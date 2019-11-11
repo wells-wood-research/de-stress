@@ -4,6 +4,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Element.Region as Region
 import FeatherIcons
 
@@ -86,6 +87,140 @@ textInputStyle =
     , Border.color colorPalette.c1
     ]
         ++ defaultBorder
+
+
+alwaysActiveButton : { labelText : String, clickMsg : msg } -> Element msg
+alwaysActiveButton { labelText, clickMsg } =
+    Input.button
+        [ padding 8
+        , Background.color colorPalette.c3
+        , Border.rounded 6
+        ]
+        { onPress = Just clickMsg
+        , label = text labelText
+        }
+
+
+conditionalButton :
+    { labelText : String
+    , clickMsg : msg
+    , isActive : Bool
+    }
+    -> Element msg
+conditionalButton { labelText, clickMsg, isActive } =
+    if isActive then
+        Input.button
+            [ padding 8
+            , Background.color colorPalette.c3
+            , Border.rounded 6
+            ]
+            { onPress = Just clickMsg
+            , label = text labelText
+            }
+
+    else
+        Input.button
+            [ padding 8
+            , Background.color colorPalette.c4
+            , Border.color colorPalette.black
+            , Border.width 2
+            , Border.rounded 6
+            , Font.color colorPalette.white
+            ]
+            { onPress = Nothing
+            , label = text labelText
+            }
+
+
+linkButton : { labelText : String, url : String } -> Element msg
+linkButton { labelText, url } =
+    link
+        [ padding 8
+        , Background.color colorPalette.c3
+        , Border.rounded 6
+        ]
+        { url = url, label = text labelText }
+
+
+type DangerStatus
+    = Unclicked
+    | Clicked
+    | Confirmed
+
+
+dangerousButton :
+    { labelText : String
+    , confirmText : String
+    , status : DangerStatus
+    , dangerousMsg : DangerStatus -> msg
+    }
+    -> Element msg
+dangerousButton { labelText, confirmText, status, dangerousMsg } =
+    case status of
+        Unclicked ->
+            Input.button
+                [ padding 8
+                , Background.color colorPalette.red
+                , Border.rounded 6
+                ]
+                { onPress = Just <| dangerousMsg Clicked
+                , label = text labelText
+                }
+
+        Clicked ->
+            let
+                confirmDialog =
+                    column
+                        [ padding 10
+                        , spacing 10
+                        , width <| px 250
+                        , Background.color colorPalette.red
+                        , Border.rounded 6
+                        , Font.color colorPalette.black
+                        ]
+                        [ paragraph [] [ text confirmText ]
+                        , row [ spacing 10 ]
+                            [ Input.button
+                                [ focused []
+                                , padding 8
+                                , Border.rounded 6
+                                , Border.width 2
+                                ]
+                                { onPress = Just <| dangerousMsg Confirmed
+                                , label = text "Yes"
+                                }
+                            , Input.button
+                                [ focused []
+                                , padding 8
+                                , Border.rounded 6
+                                , Border.width 2
+                                ]
+                                { onPress = Just <| dangerousMsg Unclicked
+                                , label = text "No"
+                                }
+                            ]
+                        ]
+            in
+            Input.button
+                [ below confirmDialog
+                , padding 8
+                , Background.color colorPalette.red
+                , Border.rounded 6
+                ]
+                { onPress = Nothing
+                , label = text labelText
+                }
+
+        Confirmed ->
+            Input.button
+                [ padding 8
+                , Background.color colorPalette.c4
+                , Border.rounded 6
+                , Font.color colorPalette.c5
+                ]
+                { onPress = Nothing
+                , label = text labelText
+                }
 
 
 

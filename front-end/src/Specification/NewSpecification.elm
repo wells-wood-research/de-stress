@@ -1,4 +1,8 @@
-module Specification.NewSpecification exposing (NewSpecification)
+module Specification.NewSpecification exposing
+    ( NewRequirement(..)
+    , NewRequirementData(..)
+    , newRequirementToRequirement
+    )
 
 import Codec exposing (Codec)
 import Specification as Spec exposing (Specification)
