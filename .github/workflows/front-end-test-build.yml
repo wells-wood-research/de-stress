@@ -1,6 +1,14 @@
 name: Front End Test Build
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'front-end/*'
+  pull_request:
+    paths:
+      - 'front-end/*'
 
 jobs:
   build:

@@ -1,6 +1,14 @@
 name: Big Structure Run Tests
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      'big-structure/*'
+  pull_request:
+    paths:
+      'big-structure/*'
 
 jobs:
   build:
