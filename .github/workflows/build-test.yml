@@ -12,4 +12,5 @@ jobs:
     - name: Build the application.
       run: |
         cd front-end/
-        ls
+        docker build -t front-end-build-test .
+        docker run --rm front-end-build-test
