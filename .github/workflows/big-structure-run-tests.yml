@@ -1,0 +1,16 @@
+name: Big Structure Run Tests
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build and test `big-structure`.
+      run: |
+        cd big-structure/
+        docker build -t big-structure-run-tests .
+        docker run --rm big-structure-run-tests
