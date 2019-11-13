@@ -12,7 +12,8 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Global
-import Pages.Specifications.All as Specs
+import Pages.Specifications.All exposing (requirementView)
+import Specification as Specs
     exposing
         ( Requirement
         , RequirementData
@@ -390,7 +391,19 @@ update _ msg model =
         ClickedCreateSpecification ->
             ( defaultModel
             , Cmd.none
-            , Cmd.none
+            , Global.AddSpecification
+                { name =
+                    Maybe.withDefault
+                        "DEFAULT SPEC NAME"
+                        model.name
+                , description =
+                    Maybe.withDefault
+                        "DEFAULT SPEC DESCRIPTION"
+                        model.description
+                , requirements = Specs.All model.requirements
+                , deleteStatus = Style.Unclicked
+                }
+                |> Global.send
             )
 
 
@@ -442,7 +455,7 @@ view _ model =
                         ]
 
                 _ ->
-                    Specs.requirementView <| Specs.All model.requirements
+                    requirementView <| Specs.All model.requirements
             )
         , let
             areRequirements =

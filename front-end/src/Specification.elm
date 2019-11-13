@@ -6,15 +6,18 @@ module Specification exposing
     , Specification
     , ValueType(..)
     , specificationCodec
+    , stringFromOrder
     )
 
 import Codec exposing (Codec)
+import Style
 
 
 type alias Specification =
     { name : String
     , description : String
     , requirements : Requirement RequirementData
+    , deleteStatus : Style.DangerStatus
     }
 
 
@@ -24,6 +27,7 @@ specificationCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
         |> Codec.field "requirements" .requirements (requirementCodec requirementDataTypeCodec)
+        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
 

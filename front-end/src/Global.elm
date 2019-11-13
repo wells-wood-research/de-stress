@@ -3,12 +3,14 @@ module Global exposing
     , Model
     , Msg(..)
     , init
+    , send
     , subscriptions
     , update
     )
 
 import Generated.Route exposing (Route)
 import Specification exposing (Specification)
+import Task
 
 
 type alias Flags =
@@ -44,3 +46,16 @@ update _ msg model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
+
+
+
+-- {{ Utilities
+
+
+send : msg -> Cmd msg
+send =
+    Task.succeed >> Task.perform identity
+
+
+
+-- }}
