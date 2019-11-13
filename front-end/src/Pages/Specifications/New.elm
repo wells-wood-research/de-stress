@@ -416,7 +416,9 @@ view : Global.Model -> Model -> Element Msg
 view _ model =
     column
         [ width fill, spacing 30 ]
-        [ text "Create New Specification" |> Style.h1
+        [ text "Create New Specification"
+            |> Style.h1
+            |> el [ centerX ]
         , Input.text
             Style.textInputStyle
             { onChange = UpdatedName

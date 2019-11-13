@@ -9,6 +9,7 @@ import Application.Page as Page
 import Codec exposing (Codec)
 import Element exposing (..)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import FeatherIcons
 import Global
@@ -26,7 +27,7 @@ modelCodec =
 
 
 type Msg
-    = NoOp
+    = DeleteSpecification Int Style.DangerStatus
 
 
 page =
@@ -55,10 +56,11 @@ init _ _ =
 update : Global.Model -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
 update _ msg model =
     case msg of
-        NoOp ->
+        DeleteSpecification index dangerStatus ->
             ( model
             , Cmd.none
-            , Cmd.none
+            , Global.DeleteSpecification index dangerStatus
+                |> Global.send
             )
 
 
@@ -68,8 +70,40 @@ subscriptions _ _ =
 
 
 view : Global.Model -> Model -> Element Msg
-view _ _ =
-    h1 <| text "Specifications"
+view { specifications } _ =
+    column
+        [ width fill, spacing 30 ]
+        (row [ centerX, spacing 10 ]
+            [ Style.h1 <|
+                text "Requirement Specifications"
+            , Style.linkButton { url = "/specifications/new", labelText = "New" }
+            ]
+            :: List.indexedMap specificationView specifications
+        )
+
+
+specificationView : Int -> Specification -> Element Msg
+specificationView index { name, description, requirements, deleteStatus } =
+    column
+        [ padding 15
+        , spacing 10
+        , width fill
+        , Background.color Style.colorPalette.c5
+        , Border.rounded 10
+        ]
+        [ Style.h2 <| text "Name"
+        , paragraph [] [ text name ]
+        , Style.h2 <| text "Description"
+        , paragraph [] [ text description ]
+        , Style.h2 <| text "Requirements"
+        , requirementView requirements
+        , Style.dangerousButton
+            { labelText = "Delete"
+            , confirmText = "Are you sure you want to delete this specification?"
+            , status = deleteStatus
+            , dangerousMsg = DeleteSpecification index
+            }
+        ]
 
 
 requirementView : Spec.Requirement Spec.RequirementData -> Element msg
