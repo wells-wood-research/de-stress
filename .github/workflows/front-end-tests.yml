@@ -1,4 +1,4 @@
-name: Front End Test Build
+name: Front End Tests
 
 on:
   push:
@@ -20,5 +20,5 @@ jobs:
     - name: Build the application.
       run: |
         cd front-end/
-        docker build -t front-end-build-test .
-        docker run --rm front-end-build-test
+        docker build -t front-end-test .
+        docker run --rm front-end-test
