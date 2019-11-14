@@ -1,26 +1,47 @@
 module Global exposing
     ( Flags
-    , Model
+    , Model(..)
     , Msg(..)
+    , RunState
     , init
     , send
     , subscriptions
     , update
     )
 
+import Codec exposing (Codec)
 import Generated.Route as TopRoute
 import Generated.Route.Specifications as SpecRoute
+import Json.Decode as JDe
 import Specification exposing (Specification)
 import Style
 import Task
 
 
 type alias Flags =
-    ()
+    { randomSeed : Int }
 
 
-type alias Model =
-    { specifications : List Specification }
+flagsCodec : Codec Flags
+flagsCodec =
+    Codec.object Flags
+        |> Codec.field "randomSeed" .randomSeed Codec.int
+        |> Codec.buildObject
+
+
+type Model
+    = Running RunState
+    | FailedToLaunch LaunchError
+
+
+type alias RunState =
+    { randomSeed : Int
+    , specifications : List Specification
+    }
+
+
+type LaunchError
+    = FailedToDecodeFlags Codec.Error
 
 
 type Msg
@@ -32,9 +53,14 @@ type Msg
 -- {{{ Init
 
 
-init : { navigate : TopRoute.Route -> Cmd msg } -> Flags -> ( Model, Cmd Msg, Cmd msg )
-init _ _ =
-    ( { specifications = [] }
+init : { navigate : TopRoute.Route -> Cmd msg } -> JDe.Value -> ( Model, Cmd Msg, Cmd msg )
+init _ flagsValue =
+    ( case Codec.decodeValue flagsCodec flagsValue of
+        Ok flags ->
+            Running { randomSeed = flags.randomSeed, specifications = [] }
+
+        Err errString ->
+            FailedToDecodeFlags errString |> FailedToLaunch
     , Cmd.none
     , Cmd.none
     )
@@ -47,44 +73,58 @@ init _ _ =
 
 update : { navigate : TopRoute.Route -> Cmd msg } -> Msg -> Model -> ( Model, Cmd Msg, Cmd msg )
 update { navigate } msg model =
-    case msg of
-        AddSpecification spec ->
-            ( { model | specifications = spec :: model.specifications }
-            , Cmd.none
-            , navigate <|
-                TopRoute.Specifications (SpecRoute.All ())
+    case model of
+        Running runState ->
+            (case msg of
+                AddSpecification spec ->
+                    ( { runState | specifications = spec :: runState.specifications }
+                    , Cmd.none
+                    , navigate <|
+                        TopRoute.Specifications (SpecRoute.All ())
+                    )
+
+                DeleteSpecification index dangerStatus ->
+                    ( case dangerStatus of
+                        Style.Confirmed ->
+                            { runState
+                                | specifications =
+                                    List.indexedMap Tuple.pair runState.specifications
+                                        |> List.filter
+                                            (\( i, _ ) -> i /= index)
+                                        |> List.map Tuple.second
+                            }
+
+                        _ ->
+                            { runState
+                                | specifications =
+                                    List.indexedMap
+                                        (\i s ->
+                                            if i == index then
+                                                { s
+                                                    | deleteStatus =
+                                                        dangerStatus
+                                                }
+
+                                            else
+                                                s
+                                        )
+                                        runState.specifications
+                            }
+                    , Cmd.none
+                    , Cmd.none
+                    )
             )
+                |> asModel Running
 
-        DeleteSpecification index dangerStatus ->
-            ( case dangerStatus of
-                Style.Confirmed ->
-                    { model
-                        | specifications =
-                            List.indexedMap Tuple.pair model.specifications
-                                |> List.filter
-                                    (\( i, _ ) -> i /= index)
-                                |> List.map Tuple.second
-                    }
-
+        FailedToLaunch launchError ->
+            case msg of
                 _ ->
-                    { model
-                        | specifications =
-                            List.indexedMap
-                                (\i s ->
-                                    if i == index then
-                                        { s
-                                            | deleteStatus =
-                                                dangerStatus
-                                        }
+                    ( model, Cmd.none, Cmd.none )
 
-                                    else
-                                        s
-                                )
-                                model.specifications
-                    }
-            , Cmd.none
-            , Cmd.none
-            )
+
+asModel : (a -> Model) -> ( a, Cmd Msg, Cmd msg ) -> ( Model, Cmd Msg, Cmd msg )
+asModel constructor ( state, gCmds, pCmds ) =
+    ( constructor state, gCmds, pCmds )
 
 
 

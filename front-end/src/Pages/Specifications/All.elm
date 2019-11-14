@@ -70,16 +70,21 @@ subscriptions _ _ =
 
 
 view : Global.Model -> Model -> Element Msg
-view { specifications } _ =
-    column
-        [ width fill, spacing 30 ]
-        (row [ centerX, spacing 10 ]
-            [ Style.h1 <|
-                text "Requirement Specifications"
-            , Style.linkButton { url = "/specifications/new", labelText = "New" }
-            ]
-            :: List.indexedMap specificationView specifications
-        )
+view model _ =
+    case model of
+        Global.Running { specifications } ->
+            column
+                [ width fill, spacing 30 ]
+                (row [ centerX, spacing 10 ]
+                    [ Style.h1 <|
+                        text "Requirement Specifications"
+                    , Style.linkButton { url = "/specifications/new", labelText = "New" }
+                    ]
+                    :: List.indexedMap specificationView specifications
+                )
+
+        Global.FailedToLaunch _ ->
+            Debug.todo "Add common state page"
 
 
 specificationView : Int -> Specification -> Element Msg
