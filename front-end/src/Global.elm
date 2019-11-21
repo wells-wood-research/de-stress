@@ -3,10 +3,12 @@ module Global exposing
     , Model(..)
     , Msg(..)
     , RunState
+    , createInitialUuid
     , init
     , send
     , subscriptions
     , update
+    , updateUuid
     )
 
 import Codec exposing (Codec)
@@ -50,6 +52,7 @@ type LaunchError
 type Msg
     = AddSpecification Specification
     | DeleteSpecification Int Style.DangerStatus
+    | RequestedNewUuid
 
 
 
@@ -61,11 +64,8 @@ init _ flagsValue =
     ( case Codec.decodeValue flagsCodec flagsValue of
         Ok flags ->
             let
-                initialRandomSeed =
-                    Random.initialSeed flags.randomSeed
-
-                ( nextUuid, randomSeed ) =
-                    Random.step Uuid.uuidGenerator initialRandomSeed
+                ( nextUuid, initialRandomSeed ) =
+                    createInitialUuid flags.randomSeed
             in
             Running
                 { randomSeed = initialRandomSeed
@@ -78,6 +78,15 @@ init _ flagsValue =
     , Cmd.none
     , Cmd.none
     )
+
+
+createInitialUuid : Int -> ( Uuid, Random.Seed )
+createInitialUuid initialRandomNumber =
+    let
+        initialRandomSeed =
+            Random.initialSeed initialRandomNumber
+    in
+    Random.step Uuid.uuidGenerator initialRandomSeed
 
 
 
@@ -127,6 +136,9 @@ update { navigate } msg model =
                     , Cmd.none
                     , Cmd.none
                     )
+
+                RequestedNewUuid ->
+                    ( runState, Cmd.none, Cmd.none )
             )
                 |> asModel Running
 
@@ -139,6 +151,15 @@ update { navigate } msg model =
 asModel : (a -> Model) -> ( a, Cmd Msg, Cmd msg ) -> ( Model, Cmd Msg, Cmd msg )
 asModel constructor ( state, gCmds, pCmds ) =
     ( constructor state, gCmds, pCmds )
+
+
+updateUuid : { randomSeed : Random.Seed, nextUuid : Uuid.Uuid } -> { randomSeed : Random.Seed, nextUuid : Uuid.Uuid }
+updateUuid { randomSeed } =
+    let
+        ( nextUuid, newSeed ) =
+            Random.step Uuid.uuidGenerator randomSeed
+    in
+    { randomSeed = newSeed, nextUuid = nextUuid }
 
 
 
