@@ -13,9 +13,11 @@ import Codec exposing (Codec)
 import Generated.Route as TopRoute
 import Generated.Route.Specifications as SpecRoute
 import Json.Decode as JDe
+import Random
 import Specification exposing (Specification)
 import Style
 import Task
+import Uuid exposing (Uuid)
 
 
 type alias Flags =
@@ -35,7 +37,8 @@ type Model
 
 
 type alias RunState =
-    { randomSeed : Int
+    { randomSeed : Random.Seed
+    , nextUuid : Uuid
     , specifications : List Specification
     }
 
@@ -57,7 +60,18 @@ init : { navigate : TopRoute.Route -> Cmd msg } -> JDe.Value -> ( Model, Cmd Msg
 init _ flagsValue =
     ( case Codec.decodeValue flagsCodec flagsValue of
         Ok flags ->
-            Running { randomSeed = flags.randomSeed, specifications = [] }
+            let
+                initialRandomSeed =
+                    Random.initialSeed flags.randomSeed
+
+                ( nextUuid, randomSeed ) =
+                    Random.step Uuid.uuidGenerator initialRandomSeed
+            in
+            Running
+                { randomSeed = initialRandomSeed
+                , nextUuid = nextUuid
+                , specifications = []
+                }
 
         Err errString ->
             FailedToDecodeFlags errString |> FailedToLaunch
