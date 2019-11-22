@@ -4,12 +4,14 @@ module Specification exposing
     , Requirement(..)
     , RequirementData(..)
     , Specification
+    , SpecificationStub
+    , StoredSpecification
     , ValueType(..)
     , specificationCodec
     , stringFromOrder
     )
 
-import Codec exposing (Codec)
+import Codec exposing (Codec, Value)
 import Style
 
 
@@ -195,3 +197,23 @@ stringFromOrder order =
 
         GT ->
             "GreaterThan"
+
+
+type alias SpecificationStub =
+    { name : String
+    , description : String
+    , deleteStatus : Style.DangerStatus
+    }
+
+
+specificationStubCodec : Codec SpecificationStub
+specificationStubCodec =
+    Codec.object SpecificationStub
+        |> Codec.field "name" .name Codec.string
+        |> Codec.field "description" .description Codec.string
+        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.buildObject
+
+
+type StoredSpecification
+    = IndexedDb SpecificationStub

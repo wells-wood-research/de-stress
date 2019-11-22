@@ -1,4 +1,4 @@
-module Global exposing
+port module Global exposing
     ( Flags
     , Model(..)
     , Msg(..)
@@ -11,7 +11,7 @@ module Global exposing
     , updateUuid
     )
 
-import Codec exposing (Codec)
+import Codec exposing (Codec, Value)
 import Dict exposing (Dict)
 import Generated.Route as TopRoute
 import Generated.Route.Specifications as SpecRoute
@@ -101,15 +101,23 @@ update { navigate } msg model =
         Running runState ->
             (case msg of
                 AddSpecification spec ->
+                    let
+                        uuidString =
+                            Uuid.toString runState.nextUuid
+                    in
                     ( { runState
                         | specifications =
                             Dict.insert
-                                (Uuid.toString runState.nextUuid)
+                                uuidString
                                 spec
                                 runState.specifications
                       }
                         |> updateUuid
-                    , Cmd.none
+                    , encodeSpecificationAndKey
+                        { storeKey = uuidString
+                        , specification = spec
+                        }
+                        |> storeSpecification
                     , navigate <|
                         TopRoute.Specifications (SpecRoute.All ())
                     )
@@ -174,6 +182,35 @@ updateUuid runState =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
+
+
+
+-- }}}
+-- {{{ Ports
+
+
+port storeSpecification : Value -> Cmd msg
+
+
+type alias SpecificationAndKey =
+    { storeKey : String
+    , specification : Specification
+    }
+
+
+encodeSpecificationAndKey : SpecificationAndKey -> Value
+encodeSpecificationAndKey specificationAndKey =
+    Codec.encoder
+        specificationAndKeyCodec
+        specificationAndKey
+
+
+specificationAndKeyCodec : Codec SpecificationAndKey
+specificationAndKeyCodec =
+    Codec.object SpecificationAndKey
+        |> Codec.field "storeKey" .storeKey Codec.string
+        |> Codec.field "specification" .specification Specification.specificationCodec
+        |> Codec.buildObject
 
 
 
