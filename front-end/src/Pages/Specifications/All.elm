@@ -14,7 +14,7 @@ import Element.Border as Border
 import Element.Font as Font
 import FeatherIcons
 import Global
-import Specification as Spec exposing (Specification)
+import Specification as Spec exposing (Specification, SpecificationStub)
 import Style exposing (h1)
 
 
@@ -76,11 +76,39 @@ view model _ =
                         text "Requirement Specifications"
                     , Style.linkButton { url = "/specifications/new", labelText = "New" }
                     ]
-                    :: (Dict.toList specifications |> List.map specificationView)
+                    :: (Dict.toList specifications
+                            |> List.map
+                                (\( k, v ) ->
+                                    ( k, Global.storedSpecificationToStub v )
+                                )
+                            |> List.map specificationStubView
+                       )
                 )
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"
+
+
+specificationStubView : ( String, SpecificationStub ) -> Element Msg
+specificationStubView ( uuidString, { name, description, deleteStatus } ) =
+    column
+        [ padding 15
+        , spacing 10
+        , width fill
+        , Background.color Style.colorPalette.c5
+        , Border.rounded 10
+        ]
+        [ Style.h2 <| text "Name"
+        , paragraph [] [ text name ]
+        , Style.h2 <| text "Description"
+        , paragraph [] [ text description ]
+        , Style.dangerousButton
+            { labelText = "Delete"
+            , confirmText = "Are you sure you want to delete this specification?"
+            , status = deleteStatus
+            , dangerousMsg = DeleteSpecification uuidString
+            }
+        ]
 
 
 specificationView : ( String, Specification ) -> Element Msg

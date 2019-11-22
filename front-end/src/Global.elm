@@ -6,6 +6,7 @@ port module Global exposing
     , createInitialUuid
     , init
     , send
+    , storedSpecificationToStub
     , subscriptions
     , update
     , updateUuid
@@ -17,7 +18,7 @@ import Generated.Route as TopRoute
 import Generated.Route.Specifications as SpecRoute
 import Json.Decode as JDe
 import Random
-import Specification exposing (Specification)
+import Specification exposing (Specification, SpecificationStub)
 import Style
 import Task
 import Uuid exposing (Uuid)
@@ -42,7 +43,7 @@ type Model
 type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
-    , specifications : Dict String Specification
+    , specifications : Dict String StoredSpecification
     }
 
 
@@ -54,6 +55,24 @@ type Msg
     = AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | RequestedNewUuid
+
+
+type StoredSpecification
+    = IndexedDb SpecificationStub
+
+
+mapStoredSpecification : (SpecificationStub -> SpecificationStub) -> StoredSpecification -> StoredSpecification
+mapStoredSpecification stubFn storedSpecification =
+    case storedSpecification of
+        IndexedDb stub ->
+            stubFn stub |> IndexedDb
+
+
+storedSpecificationToStub : StoredSpecification -> SpecificationStub
+storedSpecificationToStub storedSpecification =
+    case storedSpecification of
+        IndexedDb stub ->
+            stub
 
 
 
@@ -109,7 +128,10 @@ update { navigate } msg model =
                         | specifications =
                             Dict.insert
                                 uuidString
-                                spec
+                                (spec
+                                    |> Specification.createSpecificationStub
+                                    |> IndexedDb
+                                )
                                 runState.specifications
                       }
                         |> updateUuid
@@ -135,13 +157,14 @@ update { navigate } msg model =
                                 | specifications =
                                     Dict.update
                                         uuidString
-                                        (Maybe.map
-                                            (\s ->
-                                                { s
-                                                    | deleteStatus =
-                                                        dangerStatus
-                                                }
-                                            )
+                                        ((\s ->
+                                            { s
+                                                | deleteStatus =
+                                                    dangerStatus
+                                            }
+                                         )
+                                            |> mapStoredSpecification
+                                            |> Maybe.map
                                         )
                                         runState.specifications
                             }

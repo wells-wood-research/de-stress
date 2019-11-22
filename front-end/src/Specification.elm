@@ -5,8 +5,8 @@ module Specification exposing
     , RequirementData(..)
     , Specification
     , SpecificationStub
-    , StoredSpecification
     , ValueType(..)
+    , createSpecificationStub
     , specificationCodec
     , stringFromOrder
     )
@@ -215,5 +215,9 @@ specificationStubCodec =
         |> Codec.buildObject
 
 
-type StoredSpecification
-    = IndexedDb SpecificationStub
+createSpecificationStub : Specification -> SpecificationStub
+createSpecificationStub specification =
+    { name = specification.name
+    , description = specification.description
+    , deleteStatus = specification.deleteStatus
+    }
