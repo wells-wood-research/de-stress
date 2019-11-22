@@ -12,6 +12,7 @@ module Global exposing
     )
 
 import Codec exposing (Codec)
+import Dict exposing (Dict)
 import Generated.Route as TopRoute
 import Generated.Route.Specifications as SpecRoute
 import Json.Decode as JDe
@@ -41,7 +42,7 @@ type Model
 type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
-    , specifications : List Specification
+    , specifications : Dict String Specification
     }
 
 
@@ -51,7 +52,7 @@ type LaunchError
 
 type Msg
     = AddSpecification Specification
-    | DeleteSpecification Int Style.DangerStatus
+    | DeleteSpecification String Style.DangerStatus
     | RequestedNewUuid
 
 
@@ -64,13 +65,13 @@ init _ flagsValue =
     ( case Codec.decodeValue flagsCodec flagsValue of
         Ok flags ->
             let
-                ( nextUuid, initialRandomSeed ) =
+                ( nextUuid, randomSeed ) =
                     createInitialUuid flags.randomSeed
             in
             Running
-                { randomSeed = initialRandomSeed
+                { randomSeed = randomSeed
                 , nextUuid = nextUuid
-                , specifications = []
+                , specifications = Dict.empty
                 }
 
         Err errString ->
@@ -100,36 +101,39 @@ update { navigate } msg model =
         Running runState ->
             (case msg of
                 AddSpecification spec ->
-                    ( { runState | specifications = spec :: runState.specifications }
+                    ( { runState
+                        | specifications =
+                            Dict.insert
+                                (Uuid.toString runState.nextUuid)
+                                spec
+                                runState.specifications
+                      }
+                        |> updateUuid
                     , Cmd.none
                     , navigate <|
                         TopRoute.Specifications (SpecRoute.All ())
                     )
 
-                DeleteSpecification index dangerStatus ->
+                DeleteSpecification uuidString dangerStatus ->
                     ( case dangerStatus of
                         Style.Confirmed ->
                             { runState
                                 | specifications =
-                                    List.indexedMap Tuple.pair runState.specifications
-                                        |> List.filter
-                                            (\( i, _ ) -> i /= index)
-                                        |> List.map Tuple.second
+                                    Dict.remove uuidString runState.specifications
                             }
 
                         _ ->
                             { runState
                                 | specifications =
-                                    List.indexedMap
-                                        (\i s ->
-                                            if i == index then
+                                    Dict.update
+                                        uuidString
+                                        (Maybe.map
+                                            (\s ->
                                                 { s
                                                     | deleteStatus =
                                                         dangerStatus
                                                 }
-
-                                            else
-                                                s
+                                            )
                                         )
                                         runState.specifications
                             }
@@ -153,13 +157,13 @@ asModel constructor ( state, gCmds, pCmds ) =
     ( constructor state, gCmds, pCmds )
 
 
-updateUuid : { randomSeed : Random.Seed, nextUuid : Uuid.Uuid } -> { randomSeed : Random.Seed, nextUuid : Uuid.Uuid }
-updateUuid { randomSeed } =
+updateUuid : RunState -> RunState
+updateUuid runState =
     let
         ( nextUuid, newSeed ) =
-            Random.step Uuid.uuidGenerator randomSeed
+            Random.step Uuid.uuidGenerator runState.randomSeed
     in
-    { randomSeed = newSeed, nextUuid = nextUuid }
+    { runState | randomSeed = newSeed, nextUuid = nextUuid }
 
 
 

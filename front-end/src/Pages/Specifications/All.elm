@@ -7,6 +7,7 @@ module Pages.Specifications.All exposing
 
 import Application.Page as Page
 import Codec exposing (Codec)
+import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -18,16 +19,11 @@ import Style exposing (h1)
 
 
 type alias Model =
-    List Specification
-
-
-modelCodec : Codec Model
-modelCodec =
-    Codec.list Spec.specificationCodec
+    ()
 
 
 type Msg
-    = DeleteSpecification Int Style.DangerStatus
+    = DeleteSpecification String Style.DangerStatus
 
 
 page =
@@ -47,7 +43,7 @@ title _ _ =
 
 init : Global.Model -> () -> ( Model, Cmd Msg, Cmd Global.Msg )
 init _ _ =
-    ( []
+    ( ()
     , Cmd.none
     , Cmd.none
     )
@@ -56,10 +52,10 @@ init _ _ =
 update : Global.Model -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
 update _ msg model =
     case msg of
-        DeleteSpecification index dangerStatus ->
+        DeleteSpecification uuidString dangerStatus ->
             ( model
             , Cmd.none
-            , Global.DeleteSpecification index dangerStatus
+            , Global.DeleteSpecification uuidString dangerStatus
                 |> Global.send
             )
 
@@ -80,15 +76,15 @@ view model _ =
                         text "Requirement Specifications"
                     , Style.linkButton { url = "/specifications/new", labelText = "New" }
                     ]
-                    :: List.indexedMap specificationView specifications
+                    :: (Dict.toList specifications |> List.map specificationView)
                 )
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"
 
 
-specificationView : Int -> Specification -> Element Msg
-specificationView index { name, description, requirements, deleteStatus } =
+specificationView : ( String, Specification ) -> Element Msg
+specificationView ( uuidString, { name, description, requirements, deleteStatus } ) =
     column
         [ padding 15
         , spacing 10
@@ -106,7 +102,7 @@ specificationView index { name, description, requirements, deleteStatus } =
             { labelText = "Delete"
             , confirmText = "Are you sure you want to delete this specification?"
             , status = deleteStatus
-            , dangerousMsg = DeleteSpecification index
+            , dangerousMsg = DeleteSpecification uuidString
             }
         ]
 
