@@ -1,14 +1,17 @@
-import './main.css';
-import { Elm } from './Main.elm';
-import * as serviceWorker from './serviceWorker';
+import "./main.css";
+import { Elm } from "./Main.elm";
+import * as serviceWorker from "./serviceWorker";
 
 // {{{ Elm App
 
-const specificationStore = new idbKeyval.Store('destress-front-end', 'specification-store');
+const specificationStore = new idbKeyval.Store(
+  "destress-front-end",
+  "specification-store"
+);
 
 var app = Elm.Main.init({
-  node: document.getElementById('root'),
-  flags: { randomSeed : Math.floor(Math.random()* 0x0fffffff)}
+  node: document.getElementById("root"),
+  flags: { randomSeed: Math.floor(Math.random() * 0x0fffffff) }
 });
 
 // }}}
@@ -22,8 +25,18 @@ app.ports.storeSpecification.subscribe(specificationAndKey => {
   } else {
     console.log(
       "Storage is not available. IndexedDB must be enabled to store state."
-      );
-    }
+    );
+  }
+});
+
+//Get specification
+app.ports.getSpecification.subscribe(storeKey => {
+  idbKeyval.get(storeKey, specificationStore).then(specification =>
+    app.ports.setFocussedSpecification.send({
+      uuidString: storeKey,
+      specification: specification
+    })
+  );
 });
 
 // }}}

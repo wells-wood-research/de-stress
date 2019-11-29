@@ -54,6 +54,7 @@ type LaunchError
 type Msg
     = AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
+    | GetSpecification String
     | RequestedNewUuid
 
 
@@ -144,6 +145,12 @@ update { navigate } msg model =
                         TopRoute.Specifications (SpecRoute.All ())
                     )
 
+                GetSpecification uuidString ->
+                    ( runState
+                    , getSpecification uuidString
+                    , Cmd.none
+                    )
+
                 DeleteSpecification uuidString dangerStatus ->
                     ( case dangerStatus of
                         Style.Confirmed ->
@@ -199,17 +206,7 @@ updateUuid runState =
 
 
 -- }}}
--- {{{ Subscriptions
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
-
-
-
--- }}}
--- {{{ Ports
+-- {{{ Cmds
 
 
 port storeSpecification : Value -> Cmd msg
@@ -234,6 +231,22 @@ specificationAndKeyCodec =
         |> Codec.field "storeKey" .storeKey Codec.string
         |> Codec.field "specification" .specification Specification.specificationCodec
         |> Codec.buildObject
+
+
+port getSpecification : String -> Cmd msg
+
+
+
+-- }}}
+-- {{{ Subscriptions
+
+
+port loadSpecification : (Value -> msg) -> Sub msg
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
 
 
 

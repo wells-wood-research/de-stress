@@ -1,4 +1,4 @@
-module Pages.Specifications.All exposing
+port module Pages.Specifications.All exposing
     ( Model
     , Msg
     , page
@@ -6,11 +6,12 @@ module Pages.Specifications.All exposing
     )
 
 import Application.Page as Page
-import Codec exposing (Codec)
+import Codec exposing (Codec, Value)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import FeatherIcons
 import Global
@@ -19,11 +20,40 @@ import Style exposing (h1)
 
 
 type alias Model =
-    ()
+    { focussedSpecification : FocussedSpecifiation }
+
+
+type FocussedSpecifiation
+    = NoFocus
+    | Loading
+    | Spec String Specification
+
+
+mapFocussedSpecification :
+    ({ uuidString : String, specification : Specification }
+     -> { uuidString : String, specification : Specification }
+    )
+    -> FocussedSpecifiation
+    -> FocussedSpecifiation
+mapFocussedSpecification specFn focus =
+    case focus of
+        NoFocus ->
+            focus
+
+        Loading ->
+            focus
+
+        Spec uuidString specification ->
+            { uuidString = uuidString, specification = specification }
+                |> specFn
+                |> (\idSpec -> Spec idSpec.uuidString idSpec.specification)
 
 
 type Msg
-    = DeleteSpecification String Style.DangerStatus
+    = ClickedFocusSpecification String
+    | SetFocus Value
+    | DeleteSpecification String Style.DangerStatus
+    | DeleteFocussedSpecification String Style.DangerStatus
 
 
 page =
@@ -43,7 +73,7 @@ title _ _ =
 
 init : Global.Model -> () -> ( Model, Cmd Msg, Cmd Global.Msg )
 init _ _ =
-    ( ()
+    ( { focussedSpecification = NoFocus }
     , Cmd.none
     , Cmd.none
     )
@@ -52,6 +82,38 @@ init _ _ =
 update : Global.Model -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
 update _ msg model =
     case msg of
+        ClickedFocusSpecification uuidString ->
+            ( { model | focussedSpecification = Loading }
+            , Cmd.none
+            , Global.GetSpecification uuidString
+                |> Global.send
+            )
+
+        SetFocus value ->
+            let
+                focusCodec =
+                    Codec.object
+                        (\uuidString spec ->
+                            { uuidString = uuidString
+                            , specification = spec
+                            }
+                        )
+                        |> Codec.field "uuidString" .uuidString Codec.string
+                        |> Codec.field "specification"
+                            .specification
+                            Spec.specificationCodec
+                        |> Codec.buildObject
+            in
+            case Codec.decodeValue focusCodec value of
+                Ok { uuidString, specification } ->
+                    ( { model | focussedSpecification = Spec uuidString specification }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+                Err errorString ->
+                    Debug.todo "Catch this error"
+
         DeleteSpecification uuidString dangerStatus ->
             ( model
             , Cmd.none
@@ -59,31 +121,71 @@ update _ msg model =
                 |> Global.send
             )
 
+        DeleteFocussedSpecification globalUuidString dangerStatus ->
+            ( case dangerStatus of
+                Style.Confirmed ->
+                    { model
+                        | focussedSpecification =
+                            NoFocus
+                    }
+
+                _ ->
+                    { model
+                        | focussedSpecification =
+                            mapFocussedSpecification
+                                (\{ uuidString, specification } ->
+                                    { uuidString = uuidString
+                                    , specification =
+                                        { specification
+                                            | deleteStatus =
+                                                dangerStatus
+                                        }
+                                    }
+                                )
+                                model.focussedSpecification
+                    }
+            , Cmd.none
+            , Global.DeleteSpecification globalUuidString dangerStatus
+                |> Global.send
+            )
+
+
+port setFocussedSpecification : (Value -> msg) -> Sub msg
+
 
 subscriptions : Global.Model -> Model -> Sub Msg
 subscriptions _ _ =
-    Sub.none
+    Sub.batch
+        [ setFocussedSpecification SetFocus ]
 
 
 view : Global.Model -> Model -> Element Msg
-view model _ =
-    case model of
+view globalModel model =
+    case globalModel of
         Global.Running { specifications } ->
-            column
-                [ width fill, spacing 30 ]
-                (row [ centerX, spacing 10 ]
-                    [ Style.h1 <|
-                        text "Requirement Specifications"
-                    , Style.linkButton { url = "/specifications/new", labelText = "New" }
-                    ]
-                    :: (Dict.toList specifications
-                            |> List.map
-                                (\( k, v ) ->
-                                    ( k, Global.storedSpecificationToStub v )
-                                )
-                            |> List.map specificationStubView
-                       )
-                )
+            case model.focussedSpecification of
+                NoFocus ->
+                    column
+                        [ width fill, spacing 30 ]
+                        (row [ centerX, spacing 10 ]
+                            [ Style.h1 <|
+                                text "Requirement Specifications"
+                            , Style.linkButton { url = "/specifications/new", labelText = "New" }
+                            ]
+                            :: (Dict.toList specifications
+                                    |> List.map
+                                        (\( k, v ) ->
+                                            ( k, Global.storedSpecificationToStub v )
+                                        )
+                                    |> List.map specificationStubView
+                               )
+                        )
+
+                Loading ->
+                    el [] (text "Loading...")
+
+                Spec uuidString specification ->
+                    specificationView uuidString specification
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"
@@ -97,6 +199,7 @@ specificationStubView ( uuidString, { name, description, deleteStatus } ) =
         , width fill
         , Background.color Style.colorPalette.c5
         , Border.rounded 10
+        , Events.onClick <| ClickedFocusSpecification uuidString
         ]
         [ Style.h2 <| text "Name"
         , paragraph [] [ text name ]
@@ -111,8 +214,8 @@ specificationStubView ( uuidString, { name, description, deleteStatus } ) =
         ]
 
 
-specificationView : ( String, Specification ) -> Element Msg
-specificationView ( uuidString, { name, description, requirements, deleteStatus } ) =
+specificationView : String -> Specification -> Element Msg
+specificationView uuidString { name, description, requirements, deleteStatus } =
     column
         [ padding 15
         , spacing 10
@@ -130,7 +233,7 @@ specificationView ( uuidString, { name, description, requirements, deleteStatus 
             { labelText = "Delete"
             , confirmText = "Are you sure you want to delete this specification?"
             , status = deleteStatus
-            , dangerousMsg = DeleteSpecification uuidString
+            , dangerousMsg = DeleteFocussedSpecification uuidString
             }
         ]
 
