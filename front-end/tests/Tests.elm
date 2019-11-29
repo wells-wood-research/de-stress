@@ -1,5 +1,6 @@
 module Tests exposing (..)
 
+import Dict
 import Expect
 import Fuzz exposing (int)
 import Global
@@ -26,6 +27,7 @@ all =
                             { randomSeed = firstSeed
                             , nextUuid =
                                 firstUuid
+                            , specifications = Dict.empty
                             }
                 in
                 newSeedAndUuid.nextUuid
