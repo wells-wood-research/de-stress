@@ -31,12 +31,17 @@ app.ports.storeSpecification.subscribe(specificationAndKey => {
 
 //Get specification
 app.ports.getSpecification.subscribe(storeKey => {
-  idbKeyval.get(storeKey, specificationStore).then(specification =>
+  idbKeyval.get(storeKey, specificationStore).then(specification => {
     app.ports.setFocussedSpecification.send({
       uuidString: storeKey,
       specification: specification
-    })
-  );
+    });
+  });
+});
+
+// Store specifications
+app.ports.deleteSpecification.subscribe(storeKey => {
+  idbKeyval.del(storeKey, specificationStore);
 });
 
 // }}}

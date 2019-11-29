@@ -175,7 +175,7 @@ update { navigate } msg model =
                                         )
                                         runState.specifications
                             }
-                    , Cmd.none
+                    , deleteSpecification uuidString
                     , Cmd.none
                     )
 
@@ -234,6 +234,9 @@ specificationAndKeyCodec =
 
 
 port getSpecification : String -> Cmd msg
+
+
+port deleteSpecification : String -> Cmd msg
 
 
 
