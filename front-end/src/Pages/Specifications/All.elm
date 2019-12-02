@@ -54,6 +54,7 @@ type Msg
     | SetFocus Value
     | DeleteSpecification String Style.DangerStatus
     | DeleteFocussedSpecification String Style.DangerStatus
+    | ClearFocus
 
 
 page =
@@ -122,6 +123,12 @@ update _ msg model =
 
                 Err errorString ->
                     Debug.todo "Catch this error"
+
+        ClearFocus ->
+            ( { model | focussedSpecification = NoFocus }
+            , Cmd.none
+            , Cmd.none
+            )
 
         DeleteSpecification uuidString dangerStatus ->
             ( model
@@ -250,16 +257,22 @@ specificationView uuidString { name, description, requirements, deleteStatus } =
         , width fill
         ]
         [ Style.h1 <| text "Specification Details"
+        , row [ spacing 10 ]
+            [ Style.alwaysActiveButton
+                { labelText = "Back"
+                , clickMsg = ClearFocus
+                }
+            , Style.dangerousButton
+                { labelText = "Delete"
+                , confirmText = "Are you sure you want to delete this specification?"
+                , status = deleteStatus
+                , dangerousMsg = DeleteFocussedSpecification uuidString
+                }
+            ]
         , Style.h2 <| text name
         , paragraph [] [ text description ]
         , Style.h2 <| text "Requirements"
         , requirementView requirements
-        , Style.dangerousButton
-            { labelText = "Delete"
-            , confirmText = "Are you sure you want to delete this specification?"
-            , status = deleteStatus
-            , dangerousMsg = DeleteFocussedSpecification uuidString
-            }
         ]
 
 

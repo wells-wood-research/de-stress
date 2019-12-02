@@ -71,7 +71,7 @@ type Msg
     | DeleteFocussedDesign String Style.DangerStatus
     | ClickedFocusDesign String
     | SetFocus Value
-    | NoOp
+    | ClearFocus
 
 
 page =
@@ -230,6 +230,12 @@ update _ msg model =
                 Err errorString ->
                     Debug.todo "Catch this error"
 
+        ClearFocus ->
+            ( { model | focussedDesign = NoFocus }
+            , Cmd.none
+            , Cmd.none
+            )
+
         DeleteDesign uuidString dangerStatus ->
             ( model
             , Cmd.none
@@ -264,9 +270,6 @@ update _ msg model =
             , Global.DeleteDesign globalUuidString dangerStatus
                 |> Global.send
             )
-
-        NoOp ->
-            ( model, Cmd.none, Cmd.none )
 
 
 
@@ -411,12 +414,18 @@ designDetailsView uuidString { name, fileName, deleteStatus } =
                 [ h1 <| text (Design.editableValue name ++ " Design Details") ]
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
             ]
-        , Style.dangerousButton
-            { labelText = "Delete"
-            , confirmText = "Are you sure you want to delete this design?"
-            , status = deleteStatus
-            , dangerousMsg = DeleteFocussedDesign uuidString
-            }
+        , row [ spacing 10 ]
+            [ Style.alwaysActiveButton
+                { labelText = "Back"
+                , clickMsg = ClearFocus
+                }
+            , Style.dangerousButton
+                { labelText = "Delete"
+                , confirmText = "Are you sure you want to delete this design?"
+                , status = deleteStatus
+                , dangerousMsg = DeleteFocussedDesign uuidString
+                }
+            ]
         , sectionColumn
             [ h2 <| text "Structure"
             , Keyed.el [ height <| px 300, width fill ]
