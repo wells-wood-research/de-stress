@@ -175,49 +175,37 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                 }
 
         Clicked ->
-            let
-                confirmDialog =
-                    column
-                        [ padding 10
-                        , spacing 10
-                        , width <| px 250
-                        , Background.color colorPalette.red
-                        , Border.rounded 6
-                        , Font.color colorPalette.black
-                        ]
-                        [ paragraph [] [ text confirmText ]
-                        , row [ spacing 10 ]
-                            [ Input.button
-                                (buttonStyle
-                                    ++ [ focused []
-                                       , Border.width 2
-                                       ]
-                                )
-                                { onPress = Just <| dangerousMsg Confirmed
-                                , label = text "Yes"
-                                }
-                            , Input.button
-                                (buttonStyle
-                                    ++ [ focused []
-                                       , Border.width 2
-                                       ]
-                                )
-                                { onPress = Just <| dangerousMsg Unclicked
-                                , label = text "No"
-                                }
-                            ]
-                        ]
-            in
-            Input.button
-                (buttonStyle
-                    ++ [ above confirmDialog
-                       , Background.color colorPalette.red
-                       , Events.onMouseLeave <| dangerousMsg Unclicked
-                       ]
-                )
-                { onPress = Nothing
-                , label = text labelText
-                }
+            column
+                [ padding 10
+                , spacing 10
+                , width <| px 250
+                , Background.color colorPalette.red
+                , Border.rounded 6
+                , Events.onMouseLeave <| dangerousMsg Unclicked
+                , Font.color colorPalette.black
+                ]
+                [ paragraph [] [ text confirmText ]
+                , row [ spacing 10 ]
+                    [ Input.button
+                        (buttonStyle
+                            ++ [ focused []
+                               , Border.width 2
+                               ]
+                        )
+                        { onPress = Just <| dangerousMsg Confirmed
+                        , label = text "Yes"
+                        }
+                    , Input.button
+                        (buttonStyle
+                            ++ [ focused []
+                               , Border.width 2
+                               ]
+                        )
+                        { onPress = Just <| dangerousMsg Unclicked
+                        , label = text "No"
+                        }
+                    ]
+                ]
 
         Confirmed ->
             Input.button
