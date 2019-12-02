@@ -6,6 +6,7 @@ port module Global exposing
     , createInitialUuid
     , init
     , send
+    , storedDesignToStub
     , storedSpecificationToStub
     , subscriptions
     , update
@@ -13,6 +14,7 @@ port module Global exposing
     )
 
 import Codec exposing (Codec, Value)
+import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
 import Generated.Route as TopRoute
 import Generated.Route.Specifications as SpecRoute
@@ -43,6 +45,7 @@ type Model
 type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
+    , designs : Dict String StoredDesign
     , specifications : Dict String StoredSpecification
     }
 
@@ -52,27 +55,43 @@ type LaunchError
 
 
 type Msg
-    = AddSpecification Specification
+    = AddDesign Design
+    | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
     | RequestedNewUuid
 
 
+type StoreLocation
+    = IndexedDb
+
+
+type StoredDesign
+    = LocalDesign DesignStub
+
+
+storedDesignToStub : StoredDesign -> DesignStub
+storedDesignToStub storedDesign =
+    case storedDesign of
+        LocalDesign stub ->
+            stub
+
+
 type StoredSpecification
-    = IndexedDb SpecificationStub
+    = LocalSpecification SpecificationStub
 
 
 mapStoredSpecification : (SpecificationStub -> SpecificationStub) -> StoredSpecification -> StoredSpecification
 mapStoredSpecification stubFn storedSpecification =
     case storedSpecification of
-        IndexedDb stub ->
-            stubFn stub |> IndexedDb
+        LocalSpecification stub ->
+            stubFn stub |> LocalSpecification
 
 
 storedSpecificationToStub : StoredSpecification -> SpecificationStub
 storedSpecificationToStub storedSpecification =
     case storedSpecification of
-        IndexedDb stub ->
+        LocalSpecification stub ->
             stub
 
 
@@ -91,6 +110,7 @@ init _ flagsValue =
             Running
                 { randomSeed = randomSeed
                 , nextUuid = nextUuid
+                , designs = Dict.empty
                 , specifications = Dict.empty
                 }
 
@@ -120,6 +140,31 @@ update { navigate } msg model =
     case model of
         Running runState ->
             (case msg of
+                AddDesign design ->
+                    let
+                        uuidString =
+                            Uuid.toString runState.nextUuid
+                    in
+                    ( { runState
+                        | designs =
+                            Dict.insert
+                                uuidString
+                                (design
+                                    |> Design.createDesignStub
+                                    |> LocalDesign
+                                )
+                                runState.designs
+                      }
+                        |> updateUuid
+                    , encodeDesignAndKey
+                        { storeKey = uuidString
+                        , design = design
+                        }
+                        |> storeDesign
+                    , navigate <|
+                        TopRoute.Designs ()
+                    )
+
                 AddSpecification spec ->
                     let
                         uuidString =
@@ -131,7 +176,7 @@ update { navigate } msg model =
                                 uuidString
                                 (spec
                                     |> Specification.createSpecificationStub
-                                    |> IndexedDb
+                                    |> LocalSpecification
                                 )
                                 runState.specifications
                       }
@@ -212,7 +257,34 @@ updateUuid runState =
 -- {{{ Cmds
 
 
-port storeSpecification : Value -> Cmd msg
+type alias DesignAndKey =
+    { storeKey : String
+    , design : Design
+    }
+
+
+encodeDesignAndKey : DesignAndKey -> Value
+encodeDesignAndKey designAndKey =
+    Codec.encoder
+        designAndKeyCodec
+        designAndKey
+
+
+designAndKeyCodec : Codec DesignAndKey
+designAndKeyCodec =
+    Codec.object DesignAndKey
+        |> Codec.field "storeKey" .storeKey Codec.string
+        |> Codec.field "design" .design Design.codec
+        |> Codec.buildObject
+
+
+port storeDesign : Value -> Cmd msg
+
+
+port getDesign : String -> Cmd msg
+
+
+port deleteDesign : String -> Cmd msg
 
 
 type alias SpecificationAndKey =
@@ -234,6 +306,9 @@ specificationAndKeyCodec =
         |> Codec.field "storeKey" .storeKey Codec.string
         |> Codec.field "specification" .specification Specification.specificationCodec
         |> Codec.buildObject
+
+
+port storeSpecification : Value -> Cmd msg
 
 
 port getSpecification : String -> Cmd msg

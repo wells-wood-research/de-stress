@@ -283,12 +283,21 @@ title _ _ =
     "New Specification"
 
 
+
+-- {{{ Init
+
+
 init : Global.Model -> () -> ( Model, Cmd Msg, Cmd Global.Msg )
 init _ _ =
     ( defaultModel
     , Cmd.none
     , Cmd.none
     )
+
+
+
+-- }}}
+-- {{{ Update
 
 
 update : Global.Model -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
@@ -407,9 +416,19 @@ update _ msg model =
             )
 
 
+
+-- }}}
+-- {{{ Subs
+
+
 subscriptions : Global.Model -> Model -> Sub Msg
 subscriptions _ _ =
     Sub.none
+
+
+
+-- }}}
+-- {{{ View
 
 
 view : Global.Model -> Model -> Element Msg
@@ -909,3 +928,7 @@ valueSequenceInputView { msgConstructor, valueTypeName, mValue } =
             }
         ]
     )
+
+
+
+-- }}}
