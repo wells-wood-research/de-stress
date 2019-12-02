@@ -8,6 +8,7 @@ module Specification exposing
     , ValueType(..)
     , createSpecificationStub
     , specificationCodec
+    , specificationStubCodec
     , stringFromOrder
     )
 

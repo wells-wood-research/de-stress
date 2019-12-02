@@ -5,19 +5,31 @@ import * as serviceWorker from "./serviceWorker";
 // {{{ Elm App
 
 const designStore = new idbKeyval.Store("designs", "design-store");
-
 const specificationStore = new idbKeyval.Store(
   "specifications",
   "specification-store"
 );
 
+// Get stored global state
+const storageKey = "globalState";
+const storedState = localStorage.getItem(storageKey);
+const mInitialState = storedState ? JSON.parse(storedState) : null;
+
 var app = Elm.Main.init({
   node: document.getElementById("root"),
-  flags: { randomSeed: Math.floor(Math.random() * 0x0fffffff) }
+  flags: {
+    randomSeed: Math.floor(Math.random() * 0x0fffffff),
+    mInitialState: mInitialState
+  }
 });
 
 // }}}
 // {{{ Ports
+
+// Store global state
+app.ports.storeRunState.subscribe(storedRunState => {
+  localStorage.setItem(storageKey, JSON.stringify(storedRunState));
+});
 
 // Store design
 app.ports.storeDesign.subscribe(designAndKey => {

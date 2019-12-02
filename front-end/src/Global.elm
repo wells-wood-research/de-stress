@@ -27,13 +27,24 @@ import Uuid exposing (Uuid)
 
 
 type alias Flags =
-    { randomSeed : Int }
+    { randomSeed : Int
+    , mInitialState :
+        Maybe
+            { designs : Dict String StoredDesign
+            , specifications : Dict String StoredSpecification
+            }
+    }
 
 
 flagsCodec : Codec Flags
 flagsCodec =
     Codec.object Flags
         |> Codec.field "randomSeed" .randomSeed Codec.int
+        |> Codec.field "mInitialState"
+            .mInitialState
+            (storedStateCodec
+                |> Codec.maybe
+            )
         |> Codec.buildObject
 
 
@@ -50,6 +61,18 @@ type alias RunState =
     }
 
 
+storedStateCodec :
+    Codec
+        { designs : Dict String StoredDesign
+        , specifications : Dict String StoredSpecification
+        }
+storedStateCodec =
+    Codec.object (\ds ss -> { designs = ds, specifications = ss })
+        |> Codec.field "designs" .designs (Codec.dict storedDesignCodec)
+        |> Codec.field "specifications" .specifications (Codec.dict storedSpecificationCodec)
+        |> Codec.buildObject
+
+
 type LaunchError
     = FailedToDecodeFlags Codec.Error
 
@@ -64,12 +87,20 @@ type Msg
     | RequestedNewUuid
 
 
-type StoreLocation
-    = IndexedDb
-
-
 type StoredDesign
     = LocalDesign DesignStub
+
+
+storedDesignCodec : Codec StoredDesign
+storedDesignCodec =
+    Codec.custom
+        (\flocal value ->
+            case value of
+                LocalDesign stub ->
+                    flocal stub
+        )
+        |> Codec.variant1 "LocalDesign" LocalDesign Design.designStubCodec
+        |> Codec.buildCustom
 
 
 storedDesignToStub : StoredDesign -> DesignStub
@@ -88,6 +119,18 @@ mapStoredDesign stubFn storedDesign =
 
 type StoredSpecification
     = LocalSpecification SpecificationStub
+
+
+storedSpecificationCodec : Codec StoredSpecification
+storedSpecificationCodec =
+    Codec.custom
+        (\flocal value ->
+            case value of
+                LocalSpecification stub ->
+                    flocal stub
+        )
+        |> Codec.variant1 "LocalSpecification" LocalSpecification Specification.specificationStubCodec
+        |> Codec.buildCustom
 
 
 mapStoredSpecification : (SpecificationStub -> SpecificationStub) -> StoredSpecification -> StoredSpecification
@@ -116,12 +159,22 @@ init _ flagsValue =
                 ( nextUuid, randomSeed ) =
                     createInitialUuid flags.randomSeed
             in
-            Running
-                { randomSeed = randomSeed
-                , nextUuid = nextUuid
-                , designs = Dict.empty
-                , specifications = Dict.empty
-                }
+            case flags.mInitialState of
+                Just initialState ->
+                    Running
+                        { randomSeed = randomSeed
+                        , nextUuid = nextUuid
+                        , designs = initialState.designs
+                        , specifications = initialState.specifications
+                        }
+
+                Nothing ->
+                    Running
+                        { randomSeed = randomSeed
+                        , nextUuid = nextUuid
+                        , designs = Dict.empty
+                        , specifications = Dict.empty
+                        }
 
         Err errString ->
             FailedToDecodeFlags errString |> FailedToLaunch
@@ -275,6 +328,7 @@ update { navigate } msg model =
                 RequestedNewUuid ->
                     ( runState, Cmd.none, Cmd.none )
             )
+                |> addStoreCmd
                 |> asModel Running
 
         FailedToLaunch launchError ->
@@ -283,9 +337,25 @@ update { navigate } msg model =
                     ( model, Cmd.none, Cmd.none )
 
 
+addStoreCmd : ( RunState, Cmd Msg, Cmd msg ) -> ( RunState, Cmd Msg, Cmd msg )
+addStoreCmd ( state, gCmd, pCmd ) =
+    ( state
+    , Cmd.batch
+        [ gCmd
+        , encodeStoredState
+            { designs = state.designs
+            , specifications =
+                state.specifications
+            }
+            |> storeRunState
+        ]
+    , pCmd
+    )
+
+
 asModel : (a -> Model) -> ( a, Cmd Msg, Cmd msg ) -> ( Model, Cmd Msg, Cmd msg )
-asModel constructor ( state, gCmds, pCmds ) =
-    ( constructor state, gCmds, pCmds )
+asModel constructor ( state, gCmd, pCmd ) =
+    ( constructor state, gCmd, pCmd )
 
 
 updateUuid : RunState -> RunState
@@ -300,6 +370,20 @@ updateUuid runState =
 
 -- }}}
 -- {{{ Cmds
+
+
+port storeRunState : Value -> Cmd msg
+
+
+encodeStoredState :
+    { designs : Dict String StoredDesign
+    , specifications : Dict String StoredSpecification
+    }
+    -> Value
+encodeStoredState storedState =
+    Codec.encoder
+        storedStateCodec
+        storedState
 
 
 type alias DesignAndKey =

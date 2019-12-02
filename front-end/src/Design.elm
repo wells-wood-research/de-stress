@@ -4,6 +4,7 @@ module Design exposing
     , Editable(..)
     , codec
     , createDesignStub
+    , designStubCodec
     , editableValue
     )
 
@@ -80,6 +81,15 @@ type alias DesignStub =
     , fileName : String
     , deleteStatus : Style.DangerStatus
     }
+
+
+designStubCodec : Codec DesignStub
+designStubCodec =
+    Codec.object DesignStub
+        |> Codec.field "name" .name Codec.string
+        |> Codec.field "fileName" .fileName Codec.string
+        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.buildObject
 
 
 createDesignStub : Design -> DesignStub
