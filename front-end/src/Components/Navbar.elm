@@ -28,7 +28,7 @@ view =
             ]
             ([ link [] { url = "/designs", label = text "Designs" }
              , link [] { url = "/reference-sets", label = text "Reference Sets" }
-             , link [] { url = "/specifications/all", label = text "Specifiations" }
+             , link [] { url = "/specifications/all", label = text "Specifications" }
              , link []
                 { url = "/settings"
                 , label =
