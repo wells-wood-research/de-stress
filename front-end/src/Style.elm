@@ -3,6 +3,7 @@ module Style exposing (..)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -89,13 +90,20 @@ textInputStyle =
         ++ defaultBorder
 
 
+buttonStyle : List (Attribute msg)
+buttonStyle =
+    [ paddingEach { top = 12, bottom = 8, left = 8, right = 8 }
+    , Border.rounded 6
+    ]
+
+
 alwaysActiveButton : { labelText : String, clickMsg : msg } -> Element msg
 alwaysActiveButton { labelText, clickMsg } =
     Input.button
-        [ padding 8
-        , Background.color colorPalette.c3
-        , Border.rounded 6
-        ]
+        (buttonStyle
+            ++ [ Background.color colorPalette.c3
+               ]
+        )
         { onPress = Just clickMsg
         , label = text labelText
         }
@@ -110,23 +118,22 @@ conditionalButton :
 conditionalButton { labelText, clickMsg, isActive } =
     if isActive then
         Input.button
-            [ padding 8
-            , Background.color colorPalette.c3
-            , Border.rounded 6
-            ]
+            (buttonStyle
+                ++ [ Background.color colorPalette.c3 ]
+            )
             { onPress = Just clickMsg
             , label = text labelText
             }
 
     else
         Input.button
-            [ padding 8
-            , Background.color colorPalette.c4
-            , Border.color colorPalette.black
-            , Border.width 2
-            , Border.rounded 6
-            , Font.color colorPalette.white
-            ]
+            (buttonStyle
+                ++ [ Background.color colorPalette.c4
+                   , Border.color colorPalette.black
+                   , Border.width 2
+                   , Font.color colorPalette.white
+                   ]
+            )
             { onPress = Nothing
             , label = text labelText
             }
@@ -135,10 +142,10 @@ conditionalButton { labelText, clickMsg, isActive } =
 linkButton : { labelText : String, url : String } -> Element msg
 linkButton { labelText, url } =
     link
-        [ padding 8
-        , Background.color colorPalette.c3
-        , Border.rounded 6
-        ]
+        (buttonStyle
+            ++ [ Background.color colorPalette.c3
+               ]
+        )
         { url = url, label = text labelText }
 
 
@@ -159,10 +166,10 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
     case status of
         Unclicked ->
             Input.button
-                [ padding 8
-                , Background.color colorPalette.red
-                , Border.rounded 6
-                ]
+                (buttonStyle
+                    ++ [ Background.color colorPalette.red
+                       ]
+                )
                 { onPress = Just <| dangerousMsg Clicked
                 , label = text labelText
                 }
@@ -181,20 +188,20 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                         [ paragraph [] [ text confirmText ]
                         , row [ spacing 10 ]
                             [ Input.button
-                                [ focused []
-                                , padding 8
-                                , Border.rounded 6
-                                , Border.width 2
-                                ]
+                                (buttonStyle
+                                    ++ [ focused []
+                                       , Border.width 2
+                                       ]
+                                )
                                 { onPress = Just <| dangerousMsg Confirmed
                                 , label = text "Yes"
                                 }
                             , Input.button
-                                [ focused []
-                                , padding 8
-                                , Border.rounded 6
-                                , Border.width 2
-                                ]
+                                (buttonStyle
+                                    ++ [ focused []
+                                       , Border.width 2
+                                       ]
+                                )
                                 { onPress = Just <| dangerousMsg Unclicked
                                 , label = text "No"
                                 }
@@ -202,22 +209,23 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                         ]
             in
             Input.button
-                [ below confirmDialog
-                , padding 8
-                , Background.color colorPalette.red
-                , Border.rounded 6
-                ]
+                (buttonStyle
+                    ++ [ above confirmDialog
+                       , Background.color colorPalette.red
+                       , Events.onMouseLeave <| dangerousMsg Unclicked
+                       ]
+                )
                 { onPress = Nothing
                 , label = text labelText
                 }
 
         Confirmed ->
             Input.button
-                [ padding 8
-                , Background.color colorPalette.c4
-                , Border.rounded 6
-                , Font.color colorPalette.c5
-                ]
+                (buttonStyle
+                    ++ [ Background.color colorPalette.c4
+                       , Font.color colorPalette.c5
+                       ]
+                )
                 { onPress = Nothing
                 , label = text labelText
                 }

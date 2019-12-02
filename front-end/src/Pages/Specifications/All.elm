@@ -199,12 +199,16 @@ specificationStubView ( uuidString, { name, description, deleteStatus } ) =
         , width fill
         , Background.color Style.colorPalette.c5
         , Border.rounded 10
-        , Events.onClick <| ClickedFocusSpecification uuidString
         ]
-        [ Style.h2 <| text "Name"
-        , paragraph [] [ text name ]
-        , Style.h2 <| text "Description"
-        , paragraph [] [ text description ]
+        [ column
+            [ pointer
+            , spacing 10
+            , width fill
+            , Events.onClick <| ClickedFocusSpecification uuidString
+            ]
+            [ Style.h2 <| text name
+            , paragraph [] [ text description ]
+            ]
         , Style.dangerousButton
             { labelText = "Delete"
             , confirmText = "Are you sure you want to delete this specification?"
@@ -218,14 +222,11 @@ specificationView : String -> Specification -> Element Msg
 specificationView uuidString { name, description, requirements, deleteStatus } =
     column
         [ padding 15
-        , spacing 10
+        , spacing 15
         , width fill
-        , Background.color Style.colorPalette.c5
-        , Border.rounded 10
         ]
-        [ Style.h2 <| text "Name"
-        , paragraph [] [ text name ]
-        , Style.h2 <| text "Description"
+        [ Style.h1 <| text "Specification Details"
+        , Style.h2 <| text name
         , paragraph [] [ text description ]
         , Style.h2 <| text "Requirements"
         , requirementView requirements
