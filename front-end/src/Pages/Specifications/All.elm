@@ -71,12 +71,21 @@ title _ _ =
     "Specifications"
 
 
+
+-- {{{ Init
+
+
 init : Global.Model -> () -> ( Model, Cmd Msg, Cmd Global.Msg )
 init _ _ =
     ( { focussedSpecification = NoFocus }
     , Cmd.none
     , Cmd.none
     )
+
+
+
+-- }}}
+-- {{{ Update
 
 
 update : Global.Model -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
@@ -150,6 +159,11 @@ update _ msg model =
             )
 
 
+
+-- }}}
+-- {{{ Subs
+
+
 port setFocussedSpecification : (Value -> msg) -> Sub msg
 
 
@@ -157,6 +171,11 @@ subscriptions : Global.Model -> Model -> Sub Msg
 subscriptions _ _ =
     Sub.batch
         [ setFocussedSpecification SetFocus ]
+
+
+
+-- }}}
+-- {{{ View
 
 
 view : Global.Model -> Model -> Element Msg
@@ -204,17 +223,22 @@ specificationStubView ( uuidString, { name, description, deleteStatus } ) =
             [ pointer
             , spacing 10
             , width fill
-            , Events.onClick <| ClickedFocusSpecification uuidString
             ]
             [ Style.h2 <| text name
             , paragraph [] [ text description ]
             ]
-        , Style.dangerousButton
-            { labelText = "Delete"
-            , confirmText = "Are you sure you want to delete this specification?"
-            , status = deleteStatus
-            , dangerousMsg = DeleteSpecification uuidString
-            }
+        , row [ spacing 10, width fill ]
+            [ Style.alwaysActiveButton
+                { labelText = "Details"
+                , clickMsg = ClickedFocusSpecification uuidString
+                }
+            , Style.dangerousButton
+                { labelText = "Delete"
+                , confirmText = "Are you sure you want to delete this specification?"
+                , status = deleteStatus
+                , dangerousMsg = DeleteSpecification uuidString
+                }
+            ]
         ]
 
 
@@ -362,3 +386,7 @@ requirementView requirement =
                 , column [ padding 10, spacing 5 ] <|
                     List.map arrowRow requirements
                 ]
+
+
+
+-- }}}

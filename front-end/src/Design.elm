@@ -1,4 +1,11 @@
-module Design exposing (Design, DesignStub, Editable(..), codec, createDesignStub)
+module Design exposing
+    ( Design
+    , DesignStub
+    , Editable(..)
+    , codec
+    , createDesignStub
+    , editableValue
+    )
 
 import Codec exposing (Codec)
 import DesignMetrics exposing (DesignMetrics)
@@ -71,7 +78,6 @@ codec =
 type alias DesignStub =
     { name : String
     , fileName : String
-    , metricsAvailable : Bool
     , deleteStatus : Style.DangerStatus
     }
 
@@ -80,12 +86,5 @@ createDesignStub : Design -> DesignStub
 createDesignStub { name, fileName, metricsRemoteData, deleteStatus } =
     { name = editableValue name
     , fileName = fileName
-    , metricsAvailable =
-        case metricsRemoteData of
-            RD.Success _ ->
-                True
-
-            _ ->
-                False
     , deleteStatus = deleteStatus
     }

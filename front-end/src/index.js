@@ -31,6 +31,16 @@ app.ports.storeDesign.subscribe(designAndKey => {
   }
 });
 
+//Get design
+app.ports.getDesign.subscribe(storeKey => {
+  idbKeyval.get(storeKey, designStore).then(design => {
+    app.ports.setFocussedDesign.send({
+      uuidString: storeKey,
+      design: design
+    });
+  });
+});
+
 // Store design
 app.ports.deleteDesign.subscribe(storeKey => {
   idbKeyval.del(storeKey, designStore);

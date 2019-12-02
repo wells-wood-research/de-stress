@@ -57,6 +57,7 @@ type LaunchError
 type Msg
     = AddDesign Design
     | DeleteDesign String Style.DangerStatus
+    | GetDesign String
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
@@ -202,6 +203,12 @@ update { navigate } msg model =
                             , Cmd.none
                             , Cmd.none
                             )
+
+                GetDesign uuidString ->
+                    ( runState
+                    , getDesign uuidString
+                    , Cmd.none
+                    )
 
                 AddSpecification spec ->
                     let
@@ -358,9 +365,6 @@ port deleteSpecification : String -> Cmd msg
 
 -- }}}
 -- {{{ Subscriptions
-
-
-port loadSpecification : (Value -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
