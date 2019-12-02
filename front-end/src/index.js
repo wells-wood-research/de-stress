@@ -4,8 +4,10 @@ import * as serviceWorker from "./serviceWorker";
 
 // {{{ Elm App
 
+const designStore = new idbKeyval.Store("designs", "design-store");
+
 const specificationStore = new idbKeyval.Store(
-  "destress-front-end",
+  "specifications",
   "specification-store"
 );
 
@@ -16,6 +18,18 @@ var app = Elm.Main.init({
 
 // }}}
 // {{{ Ports
+
+// Store design
+app.ports.storeDesign.subscribe(designAndKey => {
+  var { storeKey, design } = designAndKey;
+  if (idbAvailable) {
+    idbKeyval.set(storeKey, design, designStore);
+  } else {
+    console.log(
+      "Storage is not available. IndexedDB must be enabled to store state."
+    );
+  }
+});
 
 // Store specifications
 app.ports.storeSpecification.subscribe(specificationAndKey => {

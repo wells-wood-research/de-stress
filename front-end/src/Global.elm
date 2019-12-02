@@ -161,8 +161,7 @@ update { navigate } msg model =
                         , design = design
                         }
                         |> storeDesign
-                    , navigate <|
-                        TopRoute.Designs ()
+                    , Cmd.none
                     )
 
                 AddSpecification spec ->

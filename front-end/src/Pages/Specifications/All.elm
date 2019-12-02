@@ -165,10 +165,6 @@ view globalModel model =
         Global.Running { specifications } ->
             case model.focussedSpecification of
                 NoFocus ->
-                    let
-                        _ =
-                            Debug.todo "Change this to a column for specifications"
-                    in
                     column
                         [ width fill, spacing 30 ]
                         (row [ centerX, spacing 10 ]
