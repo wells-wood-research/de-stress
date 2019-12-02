@@ -223,7 +223,7 @@ update _ msg model =
             case Codec.decodeValue focusCodec value of
                 Ok { uuidString, design } ->
                     ( { model | focussedDesign = Design uuidString design }
-                    , Cmd.none
+                    , viewStructure design.pdbString
                     , Cmd.none
                     )
 
@@ -280,6 +280,9 @@ update _ msg model =
 structureRequested : Cmd Msg
 structureRequested =
     FileSelect.files [ "*/*" ] StructureFilesSelected
+
+
+port viewStructure : String -> Cmd msg
 
 
 
