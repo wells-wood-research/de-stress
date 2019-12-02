@@ -152,15 +152,18 @@ update { navigate } msg model =
                     )
 
                 DeleteSpecification uuidString dangerStatus ->
-                    ( case dangerStatus of
+                    case dangerStatus of
                         Style.Confirmed ->
-                            { runState
+                            ( { runState
                                 | specifications =
                                     Dict.remove uuidString runState.specifications
-                            }
+                              }
+                            , deleteSpecification uuidString
+                            , Cmd.none
+                            )
 
                         _ ->
-                            { runState
+                            ( { runState
                                 | specifications =
                                     Dict.update
                                         uuidString
@@ -174,10 +177,10 @@ update { navigate } msg model =
                                             |> Maybe.map
                                         )
                                         runState.specifications
-                            }
-                    , deleteSpecification uuidString
-                    , Cmd.none
-                    )
+                              }
+                            , Cmd.none
+                            , Cmd.none
+                            )
 
                 RequestedNewUuid ->
                     ( runState, Cmd.none, Cmd.none )
