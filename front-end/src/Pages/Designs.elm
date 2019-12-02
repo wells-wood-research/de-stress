@@ -36,6 +36,7 @@ type Msg
     = StructuresRequested
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
+    | DeleteDesign String Style.DangerStatus
     | NoOp
 
 
@@ -165,6 +166,13 @@ update _ msg model =
                     , Cmd.none
                     )
 
+        DeleteDesign uuidString dangerStatus ->
+            ( model
+            , Cmd.none
+            , Global.DeleteDesign uuidString dangerStatus
+                |> Global.send
+            )
+
         NoOp ->
             ( model, Cmd.none, Cmd.none )
 
@@ -270,7 +278,7 @@ designCard ( uuid, designStub ) =
                 { labelText = "Delete"
                 , confirmText = "Are you sure you want to delete this design?"
                 , status = designStub.deleteStatus
-                , dangerousMsg = \_ -> NoOp
+                , dangerousMsg = DeleteDesign uuid
                 }
             ]
         ]

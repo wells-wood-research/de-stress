@@ -56,6 +56,7 @@ type LaunchError
 
 type Msg
     = AddDesign Design
+    | DeleteDesign String Style.DangerStatus
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
@@ -75,6 +76,13 @@ storedDesignToStub storedDesign =
     case storedDesign of
         LocalDesign stub ->
             stub
+
+
+mapStoredDesign : (DesignStub -> DesignStub) -> StoredDesign -> StoredDesign
+mapStoredDesign stubFn storedDesign =
+    case storedDesign of
+        LocalDesign stub ->
+            stubFn stub |> LocalDesign
 
 
 type StoredSpecification
@@ -163,6 +171,37 @@ update { navigate } msg model =
                         |> storeDesign
                     , Cmd.none
                     )
+
+                DeleteDesign uuidString dangerStatus ->
+                    case dangerStatus of
+                        Style.Confirmed ->
+                            ( { runState
+                                | designs =
+                                    Dict.remove uuidString runState.designs
+                              }
+                            , deleteDesign uuidString
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( { runState
+                                | designs =
+                                    Dict.update
+                                        uuidString
+                                        ((\d ->
+                                            { d
+                                                | deleteStatus =
+                                                    dangerStatus
+                                            }
+                                         )
+                                            |> mapStoredDesign
+                                            |> Maybe.map
+                                        )
+                                        runState.designs
+                              }
+                            , Cmd.none
+                            , Cmd.none
+                            )
 
                 AddSpecification spec ->
                     let
