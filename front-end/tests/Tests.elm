@@ -27,6 +27,7 @@ all =
                             { randomSeed = firstSeed
                             , nextUuid =
                                 firstUuid
+                            , designs = Dict.empty
                             , specifications = Dict.empty
                             }
                 in
