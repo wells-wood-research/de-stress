@@ -1,18 +1,24 @@
-# DE-STRESS Front End
+# your elm-spa
+> learn more at [https://elm-spa.dev](https://elm-spa.dev)
 
-This repository contains the code to build the front end of the DE-STRESS web
-application. DE-STRESS stands for Designed structure evaluation services and it allows
-users to:
+### local development
 
-1. Create requirement specifications for their design i.e. a formal description of the
-   properties their protein must have to be fit for purpose.
-1. Automatically evaluate protein designs using a range of metrics.
-1. Compare their designs against their specification in order to select the most
-   promising design candidates.
+```
+npm run dev
+```
 
-## Development
+## folder structure
 
-The front end to DE-STRESS is written in [Elm](https://elm-lang.org/), so you'll need to
-download and install the Elm compiler. I'm currenlty using
-[`create-elm-app`](https://github.com/halfzebra/create-elm-app) to develop the
-application, which gives a nice development server too.
+```elm
+README.md          -- this file you're reading 👀
+elm.json           -- has project dependencies
+src/
+  Main.elm         -- the entrypoint to the app
+  Global.elm       -- share state across pages
+  Transitions.elm  -- smoothly animate between pages
+  Ports.elm        -- communicate with JS
+  Pages/           -- where all your pages go
+  Layouts/         -- reusable views around pages
+  Components/      -- views shared across the site
+  Utils/           -- a place for helper functions
+```

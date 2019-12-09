@@ -1,27 +1,26 @@
 module Main exposing (main)
 
-import Application
-import Element
 import Generated.Pages as Pages
-import Generated.Route as Route
+import Generated.Routes as Routes exposing (routes)
 import Global
+import Spa
+import Transitions
 
 
+main : Spa.Program Global.Flags Global.Model Global.Msg Pages.Model Pages.Msg
 main =
-    Application.create
-        { ui =
-            { toHtml = Element.layout []
-            , map = Element.map
+    Spa.create
+        { ui = Spa.usingElmUi
+        , transitions = Transitions.transitions
+        , routing =
+            { routes = Routes.parsers
+            , toPath = Routes.toPath
+            , notFound = routes.notFound
             }
         , global =
             { init = Global.init
             , update = Global.update
             , subscriptions = Global.subscriptions
-            }
-        , routing =
-            { routes = Route.routes
-            , toPath = Route.toPath
-            , notFound = Route.NotFound ()
             }
         , page = Pages.page
         }
