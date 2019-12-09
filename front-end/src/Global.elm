@@ -196,15 +196,195 @@ createInitialUuid initialRandomNumber =
 
 
 type Msg
-    = Msg
+    = AddDesign Design
+    | DeleteDesign String Style.DangerStatus
+    | GetDesign String
+    | AddSpecification Specification
+    | DeleteSpecification String Style.DangerStatus
+    | GetSpecification String
+    | RequestedNewUuid
 
 
 update : Commands msg -> Msg -> Model -> ( Model, Cmd Msg, Cmd msg )
-update _ _ model =
-    ( model
+update _ msg model =
+    case model of
+        Running runState ->
+            updateRunState msg runState
+                |> addStoreCmd
+                |> asModel Running
+
+        FailedToLaunch launchError ->
+            case msg of
+                _ ->
+                    ( model, Cmd.none, Cmd.none )
+
+
+asModel : (a -> Model) -> ( a, Cmd Msg, Cmd msg ) -> ( Model, Cmd Msg, Cmd msg )
+asModel constructor ( state, gCmd, pCmd ) =
+    ( constructor state, gCmd, pCmd )
+
+
+updateRunState : Msg -> RunState -> ( RunState, Cmd Msg, Cmd msg )
+updateRunState msg runState =
+    case msg of
+        AddDesign design ->
+            let
+                uuidString =
+                    Uuid.toString runState.nextUuid
+            in
+            ( { runState
+                | designs =
+                    Dict.insert
+                        uuidString
+                        (design
+                            |> Design.createDesignStub
+                            |> LocalDesign
+                        )
+                        runState.designs
+              }
+                |> updateUuid
+            , Cmd.none
+              -- , encodeDesignAndKey
+              --     { storeKey = uuidString
+              --     , design = design
+              --     }
+              --     |> storeDesign
+            , Cmd.none
+            )
+
+        DeleteDesign uuidString dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | designs =
+                            Dict.remove uuidString runState.designs
+                      }
+                    , Cmd.none
+                      -- , deleteDesign uuidString
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( { runState
+                        | designs =
+                            Dict.update
+                                uuidString
+                                ((\d ->
+                                    { d
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                 )
+                                    |> mapStoredDesign
+                                    |> Maybe.map
+                                )
+                                runState.designs
+                      }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        GetDesign uuidString ->
+            ( runState
+            , Cmd.none
+              -- , getDesign uuidString
+            , Cmd.none
+            )
+
+        AddSpecification spec ->
+            let
+                uuidString =
+                    Uuid.toString runState.nextUuid
+            in
+            ( { runState
+                | specifications =
+                    Dict.insert
+                        uuidString
+                        (spec
+                            |> Specification.createSpecificationStub
+                            |> LocalSpecification
+                        )
+                        runState.specifications
+              }
+                |> updateUuid
+            , Cmd.none
+            , Cmd.none
+              -- , encodeSpecificationAndKey
+              --     { storeKey = uuidString
+              --     , specification = spec
+              --     }
+              --     |> storeSpecification
+              -- , navigate <|
+              --     TopRoute.Specifications (SpecRoute.All ())
+            )
+
+        GetSpecification uuidString ->
+            ( runState
+            , Cmd.none
+              -- , getSpecification uuidString
+            , Cmd.none
+            )
+
+        DeleteSpecification uuidString dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | specifications =
+                            Dict.remove uuidString runState.specifications
+                      }
+                    , Cmd.none
+                      -- , deleteSpecification uuidString
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( { runState
+                        | specifications =
+                            Dict.update
+                                uuidString
+                                ((\s ->
+                                    { s
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                 )
+                                    |> mapStoredSpecification
+                                    |> Maybe.map
+                                )
+                                runState.specifications
+                      }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        RequestedNewUuid ->
+            ( runState, Cmd.none, Cmd.none )
+
+
+addStoreCmd : ( RunState, Cmd Msg, Cmd msg ) -> ( RunState, Cmd Msg, Cmd msg )
+addStoreCmd ( state, gCmd, pCmd ) =
+    ( state
     , Cmd.none
-    , Cmd.none
+      -- , Cmd.batch
+      --     [ gCmd
+      --     , encodeStoredState
+      --         { designs = state.designs
+      --         , specifications =
+      --             state.specifications
+      --         }
+      --         |> storeRunState
+      --     ]
+    , pCmd
     )
+
+
+updateUuid : RunState -> RunState
+updateUuid runState =
+    let
+        ( nextUuid, newSeed ) =
+            Random.step Uuid.uuidGenerator runState.randomSeed
+    in
+    { runState | randomSeed = newSeed, nextUuid = nextUuid }
 
 
 

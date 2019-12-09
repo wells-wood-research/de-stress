@@ -1,4 +1,4 @@
-module Pages.Specifications exposing (Model, Msg, page)
+module Pages.Specifications exposing (Model, Msg, page, requirementView)
 
 import Codec exposing (Codec, Value)
 import Dict exposing (Dict)
