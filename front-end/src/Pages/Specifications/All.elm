@@ -111,7 +111,7 @@ update _ msg model =
                         |> Codec.field "uuidString" .uuidString Codec.string
                         |> Codec.field "specification"
                             .specification
-                            Spec.specificationCodec
+                            Spec.codec
                         |> Codec.buildObject
             in
             case Codec.decodeValue focusCodec value of

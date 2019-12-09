@@ -6,8 +6,8 @@ module Specification exposing
     , Specification
     , SpecificationStub
     , ValueType(..)
+    , codec
     , createSpecificationStub
-    , specificationCodec
     , specificationStubCodec
     , stringFromOrder
     )
@@ -24,8 +24,8 @@ type alias Specification =
     }
 
 
-specificationCodec : Codec Specification
-specificationCodec =
+codec : Codec Specification
+codec =
     Codec.object Specification
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string

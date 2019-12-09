@@ -433,7 +433,7 @@ specificationAndKeyCodec : Codec SpecificationAndKey
 specificationAndKeyCodec =
     Codec.object SpecificationAndKey
         |> Codec.field "storeKey" .storeKey Codec.string
-        |> Codec.field "specification" .specification Specification.specificationCodec
+        |> Codec.field "specification" .specification Specification.codec
         |> Codec.buildObject
 
 
