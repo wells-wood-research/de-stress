@@ -12,7 +12,14 @@
     <script src="/ports.js"></script>
     <script>
       window.addEventListener('load', _ =>
-        window.ports.init(Elm.Main.init())
+        window.ports.init(
+          Elm.Main.init({
+            flags: {
+              randomSeed: Math.floor(Math.random() * 0x0fffffff),
+              mInitialState: null// mInitialState
+            }
+          })
+        )
       )
     </script>
   </body>

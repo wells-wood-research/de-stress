@@ -11220,6 +11220,693 @@ var $ryannhg$elm_spa$Spa$create = function (config) {
 				})
 		});
 };
+var $author$project$Global$FailedToDecodeFlags = function (a) {
+	return {$: 'FailedToDecodeFlags', a: a};
+};
+var $author$project$Global$FailedToLaunch = function (a) {
+	return {$: 'FailedToLaunch', a: a};
+};
+var $author$project$Global$Running = function (a) {
+	return {$: 'Running', a: a};
+};
+var $elm$random$Random$Seed = F2(
+	function (a, b) {
+		return {$: 'Seed', a: a, b: b};
+	});
+var $elm$random$Random$next = function (_v0) {
+	var state0 = _v0.a;
+	var incr = _v0.b;
+	return A2($elm$random$Random$Seed, ((state0 * 1664525) + incr) >>> 0, incr);
+};
+var $elm$random$Random$initialSeed = function (x) {
+	var _v0 = $elm$random$Random$next(
+		A2($elm$random$Random$Seed, 0, 1013904223));
+	var state1 = _v0.a;
+	var incr = _v0.b;
+	var state2 = (state1 + x) >>> 0;
+	return $elm$random$Random$next(
+		A2($elm$random$Random$Seed, state2, incr));
+};
+var $elm$random$Random$step = F2(
+	function (_v0, seed) {
+		var generator = _v0.a;
+		return generator(seed);
+	});
+var $danyx23$elm_uuid$Uuid$Uuid = function (a) {
+	return {$: 'Uuid', a: a};
+};
+var $elm$random$Random$Generator = function (a) {
+	return {$: 'Generator', a: a};
+};
+var $elm$random$Random$map = F2(
+	function (func, _v0) {
+		var genA = _v0.a;
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v1 = genA(seed0);
+				var a = _v1.a;
+				var seed1 = _v1.b;
+				return _Utils_Tuple2(
+					func(a),
+					seed1);
+			});
+	});
+var $elm$core$Bitwise$xor = _Bitwise_xor;
+var $elm$random$Random$peel = function (_v0) {
+	var state = _v0.a;
+	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
+	return ((word >>> 22) ^ word) >>> 0;
+};
+var $elm$random$Random$int = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
+				var lo = _v0.a;
+				var hi = _v0.b;
+				var range = (hi - lo) + 1;
+				if (!((range - 1) & range)) {
+					return _Utils_Tuple2(
+						(((range - 1) & $elm$random$Random$peel(seed0)) >>> 0) + lo,
+						$elm$random$Random$next(seed0));
+				} else {
+					var threshhold = (((-range) >>> 0) % range) >>> 0;
+					var accountForBias = function (seed) {
+						accountForBias:
+						while (true) {
+							var x = $elm$random$Random$peel(seed);
+							var seedN = $elm$random$Random$next(seed);
+							if (_Utils_cmp(x, threshhold) < 0) {
+								var $temp$seed = seedN;
+								seed = $temp$seed;
+								continue accountForBias;
+							} else {
+								return _Utils_Tuple2((x % range) + lo, seedN);
+							}
+						}
+					};
+					return accountForBias(seed0);
+				}
+			});
+	});
+var $danyx23$elm_uuid$Uuid$Barebones$hexGenerator = A2($elm$random$Random$int, 0, 15);
+var $elm$random$Random$listHelp = F4(
+	function (revList, n, gen, seed) {
+		listHelp:
+		while (true) {
+			if (n < 1) {
+				return _Utils_Tuple2(revList, seed);
+			} else {
+				var _v0 = gen(seed);
+				var value = _v0.a;
+				var newSeed = _v0.b;
+				var $temp$revList = A2($elm$core$List$cons, value, revList),
+					$temp$n = n - 1,
+					$temp$gen = gen,
+					$temp$seed = newSeed;
+				revList = $temp$revList;
+				n = $temp$n;
+				gen = $temp$gen;
+				seed = $temp$seed;
+				continue listHelp;
+			}
+		}
+	});
+var $elm$random$Random$list = F2(
+	function (n, _v0) {
+		var gen = _v0.a;
+		return $elm$random$Random$Generator(
+			function (seed) {
+				return A4($elm$random$Random$listHelp, _List_Nil, n, gen, seed);
+			});
+	});
+var $elm$core$String$concat = function (strings) {
+	return A2($elm$core$String$join, '', strings);
+};
+var $elm$core$String$fromList = _String_fromList;
+var $elm$core$Bitwise$or = _Bitwise_or;
+var $danyx23$elm_uuid$Uuid$Barebones$limitDigitRange8ToB = function (digit) {
+	return (digit & 3) | 8;
+};
+var $elm$core$Char$fromCode = _Char_fromCode;
+var $danyx23$elm_uuid$Uuid$Barebones$hexDigits = function () {
+	var mapChars = F2(
+		function (offset, digit) {
+			return $elm$core$Char$fromCode(digit + offset);
+		});
+	return $elm$core$Array$fromList(
+		_Utils_ap(
+			A2(
+				$elm$core$List$map,
+				mapChars(48),
+				A2($elm$core$List$range, 0, 9)),
+			A2(
+				$elm$core$List$map,
+				mapChars(97),
+				A2($elm$core$List$range, 0, 5))));
+}();
+var $danyx23$elm_uuid$Uuid$Barebones$mapToHex = function (index) {
+	var maybeResult = A2($elm$core$Array$get, index, $danyx23$elm_uuid$Uuid$Barebones$hexDigits);
+	if (maybeResult.$ === 'Nothing') {
+		return _Utils_chr('x');
+	} else {
+		var result = maybeResult.a;
+		return result;
+	}
+};
+var $elm$core$List$takeReverse = F3(
+	function (n, list, kept) {
+		takeReverse:
+		while (true) {
+			if (n <= 0) {
+				return kept;
+			} else {
+				if (!list.b) {
+					return kept;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs,
+						$temp$kept = A2($elm$core$List$cons, x, kept);
+					n = $temp$n;
+					list = $temp$list;
+					kept = $temp$kept;
+					continue takeReverse;
+				}
+			}
+		}
+	});
+var $elm$core$List$takeTailRec = F2(
+	function (n, list) {
+		return $elm$core$List$reverse(
+			A3($elm$core$List$takeReverse, n, list, _List_Nil));
+	});
+var $elm$core$List$takeFast = F3(
+	function (ctr, n, list) {
+		if (n <= 0) {
+			return _List_Nil;
+		} else {
+			var _v0 = _Utils_Tuple2(n, list);
+			_v0$1:
+			while (true) {
+				_v0$5:
+				while (true) {
+					if (!_v0.b.b) {
+						return list;
+					} else {
+						if (_v0.b.b.b) {
+							switch (_v0.a) {
+								case 1:
+									break _v0$1;
+								case 2:
+									var _v2 = _v0.b;
+									var x = _v2.a;
+									var _v3 = _v2.b;
+									var y = _v3.a;
+									return _List_fromArray(
+										[x, y]);
+								case 3:
+									if (_v0.b.b.b.b) {
+										var _v4 = _v0.b;
+										var x = _v4.a;
+										var _v5 = _v4.b;
+										var y = _v5.a;
+										var _v6 = _v5.b;
+										var z = _v6.a;
+										return _List_fromArray(
+											[x, y, z]);
+									} else {
+										break _v0$5;
+									}
+								default:
+									if (_v0.b.b.b.b && _v0.b.b.b.b.b) {
+										var _v7 = _v0.b;
+										var x = _v7.a;
+										var _v8 = _v7.b;
+										var y = _v8.a;
+										var _v9 = _v8.b;
+										var z = _v9.a;
+										var _v10 = _v9.b;
+										var w = _v10.a;
+										var tl = _v10.b;
+										return (ctr > 1000) ? A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A2($elm$core$List$takeTailRec, n - 4, tl))))) : A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A3($elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
+									} else {
+										break _v0$5;
+									}
+							}
+						} else {
+							if (_v0.a === 1) {
+								break _v0$1;
+							} else {
+								break _v0$5;
+							}
+						}
+					}
+				}
+				return list;
+			}
+			var _v1 = _v0.b;
+			var x = _v1.a;
+			return _List_fromArray(
+				[x]);
+		}
+	});
+var $elm$core$List$take = F2(
+	function (n, list) {
+		return A3($elm$core$List$takeFast, 0, n, list);
+	});
+var $danyx23$elm_uuid$Uuid$Barebones$toUuidString = function (thirtyOneHexDigits) {
+	return $elm$core$String$concat(
+		_List_fromArray(
+			[
+				$elm$core$String$fromList(
+				A2(
+					$elm$core$List$map,
+					$danyx23$elm_uuid$Uuid$Barebones$mapToHex,
+					A2($elm$core$List$take, 8, thirtyOneHexDigits))),
+				'-',
+				$elm$core$String$fromList(
+				A2(
+					$elm$core$List$map,
+					$danyx23$elm_uuid$Uuid$Barebones$mapToHex,
+					A2(
+						$elm$core$List$take,
+						4,
+						A2($elm$core$List$drop, 8, thirtyOneHexDigits)))),
+				'-',
+				'4',
+				$elm$core$String$fromList(
+				A2(
+					$elm$core$List$map,
+					$danyx23$elm_uuid$Uuid$Barebones$mapToHex,
+					A2(
+						$elm$core$List$take,
+						3,
+						A2($elm$core$List$drop, 12, thirtyOneHexDigits)))),
+				'-',
+				$elm$core$String$fromList(
+				A2(
+					$elm$core$List$map,
+					$danyx23$elm_uuid$Uuid$Barebones$mapToHex,
+					A2(
+						$elm$core$List$map,
+						$danyx23$elm_uuid$Uuid$Barebones$limitDigitRange8ToB,
+						A2(
+							$elm$core$List$take,
+							1,
+							A2($elm$core$List$drop, 15, thirtyOneHexDigits))))),
+				$elm$core$String$fromList(
+				A2(
+					$elm$core$List$map,
+					$danyx23$elm_uuid$Uuid$Barebones$mapToHex,
+					A2(
+						$elm$core$List$take,
+						3,
+						A2($elm$core$List$drop, 16, thirtyOneHexDigits)))),
+				'-',
+				$elm$core$String$fromList(
+				A2(
+					$elm$core$List$map,
+					$danyx23$elm_uuid$Uuid$Barebones$mapToHex,
+					A2(
+						$elm$core$List$take,
+						12,
+						A2($elm$core$List$drop, 19, thirtyOneHexDigits))))
+			]));
+};
+var $danyx23$elm_uuid$Uuid$Barebones$uuidStringGenerator = A2(
+	$elm$random$Random$map,
+	$danyx23$elm_uuid$Uuid$Barebones$toUuidString,
+	A2($elm$random$Random$list, 31, $danyx23$elm_uuid$Uuid$Barebones$hexGenerator));
+var $danyx23$elm_uuid$Uuid$uuidGenerator = A2($elm$random$Random$map, $danyx23$elm_uuid$Uuid$Uuid, $danyx23$elm_uuid$Uuid$Barebones$uuidStringGenerator);
+var $author$project$Global$createInitialUuid = function (initialRandomNumber) {
+	var initialRandomSeed = $elm$random$Random$initialSeed(initialRandomNumber);
+	return A2($elm$random$Random$step, $danyx23$elm_uuid$Uuid$uuidGenerator, initialRandomSeed);
+};
+var $miniBill$elm_codec$Codec$decoder = function (_v0) {
+	var m = _v0.a;
+	return m.decoder;
+};
+var $miniBill$elm_codec$Codec$decodeValue = function (codec) {
+	return $elm$json$Json$Decode$decodeValue(
+		$miniBill$elm_codec$Codec$decoder(codec));
+};
+var $author$project$Global$DecodedFlags = F2(
+	function (randomSeed, mInitialState) {
+		return {mInitialState: mInitialState, randomSeed: randomSeed};
+	});
+var $miniBill$elm_codec$Codec$Codec = function (a) {
+	return {$: 'Codec', a: a};
+};
+var $miniBill$elm_codec$Codec$buildObject = function (_v0) {
+	var om = _v0.a;
+	return $miniBill$elm_codec$Codec$Codec(
+		{
+			decoder: om.decoder,
+			encoder: function (v) {
+				return $elm$json$Json$Encode$object(
+					om.encoder(v));
+			}
+		});
+};
+var $miniBill$elm_codec$Codec$ObjectCodec = function (a) {
+	return {$: 'ObjectCodec', a: a};
+};
+var $miniBill$elm_codec$Codec$encoder = function (_v0) {
+	var m = _v0.a;
+	return m.encoder;
+};
+var $miniBill$elm_codec$Codec$field = F4(
+	function (name, getter, codec, _v0) {
+		var ocodec = _v0.a;
+		return $miniBill$elm_codec$Codec$ObjectCodec(
+			{
+				decoder: A3(
+					$elm$json$Json$Decode$map2,
+					F2(
+						function (f, x) {
+							return f(x);
+						}),
+					ocodec.decoder,
+					A2(
+						$elm$json$Json$Decode$field,
+						name,
+						$miniBill$elm_codec$Codec$decoder(codec))),
+				encoder: function (v) {
+					return A2(
+						$elm$core$List$cons,
+						_Utils_Tuple2(
+							name,
+							A2(
+								$miniBill$elm_codec$Codec$encoder,
+								codec,
+								getter(v))),
+						ocodec.encoder(v));
+				}
+			});
+	});
+var $miniBill$elm_codec$Codec$build = F2(
+	function (encoder_, decoder_) {
+		return $miniBill$elm_codec$Codec$Codec(
+			{decoder: decoder_, encoder: encoder_});
+	});
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $miniBill$elm_codec$Codec$int = A2($miniBill$elm_codec$Codec$build, $elm$json$Json$Encode$int, $elm$json$Json$Decode$int);
+var $elm$json$Json$Decode$oneOf = _Json_oneOf;
+var $elm$json$Json$Decode$maybe = function (decoder) {
+	return $elm$json$Json$Decode$oneOf(
+		_List_fromArray(
+			[
+				A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, decoder),
+				$elm$json$Json$Decode$succeed($elm$core$Maybe$Nothing)
+			]));
+};
+var $elm$json$Json$Encode$null = _Json_encodeNull;
+var $miniBill$elm_codec$Codec$maybe = function (codec) {
+	return $miniBill$elm_codec$Codec$Codec(
+		{
+			decoder: $elm$json$Json$Decode$maybe(
+				$miniBill$elm_codec$Codec$decoder(codec)),
+			encoder: function (v) {
+				if (v.$ === 'Nothing') {
+					return $elm$json$Json$Encode$null;
+				} else {
+					var x = v.a;
+					return A2($miniBill$elm_codec$Codec$encoder, codec, x);
+				}
+			}
+		});
+};
+var $miniBill$elm_codec$Codec$object = function (ctor) {
+	return $miniBill$elm_codec$Codec$ObjectCodec(
+		{
+			decoder: $elm$json$Json$Decode$succeed(ctor),
+			encoder: function (_v0) {
+				return _List_Nil;
+			}
+		});
+};
+var $miniBill$elm_codec$Codec$composite = F3(
+	function (enc, dec, _v0) {
+		var codec = _v0.a;
+		return $miniBill$elm_codec$Codec$Codec(
+			{
+				decoder: dec(codec.decoder),
+				encoder: enc(codec.encoder)
+			});
+	});
+var $miniBill$elm_codec$Codec$dict = A2(
+	$miniBill$elm_codec$Codec$composite,
+	function (e) {
+		return A2(
+			$elm$core$Basics$composeL,
+			A2($elm$core$Basics$composeL, $elm$json$Json$Encode$object, $elm$core$Dict$toList),
+			$elm$core$Dict$map(
+				function (_v0) {
+					return e;
+				}));
+	},
+	$elm$json$Json$Decode$dict);
+var $author$project$Global$LocalDesign = function (a) {
+	return {$: 'LocalDesign', a: a};
+};
+var $elm$json$Json$Decode$andThen = _Json_andThen;
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $miniBill$elm_codec$Codec$buildCustom = function (_v0) {
+	var am = _v0.a;
+	return $miniBill$elm_codec$Codec$Codec(
+		{
+			decoder: A2(
+				$elm$json$Json$Decode$andThen,
+				function (tag) {
+					var error = 'tag ' + (tag + 'did not match');
+					return A2(
+						$elm$json$Json$Decode$field,
+						'args',
+						A2(
+							am.decoder,
+							tag,
+							$elm$json$Json$Decode$fail(error)));
+				},
+				A2($elm$json$Json$Decode$field, 'tag', $elm$json$Json$Decode$string)),
+			encoder: function (v) {
+				return am.match(v);
+			}
+		});
+};
+var $miniBill$elm_codec$Codec$CustomCodec = function (a) {
+	return {$: 'CustomCodec', a: a};
+};
+var $miniBill$elm_codec$Codec$custom = function (match) {
+	return $miniBill$elm_codec$Codec$CustomCodec(
+		{
+			decoder: function (_v0) {
+				return $elm$core$Basics$identity;
+			},
+			match: match
+		});
+};
+var $author$project$Design$DesignStub = F3(
+	function (name, fileName, deleteStatus) {
+		return {deleteStatus: deleteStatus, fileName: fileName, name: name};
+	});
+var $author$project$Style$Unclicked = {$: 'Unclicked'};
+var $miniBill$elm_codec$Codec$constant = function (default_) {
+	return $miniBill$elm_codec$Codec$Codec(
+		{
+			decoder: $elm$json$Json$Decode$succeed(default_),
+			encoder: function (_v0) {
+				return $elm$json$Json$Encode$null;
+			}
+		});
+};
+var $miniBill$elm_codec$Codec$string = A2($miniBill$elm_codec$Codec$build, $elm$json$Json$Encode$string, $elm$json$Json$Decode$string);
+var $author$project$Design$designStubCodec = $miniBill$elm_codec$Codec$buildObject(
+	A4(
+		$miniBill$elm_codec$Codec$field,
+		'deleteStatus',
+		function ($) {
+			return $.deleteStatus;
+		},
+		$miniBill$elm_codec$Codec$constant($author$project$Style$Unclicked),
+		A4(
+			$miniBill$elm_codec$Codec$field,
+			'fileName',
+			function ($) {
+				return $.fileName;
+			},
+			$miniBill$elm_codec$Codec$string,
+			A4(
+				$miniBill$elm_codec$Codec$field,
+				'name',
+				function ($) {
+					return $.name;
+				},
+				$miniBill$elm_codec$Codec$string,
+				$miniBill$elm_codec$Codec$object($author$project$Design$DesignStub)))));
+var $elm$json$Json$Decode$index = _Json_decodeIndex;
+var $miniBill$elm_codec$Codec$variant = F4(
+	function (name, matchPiece, decoderPiece, _v0) {
+		var am = _v0.a;
+		var enc = function (v) {
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'tag',
+						$elm$json$Json$Encode$string(name)),
+						_Utils_Tuple2(
+						'args',
+						A2($elm$json$Json$Encode$list, $elm$core$Basics$identity, v))
+					]));
+		};
+		var decoder_ = F2(
+			function (tag, orElse) {
+				return _Utils_eq(tag, name) ? decoderPiece : A2(am.decoder, tag, orElse);
+			});
+		return $miniBill$elm_codec$Codec$CustomCodec(
+			{
+				decoder: decoder_,
+				match: am.match(
+					matchPiece(enc))
+			});
+	});
+var $miniBill$elm_codec$Codec$variant1 = F3(
+	function (name, ctor, m1) {
+		return A3(
+			$miniBill$elm_codec$Codec$variant,
+			name,
+			F2(
+				function (c, v) {
+					return c(
+						_List_fromArray(
+							[
+								A2($miniBill$elm_codec$Codec$encoder, m1, v)
+							]));
+				}),
+			A2(
+				$elm$json$Json$Decode$map,
+				ctor,
+				A2(
+					$elm$json$Json$Decode$index,
+					0,
+					$miniBill$elm_codec$Codec$decoder(m1))));
+	});
+var $author$project$Global$storedDesignCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A4(
+		$miniBill$elm_codec$Codec$variant1,
+		'LocalDesign',
+		$author$project$Global$LocalDesign,
+		$author$project$Design$designStubCodec,
+		$miniBill$elm_codec$Codec$custom(
+			F2(
+				function (flocal, value) {
+					var stub = value.a;
+					return flocal(stub);
+				}))));
+var $author$project$Global$LocalSpecification = function (a) {
+	return {$: 'LocalSpecification', a: a};
+};
+var $author$project$Specification$SpecificationStub = F3(
+	function (name, description, deleteStatus) {
+		return {deleteStatus: deleteStatus, description: description, name: name};
+	});
+var $author$project$Specification$specificationStubCodec = $miniBill$elm_codec$Codec$buildObject(
+	A4(
+		$miniBill$elm_codec$Codec$field,
+		'deleteStatus',
+		function ($) {
+			return $.deleteStatus;
+		},
+		$miniBill$elm_codec$Codec$constant($author$project$Style$Unclicked),
+		A4(
+			$miniBill$elm_codec$Codec$field,
+			'description',
+			function ($) {
+				return $.description;
+			},
+			$miniBill$elm_codec$Codec$string,
+			A4(
+				$miniBill$elm_codec$Codec$field,
+				'name',
+				function ($) {
+					return $.name;
+				},
+				$miniBill$elm_codec$Codec$string,
+				$miniBill$elm_codec$Codec$object($author$project$Specification$SpecificationStub)))));
+var $author$project$Global$storedSpecificationCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A4(
+		$miniBill$elm_codec$Codec$variant1,
+		'LocalSpecification',
+		$author$project$Global$LocalSpecification,
+		$author$project$Specification$specificationStubCodec,
+		$miniBill$elm_codec$Codec$custom(
+			F2(
+				function (flocal, value) {
+					var stub = value.a;
+					return flocal(stub);
+				}))));
+var $author$project$Global$storedStateCodec = $miniBill$elm_codec$Codec$buildObject(
+	A4(
+		$miniBill$elm_codec$Codec$field,
+		'specifications',
+		function ($) {
+			return $.specifications;
+		},
+		$miniBill$elm_codec$Codec$dict($author$project$Global$storedSpecificationCodec),
+		A4(
+			$miniBill$elm_codec$Codec$field,
+			'designs',
+			function ($) {
+				return $.designs;
+			},
+			$miniBill$elm_codec$Codec$dict($author$project$Global$storedDesignCodec),
+			$miniBill$elm_codec$Codec$object(
+				F2(
+					function (ds, ss) {
+						return {designs: ds, specifications: ss};
+					})))));
+var $author$project$Global$flagsCodec = $miniBill$elm_codec$Codec$buildObject(
+	A4(
+		$miniBill$elm_codec$Codec$field,
+		'mInitialState',
+		function ($) {
+			return $.mInitialState;
+		},
+		$miniBill$elm_codec$Codec$maybe($author$project$Global$storedStateCodec),
+		A4(
+			$miniBill$elm_codec$Codec$field,
+			'randomSeed',
+			function ($) {
+				return $.randomSeed;
+			},
+			$miniBill$elm_codec$Codec$int,
+			$miniBill$elm_codec$Codec$object($author$project$Global$DecodedFlags))));
 var $author$project$Ports$outgoing = _Platform_outgoingPort(
 	'outgoing',
 	function ($) {
@@ -11242,9 +11929,30 @@ var $author$project$Ports$log = function (message) {
 		});
 };
 var $author$project$Global$init = F2(
-	function (_v0, _v1) {
+	function (_v0, flagsValue) {
 		return _Utils_Tuple3(
-			{},
+			function () {
+				var _v1 = A2($miniBill$elm_codec$Codec$decodeValue, $author$project$Global$flagsCodec, flagsValue);
+				if (_v1.$ === 'Ok') {
+					var flags = _v1.a;
+					var _v2 = $author$project$Global$createInitialUuid(flags.randomSeed);
+					var nextUuid = _v2.a;
+					var randomSeed = _v2.b;
+					var _v3 = flags.mInitialState;
+					if (_v3.$ === 'Just') {
+						var initialState = _v3.a;
+						return $author$project$Global$Running(
+							{designs: initialState.designs, nextUuid: nextUuid, randomSeed: randomSeed, specifications: initialState.specifications});
+					} else {
+						return $author$project$Global$Running(
+							{designs: $elm$core$Dict$empty, nextUuid: nextUuid, randomSeed: randomSeed, specifications: $elm$core$Dict$empty});
+					}
+				} else {
+					var errString = _v1.a;
+					return $author$project$Global$FailedToLaunch(
+						$author$project$Global$FailedToDecodeFlags(errString));
+				}
+			}(),
 			$elm$core$Platform$Cmd$none,
 			$author$project$Ports$log('Hello!'));
 	});
@@ -11254,16 +11962,274 @@ var $author$project$Generated$Pages$NotFoundModel = function (a) {
 var $author$project$Generated$Pages$NotFoundMsg = function (a) {
 	return {$: 'NotFoundMsg', a: a};
 };
+var $author$project$Generated$Pages$SpecificationsModel = function (a) {
+	return {$: 'SpecificationsModel', a: a};
+};
+var $author$project$Generated$Pages$SpecificationsMsg = function (a) {
+	return {$: 'SpecificationsMsg', a: a};
+};
+var $author$project$Generated$Pages$Specifications_Folder_Model = function (a) {
+	return {$: 'Specifications_Folder_Model', a: a};
+};
+var $author$project$Generated$Pages$Specifications_Folder_Msg = function (a) {
+	return {$: 'Specifications_Folder_Msg', a: a};
+};
 var $author$project$Generated$Pages$TopModel = function (a) {
 	return {$: 'TopModel', a: a};
 };
 var $author$project$Generated$Pages$TopMsg = function (a) {
 	return {$: 'TopMsg', a: a};
 };
+var $author$project$Generated$Specifications$Pages$NewModel = function (a) {
+	return {$: 'NewModel', a: a};
+};
+var $author$project$Generated$Specifications$Pages$NewMsg = function (a) {
+	return {$: 'NewMsg', a: a};
+};
 var $ryannhg$elm_spa$Internals$Page$Page = function (a) {
 	return {$: 'Page', a: a};
 };
+var $ryannhg$elm_spa$Spa$Page$truple = F3(
+	function (toModel, toMsg, _v0) {
+		var a = _v0.a;
+		var b = _v0.b;
+		var c = _v0.c;
+		return _Utils_Tuple3(
+			toModel(a),
+			A2($elm$core$Platform$Cmd$map, toMsg, b),
+			c);
+	});
+var $ryannhg$elm_spa$Spa$Page$component = function (page) {
+	return $ryannhg$elm_spa$Internals$Page$Page(
+		function (_v0) {
+			var toModel = _v0.toModel;
+			var toMsg = _v0.toMsg;
+			var map = _v0.map;
+			return {
+				bundle: F3(
+					function (model, _private, context) {
+						return {
+							subscriptions: A2(
+								$elm$core$Platform$Sub$map,
+								A2($elm$core$Basics$composeR, toMsg, _private.fromPageMsg),
+								A2(page.subscriptions, context, model)),
+							title: page.title(
+								{global: context.global, model: model}),
+							view: A2(
+								_private.map,
+								_private.fromPageMsg,
+								A2(
+									map,
+									toMsg,
+									A2(page.view, context, model)))
+						};
+					}),
+				init: F2(
+					function (pageParams, context) {
+						return A3(
+							$ryannhg$elm_spa$Spa$Page$truple,
+							toModel,
+							toMsg,
+							A2(page.init, context, pageParams));
+					}),
+				update: F3(
+					function (msg, model, context) {
+						return A3(
+							$ryannhg$elm_spa$Spa$Page$truple,
+							toModel,
+							toMsg,
+							A3(page.update, context, msg, model));
+					})
+			};
+		});
+};
+var $author$project$Pages$Specifications$New$init = function (_v0) {
+	return _Utils_Tuple3(
+		{},
+		$elm$core$Platform$Cmd$none,
+		$elm$core$Platform$Cmd$none);
+};
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Pages$Specifications$New$subscriptions = function (model) {
+	return $elm$core$Platform$Sub$none;
+};
+var $author$project$Pages$Specifications$New$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple3(model, $elm$core$Platform$Cmd$none, $elm$core$Platform$Cmd$none);
+	});
+var $mdgriffith$elm_ui$Internal$Model$Text = function (a) {
+	return {$: 'Text', a: a};
+};
+var $mdgriffith$elm_ui$Element$text = function (content) {
+	return $mdgriffith$elm_ui$Internal$Model$Text(content);
+};
+var $author$project$Pages$Specifications$New$view = function (model) {
+	return $mdgriffith$elm_ui$Element$text('Specifications.New');
+};
+var $author$project$Pages$Specifications$New$page = $ryannhg$elm_spa$Spa$Page$component(
+	{
+		init: $elm$core$Basics$always($author$project$Pages$Specifications$New$init),
+		subscriptions: $elm$core$Basics$always($author$project$Pages$Specifications$New$subscriptions),
+		title: $elm$core$Basics$always('Specifications.New'),
+		update: $elm$core$Basics$always($author$project$Pages$Specifications$New$update),
+		view: $elm$core$Basics$always($author$project$Pages$Specifications$New$view)
+	});
+var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
+var $mdgriffith$elm_ui$Internal$Model$Styled = function (a) {
+	return {$: 'Styled', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
+	return {$: 'Unstyled', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$map = F2(
+	function (fn, el) {
+		switch (el.$) {
+			case 'Styled':
+				var styled = el.a;
+				return $mdgriffith$elm_ui$Internal$Model$Styled(
+					{
+						html: F2(
+							function (add, context) {
+								return A2(
+									$elm$virtual_dom$VirtualDom$map,
+									fn,
+									A2(styled.html, add, context));
+							}),
+						styles: styled.styles
+					});
+			case 'Unstyled':
+				var html = el.a;
+				return $mdgriffith$elm_ui$Internal$Model$Unstyled(
+					A2(
+						$elm$core$Basics$composeL,
+						$elm$virtual_dom$VirtualDom$map(fn),
+						html));
+			case 'Text':
+				var str = el.a;
+				return $mdgriffith$elm_ui$Internal$Model$Text(str);
+			default:
+				return $mdgriffith$elm_ui$Internal$Model$Empty;
+		}
+	});
+var $mdgriffith$elm_ui$Element$map = $mdgriffith$elm_ui$Internal$Model$map;
+var $ryannhg$elm_spa$Spa$Page$recipe = $ryannhg$elm_spa$Internals$Page$upgrade;
+var $author$project$Utils$Spa$recipe = $ryannhg$elm_spa$Spa$Page$recipe($mdgriffith$elm_ui$Element$map);
+var $author$project$Generated$Specifications$Pages$recipes = {
+	_new: $author$project$Utils$Spa$recipe(
+		{page: $author$project$Pages$Specifications$New$page, toModel: $author$project$Generated$Specifications$Pages$NewModel, toMsg: $author$project$Generated$Specifications$Pages$NewMsg})
+};
+var $author$project$Generated$Specifications$Pages$bundle = function (bigModel) {
+	var model = bigModel.a;
+	return $author$project$Generated$Specifications$Pages$recipes._new.bundle(model);
+};
+var $author$project$Generated$Specifications$Pages$init = function (route_) {
+	var params = route_.a;
+	return $author$project$Generated$Specifications$Pages$recipes._new.init(params);
+};
+var $ryannhg$elm_spa$Spa$Page$layout = F2(
+	function (map, options) {
+		return $ryannhg$elm_spa$Internals$Page$Page(
+			function (_v0) {
+				var toModel = _v0.toModel;
+				var toMsg = _v0.toMsg;
+				return {
+					bundle: F3(
+						function (model, _private, context) {
+							var viewLayout = function (page) {
+								return options.view(
+									{fromGlobalMsg: _private.fromGlobalMsg, global: context.global, page: page, route: context.route});
+							};
+							var myLayoutsVisibility = _Utils_eq(_private.path, options.path) ? _private.visibility : $ryannhg$elm_spa$Internals$Transition$visible;
+							var lookupTransitionFrom = F2(
+								function (path, list) {
+									return A2(
+										$elm$core$Maybe$withDefault,
+										$ryannhg$elm_spa$Internals$Transition$optOut,
+										$elm$core$List$head(
+											A2(
+												$elm$core$List$map,
+												function ($) {
+													return $.transition;
+												},
+												A2(
+													$elm$core$List$filter,
+													A2(
+														$elm$core$Basics$composeR,
+														function ($) {
+															return $.path;
+														},
+														$elm$core$Basics$eq(path)),
+													list))));
+								});
+							var bundle = A3(
+								options.recipe.bundle,
+								model,
+								{
+									fromGlobalMsg: _private.fromGlobalMsg,
+									fromPageMsg: A2($elm$core$Basics$composeR, toMsg, _private.fromPageMsg),
+									map: map,
+									path: _private.path,
+									transitions: _private.transitions,
+									visibility: _private.visibility
+								},
+								context);
+							return {
+								subscriptions: bundle.subscriptions,
+								title: bundle.title,
+								view: viewLayout(
+									A3(
+										$ryannhg$elm_spa$Internals$Transition$view,
+										A2(lookupTransitionFrom, options.path, _private.transitions),
+										myLayoutsVisibility,
+										bundle.view))
+							};
+						}),
+					init: F2(
+						function (pageParams, global) {
+							return A3(
+								$ryannhg$elm_spa$Spa$Page$truple,
+								toModel,
+								toMsg,
+								A2(options.recipe.init, pageParams, global));
+						}),
+					update: F3(
+						function (msg, model, global) {
+							return A3(
+								$ryannhg$elm_spa$Spa$Page$truple,
+								toModel,
+								toMsg,
+								A3(options.recipe.update, msg, model, global));
+						})
+				};
+			});
+	});
+var $author$project$Utils$Spa$layout = $ryannhg$elm_spa$Spa$Page$layout($mdgriffith$elm_ui$Element$map);
+var $ryannhg$elm_spa$Internals$Path$Static = function (a) {
+	return {$: 'Static', a: a};
+};
+var $ryannhg$elm_spa$Internals$Path$static = $ryannhg$elm_spa$Internals$Path$Static;
+var $ryannhg$elm_spa$Spa$Path$static = $ryannhg$elm_spa$Internals$Path$static;
+var $author$project$Generated$Specifications$Pages$path = _List_fromArray(
+	[
+		$ryannhg$elm_spa$Spa$Path$static('specifications')
+	]);
+var $author$project$Generated$Specifications$Pages$update = F2(
+	function (bigMsg, bigModel) {
+		var _v0 = _Utils_Tuple2(bigMsg, bigModel);
+		var msg = _v0.a.a;
+		var model = _v0.b.a;
+		return A2($author$project$Generated$Specifications$Pages$recipes._new.update, msg, model);
+	});
+var $author$project$Layouts$Specifications$view = function (_v0) {
+	var page = _v0.page;
+	return page;
+};
+var $author$project$Generated$Specifications$Pages$page = $author$project$Utils$Spa$layout(
+	{
+		path: $author$project$Generated$Specifications$Pages$path,
+		recipe: {bundle: $author$project$Generated$Specifications$Pages$bundle, init: $author$project$Generated$Specifications$Pages$init, update: $author$project$Generated$Specifications$Pages$update},
+		view: $author$project$Layouts$Specifications$view
+	});
 var $ryannhg$elm_spa$Spa$Page$static = function (page) {
 	return $ryannhg$elm_spa$Internals$Page$Page(
 		function (_v0) {
@@ -11413,12 +12379,6 @@ var $mdgriffith$elm_ui$Internal$Model$Keyed = function (a) {
 	return {$: 'Keyed', a: a};
 };
 var $mdgriffith$elm_ui$Internal$Model$NoStyleSheet = {$: 'NoStyleSheet'};
-var $mdgriffith$elm_ui$Internal$Model$Styled = function (a) {
-	return {$: 'Styled', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
-	return {$: 'Unstyled', a: a};
-};
 var $mdgriffith$elm_ui$Internal$Model$addChildren = F2(
 	function (existing, nearbyChildren) {
 		switch (nearbyChildren.$) {
@@ -13628,9 +14588,6 @@ var $mdgriffith$elm_ui$Internal$Style$sliderReset = '\ninput[type=range] {\n  -w
 var $mdgriffith$elm_ui$Internal$Style$thumbReset = '\ninput[type=range]::-webkit-slider-thumb {\n    -webkit-appearance: none;\n    opacity: 0.5;\n    width: 80px;\n    height: 80px;\n    background-color: black;\n    border:none;\n    border-radius: 5px;\n}\ninput[type=range]::-moz-range-thumb {\n    opacity: 0.5;\n    width: 80px;\n    height: 80px;\n    background-color: black;\n    border:none;\n    border-radius: 5px;\n}\ninput[type=range]::-ms-thumb {\n    opacity: 0.5;\n    width: 80px;\n    height: 80px;\n    background-color: black;\n    border:none;\n    border-radius: 5px;\n}\ninput[type=range][orient=vertical]{\n    writing-mode: bt-lr; /* IE */\n    -webkit-appearance: slider-vertical;  /* WebKit */\n}\n';
 var $mdgriffith$elm_ui$Internal$Style$trackReset = '\ninput[type=range]::-moz-range-track {\n    background: transparent;\n    cursor: pointer;\n}\ninput[type=range]::-ms-track {\n    background: transparent;\n    cursor: pointer;\n}\ninput[type=range]::-webkit-slider-runnable-track {\n    background: transparent;\n    cursor: pointer;\n}\n';
 var $mdgriffith$elm_ui$Internal$Style$overrides = '@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.any) + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.row) + (' > ' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.any) + (' { flex-basis: auto !important; } ' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.any) + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.row) + (' > ' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.any) + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.container) + (' { flex-basis: auto !important; }}' + ($mdgriffith$elm_ui$Internal$Style$inputTextReset + ($mdgriffith$elm_ui$Internal$Style$sliderReset + ($mdgriffith$elm_ui$Internal$Style$trackReset + ($mdgriffith$elm_ui$Internal$Style$thumbReset + $mdgriffith$elm_ui$Internal$Style$explainer)))))))))))))));
-var $elm$core$String$concat = function (strings) {
-	return A2($elm$core$String$join, '', strings);
-};
 var $mdgriffith$elm_ui$Internal$Style$Intermediate = function (a) {
 	return {$: 'Intermediate', a: a};
 };
@@ -15201,7 +16158,6 @@ var $mdgriffith$elm_ui$Internal$Flag$Field = F2(
 	function (a, b) {
 		return {$: 'Field', a: a, b: b};
 	});
-var $elm$core$Bitwise$or = _Bitwise_or;
 var $mdgriffith$elm_ui$Internal$Flag$add = F2(
 	function (myFlag, _v0) {
 		var one = _v0.a;
@@ -16711,40 +17667,6 @@ var $mdgriffith$elm_ui$Internal$Model$TransformComponent = F2(
 	function (a, b) {
 		return {$: 'TransformComponent', a: a, b: b};
 	});
-var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
-var $mdgriffith$elm_ui$Internal$Model$Text = function (a) {
-	return {$: 'Text', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Model$map = F2(
-	function (fn, el) {
-		switch (el.$) {
-			case 'Styled':
-				var styled = el.a;
-				return $mdgriffith$elm_ui$Internal$Model$Styled(
-					{
-						html: F2(
-							function (add, context) {
-								return A2(
-									$elm$virtual_dom$VirtualDom$map,
-									fn,
-									A2(styled.html, add, context));
-							}),
-						styles: styled.styles
-					});
-			case 'Unstyled':
-				var html = el.a;
-				return $mdgriffith$elm_ui$Internal$Model$Unstyled(
-					A2(
-						$elm$core$Basics$composeL,
-						$elm$virtual_dom$VirtualDom$map(fn),
-						html));
-			case 'Text':
-				var str = el.a;
-				return $mdgriffith$elm_ui$Internal$Model$Text(str);
-			default:
-				return $mdgriffith$elm_ui$Internal$Model$Empty;
-		}
-	});
 var $elm$virtual_dom$VirtualDom$mapAttribute = _VirtualDom_mapAttribute;
 var $mdgriffith$elm_ui$Internal$Model$mapAttrFromStyle = F2(
 	function (fn, attr) {
@@ -16845,8 +17767,17 @@ var $mdgriffith$elm_ui$Element$rgb255 = F3(
 	function (red, green, blue) {
 		return A4($mdgriffith$elm_ui$Internal$Model$Rgba, red / 255, green / 255, blue / 255, 1);
 	});
+var $author$project$Generated$Specifications$Route$New = function (a) {
+	return {$: 'New', a: a};
+};
 var $author$project$Generated$Route$NotFound = function (a) {
 	return {$: 'NotFound', a: a};
+};
+var $author$project$Generated$Route$Specifications = function (a) {
+	return {$: 'Specifications', a: a};
+};
+var $author$project$Generated$Route$Specifications_Folder = function (a) {
+	return {$: 'Specifications_Folder', a: a};
 };
 var $author$project$Generated$Route$Top = function (a) {
 	return {$: 'Top', a: a};
@@ -16854,6 +17785,11 @@ var $author$project$Generated$Route$Top = function (a) {
 var $author$project$Generated$Routes$routes = {
 	notFound: $author$project$Generated$Route$NotFound(
 		{}),
+	specifications: $author$project$Generated$Route$Specifications(
+		{}),
+	specifications_new: $author$project$Generated$Route$Specifications_Folder(
+		$author$project$Generated$Specifications$Route$New(
+			{})),
 	top: $author$project$Generated$Route$Top(
 		{})
 };
@@ -16888,14 +17824,20 @@ var $mdgriffith$elm_ui$Element$spacing = function (x) {
 			x,
 			x));
 };
-var $mdgriffith$elm_ui$Element$text = function (content) {
-	return $mdgriffith$elm_ui$Internal$Model$Text(content);
+var $author$project$Generated$Specifications$Route$toPath = function (route) {
+	return '/new';
 };
 var $author$project$Generated$Route$toPath = function (route) {
-	if (route.$ === 'NotFound') {
-		return '/not-found';
-	} else {
-		return '/';
+	switch (route.$) {
+		case 'NotFound':
+			return '/not-found';
+		case 'Specifications':
+			return '/specifications';
+		case 'Top':
+			return '/';
+		default:
+			var subRoute = route.a;
+			return '/specifications' + $author$project$Generated$Specifications$Route$toPath(subRoute);
 	}
 };
 var $author$project$Generated$Routes$toPath = $author$project$Generated$Route$toPath;
@@ -16943,6 +17885,475 @@ var $author$project$Pages$NotFound$page = $ryannhg$elm_spa$Spa$Page$static(
 		title: $elm$core$Basics$always('not found | elm-spa'),
 		view: $elm$core$Basics$always($author$project$Pages$NotFound$view)
 	});
+var $author$project$Pages$Specifications$NoFocus = {$: 'NoFocus'};
+var $author$project$Pages$Specifications$init = function (_v0) {
+	return _Utils_Tuple3(
+		{focussedSpecification: $author$project$Pages$Specifications$NoFocus},
+		$elm$core$Platform$Cmd$none,
+		$elm$core$Platform$Cmd$none);
+};
+var $author$project$Pages$Specifications$subscriptions = function (model) {
+	return $elm$core$Platform$Sub$none;
+};
+var $author$project$Pages$Specifications$Loading = {$: 'Loading'};
+var $author$project$Pages$Specifications$Spec = F2(
+	function (a, b) {
+		return {$: 'Spec', a: a, b: b};
+	});
+var $author$project$Specification$Specification = F4(
+	function (name, description, requirements, deleteStatus) {
+		return {deleteStatus: deleteStatus, description: description, name: name, requirements: requirements};
+	});
+var $author$project$Specification$All = function (a) {
+	return {$: 'All', a: a};
+};
+var $author$project$Specification$And = F2(
+	function (a, b) {
+		return {$: 'And', a: a, b: b};
+	});
+var $author$project$Specification$Any = function (a) {
+	return {$: 'Any', a: a};
+};
+var $author$project$Specification$Data = function (a) {
+	return {$: 'Data', a: a};
+};
+var $author$project$Specification$Not = function (a) {
+	return {$: 'Not', a: a};
+};
+var $author$project$Specification$Or = F2(
+	function (a, b) {
+		return {$: 'Or', a: a, b: b};
+	});
+var $miniBill$elm_codec$Codec$list = A2($miniBill$elm_codec$Codec$composite, $elm$json$Json$Encode$list, $elm$json$Json$Decode$list);
+var $elm$json$Json$Decode$lazy = function (thunk) {
+	return A2(
+		$elm$json$Json$Decode$andThen,
+		thunk,
+		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+};
+var $miniBill$elm_codec$Codec$lazy = function (f) {
+	return $miniBill$elm_codec$Codec$Codec(
+		{
+			decoder: $elm$json$Json$Decode$lazy(
+				function (_v0) {
+					return $miniBill$elm_codec$Codec$decoder(
+						f(_Utils_Tuple0));
+				}),
+			encoder: function (v) {
+				return A2(
+					$miniBill$elm_codec$Codec$encoder,
+					f(_Utils_Tuple0),
+					v);
+			}
+		});
+};
+var $miniBill$elm_codec$Codec$recursive = function (f) {
+	return f(
+		$miniBill$elm_codec$Codec$lazy(
+			function (_v0) {
+				return $miniBill$elm_codec$Codec$recursive(f);
+			}));
+};
+var $miniBill$elm_codec$Codec$variant2 = F4(
+	function (name, ctor, m1, m2) {
+		return A3(
+			$miniBill$elm_codec$Codec$variant,
+			name,
+			F3(
+				function (c, v1, v2) {
+					return c(
+						_List_fromArray(
+							[
+								A2($miniBill$elm_codec$Codec$encoder, m1, v1),
+								A2($miniBill$elm_codec$Codec$encoder, m2, v2)
+							]));
+				}),
+			A3(
+				$elm$json$Json$Decode$map2,
+				ctor,
+				A2(
+					$elm$json$Json$Decode$index,
+					0,
+					$miniBill$elm_codec$Codec$decoder(m1)),
+				A2(
+					$elm$json$Json$Decode$index,
+					1,
+					$miniBill$elm_codec$Codec$decoder(m2))));
+	});
+var $author$project$Specification$requirementCodec = function (meta) {
+	return $miniBill$elm_codec$Codec$recursive(
+		function (rmeta) {
+			return $miniBill$elm_codec$Codec$buildCustom(
+				A4(
+					$miniBill$elm_codec$Codec$variant1,
+					'All',
+					$author$project$Specification$All,
+					$miniBill$elm_codec$Codec$list(rmeta),
+					A4(
+						$miniBill$elm_codec$Codec$variant1,
+						'Any',
+						$author$project$Specification$Any,
+						$miniBill$elm_codec$Codec$list(rmeta),
+						A5(
+							$miniBill$elm_codec$Codec$variant2,
+							'And',
+							$author$project$Specification$And,
+							rmeta,
+							rmeta,
+							A5(
+								$miniBill$elm_codec$Codec$variant2,
+								'Or',
+								$author$project$Specification$Or,
+								rmeta,
+								rmeta,
+								A4(
+									$miniBill$elm_codec$Codec$variant1,
+									'Not',
+									$author$project$Specification$Not,
+									rmeta,
+									A4(
+										$miniBill$elm_codec$Codec$variant1,
+										'Data',
+										$author$project$Specification$Data,
+										meta,
+										$miniBill$elm_codec$Codec$custom(
+											F7(
+												function (fdata, fnot, _for, fand, fany, fall, value) {
+													switch (value.$) {
+														case 'Data':
+															var data = value.a;
+															return fdata(data);
+														case 'Not':
+															var requirement = value.a;
+															return fnot(requirement);
+														case 'Or':
+															var requirement1 = value.a;
+															var requirement2 = value.b;
+															return A2(_for, requirement1, requirement2);
+														case 'And':
+															var requirement1 = value.a;
+															var requirement2 = value.b;
+															return A2(fand, requirement1, requirement2);
+														case 'Any':
+															var requirements = value.a;
+															return fany(requirements);
+														default:
+															var requirements = value.a;
+															return fall(requirements);
+													}
+												})))))))));
+		});
+};
+var $author$project$Specification$Constant = function (a) {
+	return {$: 'Constant', a: a};
+};
+var $author$project$Specification$Value = function (a) {
+	return {$: 'Value', a: a};
+};
+var $author$project$Specification$Method = function (a) {
+	return {$: 'Method', a: a};
+};
+var $author$project$Specification$MolecularBiology = {$: 'MolecularBiology'};
+var $author$project$Specification$SPPS = {$: 'SPPS'};
+var $miniBill$elm_codec$Codec$variant0 = F2(
+	function (name, ctor) {
+		return A3(
+			$miniBill$elm_codec$Codec$variant,
+			name,
+			function (c) {
+				return c(_List_Nil);
+			},
+			$elm$json$Json$Decode$succeed(ctor));
+	});
+var $author$project$Specification$methodTypeCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A3(
+		$miniBill$elm_codec$Codec$variant0,
+		'MolecularBiology',
+		$author$project$Specification$MolecularBiology,
+		A3(
+			$miniBill$elm_codec$Codec$variant0,
+			'SPPS',
+			$author$project$Specification$SPPS,
+			$miniBill$elm_codec$Codec$custom(
+				F3(
+					function (fspps, fmolbio, value) {
+						if (value.$ === 'SPPS') {
+							return fspps;
+						} else {
+							return fmolbio;
+						}
+					})))));
+var $author$project$Specification$constantTypeCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A4(
+		$miniBill$elm_codec$Codec$variant1,
+		'Method',
+		$author$project$Specification$Method,
+		$author$project$Specification$methodTypeCodec,
+		$miniBill$elm_codec$Codec$custom(
+			F2(
+				function (fconstantType, value) {
+					var methodType = value.a;
+					return fconstantType(methodType);
+				}))));
+var $author$project$Specification$HydrophobicFitness = F2(
+	function (a, b) {
+		return {$: 'HydrophobicFitness', a: a, b: b};
+	});
+var $author$project$Specification$IsoelectricPoint = F2(
+	function (a, b) {
+		return {$: 'IsoelectricPoint', a: a, b: b};
+	});
+var $author$project$Specification$MeanPackingDensity = F2(
+	function (a, b) {
+		return {$: 'MeanPackingDensity', a: a, b: b};
+	});
+var $author$project$Specification$SequenceContains = function (a) {
+	return {$: 'SequenceContains', a: a};
+};
+var $elm$json$Json$Encode$float = _Json_wrap;
+var $miniBill$elm_codec$Codec$float = A2($miniBill$elm_codec$Codec$build, $elm$json$Json$Encode$float, $elm$json$Json$Decode$float);
+var $author$project$Specification$orderCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A3(
+		$miniBill$elm_codec$Codec$variant0,
+		'GT',
+		$elm$core$Basics$GT,
+		A3(
+			$miniBill$elm_codec$Codec$variant0,
+			'EQ',
+			$elm$core$Basics$EQ,
+			A3(
+				$miniBill$elm_codec$Codec$variant0,
+				'LT',
+				$elm$core$Basics$LT,
+				$miniBill$elm_codec$Codec$custom(
+					F4(
+						function (flt, feq, fgt, value) {
+							switch (value.$) {
+								case 'LT':
+									return flt;
+								case 'EQ':
+									return feq;
+								default:
+									return fgt;
+							}
+						}))))));
+var $author$project$Specification$valueTypeCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A4(
+		$miniBill$elm_codec$Codec$variant1,
+		'SequenceContains',
+		$author$project$Specification$SequenceContains,
+		$miniBill$elm_codec$Codec$string,
+		A5(
+			$miniBill$elm_codec$Codec$variant2,
+			'MeanPackingDensity',
+			$author$project$Specification$MeanPackingDensity,
+			$author$project$Specification$orderCodec,
+			$miniBill$elm_codec$Codec$float,
+			A5(
+				$miniBill$elm_codec$Codec$variant2,
+				'HydrophobicFitness',
+				$author$project$Specification$HydrophobicFitness,
+				$author$project$Specification$orderCodec,
+				$miniBill$elm_codec$Codec$float,
+				A5(
+					$miniBill$elm_codec$Codec$variant2,
+					'IsoelectricPoint',
+					$author$project$Specification$IsoelectricPoint,
+					$author$project$Specification$orderCodec,
+					$miniBill$elm_codec$Codec$float,
+					$miniBill$elm_codec$Codec$custom(
+						F5(
+							function (fisoelectric, fhfitness, fmpdensity, fseqcontains, value) {
+								switch (value.$) {
+									case 'IsoelectricPoint':
+										var order = value.a;
+										var _float = value.b;
+										return A2(fisoelectric, order, _float);
+									case 'HydrophobicFitness':
+										var order = value.a;
+										var _float = value.b;
+										return A2(fhfitness, order, _float);
+									case 'MeanPackingDensity':
+										var order = value.a;
+										var _float = value.b;
+										return A2(fmpdensity, order, _float);
+									default:
+										var sequence = value.a;
+										return fseqcontains(sequence);
+								}
+							})))))));
+var $author$project$Specification$requirementDataTypeCodec = $miniBill$elm_codec$Codec$buildCustom(
+	A4(
+		$miniBill$elm_codec$Codec$variant1,
+		'Value',
+		$author$project$Specification$Value,
+		$author$project$Specification$valueTypeCodec,
+		A4(
+			$miniBill$elm_codec$Codec$variant1,
+			'Constant',
+			$author$project$Specification$Constant,
+			$author$project$Specification$constantTypeCodec,
+			$miniBill$elm_codec$Codec$custom(
+				F3(
+					function (fconstant, fvalue, value) {
+						if (value.$ === 'Constant') {
+							var constantType = value.a;
+							return fconstant(constantType);
+						} else {
+							var valueType = value.a;
+							return fvalue(valueType);
+						}
+					})))));
+var $author$project$Specification$codec = $miniBill$elm_codec$Codec$buildObject(
+	A4(
+		$miniBill$elm_codec$Codec$field,
+		'deleteStatus',
+		function ($) {
+			return $.deleteStatus;
+		},
+		$miniBill$elm_codec$Codec$constant($author$project$Style$Unclicked),
+		A4(
+			$miniBill$elm_codec$Codec$field,
+			'requirements',
+			function ($) {
+				return $.requirements;
+			},
+			$author$project$Specification$requirementCodec($author$project$Specification$requirementDataTypeCodec),
+			A4(
+				$miniBill$elm_codec$Codec$field,
+				'description',
+				function ($) {
+					return $.description;
+				},
+				$miniBill$elm_codec$Codec$string,
+				A4(
+					$miniBill$elm_codec$Codec$field,
+					'name',
+					function ($) {
+						return $.name;
+					},
+					$miniBill$elm_codec$Codec$string,
+					$miniBill$elm_codec$Codec$object($author$project$Specification$Specification))))));
+var $author$project$Pages$Specifications$mapFocussedSpecification = F2(
+	function (specFn, focus) {
+		switch (focus.$) {
+			case 'NoFocus':
+				return focus;
+			case 'Loading':
+				return focus;
+			default:
+				var uuidString = focus.a;
+				var specification = focus.b;
+				return function (idSpec) {
+					return A2($author$project$Pages$Specifications$Spec, idSpec.uuidString, idSpec.specification);
+				}(
+					specFn(
+						{specification: specification, uuidString: uuidString}));
+		}
+	});
+var $elm$core$Debug$todo = _Debug_todo;
+var $author$project$Pages$Specifications$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'ClickedFocusSpecification':
+				var uuidString = msg.a;
+				return _Utils_Tuple3(
+					_Utils_update(
+						model,
+						{focussedSpecification: $author$project$Pages$Specifications$Loading}),
+					$elm$core$Platform$Cmd$none,
+					$elm$core$Platform$Cmd$none);
+			case 'SetFocus':
+				var value = msg.a;
+				var focusCodec = $miniBill$elm_codec$Codec$buildObject(
+					A4(
+						$miniBill$elm_codec$Codec$field,
+						'specification',
+						function ($) {
+							return $.specification;
+						},
+						$author$project$Specification$codec,
+						A4(
+							$miniBill$elm_codec$Codec$field,
+							'uuidString',
+							function ($) {
+								return $.uuidString;
+							},
+							$miniBill$elm_codec$Codec$string,
+							$miniBill$elm_codec$Codec$object(
+								F2(
+									function (uuidString, spec) {
+										return {specification: spec, uuidString: uuidString};
+									})))));
+				var _v1 = A2($miniBill$elm_codec$Codec$decodeValue, focusCodec, value);
+				if (_v1.$ === 'Ok') {
+					var uuidString = _v1.a.uuidString;
+					var specification = _v1.a.specification;
+					return _Utils_Tuple3(
+						_Utils_update(
+							model,
+							{
+								focussedSpecification: A2($author$project$Pages$Specifications$Spec, uuidString, specification)
+							}),
+						$elm$core$Platform$Cmd$none,
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var errorString = _v1.a;
+					return _Debug_todo(
+						'Pages.Specifications',
+						{
+							start: {line: 119, column: 21},
+							end: {line: 119, column: 31}
+						})('Catch this error');
+				}
+			case 'ClearFocus':
+				return _Utils_Tuple3(
+					_Utils_update(
+						model,
+						{focussedSpecification: $author$project$Pages$Specifications$NoFocus}),
+					$elm$core$Platform$Cmd$none,
+					$elm$core$Platform$Cmd$none);
+			case 'DeleteSpecification':
+				var uuidString = msg.a;
+				var dangerStatus = msg.b;
+				return _Utils_Tuple3(model, $elm$core$Platform$Cmd$none, $elm$core$Platform$Cmd$none);
+			default:
+				var globalUuidString = msg.a;
+				var dangerStatus = msg.b;
+				return _Utils_Tuple3(
+					function () {
+						if (dangerStatus.$ === 'Confirmed') {
+							return _Utils_update(
+								model,
+								{focussedSpecification: $author$project$Pages$Specifications$NoFocus});
+						} else {
+							return _Utils_update(
+								model,
+								{
+									focussedSpecification: A2(
+										$author$project$Pages$Specifications$mapFocussedSpecification,
+										function (_v3) {
+											var uuidString = _v3.uuidString;
+											var specification = _v3.specification;
+											return {
+												specification: _Utils_update(
+													specification,
+													{deleteStatus: dangerStatus}),
+												uuidString: uuidString
+											};
+										},
+										model.focussedSpecification)
+								});
+						}
+					}(),
+					$elm$core$Platform$Cmd$none,
+					$elm$core$Platform$Cmd$none);
+		}
+	});
+var $mdgriffith$elm_ui$Internal$Model$Fill = function (a) {
+	return {$: 'Fill', a: a};
+};
+var $mdgriffith$elm_ui$Element$fill = $mdgriffith$elm_ui$Internal$Model$Fill(1);
 var $mdgriffith$elm_ui$Internal$Model$Heading = function (a) {
 	return {$: 'Heading', a: a};
 };
@@ -16957,23 +18368,287 @@ var $author$project$Style$h1 = function (content) {
 			]),
 		content);
 };
-var $mdgriffith$elm_ui$Element$Font$bold = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.bold);
-var $author$project$Style$h2 = function (content) {
+var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
+	function (a, b, c, d, e) {
+		return {$: 'PaddingStyle', a: a, b: b, c: c, d: d, e: e};
+	});
+var $mdgriffith$elm_ui$Internal$Flag$padding = $mdgriffith$elm_ui$Internal$Flag$flag(2);
+var $mdgriffith$elm_ui$Internal$Model$paddingName = F4(
+	function (top, right, bottom, left) {
+		return 'pad-' + ($elm$core$String$fromInt(top) + ('-' + ($elm$core$String$fromInt(right) + ('-' + ($elm$core$String$fromInt(bottom) + ('-' + $elm$core$String$fromInt(left)))))));
+	});
+var $mdgriffith$elm_ui$Element$paddingEach = function (_v0) {
+	var top = _v0.top;
+	var right = _v0.right;
+	var bottom = _v0.bottom;
+	var left = _v0.left;
+	return (_Utils_eq(top, right) && (_Utils_eq(top, bottom) && _Utils_eq(top, left))) ? A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$padding,
+		A5(
+			$mdgriffith$elm_ui$Internal$Model$PaddingStyle,
+			'p-' + $elm$core$String$fromInt(top),
+			top,
+			top,
+			top,
+			top)) : A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$padding,
+		A5(
+			$mdgriffith$elm_ui$Internal$Model$PaddingStyle,
+			A4($mdgriffith$elm_ui$Internal$Model$paddingName, top, right, bottom, left),
+			top,
+			right,
+			bottom,
+			left));
+};
+var $mdgriffith$elm_ui$Internal$Flag$borderRound = $mdgriffith$elm_ui$Internal$Flag$flag(17);
+var $mdgriffith$elm_ui$Element$Border$rounded = function (radius) {
 	return A2(
-		$mdgriffith$elm_ui$Element$el,
-		_List_fromArray(
-			[
-				$mdgriffith$elm_ui$Element$Font$bold,
-				$mdgriffith$elm_ui$Element$Font$size(24),
-				$mdgriffith$elm_ui$Element$Region$heading(2)
-			]),
-		content);
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$borderRound,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Single,
+			'br-' + $elm$core$String$fromInt(radius),
+			'border-radius',
+			$elm$core$String$fromInt(radius) + 'px'));
+};
+var $author$project$Style$buttonStyle = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$paddingEach(
+		{bottom: 8, left: 8, right: 8, top: 12}),
+		$mdgriffith$elm_ui$Element$Border$rounded(6)
+	]);
+var $mdgriffith$elm_ui$Internal$Flag$bgColor = $mdgriffith$elm_ui$Internal$Flag$flag(8);
+var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$bgColor,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Colored,
+			'bg-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
+			'background-color',
+			clr));
+};
+var $author$project$Style$colorPalette = {
+	black: A3($mdgriffith$elm_ui$Element$rgb255, 0, 0, 0),
+	c1: A3($mdgriffith$elm_ui$Element$rgb255, 76, 120, 168),
+	c2: A3($mdgriffith$elm_ui$Element$rgb255, 160, 160, 160),
+	c3: A3($mdgriffith$elm_ui$Element$rgb255, 217, 184, 97),
+	c4: A3($mdgriffith$elm_ui$Element$rgb255, 220, 220, 220),
+	c5: A3($mdgriffith$elm_ui$Element$rgb255, 220, 220, 220),
+	red: A3($mdgriffith$elm_ui$Element$rgb255, 202, 107, 104),
+	white: A3($mdgriffith$elm_ui$Element$rgb255, 255, 255, 255)
+};
+var $author$project$Style$linkButton = function (_v0) {
+	var labelText = _v0.labelText;
+	var url = _v0.url;
+	return A2(
+		$mdgriffith$elm_ui$Element$link,
+		_Utils_ap(
+			$author$project$Style$buttonStyle,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.c3)
+				])),
+		{
+			label: $mdgriffith$elm_ui$Element$text(labelText),
+			url: url
+		});
+};
+var $mdgriffith$elm_ui$Internal$Model$AsRow = {$: 'AsRow'};
+var $mdgriffith$elm_ui$Internal$Model$asRow = $mdgriffith$elm_ui$Internal$Model$AsRow;
+var $mdgriffith$elm_ui$Element$row = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asRow,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.contentLeft + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.contentCenterY)),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
+						attrs))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
+var $author$project$Pages$Specifications$ClickedFocusSpecification = function (a) {
+	return {$: 'ClickedFocusSpecification', a: a};
+};
+var $author$project$Pages$Specifications$DeleteSpecification = F2(
+	function (a, b) {
+		return {$: 'DeleteSpecification', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Internal$Model$Button = {$: 'Button'};
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
+var $mdgriffith$elm_ui$Element$Input$hasFocusStyle = function (attr) {
+	if (((attr.$ === 'StyleClass') && (attr.b.$ === 'PseudoSelector')) && (attr.b.a.$ === 'Focus')) {
+		var _v1 = attr.b;
+		var _v2 = _v1.a;
+		return true;
+	} else {
+		return false;
+	}
+};
+var $mdgriffith$elm_ui$Element$Input$focusDefault = function (attrs) {
+	return A2($elm$core$List$any, $mdgriffith$elm_ui$Element$Input$hasFocusStyle, attrs) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Internal$Model$htmlClass('focusable');
+};
+var $mdgriffith$elm_ui$Element$Events$onClick = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onClick);
+var $mdgriffith$elm_ui$Element$Input$enter = 'Enter';
+var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var $elm$html$Html$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var $mdgriffith$elm_ui$Element$Input$onKey = F2(
+	function (desiredCode, msg) {
+		var decode = function (code) {
+			return _Utils_eq(code, desiredCode) ? $elm$json$Json$Decode$succeed(msg) : $elm$json$Json$Decode$fail('Not the enter key');
+		};
+		var isKey = A2(
+			$elm$json$Json$Decode$andThen,
+			decode,
+			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string));
+		return $mdgriffith$elm_ui$Internal$Model$Attr(
+			A2(
+				$elm$html$Html$Events$preventDefaultOn,
+				'keyup',
+				A2(
+					$elm$json$Json$Decode$map,
+					function (fired) {
+						return _Utils_Tuple2(fired, true);
+					},
+					isKey)));
+	});
+var $mdgriffith$elm_ui$Element$Input$onEnter = function (msg) {
+	return A2($mdgriffith$elm_ui$Element$Input$onKey, $mdgriffith$elm_ui$Element$Input$enter, msg);
+};
+var $mdgriffith$elm_ui$Internal$Flag$cursor = $mdgriffith$elm_ui$Internal$Flag$flag(21);
+var $mdgriffith$elm_ui$Element$pointer = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$cursor, $mdgriffith$elm_ui$Internal$Style$classes.cursorPointer);
+var $elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		$elm$core$String$fromInt(n));
+};
+var $mdgriffith$elm_ui$Element$Input$button = F2(
+	function (attrs, _v0) {
+		var onPress = _v0.onPress;
+		var label = _v0.label;
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asEl,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.contentCenterX + (' ' + ($mdgriffith$elm_ui$Internal$Style$classes.contentCenterY + (' ' + ($mdgriffith$elm_ui$Internal$Style$classes.seButton + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.noTextSelection)))))),
+						A2(
+							$elm$core$List$cons,
+							$mdgriffith$elm_ui$Element$pointer,
+							A2(
+								$elm$core$List$cons,
+								$mdgriffith$elm_ui$Element$Input$focusDefault(attrs),
+								A2(
+									$elm$core$List$cons,
+									$mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Button),
+									A2(
+										$elm$core$List$cons,
+										$mdgriffith$elm_ui$Internal$Model$Attr(
+											$elm$html$Html$Attributes$tabindex(0)),
+										function () {
+											if (onPress.$ === 'Nothing') {
+												return A2(
+													$elm$core$List$cons,
+													$mdgriffith$elm_ui$Internal$Model$Attr(
+														$elm$html$Html$Attributes$disabled(true)),
+													attrs);
+											} else {
+												var msg = onPress.a;
+												return A2(
+													$elm$core$List$cons,
+													$mdgriffith$elm_ui$Element$Events$onClick(msg),
+													A2(
+														$elm$core$List$cons,
+														$mdgriffith$elm_ui$Element$Input$onEnter(msg),
+														attrs));
+											}
+										}()))))))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(
+				_List_fromArray(
+					[label])));
+	});
+var $author$project$Style$alwaysActiveButton = function (_v0) {
+	var labelText = _v0.labelText;
+	var clickMsg = _v0.clickMsg;
+	return A2(
+		$mdgriffith$elm_ui$Element$Input$button,
+		_Utils_ap(
+			$author$project$Style$buttonStyle,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.c3)
+				])),
+		{
+			label: $mdgriffith$elm_ui$Element$text(labelText),
+			onPress: $elm$core$Maybe$Just(clickMsg)
+		});
+};
+var $author$project$Style$Clicked = {$: 'Clicked'};
+var $author$project$Style$Confirmed = {$: 'Confirmed'};
+var $mdgriffith$elm_ui$Internal$Model$Focus = {$: 'Focus'};
+var $mdgriffith$elm_ui$Internal$Flag$focus = $mdgriffith$elm_ui$Internal$Flag$flag(31);
+var $mdgriffith$elm_ui$Element$focused = function (decs) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$focus,
+		A2(
+			$mdgriffith$elm_ui$Internal$Model$PseudoSelector,
+			$mdgriffith$elm_ui$Internal$Model$Focus,
+			$mdgriffith$elm_ui$Internal$Model$unwrapDecorations(decs)));
+};
+var $elm$html$Html$Events$onMouseLeave = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'mouseleave',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $mdgriffith$elm_ui$Element$Events$onMouseLeave = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseLeave);
+var $mdgriffith$elm_ui$Element$padding = function (x) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$padding,
+		A5(
+			$mdgriffith$elm_ui$Internal$Model$PaddingStyle,
+			'p-' + $elm$core$String$fromInt(x),
+			x,
+			x,
+			x,
+			x));
 };
 var $mdgriffith$elm_ui$Internal$Model$Paragraph = {$: 'Paragraph'};
-var $mdgriffith$elm_ui$Internal$Model$Fill = function (a) {
-	return {$: 'Fill', a: a};
-};
-var $mdgriffith$elm_ui$Element$fill = $mdgriffith$elm_ui$Internal$Model$Fill(1);
 var $mdgriffith$elm_ui$Element$paragraph = F2(
 	function (attrs, children) {
 		return A4(
@@ -16991,6 +18666,629 @@ var $mdgriffith$elm_ui$Element$paragraph = F2(
 						$mdgriffith$elm_ui$Element$spacing(5),
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
+var $mdgriffith$elm_ui$Internal$Model$Px = function (a) {
+	return {$: 'Px', a: a};
+};
+var $mdgriffith$elm_ui$Element$px = $mdgriffith$elm_ui$Internal$Model$Px;
+var $mdgriffith$elm_ui$Internal$Model$BorderWidth = F5(
+	function (a, b, c, d, e) {
+		return {$: 'BorderWidth', a: a, b: b, c: c, d: d, e: e};
+	});
+var $mdgriffith$elm_ui$Element$Border$width = function (v) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$borderWidth,
+		A5(
+			$mdgriffith$elm_ui$Internal$Model$BorderWidth,
+			'b-' + $elm$core$String$fromInt(v),
+			v,
+			v,
+			v,
+			v));
+};
+var $author$project$Style$dangerousButton = function (_v0) {
+	var labelText = _v0.labelText;
+	var confirmText = _v0.confirmText;
+	var status = _v0.status;
+	var dangerousMsg = _v0.dangerousMsg;
+	switch (status.$) {
+		case 'Unclicked':
+			return A2(
+				$mdgriffith$elm_ui$Element$Input$button,
+				_Utils_ap(
+					$author$project$Style$buttonStyle,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.red)
+						])),
+				{
+					label: $mdgriffith$elm_ui$Element$text(labelText),
+					onPress: $elm$core$Maybe$Just(
+						dangerousMsg($author$project$Style$Clicked))
+				});
+		case 'Clicked':
+			return A2(
+				$mdgriffith$elm_ui$Element$column,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$padding(10),
+						$mdgriffith$elm_ui$Element$spacing(10),
+						$mdgriffith$elm_ui$Element$width(
+						$mdgriffith$elm_ui$Element$px(250)),
+						$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.red),
+						$mdgriffith$elm_ui$Element$Border$rounded(6),
+						$mdgriffith$elm_ui$Element$Events$onMouseLeave(
+						dangerousMsg($author$project$Style$Unclicked)),
+						$mdgriffith$elm_ui$Element$Font$color($author$project$Style$colorPalette.black)
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$paragraph,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$text(confirmText)
+							])),
+						A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$spacing(10)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$mdgriffith$elm_ui$Element$Input$button,
+								_Utils_ap(
+									$author$project$Style$buttonStyle,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$focused(_List_Nil),
+											$mdgriffith$elm_ui$Element$Border$width(2)
+										])),
+								{
+									label: $mdgriffith$elm_ui$Element$text('Yes'),
+									onPress: $elm$core$Maybe$Just(
+										dangerousMsg($author$project$Style$Confirmed))
+								}),
+								A2(
+								$mdgriffith$elm_ui$Element$Input$button,
+								_Utils_ap(
+									$author$project$Style$buttonStyle,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$focused(_List_Nil),
+											$mdgriffith$elm_ui$Element$Border$width(2)
+										])),
+								{
+									label: $mdgriffith$elm_ui$Element$text('No'),
+									onPress: $elm$core$Maybe$Just(
+										dangerousMsg($author$project$Style$Unclicked))
+								})
+							]))
+					]));
+		default:
+			return A2(
+				$mdgriffith$elm_ui$Element$Input$button,
+				_Utils_ap(
+					$author$project$Style$buttonStyle,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.c4),
+							$mdgriffith$elm_ui$Element$Font$color($author$project$Style$colorPalette.c5)
+						])),
+				{
+					label: $mdgriffith$elm_ui$Element$text(labelText),
+					onPress: $elm$core$Maybe$Nothing
+				});
+	}
+};
+var $mdgriffith$elm_ui$Element$Font$bold = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.bold);
+var $author$project$Style$h2 = function (content) {
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$Font$bold,
+				$mdgriffith$elm_ui$Element$Font$size(24),
+				$mdgriffith$elm_ui$Element$Region$heading(2)
+			]),
+		content);
+};
+var $author$project$Pages$Specifications$specificationStubView = function (_v0) {
+	var uuidString = _v0.a;
+	var name = _v0.b.name;
+	var description = _v0.b.description;
+	var deleteStatus = _v0.b.deleteStatus;
+	return A2(
+		$mdgriffith$elm_ui$Element$column,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$padding(15),
+				$mdgriffith$elm_ui$Element$spacing(10),
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.c5),
+				$mdgriffith$elm_ui$Element$Border$rounded(10)
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$mdgriffith$elm_ui$Element$column,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$pointer,
+						$mdgriffith$elm_ui$Element$spacing(10),
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+					]),
+				_List_fromArray(
+					[
+						$author$project$Style$h2(
+						$mdgriffith$elm_ui$Element$text(name)),
+						A2(
+						$mdgriffith$elm_ui$Element$paragraph,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$text(description)
+							]))
+					])),
+				A2(
+				$mdgriffith$elm_ui$Element$row,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$spacing(10),
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+					]),
+				_List_fromArray(
+					[
+						$author$project$Style$alwaysActiveButton(
+						{
+							clickMsg: $author$project$Pages$Specifications$ClickedFocusSpecification(uuidString),
+							labelText: 'Details'
+						}),
+						$author$project$Style$dangerousButton(
+						{
+							confirmText: 'Are you sure you want to delete this specification?',
+							dangerousMsg: $author$project$Pages$Specifications$DeleteSpecification(uuidString),
+							labelText: 'Delete',
+							status: deleteStatus
+						})
+					]))
+			]));
+};
+var $author$project$Pages$Specifications$ClearFocus = {$: 'ClearFocus'};
+var $author$project$Pages$Specifications$DeleteFocussedSpecification = F2(
+	function (a, b) {
+		return {$: 'DeleteFocussedSpecification', a: a, b: b};
+	});
+var $feathericons$elm_feather$FeatherIcons$Icon = function (a) {
+	return {$: 'Icon', a: a};
+};
+var $feathericons$elm_feather$FeatherIcons$defaultAttributes = function (name) {
+	return {
+		_class: $elm$core$Maybe$Just('feather feather-' + name),
+		size: 24,
+		sizeUnit: '',
+		strokeWidth: 2,
+		viewBox: '0 0 24 24'
+	};
+};
+var $feathericons$elm_feather$FeatherIcons$makeBuilder = F2(
+	function (name, src) {
+		return $feathericons$elm_feather$FeatherIcons$Icon(
+			{
+				attrs: $feathericons$elm_feather$FeatherIcons$defaultAttributes(name),
+				src: src
+			});
+	});
+var $elm$svg$Svg$Attributes$points = _VirtualDom_attribute('points');
+var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
+var $elm$svg$Svg$polyline = $elm$svg$Svg$trustedNode('polyline');
+var $feathericons$elm_feather$FeatherIcons$chevronRight = A2(
+	$feathericons$elm_feather$FeatherIcons$makeBuilder,
+	'chevron-right',
+	_List_fromArray(
+		[
+			A2(
+			$elm$svg$Svg$polyline,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$points('9 18 15 12 9 6')
+				]),
+			_List_Nil)
+		]));
+var $author$project$Style$defaultBorder = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Border$rounded(10),
+		$mdgriffith$elm_ui$Element$Border$width(2)
+	]);
+var $mdgriffith$elm_ui$Element$Font$italic = $mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.italic);
+var $author$project$Style$h3 = function (content) {
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$Font$italic,
+				$mdgriffith$elm_ui$Element$Font$size(22),
+				$mdgriffith$elm_ui$Element$Region$heading(3)
+			]),
+		content);
+};
+var $mdgriffith$elm_ui$Internal$Model$unstyled = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Unstyled, $elm$core$Basics$always);
+var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
+var $author$project$Specification$stringFromOrder = function (order) {
+	switch (order.$) {
+		case 'LT':
+			return 'LessThan';
+		case 'EQ':
+			return 'EqualTo';
+		default:
+			return 'GreaterThan';
+	}
+};
+var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
+var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
+var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
+var $elm$svg$Svg$map = $elm$virtual_dom$VirtualDom$map;
+var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
+var $elm$svg$Svg$Attributes$strokeLinecap = _VirtualDom_attribute('stroke-linecap');
+var $elm$svg$Svg$Attributes$strokeLinejoin = _VirtualDom_attribute('stroke-linejoin');
+var $elm$svg$Svg$Attributes$strokeWidth = _VirtualDom_attribute('stroke-width');
+var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
+var $elm$svg$Svg$Attributes$viewBox = _VirtualDom_attribute('viewBox');
+var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
+var $feathericons$elm_feather$FeatherIcons$toHtml = F2(
+	function (attributes, _v0) {
+		var src = _v0.a.src;
+		var attrs = _v0.a.attrs;
+		var strSize = $elm$core$String$fromFloat(attrs.size);
+		var baseAttributes = _List_fromArray(
+			[
+				$elm$svg$Svg$Attributes$fill('none'),
+				$elm$svg$Svg$Attributes$height(
+				_Utils_ap(strSize, attrs.sizeUnit)),
+				$elm$svg$Svg$Attributes$width(
+				_Utils_ap(strSize, attrs.sizeUnit)),
+				$elm$svg$Svg$Attributes$stroke('currentColor'),
+				$elm$svg$Svg$Attributes$strokeLinecap('round'),
+				$elm$svg$Svg$Attributes$strokeLinejoin('round'),
+				$elm$svg$Svg$Attributes$strokeWidth(
+				$elm$core$String$fromFloat(attrs.strokeWidth)),
+				$elm$svg$Svg$Attributes$viewBox(attrs.viewBox)
+			]);
+		var combinedAttributes = _Utils_ap(
+			function () {
+				var _v1 = attrs._class;
+				if (_v1.$ === 'Just') {
+					var c = _v1.a;
+					return A2(
+						$elm$core$List$cons,
+						$elm$svg$Svg$Attributes$class(c),
+						baseAttributes);
+				} else {
+					return baseAttributes;
+				}
+			}(),
+			attributes);
+		return A2(
+			$elm$svg$Svg$svg,
+			combinedAttributes,
+			A2(
+				$elm$core$List$map,
+				$elm$svg$Svg$map($elm$core$Basics$never),
+				src));
+	});
+var $author$project$Pages$Specifications$requirementView = function (requirement) {
+	var arrowRow = function (r) {
+		return A2(
+			$mdgriffith$elm_ui$Element$row,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$padding(5),
+					$mdgriffith$elm_ui$Element$spacing(15)
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_Nil,
+					$mdgriffith$elm_ui$Element$html(
+						A2($feathericons$elm_feather$FeatherIcons$toHtml, _List_Nil, $feathericons$elm_feather$FeatherIcons$chevronRight))),
+					$author$project$Pages$Specifications$requirementView(r)
+				]));
+	};
+	switch (requirement.$) {
+		case 'Data':
+			var data = requirement.a;
+			if (data.$ === 'Constant') {
+				var constantType = data.a;
+				var typeString = 'Constant:';
+				var requirementString = function () {
+					var methodType = constantType.a;
+					var constantTypeString = typeString + 'Method:';
+					if (methodType.$ === 'SPPS') {
+						return constantTypeString + 'SPPS';
+					} else {
+						return constantTypeString + 'MolBio';
+					}
+				}();
+				return A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_Nil,
+					$mdgriffith$elm_ui$Element$text(requirementString));
+			} else {
+				var valueType = data.a;
+				var typeString = 'Value:';
+				var requirementString = function () {
+					switch (valueType.$) {
+						case 'IsoelectricPoint':
+							var order = valueType.a;
+							var value = valueType.b;
+							return typeString + ('IsoelectricPoint:' + ($author$project$Specification$stringFromOrder(order) + (':' + $elm$core$String$fromFloat(value))));
+						case 'HydrophobicFitness':
+							var order = valueType.a;
+							var value = valueType.b;
+							return typeString + ('HydrophobicFitness:' + ($author$project$Specification$stringFromOrder(order) + (':' + $elm$core$String$fromFloat(value))));
+						case 'MeanPackingDensity':
+							var order = valueType.a;
+							var value = valueType.b;
+							return typeString + ('MeanPackingDensity:' + ($author$project$Specification$stringFromOrder(order) + (':' + $elm$core$String$fromFloat(value))));
+						default:
+							var string = valueType.a;
+							return typeString + ('SequenceContains:' + string);
+					}
+				}();
+				return A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_Nil,
+					$mdgriffith$elm_ui$Element$text(requirementString));
+			}
+		case 'Not':
+			var subRequirement = requirement.a;
+			return A2(
+				$mdgriffith$elm_ui$Element$row,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$spacing(10)
+					]),
+				_List_fromArray(
+					[
+						$author$project$Style$h3(
+						A2(
+							$mdgriffith$elm_ui$Element$el,
+							_List_fromArray(
+								[$mdgriffith$elm_ui$Element$Font$bold]),
+							$mdgriffith$elm_ui$Element$text('NOT'))),
+						$author$project$Pages$Specifications$requirementView(subRequirement)
+					]));
+		case 'Or':
+			var subRequirement1 = requirement.a;
+			var subRequirement2 = requirement.b;
+			return A2(
+				$mdgriffith$elm_ui$Element$column,
+				_Utils_ap(
+					$author$project$Style$defaultBorder,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$padding(15),
+							$mdgriffith$elm_ui$Element$spacing(10)
+						])),
+				_List_fromArray(
+					[
+						$author$project$Pages$Specifications$requirementView(subRequirement1),
+						$author$project$Style$h3(
+						A2(
+							$mdgriffith$elm_ui$Element$el,
+							_List_fromArray(
+								[$mdgriffith$elm_ui$Element$Font$bold]),
+							$mdgriffith$elm_ui$Element$text('---- OR ----'))),
+						$author$project$Pages$Specifications$requirementView(subRequirement2)
+					]));
+		case 'And':
+			var requirement1 = requirement.a;
+			var requirement2 = requirement.b;
+			return A2(
+				$mdgriffith$elm_ui$Element$column,
+				_Utils_ap(
+					$author$project$Style$defaultBorder,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$padding(15),
+							$mdgriffith$elm_ui$Element$spacing(10)
+						])),
+				_List_fromArray(
+					[
+						$author$project$Pages$Specifications$requirementView(requirement1),
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[$mdgriffith$elm_ui$Element$Font$bold]),
+						$mdgriffith$elm_ui$Element$text('---- AND ----')),
+						$author$project$Pages$Specifications$requirementView(requirement2)
+					]));
+		case 'Any':
+			var requirements = requirement.a;
+			return A2(
+				$mdgriffith$elm_ui$Element$column,
+				_Utils_ap(
+					$author$project$Style$defaultBorder,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$padding(15),
+							$mdgriffith$elm_ui$Element$spacing(10)
+						])),
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[$mdgriffith$elm_ui$Element$Font$bold]),
+						$mdgriffith$elm_ui$Element$text('ANY')),
+						A2(
+						$mdgriffith$elm_ui$Element$column,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$padding(15),
+								$mdgriffith$elm_ui$Element$spacing(10)
+							]),
+						A2($elm$core$List$map, arrowRow, requirements))
+					]));
+		default:
+			var requirements = requirement.a;
+			return A2(
+				$mdgriffith$elm_ui$Element$column,
+				_Utils_ap(
+					$author$project$Style$defaultBorder,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$padding(15),
+							$mdgriffith$elm_ui$Element$spacing(10),
+							$mdgriffith$elm_ui$Element$Background$color($author$project$Style$colorPalette.white)
+						])),
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[$mdgriffith$elm_ui$Element$Font$bold]),
+						$mdgriffith$elm_ui$Element$text('ALL')),
+						A2(
+						$mdgriffith$elm_ui$Element$column,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$padding(10),
+								$mdgriffith$elm_ui$Element$spacing(5)
+							]),
+						A2($elm$core$List$map, arrowRow, requirements))
+					]));
+	}
+};
+var $author$project$Pages$Specifications$specificationView = F2(
+	function (uuidString, _v0) {
+		var name = _v0.name;
+		var description = _v0.description;
+		var requirements = _v0.requirements;
+		var deleteStatus = _v0.deleteStatus;
+		return A2(
+			$mdgriffith$elm_ui$Element$column,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$padding(15),
+					$mdgriffith$elm_ui$Element$spacing(15),
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+				]),
+			_List_fromArray(
+				[
+					$author$project$Style$h1(
+					$mdgriffith$elm_ui$Element$text('Specification Details')),
+					A2(
+					$mdgriffith$elm_ui$Element$row,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$spacing(10)
+						]),
+					_List_fromArray(
+						[
+							$author$project$Style$alwaysActiveButton(
+							{clickMsg: $author$project$Pages$Specifications$ClearFocus, labelText: 'Back'}),
+							$author$project$Style$dangerousButton(
+							{
+								confirmText: 'Are you sure you want to delete this specification?',
+								dangerousMsg: $author$project$Pages$Specifications$DeleteFocussedSpecification(uuidString),
+								labelText: 'Delete',
+								status: deleteStatus
+							})
+						])),
+					$author$project$Style$h2(
+					$mdgriffith$elm_ui$Element$text(name)),
+					A2(
+					$mdgriffith$elm_ui$Element$paragraph,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$text(description)
+						])),
+					$author$project$Style$h2(
+					$mdgriffith$elm_ui$Element$text('Requirements')),
+					$author$project$Pages$Specifications$requirementView(requirements)
+				]));
+	});
+var $author$project$Global$storedSpecificationToStub = function (storedSpecification) {
+	var stub = storedSpecification.a;
+	return stub;
+};
+var $author$project$Pages$Specifications$view = F2(
+	function (_v0, model) {
+		var global = _v0.global;
+		if (global.$ === 'Running') {
+			var specifications = global.a.specifications;
+			var _v2 = model.focussedSpecification;
+			switch (_v2.$) {
+				case 'NoFocus':
+					return A2(
+						$mdgriffith$elm_ui$Element$column,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$spacing(30)
+							]),
+						A2(
+							$elm$core$List$cons,
+							A2(
+								$mdgriffith$elm_ui$Element$row,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$centerX,
+										$mdgriffith$elm_ui$Element$spacing(10)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Style$h1(
+										$mdgriffith$elm_ui$Element$text('Requirement Specifications')),
+										$author$project$Style$linkButton(
+										{labelText: 'New', url: '/specifications/new'})
+									])),
+							A2(
+								$elm$core$List$map,
+								$author$project$Pages$Specifications$specificationStubView,
+								A2(
+									$elm$core$List$map,
+									function (_v3) {
+										var k = _v3.a;
+										var v = _v3.b;
+										return _Utils_Tuple2(
+											k,
+											$author$project$Global$storedSpecificationToStub(v));
+									},
+									$elm$core$Dict$toList(specifications)))));
+				case 'Loading':
+					return A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_Nil,
+						$mdgriffith$elm_ui$Element$text('Loading...'));
+				default:
+					var uuidString = _v2.a;
+					var specification = _v2.b;
+					return A2($author$project$Pages$Specifications$specificationView, uuidString, specification);
+			}
+		} else {
+			return _Debug_todo(
+				'Pages.Specifications',
+				{
+					start: {line: 207, column: 13},
+					end: {line: 207, column: 23}
+				})('Add common state page');
+		}
+	});
+var $author$project$Pages$Specifications$page = $ryannhg$elm_spa$Spa$Page$component(
+	{
+		init: $elm$core$Basics$always($author$project$Pages$Specifications$init),
+		subscriptions: $elm$core$Basics$always($author$project$Pages$Specifications$subscriptions),
+		title: $elm$core$Basics$always('Specifications'),
+		update: $elm$core$Basics$always($author$project$Pages$Specifications$update),
+		view: $author$project$Pages$Specifications$view
 	});
 var $author$project$Pages$Top$view = A2(
 	$mdgriffith$elm_ui$Element$column,
@@ -17042,121 +19340,48 @@ var $author$project$Pages$Top$page = $ryannhg$elm_spa$Spa$Page$static(
 		title: $elm$core$Basics$always('DESTRESS - Home'),
 		view: $elm$core$Basics$always($author$project$Pages$Top$view)
 	});
-var $mdgriffith$elm_ui$Element$map = $mdgriffith$elm_ui$Internal$Model$map;
-var $ryannhg$elm_spa$Spa$Page$recipe = $ryannhg$elm_spa$Internals$Page$upgrade;
-var $author$project$Utils$Spa$recipe = $ryannhg$elm_spa$Spa$Page$recipe($mdgriffith$elm_ui$Element$map);
 var $author$project$Generated$Pages$recipes = {
 	notFound: $author$project$Utils$Spa$recipe(
 		{page: $author$project$Pages$NotFound$page, toModel: $author$project$Generated$Pages$NotFoundModel, toMsg: $author$project$Generated$Pages$NotFoundMsg}),
+	specifications: $author$project$Utils$Spa$recipe(
+		{page: $author$project$Pages$Specifications$page, toModel: $author$project$Generated$Pages$SpecificationsModel, toMsg: $author$project$Generated$Pages$SpecificationsMsg}),
+	specifications_folder: $author$project$Utils$Spa$recipe(
+		{page: $author$project$Generated$Specifications$Pages$page, toModel: $author$project$Generated$Pages$Specifications_Folder_Model, toMsg: $author$project$Generated$Pages$Specifications_Folder_Msg}),
 	top: $author$project$Utils$Spa$recipe(
 		{page: $author$project$Pages$Top$page, toModel: $author$project$Generated$Pages$TopModel, toMsg: $author$project$Generated$Pages$TopMsg})
 };
 var $author$project$Generated$Pages$bundle = function (bigModel) {
-	if (bigModel.$ === 'NotFoundModel') {
-		var model = bigModel.a;
-		return $author$project$Generated$Pages$recipes.notFound.bundle(model);
-	} else {
-		var model = bigModel.a;
-		return $author$project$Generated$Pages$recipes.top.bundle(model);
+	switch (bigModel.$) {
+		case 'NotFoundModel':
+			var model = bigModel.a;
+			return $author$project$Generated$Pages$recipes.notFound.bundle(model);
+		case 'SpecificationsModel':
+			var model = bigModel.a;
+			return $author$project$Generated$Pages$recipes.specifications.bundle(model);
+		case 'TopModel':
+			var model = bigModel.a;
+			return $author$project$Generated$Pages$recipes.top.bundle(model);
+		default:
+			var model = bigModel.a;
+			return $author$project$Generated$Pages$recipes.specifications_folder.bundle(model);
 	}
 };
 var $author$project$Generated$Pages$init = function (route_) {
-	if (route_.$ === 'NotFound') {
-		var params = route_.a;
-		return $author$project$Generated$Pages$recipes.notFound.init(params);
-	} else {
-		var params = route_.a;
-		return $author$project$Generated$Pages$recipes.top.init(params);
+	switch (route_.$) {
+		case 'NotFound':
+			var params = route_.a;
+			return $author$project$Generated$Pages$recipes.notFound.init(params);
+		case 'Specifications':
+			var params = route_.a;
+			return $author$project$Generated$Pages$recipes.specifications.init(params);
+		case 'Top':
+			var params = route_.a;
+			return $author$project$Generated$Pages$recipes.top.init(params);
+		default:
+			var route = route_.a;
+			return $author$project$Generated$Pages$recipes.specifications_folder.init(route);
 	}
 };
-var $ryannhg$elm_spa$Spa$Page$truple = F3(
-	function (toModel, toMsg, _v0) {
-		var a = _v0.a;
-		var b = _v0.b;
-		var c = _v0.c;
-		return _Utils_Tuple3(
-			toModel(a),
-			A2($elm$core$Platform$Cmd$map, toMsg, b),
-			c);
-	});
-var $ryannhg$elm_spa$Spa$Page$layout = F2(
-	function (map, options) {
-		return $ryannhg$elm_spa$Internals$Page$Page(
-			function (_v0) {
-				var toModel = _v0.toModel;
-				var toMsg = _v0.toMsg;
-				return {
-					bundle: F3(
-						function (model, _private, context) {
-							var viewLayout = function (page) {
-								return options.view(
-									{fromGlobalMsg: _private.fromGlobalMsg, global: context.global, page: page, route: context.route});
-							};
-							var myLayoutsVisibility = _Utils_eq(_private.path, options.path) ? _private.visibility : $ryannhg$elm_spa$Internals$Transition$visible;
-							var lookupTransitionFrom = F2(
-								function (path, list) {
-									return A2(
-										$elm$core$Maybe$withDefault,
-										$ryannhg$elm_spa$Internals$Transition$optOut,
-										$elm$core$List$head(
-											A2(
-												$elm$core$List$map,
-												function ($) {
-													return $.transition;
-												},
-												A2(
-													$elm$core$List$filter,
-													A2(
-														$elm$core$Basics$composeR,
-														function ($) {
-															return $.path;
-														},
-														$elm$core$Basics$eq(path)),
-													list))));
-								});
-							var bundle = A3(
-								options.recipe.bundle,
-								model,
-								{
-									fromGlobalMsg: _private.fromGlobalMsg,
-									fromPageMsg: A2($elm$core$Basics$composeR, toMsg, _private.fromPageMsg),
-									map: map,
-									path: _private.path,
-									transitions: _private.transitions,
-									visibility: _private.visibility
-								},
-								context);
-							return {
-								subscriptions: bundle.subscriptions,
-								title: bundle.title,
-								view: viewLayout(
-									A3(
-										$ryannhg$elm_spa$Internals$Transition$view,
-										A2(lookupTransitionFrom, options.path, _private.transitions),
-										myLayoutsVisibility,
-										bundle.view))
-							};
-						}),
-					init: F2(
-						function (pageParams, global) {
-							return A3(
-								$ryannhg$elm_spa$Spa$Page$truple,
-								toModel,
-								toMsg,
-								A2(options.recipe.init, pageParams, global));
-						}),
-					update: F3(
-						function (msg, model, global) {
-							return A3(
-								$ryannhg$elm_spa$Spa$Page$truple,
-								toModel,
-								toMsg,
-								A3(options.recipe.update, msg, model, global));
-						})
-				};
-			});
-	});
-var $author$project$Utils$Spa$layout = $ryannhg$elm_spa$Spa$Page$layout($mdgriffith$elm_ui$Element$map);
 var $author$project$Generated$Pages$path = _List_Nil;
 var $ryannhg$elm_spa$Spa$Page$keep = function (model) {
 	return $elm$core$Basics$always(
@@ -17165,24 +19390,41 @@ var $ryannhg$elm_spa$Spa$Page$keep = function (model) {
 var $author$project$Generated$Pages$update = F2(
 	function (bigMsg, bigModel) {
 		var _v0 = _Utils_Tuple2(bigMsg, bigModel);
-		_v0$2:
+		_v0$4:
 		while (true) {
-			if (_v0.a.$ === 'NotFoundMsg') {
-				if (_v0.b.$ === 'NotFoundModel') {
-					var msg = _v0.a.a;
-					var model = _v0.b.a;
-					return A2($author$project$Generated$Pages$recipes.notFound.update, msg, model);
-				} else {
-					break _v0$2;
-				}
-			} else {
-				if (_v0.b.$ === 'TopModel') {
-					var msg = _v0.a.a;
-					var model = _v0.b.a;
-					return A2($author$project$Generated$Pages$recipes.top.update, msg, model);
-				} else {
-					break _v0$2;
-				}
+			switch (_v0.a.$) {
+				case 'NotFoundMsg':
+					if (_v0.b.$ === 'NotFoundModel') {
+						var msg = _v0.a.a;
+						var model = _v0.b.a;
+						return A2($author$project$Generated$Pages$recipes.notFound.update, msg, model);
+					} else {
+						break _v0$4;
+					}
+				case 'SpecificationsMsg':
+					if (_v0.b.$ === 'SpecificationsModel') {
+						var msg = _v0.a.a;
+						var model = _v0.b.a;
+						return A2($author$project$Generated$Pages$recipes.specifications.update, msg, model);
+					} else {
+						break _v0$4;
+					}
+				case 'TopMsg':
+					if (_v0.b.$ === 'TopModel') {
+						var msg = _v0.a.a;
+						var model = _v0.b.a;
+						return A2($author$project$Generated$Pages$recipes.top.update, msg, model);
+					} else {
+						break _v0$4;
+					}
+				default:
+					if (_v0.b.$ === 'Specifications_Folder_Model') {
+						var msg = _v0.a.a;
+						var model = _v0.b.a;
+						return A2($author$project$Generated$Pages$recipes.specifications_folder.update, msg, model);
+					} else {
+						break _v0$4;
+					}
 			}
 		}
 		return $ryannhg$elm_spa$Spa$Page$keep(bigModel);
@@ -17195,11 +19437,6 @@ var $mdgriffith$elm_ui$Element$maximum = F2(
 	function (i, l) {
 		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
 	});
-var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
-	function (a, b, c, d, e) {
-		return {$: 'PaddingStyle', a: a, b: b, c: c, d: d, e: e};
-	});
-var $mdgriffith$elm_ui$Internal$Flag$padding = $mdgriffith$elm_ui$Internal$Flag$flag(2);
 var $mdgriffith$elm_ui$Element$paddingXY = F2(
 	function (x, y) {
 		return _Utils_eq(x, y) ? A2(
@@ -17224,62 +19461,9 @@ var $mdgriffith$elm_ui$Element$paddingXY = F2(
 	});
 var $mdgriffith$elm_ui$Internal$Model$Right = {$: 'Right'};
 var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Right);
-var $mdgriffith$elm_ui$Internal$Flag$bgColor = $mdgriffith$elm_ui$Internal$Flag$flag(8);
-var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$bgColor,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$Colored,
-			'bg-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
-			'background-color',
-			clr));
-};
-var $author$project$Style$colorPalette = {
-	black: A3($mdgriffith$elm_ui$Element$rgb255, 0, 0, 0),
-	c1: A3($mdgriffith$elm_ui$Element$rgb255, 76, 120, 168),
-	c2: A3($mdgriffith$elm_ui$Element$rgb255, 160, 160, 160),
-	c3: A3($mdgriffith$elm_ui$Element$rgb255, 217, 184, 97),
-	c4: A3($mdgriffith$elm_ui$Element$rgb255, 220, 220, 220),
-	c5: A3($mdgriffith$elm_ui$Element$rgb255, 220, 220, 220),
-	red: A3($mdgriffith$elm_ui$Element$rgb255, 202, 107, 104),
-	white: A3($mdgriffith$elm_ui$Element$rgb255, 255, 255, 255)
-};
 var $mdgriffith$elm_ui$Element$Font$medium = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.textMedium);
 var $mdgriffith$elm_ui$Internal$Model$Navigation = {$: 'Navigation'};
 var $mdgriffith$elm_ui$Element$Region$navigation = $mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Navigation);
-var $mdgriffith$elm_ui$Element$padding = function (x) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$padding,
-		A5(
-			$mdgriffith$elm_ui$Internal$Model$PaddingStyle,
-			'p-' + $elm$core$String$fromInt(x),
-			x,
-			x,
-			x,
-			x));
-};
-var $mdgriffith$elm_ui$Internal$Model$AsRow = {$: 'AsRow'};
-var $mdgriffith$elm_ui$Internal$Model$asRow = $mdgriffith$elm_ui$Internal$Model$AsRow;
-var $mdgriffith$elm_ui$Element$row = F2(
-	function (attrs, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asRow,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.contentLeft + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.contentCenterY)),
-				A2(
-					$elm$core$List$cons,
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
-					A2(
-						$elm$core$List$cons,
-						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
-						attrs))),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
 var $mdgriffith$elm_ui$Element$spacingXY = F2(
 	function (x, y) {
 		return A2(
@@ -17371,7 +19555,7 @@ var $author$project$Layout$viewHeader = function (currentRoute) {
 							A2(
 							$author$project$Layout$viewLink,
 							currentRoute,
-							_Utils_Tuple2('Specifications', $author$project$Generated$Routes$routes.notFound)),
+							_Utils_Tuple2('Specifications', $author$project$Generated$Routes$routes.specifications)),
 							A2(
 							$author$project$Layout$viewLink,
 							currentRoute,
@@ -17469,6 +19653,18 @@ var $elm$url$Url$Parser$s = function (str) {
 			}
 		});
 };
+var $elm$url$Url$Parser$slash = F2(
+	function (_v0, _v1) {
+		var parseBefore = _v0.a;
+		var parseAfter = _v1.a;
+		return $elm$url$Url$Parser$Parser(
+			function (state) {
+				return A2(
+					$elm$core$List$concatMap,
+					parseAfter,
+					parseBefore(state));
+			});
+	});
 var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
 	function (state) {
 		return _List_fromArray(
@@ -17480,7 +19676,18 @@ var $author$project$Generated$Routes$parsers = _List_fromArray(
 		$elm$url$Url$Parser$map,
 		$author$project$Generated$Routes$routes.notFound,
 		$elm$url$Url$Parser$s('not-found')),
-		A2($elm$url$Url$Parser$map, $author$project$Generated$Routes$routes.top, $elm$url$Url$Parser$top)
+		A2(
+		$elm$url$Url$Parser$map,
+		$author$project$Generated$Routes$routes.specifications,
+		$elm$url$Url$Parser$s('specifications')),
+		A2($elm$url$Url$Parser$map, $author$project$Generated$Routes$routes.top, $elm$url$Url$Parser$top),
+		A2(
+		$elm$url$Url$Parser$map,
+		$author$project$Generated$Routes$routes.specifications_new,
+		A2(
+			$elm$url$Url$Parser$slash,
+			$elm$url$Url$Parser$s('specifications'),
+			$elm$url$Url$Parser$s('new')))
 	]);
 var $author$project$Global$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$none;
@@ -17794,5 +20001,4 @@ var $author$project$Main$main = $ryannhg$elm_spa$Spa$create(
 		transitions: $author$project$Transitions$transitions,
 		ui: $ryannhg$elm_spa$Spa$usingElmUi
 	});
-_Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Spa.Msg Global.Msg Generated.Pages.Msg","aliases":{"Pages.NotFound.Msg":{"args":[],"type":"Basics.Never"},"Pages.Top.Msg":{"args":[],"type":"Basics.Never"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Generated.Pages.Msg":{"args":[],"tags":{"NotFoundMsg":["Pages.NotFound.Msg"],"TopMsg":["Pages.Top.Msg"]}},"Global.Msg":{"args":[],"tags":{"Msg":[]}},"Spa.Msg":{"args":["globalMsg","msg"],"tags":{"ChangedUrl":["Url.Url"],"ClickedLink":["Browser.UrlRequest"],"Global":["globalMsg"],"Page":["msg"],"FadeInLayout":[],"FadeInPage":["Url.Url"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Basics.Never":{"args":[],"tags":{"JustOneMore":["Basics.Never"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+_Platform_export({'Main':{'init':$author$project$Main$main($elm$json$Json$Decode$value)({"versions":{"elm":"0.19.1"},"types":{"message":"Spa.Msg Global.Msg Generated.Pages.Msg","aliases":{"Pages.NotFound.Msg":{"args":[],"type":"Basics.Never"},"Pages.Top.Msg":{"args":[],"type":"Basics.Never"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"},"Codec.Value":{"args":[],"type":"Json.Encode.Value"}},"unions":{"Generated.Pages.Msg":{"args":[],"tags":{"NotFoundMsg":["Pages.NotFound.Msg"],"SpecificationsMsg":["Pages.Specifications.Msg"],"TopMsg":["Pages.Top.Msg"],"Specifications_Folder_Msg":["Generated.Specifications.Pages.Msg"]}},"Global.Msg":{"args":[],"tags":{"Msg":[]}},"Spa.Msg":{"args":["globalMsg","msg"],"tags":{"ChangedUrl":["Url.Url"],"ClickedLink":["Browser.UrlRequest"],"Global":["globalMsg"],"Page":["msg"],"FadeInLayout":[],"FadeInPage":["Url.Url"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Generated.Specifications.Pages.Msg":{"args":[],"tags":{"NewMsg":["Pages.Specifications.New.Msg"]}},"Pages.Specifications.Msg":{"args":[],"tags":{"ClickedFocusSpecification":["String.String"],"SetFocus":["Codec.Value"],"DeleteSpecification":["String.String","Style.DangerStatus"],"DeleteFocussedSpecification":["String.String","Style.DangerStatus"],"ClearFocus":[]}},"Basics.Never":{"args":[],"tags":{"JustOneMore":["Basics.Never"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}},"Style.DangerStatus":{"args":[],"tags":{"Unclicked":[],"Clicked":[],"Confirmed":[]}},"Pages.Specifications.New.Msg":{"args":[],"tags":{"Msg":[]}},"Json.Encode.Value":{"args":[],"tags":{"Value":[]}}}}})}});}(this));

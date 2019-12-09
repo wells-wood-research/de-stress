@@ -44,7 +44,7 @@ viewHeader currentRoute =
             ]
             ([ viewLink currentRoute ( "Designs", routes.notFound )
              , viewLink currentRoute ( "Reference Sets", routes.notFound )
-             , viewLink currentRoute ( "Specifications", routes.notFound )
+             , viewLink currentRoute ( "Specifications", routes.specifications )
              , viewLink currentRoute ( "Settings", routes.notFound )
              ]
                 |> List.intersperse (el [ Font.color colorPalette.c4 ] <| text "|")
