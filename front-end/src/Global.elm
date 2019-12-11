@@ -3,6 +3,7 @@ module Global exposing
     , Model(..)
     , Msg(..)
     , init
+    , storedDesignToStub
     , storedSpecificationToStub
     , subscriptions
     , update
@@ -11,7 +12,7 @@ module Global exposing
 import Codec exposing (Codec, Value)
 import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
-import Generated.Routes as Routes exposing (Route)
+import Generated.Routes as Routes exposing (Route, routes)
 import Ports
 import Random
 import Specification exposing (Specification, SpecificationStub)
@@ -144,6 +145,27 @@ type LaunchError
     = FailedToDecodeFlags Codec.Error
 
 
+type alias DesignAndKey =
+    { storeKey : String
+    , design : Design
+    }
+
+
+encodeDesignAndKey : DesignAndKey -> Value
+encodeDesignAndKey designAndKey =
+    Codec.encoder
+        designAndKeyCodec
+        designAndKey
+
+
+designAndKeyCodec : Codec DesignAndKey
+designAndKeyCodec =
+    Codec.object DesignAndKey
+        |> Codec.field "storeKey" .storeKey Codec.string
+        |> Codec.field "design" .design Design.codec
+        |> Codec.buildObject
+
+
 type alias SpecificationAndKey =
     { storeKey : String
     , specification : Specification
@@ -227,10 +249,10 @@ type Msg
 
 
 update : Commands msg -> Msg -> Model -> ( Model, Cmd Msg, Cmd msg )
-update _ msg model =
+update commands msg model =
     case model of
         Running runState ->
-            updateRunState msg runState
+            updateRunState commands msg runState
                 |> addStoreCmd
                 |> asModel Running
 
@@ -245,8 +267,8 @@ asModel constructor ( state, gCmd, pCmd ) =
     ( constructor state, gCmd, pCmd )
 
 
-updateRunState : Msg -> RunState -> ( RunState, Cmd Msg, Cmd msg )
-updateRunState msg runState =
+updateRunState : Commands msg -> Msg -> RunState -> ( RunState, Cmd Msg, Cmd msg )
+updateRunState commands msg runState =
     case msg of
         AddDesign design ->
             let
@@ -265,12 +287,11 @@ updateRunState msg runState =
               }
                 |> updateUuid
             , Cmd.none
-              -- , encodeDesignAndKey
-              --     { storeKey = uuidString
-              --     , design = design
-              --     }
-              --     |> storeDesign
-            , Cmd.none
+            , encodeDesignAndKey
+                { storeKey = uuidString
+                , design = design
+                }
+                |> Ports.storeDesign
             )
 
         DeleteDesign uuidString dangerStatus ->
@@ -281,8 +302,8 @@ updateRunState msg runState =
                             Dict.remove uuidString runState.designs
                       }
                     , Cmd.none
-                      -- , deleteDesign uuidString
-                    , Cmd.none
+                    , Codec.encoder Codec.string uuidString
+                        |> Ports.deleteDesign
                     )
 
                 _ ->
@@ -308,8 +329,8 @@ updateRunState msg runState =
         GetDesign uuidString ->
             ( runState
             , Cmd.none
-              -- , getDesign uuidString
-            , Cmd.none
+            , Codec.encoder Codec.string uuidString
+                |> Ports.getDesign
             )
 
         AddSpecification spec ->
@@ -329,13 +350,14 @@ updateRunState msg runState =
               }
                 |> updateUuid
             , Cmd.none
-            , encodeSpecificationAndKey
-                { storeKey = uuidString
-                , specification = spec
-                }
-                |> Ports.storeSpecification
-              -- , navigate <|
-              --     TopRoute.Specifications (SpecRoute.All ())
+            , Cmd.batch
+                [ encodeSpecificationAndKey
+                    { storeKey = uuidString
+                    , specification = spec
+                    }
+                    |> Ports.storeSpecification
+                , commands.navigate routes.specifications
+                ]
             )
 
         GetSpecification uuidString ->

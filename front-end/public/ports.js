@@ -10,8 +10,39 @@ window.addEventListener("load", _ => {
   };
 });
 
-// {{{ Specifications
+// {{{ Designs
 //
+const designStore = new idbKeyval.Store("designs", "design-store");
+
+// Store design
+const storeDesign = (_, designAndKey) => {
+  var { storeKey, design } = designAndKey;
+  if (idbAvailable) {
+    idbKeyval.set(storeKey, design, designStore);
+  } else {
+    console.log(
+      "Storage is not available. IndexedDB must be enabled to store state."
+    );
+  }
+};
+
+// Get design
+const getDesign = (app, storeKey) => {
+  idbKeyval.get(storeKey, designStore).then(design => {
+    app.ports.setFocussedDesign.send({
+      uuidString: storeKey,
+      design: design
+    });
+  });
+};
+
+// Delete design
+const deleteDesign = (_, storeKey) => {
+  idbKeyval.del(storeKey, designStore);
+};
+
+// }}}
+// {{{ Specifications
 const specificationStore = new idbKeyval.Store(
   "specifications",
   "specification-store"
@@ -48,6 +79,10 @@ const deleteSpecification = (_, storeKey) => {
 
 // maps actions to functions!
 const actions = {
+  // Designs
+  STORE_DESIGN: storeDesign,
+  GET_DESIGN: getDesign,
+  DELETE_DESIGN: deleteDesign,
   // Specifications
   STORE_SPECIFICATION: storeSpecification,
   GET_SPECIFICATION: getSpecification,

@@ -30,7 +30,7 @@ page =
 
 
 
--- INIT
+-- {{{ Init
 
 
 type alias Model =
@@ -72,7 +72,8 @@ init _ =
 
 
 
--- UPDATE
+-- }}}
+-- {{{ Update
 
 
 type Msg
@@ -161,7 +162,8 @@ update msg model =
 
 
 
--- SUBSCRIPTIONS
+-- }}}
+-- {{{ Subscriptions
 
 
 subscriptions : Model -> Sub Msg
@@ -171,6 +173,7 @@ subscriptions _ =
 
 
 
+-- }}}
 -- {{{ View
 
 

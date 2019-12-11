@@ -1,8 +1,13 @@
 port module Ports exposing
-    ( deleteSpecification
+    ( deleteDesign
+    , deleteSpecification
+    , getDesign
     , getSpecification
+    , setFocussedDesign
     , setFocussedSpecification
+    , storeDesign
     , storeSpecification
+    , viewStructure
     )
 
 import Codec exposing (Value)
@@ -13,6 +18,46 @@ import Codec exposing (Value)
 
 
 port outgoing : { action : String, data : Value } -> Cmd msg
+
+
+
+-- Design
+
+
+storeDesign : Value -> Cmd msg
+storeDesign designValue =
+    outgoing
+        { action = "STORE_DESIGN"
+        , data = designValue
+        }
+
+
+getDesign : Value -> Cmd msg
+getDesign uuidValue =
+    outgoing
+        { action = "GET_DESIGN"
+        , data = uuidValue
+        }
+
+
+deleteDesign : Value -> Cmd msg
+deleteDesign uuidValue =
+    outgoing
+        { action = "DELETE_DESIGN"
+        , data = uuidValue
+        }
+
+
+viewStructure : Value -> Cmd msg
+viewStructure pdbStringValue =
+    outgoing
+        { action = "VIEW_STRUCTURE"
+        , data = pdbStringValue
+        }
+
+
+
+-- Specifications
 
 
 storeSpecification : Value -> Cmd msg
@@ -45,6 +90,9 @@ deleteSpecification uuidValue =
 
 
 port setFocussedSpecification : (Value -> msg) -> Sub msg
+
+
+port setFocussedDesign : (Value -> msg) -> Sub msg
 
 
 

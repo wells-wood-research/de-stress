@@ -42,7 +42,7 @@ viewHeader currentRoute =
             , Font.medium
             , Font.size 24
             ]
-            ([ viewLink currentRoute ( "Designs", routes.notFound )
+            ([ viewLink currentRoute ( "Designs", routes.designs )
              , viewLink currentRoute ( "Reference Sets", routes.notFound )
              , viewLink currentRoute ( "Specifications", routes.specifications )
              , viewLink currentRoute ( "Settings", routes.notFound )
