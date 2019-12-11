@@ -10,6 +10,21 @@ window.addEventListener("load", _ => {
   };
 });
 
+// {{{ Run State
+// Get stored global state
+const storageKey = "globalState";
+
+// Store Run State
+const storeRunState = (_, storedRunState) => {
+  if (storageAvailable("localStorage")) {
+    localStorage.setItem(storageKey, JSON.stringify(storedRunState));
+  } else {
+    console.log(
+      "Storage is not available. Local storage must be enabled to store state."
+    );
+  }
+};
+// }}}
 // {{{ Designs
 //
 const designStore = new idbKeyval.Store("designs", "design-store");
@@ -79,6 +94,8 @@ const deleteSpecification = (_, storeKey) => {
 
 // maps actions to functions!
 const actions = {
+  // Run State
+  STORE_STATE: storeRunState,
   // Designs
   STORE_DESIGN: storeDesign,
   GET_DESIGN: getDesign,

@@ -141,6 +141,17 @@ type alias RunState =
     }
 
 
+encodeStoredState :
+    { designs : Dict String StoredDesign
+    , specifications : Dict String StoredSpecification
+    }
+    -> Value
+encodeStoredState storedState =
+    Codec.encoder
+        storedStateCodec
+        storedState
+
+
 type LaunchError
     = FailedToDecodeFlags Codec.Error
 
@@ -406,16 +417,15 @@ updateRunState commands msg runState =
 addStoreCmd : ( RunState, Cmd Msg, Cmd msg ) -> ( RunState, Cmd Msg, Cmd msg )
 addStoreCmd ( state, gCmd, pCmd ) =
     ( state
-    , Cmd.none
-      -- , Cmd.batch
-      --     [ gCmd
-      --     , encodeStoredState
-      --         { designs = state.designs
-      --         , specifications =
-      --             state.specifications
-      --         }
-      --         |> storeRunState
-      --     ]
+    , Cmd.batch
+        [ gCmd
+        , encodeStoredState
+            { designs = state.designs
+            , specifications =
+                state.specifications
+            }
+            |> Ports.storeRunState
+        ]
     , pCmd
     )
 

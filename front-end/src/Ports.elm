@@ -6,6 +6,7 @@ port module Ports exposing
     , setFocussedDesign
     , setFocussedSpecification
     , storeDesign
+    , storeRunState
     , storeSpecification
     , viewStructure
     )
@@ -18,6 +19,18 @@ import Codec exposing (Value)
 
 
 port outgoing : { action : String, data : Value } -> Cmd msg
+
+
+
+-- Run State
+
+
+storeRunState : Value -> Cmd msg
+storeRunState storedStateValue =
+    outgoing
+        { action = "STORE_STATE"
+        , data = storedStateValue
+        }
 
 
 
