@@ -1,17 +1,92 @@
 // On load, listen to Elm!
-window.addEventListener('load', _ => {
+window.addEventListener("load", _ => {
   window.ports = {
-    init: (app) =>
-      app.ports.outgoing.subscribe(({ action, data }) =>
+    init: app =>
+      app.ports.outgoing.subscribe(({ action, data }) => {
         actions[action]
           ? actions[action](data)
-          : console.warn(`I didn't recognize action "${action}".`)
-      )
+          : console.warn(`I didn't recognize action "${action}".`);
+      })
+  };
+});
+
+// {{{ Specifications
+//
+const specificationStore = new idbKeyval.Store(
+  "specifications",
+  "specification-store"
+);
+
+// Store specification
+const storeSpecification = specificationAndKey => {
+  var { storeKey, specification } = specificationAndKey;
+  console.log("STORE");
+  if (idbAvailable) {
+    idbKeyval.set(storeKey, specification, specificationStore);
+  } else {
+    console.log(
+      "Storage is not available. IndexedDB must be enabled to store state."
+    );
   }
-})
+};
+
+// Get specification
+const getSpecification = storeKey => {
+  idbKeyval.get(storeKey, specificationStore).then(specification => {
+    app.ports.setFocussedSpecification.send({
+      uuidString: storeKey,
+      specification: specification
+    });
+  });
+};
+
+// Delete specification
+const deleteSpecification = storeKey => {
+  idbKeyval.del(storeKey, specificationStore);
+};
+
+// }}}
 
 // maps actions to functions!
 const actions = {
-  'LOG': (message) =>
-    console.log(`From Elm:`, message)
+  // Specifications
+  STORE_SPECIFICATION: storeSpecification,
+  GET_SPECIFICATION: getSpecification,
+  DELETE_SPECIFICATION: deleteSpecification
+};
+
+// {{{ Utilities
+
+function idbAvailable() {
+  return Boolean(window.indexedDB);
 }
+
+// Taken from MDN
+function storageAvailable(type) {
+  var storage;
+  try {
+    storage = window[type];
+    var x = "__storage_test__";
+    storage.setItem(x, x);
+    storage.removeItem(x);
+    return true;
+  } catch (e) {
+    return (
+      e instanceof DOMException &&
+      // everything except Firefox
+      (e.code === 22 ||
+        // Firefox
+        e.code === 1014 ||
+        // test name field too, because code might not be present
+        // everything except Firefox
+        e.name === "QuotaExceededError" ||
+        // Firefox
+        e.name === "NS_ERROR_DOM_QUOTA_REACHED") &&
+      // acknowledge QuotaExceededError only if there's something already stored
+      storage &&
+      storage.length !== 0
+    );
+  }
+}
+
+// }}}

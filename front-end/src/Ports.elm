@@ -1,14 +1,15 @@
-port module Ports exposing (log)
+port module Ports exposing (storeSpecification)
 
+import Codec exposing (Value)
 import Json.Encode as Json
 
 
-port outgoing : { action : String, data : Json.Value } -> Cmd msg
+port outgoing : { action : String, data : Value } -> Cmd msg
 
 
-log : String -> Cmd msg
-log message =
+storeSpecification : Value -> Cmd msg
+storeSpecification specValue =
     outgoing
-        { action = "LOG"
-        , data = Json.string message
+        { action = "STORE_SPECIFICATION"
+        , data = specValue
         }

@@ -144,6 +144,31 @@ type LaunchError
     = FailedToDecodeFlags Codec.Error
 
 
+type alias SpecificationAndKey =
+    { storeKey : String
+    , specification : Specification
+    }
+
+
+encodeSpecificationAndKey : SpecificationAndKey -> Value
+encodeSpecificationAndKey specificationAndKey =
+    let
+        _ =
+            Debug.log "sak" specificationAndKey
+    in
+    Codec.encoder
+        specificationAndKeyCodec
+        specificationAndKey
+
+
+specificationAndKeyCodec : Codec SpecificationAndKey
+specificationAndKeyCodec =
+    Codec.object SpecificationAndKey
+        |> Codec.field "storeKey" .storeKey Codec.string
+        |> Codec.field "specification" .specification Specification.codec
+        |> Codec.buildObject
+
+
 
 -- }}}
 -- {{{ Init
@@ -177,7 +202,7 @@ init _ flagsValue =
         Err errString ->
             FailedToDecodeFlags errString |> FailedToLaunch
     , Cmd.none
-    , Ports.log "Hello!"
+    , Cmd.none
     )
 
 
@@ -308,12 +333,11 @@ updateRunState msg runState =
               }
                 |> updateUuid
             , Cmd.none
-            , Cmd.none
-              -- , encodeSpecificationAndKey
-              --     { storeKey = uuidString
-              --     , specification = spec
-              --     }
-              --     |> storeSpecification
+            , encodeSpecificationAndKey
+                { storeKey = uuidString
+                , specification = spec
+                }
+                |> Ports.storeSpecification
               -- , navigate <|
               --     TopRoute.Specifications (SpecRoute.All ())
             )

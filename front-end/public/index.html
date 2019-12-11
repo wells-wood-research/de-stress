@@ -4,12 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>our-elm-spa</title>
+    <title>DESTRESS</title>
     <link rel="stylesheet" href="/styles.css">
+    <!-- Simple IndexedDB KeyVal pair -->
+    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval-iife.min.js"></script>
   </head>
   <body>
     <script src="/dist/elm.compiled.js"></script>
     <script src="/ports.js"></script>
+    <!-- PV - Protein Viewer -->
+    <script src="/bio-pv.min.js"></script>
     <script>
       window.addEventListener('load', _ =>
         window.ports.init(
