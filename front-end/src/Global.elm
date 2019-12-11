@@ -152,10 +152,6 @@ type alias SpecificationAndKey =
 
 encodeSpecificationAndKey : SpecificationAndKey -> Value
 encodeSpecificationAndKey specificationAndKey =
-    let
-        _ =
-            Debug.log "sak" specificationAndKey
-    in
     Codec.encoder
         specificationAndKeyCodec
         specificationAndKey
@@ -345,8 +341,8 @@ updateRunState msg runState =
         GetSpecification uuidString ->
             ( runState
             , Cmd.none
-              -- , getSpecification uuidString
-            , Cmd.none
+            , Codec.encoder Codec.string uuidString
+                |> Ports.getSpecification
             )
 
         DeleteSpecification uuidString dangerStatus ->
@@ -357,8 +353,8 @@ updateRunState msg runState =
                             Dict.remove uuidString runState.specifications
                       }
                     , Cmd.none
-                      -- , deleteSpecification uuidString
-                    , Cmd.none
+                    , Codec.encoder Codec.string uuidString
+                        |> Ports.deleteSpecification
                     )
 
                 _ ->

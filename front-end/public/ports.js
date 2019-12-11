@@ -4,7 +4,7 @@ window.addEventListener("load", _ => {
     init: app =>
       app.ports.outgoing.subscribe(({ action, data }) => {
         actions[action]
-          ? actions[action](data)
+          ? actions[action](app, data)
           : console.warn(`I didn't recognize action "${action}".`);
       })
   };
@@ -18,9 +18,8 @@ const specificationStore = new idbKeyval.Store(
 );
 
 // Store specification
-const storeSpecification = specificationAndKey => {
+const storeSpecification = (_, specificationAndKey) => {
   var { storeKey, specification } = specificationAndKey;
-  console.log("STORE");
   if (idbAvailable) {
     idbKeyval.set(storeKey, specification, specificationStore);
   } else {
@@ -31,7 +30,7 @@ const storeSpecification = specificationAndKey => {
 };
 
 // Get specification
-const getSpecification = storeKey => {
+const getSpecification = (app, storeKey) => {
   idbKeyval.get(storeKey, specificationStore).then(specification => {
     app.ports.setFocussedSpecification.send({
       uuidString: storeKey,
@@ -41,7 +40,7 @@ const getSpecification = storeKey => {
 };
 
 // Delete specification
-const deleteSpecification = storeKey => {
+const deleteSpecification = (_, storeKey) => {
   idbKeyval.del(storeKey, specificationStore);
 };
 

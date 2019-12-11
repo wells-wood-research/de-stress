@@ -10,6 +10,7 @@ import Element.Font as Font
 import FeatherIcons
 import Generated.Params as Params
 import Global
+import Ports
 import Spa
 import Spa.Page exposing (send)
 import Specification as Spec exposing (Specification, SpecificationStub)
@@ -88,9 +89,8 @@ update msg model =
         ClickedFocusSpecification uuidString ->
             ( { model | focussedSpecification = Loading }
             , Cmd.none
-            , Cmd.none
-              -- , Global.GetSpecification uuidString
-              --     |> send
+            , Global.GetSpecification uuidString
+                |> send
             )
 
         SetFocus value ->
@@ -127,9 +127,8 @@ update msg model =
         DeleteSpecification uuidString dangerStatus ->
             ( model
             , Cmd.none
-            , Cmd.none
-              -- , Global.DeleteSpecification uuidString dangerStatus
-              --     |> Global.send
+            , Global.DeleteSpecification uuidString dangerStatus
+                |> send
             )
 
         DeleteFocussedSpecification globalUuidString dangerStatus ->
@@ -156,9 +155,8 @@ update msg model =
                                 model.focussedSpecification
                     }
             , Cmd.none
-            , Cmd.none
-              -- , Global.DeleteSpecification globalUuidString dangerStatus
-              --     |> Global.send
+            , Global.DeleteSpecification globalUuidString dangerStatus
+                |> send
             )
 
 
@@ -167,8 +165,9 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
+subscriptions _ =
+    Sub.batch
+        [ Ports.setFocussedSpecification SetFocus ]
 
 
 
