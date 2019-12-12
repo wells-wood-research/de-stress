@@ -8,7 +8,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Generated.Specifications.Params as Params
 import Global
-import Pages.Specifications exposing (requirementView)
+import Pages.Specifications.Dynamic exposing (requirementView)
 import Spa.Page exposing (send)
 import Specification as Specs
     exposing

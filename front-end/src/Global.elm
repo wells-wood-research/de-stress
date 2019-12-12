@@ -257,6 +257,7 @@ type Msg
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
+    | DeleteFocussedSpecification String Style.DangerStatus
     | RequestedNewUuid
 
 
@@ -433,6 +434,41 @@ updateRunState commands msg runState =
                                 uuidString
                                 ((\s ->
                                     { s
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                 )
+                                    |> mapStoredSpecification
+                                    |> Maybe.map
+                                )
+                                runState.specifications
+                      }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        DeleteFocussedSpecification uuidString dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | specifications =
+                            Dict.remove uuidString runState.specifications
+                      }
+                    , Cmd.none
+                    , Cmd.batch
+                        [ Codec.encoder Codec.string uuidString
+                            |> Ports.deleteSpecification
+                        , commands.navigate routes.specifications
+                        ]
+                    )
+
+                _ ->
+                    ( { runState
+                        | specifications =
+                            Dict.update
+                                uuidString
+                                ((\d ->
+                                    { d
                                         | deleteStatus =
                                             dangerStatus
                                     }

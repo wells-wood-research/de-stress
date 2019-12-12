@@ -104,7 +104,7 @@ update msg model =
         DeleteFocussedDesign globalUuidString dangerStatus ->
             case dangerStatus of
                 Style.Confirmed ->
-                    ( DesignNotFound globalUuidString
+                    ( model
                     , Cmd.none
                     , Global.DeleteFocussedDesign globalUuidString dangerStatus
                         |> send
@@ -154,10 +154,6 @@ view model =
 
         Design uuidString design ->
             designDetailsView uuidString design
-
-
-
--- {{{ View: Design Details
 
 
 designDetailsView : String -> Design -> Element Msg
@@ -216,5 +212,4 @@ designDetailsView uuidString { name, fileName, deleteStatus } =
 
 
 
--- }}}
 -- }}}
