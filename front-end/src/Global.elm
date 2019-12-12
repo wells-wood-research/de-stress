@@ -253,6 +253,7 @@ type Msg
     = AddDesign Design
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
+    | DeleteFocussedDesign String Style.DangerStatus
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
@@ -315,6 +316,41 @@ updateRunState commands msg runState =
                     , Cmd.none
                     , Codec.encoder Codec.string uuidString
                         |> Ports.deleteDesign
+                    )
+
+                _ ->
+                    ( { runState
+                        | designs =
+                            Dict.update
+                                uuidString
+                                ((\d ->
+                                    { d
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                 )
+                                    |> mapStoredDesign
+                                    |> Maybe.map
+                                )
+                                runState.designs
+                      }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        DeleteFocussedDesign uuidString dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | designs =
+                            Dict.remove uuidString runState.designs
+                      }
+                    , Cmd.none
+                    , Cmd.batch
+                        [ Codec.encoder Codec.string uuidString
+                            |> Ports.deleteDesign
+                        , commands.navigate routes.designs
+                        ]
                     )
 
                 _ ->

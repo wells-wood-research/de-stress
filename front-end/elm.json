@@ -40,5 +40,8 @@
     "test-dependencies": {
         "direct": {},
         "indirect": {}
+    },
+    "elm-spa": {
+        "ui": "Element" 
     }
 }

@@ -9,13 +9,11 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Element.Keyed as Keyed
 import File exposing (File)
 import File.Select as FileSelect
 import Generated.Params as Params
+import Generated.Routes as Routes
 import Global
-import Html
-import Html.Attributes as HAtt
 import Ports
 import RemoteData as RD exposing (RemoteData)
 import Spa.Page exposing (send)
@@ -42,34 +40,7 @@ page =
 type alias Model =
     { loadingState : DesignLoadingState
     , loadErrors : List String
-    , focussedDesign : FocussedDesign
     }
-
-
-type FocussedDesign
-    = NoFocus
-    | Loading
-    | Design String Design
-
-
-mapFocussedDesign :
-    ({ uuidString : String, design : Design }
-     -> { uuidString : String, design : Design }
-    )
-    -> FocussedDesign
-    -> FocussedDesign
-mapFocussedDesign designFn focus =
-    case focus of
-        NoFocus ->
-            focus
-
-        Loading ->
-            focus
-
-        Design uuidString design ->
-            { uuidString = uuidString, design = design }
-                |> designFn
-                |> (\idDesign -> Design idDesign.uuidString idDesign.design)
 
 
 type DesignLoadingState
@@ -79,7 +50,7 @@ type DesignLoadingState
 
 init : Params.Designs -> ( Model, Cmd Msg, Cmd Global.Msg )
 init _ =
-    ( { loadingState = Free, loadErrors = [], focussedDesign = NoFocus }
+    ( { loadingState = Free, loadErrors = [] }
     , Cmd.none
     , Cmd.none
     )
@@ -95,10 +66,6 @@ type Msg
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
     | DeleteDesign String Style.DangerStatus
-    | DeleteFocussedDesign String Style.DangerStatus
-    | ClickedFocusDesign String
-    | SetFocus Value
-    | ClearFocus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
@@ -195,75 +162,10 @@ update msg model =
                     , Cmd.none
                     )
 
-        ClickedFocusDesign uuidString ->
-            ( { model | focussedDesign = Loading }
-            , Cmd.none
-            , Global.GetDesign uuidString
-                |> send
-            )
-
-        SetFocus value ->
-            let
-                focusCodec =
-                    Codec.object
-                        (\uuidString design ->
-                            { uuidString = uuidString
-                            , design = design
-                            }
-                        )
-                        |> Codec.field "uuidString" .uuidString Codec.string
-                        |> Codec.field "design" .design Design.codec
-                        |> Codec.buildObject
-            in
-            case Codec.decodeValue focusCodec value of
-                Ok { uuidString, design } ->
-                    ( { model | focussedDesign = Design uuidString design }
-                    , Codec.encoder Codec.string design.pdbString
-                        |> Ports.viewStructure
-                    , Cmd.none
-                    )
-
-                Err errorString ->
-                    Debug.todo "Catch this error"
-
-        ClearFocus ->
-            ( { model | focussedDesign = NoFocus }
-            , Cmd.none
-            , Cmd.none
-            )
-
         DeleteDesign uuidString dangerStatus ->
             ( model
             , Cmd.none
             , Global.DeleteDesign uuidString dangerStatus
-                |> send
-            )
-
-        DeleteFocussedDesign globalUuidString dangerStatus ->
-            ( case dangerStatus of
-                Style.Confirmed ->
-                    { model
-                        | focussedDesign =
-                            NoFocus
-                    }
-
-                _ ->
-                    { model
-                        | focussedDesign =
-                            mapFocussedDesign
-                                (\{ uuidString, design } ->
-                                    { uuidString = uuidString
-                                    , design =
-                                        { design
-                                            | deleteStatus =
-                                                dangerStatus
-                                        }
-                                    }
-                                )
-                                model.focussedDesign
-                    }
-            , Cmd.none
-            , Global.DeleteDesign globalUuidString dangerStatus
                 |> send
             )
 
@@ -280,8 +182,7 @@ structureRequested =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.batch
-        [ Ports.setFocussedDesign SetFocus ]
+    Sub.none
 
 
 
@@ -293,46 +194,38 @@ view : Utils.Spa.PageContext -> Model -> Element Msg
 view { global } model =
     case global of
         Global.Running { designs } ->
-            case model.focussedDesign of
-                NoFocus ->
-                    column [ spacing 15, width fill ]
-                        [ row [ centerX, spacing 10 ]
-                            [ h1 <| text "Designs"
-                            , let
-                                ( buttonLabel, isActive ) =
-                                    case model.loadingState of
-                                        LoadingFiles total remaining ->
-                                            ( "Loaded "
-                                                ++ String.fromInt remaining
-                                                ++ "/"
-                                                ++ String.fromInt total
-                                            , False
-                                            )
+            column [ spacing 15, width fill ]
+                [ row [ centerX, spacing 10 ]
+                    [ h1 <| text "Designs"
+                    , let
+                        ( buttonLabel, isActive ) =
+                            case model.loadingState of
+                                LoadingFiles total remaining ->
+                                    ( "Loaded "
+                                        ++ String.fromInt remaining
+                                        ++ "/"
+                                        ++ String.fromInt total
+                                    , False
+                                    )
 
-                                        Free ->
-                                            ( "Load", True )
-                              in
-                              Style.conditionalButton
-                                { labelText = buttonLabel
-                                , clickMsg = StructuresRequested
-                                , isActive = isActive
-                                }
-                            ]
-                        , designs
-                            |> Dict.toList
-                            |> List.map
-                                (\( k, v ) ->
-                                    ( k, Global.storedDesignToStub v )
-                                )
-                            |> List.map designCard
-                            |> column [ spacing 15, width fill ]
-                        ]
-
-                Loading ->
-                    el [] (text "Loading...")
-
-                Design uuidString design ->
-                    designDetailsView uuidString design
+                                Free ->
+                                    ( "Load", True )
+                      in
+                      Style.conditionalButton
+                        { labelText = buttonLabel
+                        , clickMsg = StructuresRequested
+                        , isActive = isActive
+                        }
+                    ]
+                , designs
+                    |> Dict.toList
+                    |> List.map
+                        (\( k, v ) ->
+                            ( k, Global.storedDesignToStub v )
+                        )
+                    |> List.map designCard
+                    |> column [ spacing 15, width fill ]
+                ]
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"
@@ -370,9 +263,9 @@ designCard ( uuidString, designStub ) =
         [ Style.h2 <| text designStub.name
         , text ("Structure file: " ++ designStub.fileName)
         , row [ spacing 10, width fill ]
-            [ Style.alwaysActiveButton
+            [ Style.linkButton
                 { labelText = "Details"
-                , clickMsg = ClickedFocusDesign uuidString
+                , url = Routes.toPath <| Routes.routes.designs_dynamic uuidString
                 }
             , Style.dangerousButton
                 { labelText = "Delete"
@@ -385,65 +278,4 @@ designCard ( uuidString, designStub ) =
 
 
 
--- {{{ View: Details
----- Design Details View ----
-
-
-designDetailsView : String -> Design -> Element Msg
-designDetailsView uuidString { name, fileName, deleteStatus } =
-    let
-        sectionColumn =
-            column [ spacing 10, width fill ]
-    in
-    column
-        [ spacing 15, width fill ]
-        [ sectionColumn
-            [ paragraph [ centerX ]
-                [ h1 <| text (Design.editableValue name ++ " Design Details") ]
-            , paragraph [] [ text ("Structure file: " ++ fileName) ]
-            ]
-        , row [ spacing 10 ]
-            [ Style.alwaysActiveButton
-                { labelText = "Back"
-                , clickMsg = ClearFocus
-                }
-            , Style.dangerousButton
-                { labelText = "Delete"
-                , confirmText = "Are you sure you want to delete this design?"
-                , status = deleteStatus
-                , dangerousMsg = DeleteFocussedDesign uuidString
-                }
-            ]
-        , sectionColumn
-            [ h2 <| text "Structure"
-            , Keyed.el [ height <| px 300, width fill ]
-                ( "viewer"
-                , Html.div
-                    [ HAtt.id "viewer"
-                    , HAtt.style "height" "100%"
-                    , HAtt.style "width" "100%"
-                    ]
-                    []
-                    |> html
-                )
-            ]
-        , sectionColumn
-            [ h2 <| text "Sequences"
-            ]
-
-        -- , metricsView designMetrics
-        -- , compareToPdb designMetrics referenceSetMetrics
-        -- , case mSpecification of
-        --     Nothing ->
-        --         none
-        --     Just specification ->
-        --         sectionColumn
-        --             [ Common.h2 <| text "Active Requirement Specification"
-        --             , specificationView sequenceStrings designMetrics specification
-        --             ]
-        ]
-
-
-
--- }}}
 -- }}}
