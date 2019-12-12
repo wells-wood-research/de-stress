@@ -2,11 +2,13 @@ module Global exposing
     ( Flags
     , Model(..)
     , Msg(..)
+    , createInitialUuid
     , init
     , storedDesignToStub
     , storedSpecificationToStub
     , subscriptions
     , update
+    , updateUuid
     )
 
 import Codec exposing (Codec, Value)

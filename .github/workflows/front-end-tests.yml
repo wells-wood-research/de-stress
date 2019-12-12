@@ -9,16 +9,23 @@ on:
   pull_request:
     paths:
       - 'front-end/*'
-
 jobs:
   build:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [8.x, 10.x, 12.x]
+
     steps:
     - uses: actions/checkout@v1
-    - name: Build the application.
-      run: |
-        cd front-end/
-        docker build -t front-end-test .
-        docker run --rm front-end-test
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm ci
+    - run: npm run build
+    - run: npm test
+      env:
+        CI: true
