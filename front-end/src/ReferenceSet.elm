@@ -1,8 +1,9 @@
 module ReferenceSet exposing
     ( ReferenceSet
     , ReferenceSetStub
+    , codec
+    , createReferenceSetStub
     , generateRemoteDataCmd
-    , referenceSetCodec
     , referenceSetStubCodec
     )
 
@@ -60,8 +61,8 @@ type alias ReferenceSetRemoteData =
     RemoteData (Graphql.Http.Error (List DesignMetrics)) (List DesignMetrics)
 
 
-referenceSetCodec : Codec ReferenceSet
-referenceSetCodec =
+codec : Codec ReferenceSet
+codec =
     Codec.object ReferenceSet
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
@@ -157,3 +158,11 @@ referenceSetStubCodec =
         |> Codec.field "description" .description Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
+
+
+createReferenceSetStub : ReferenceSet -> ReferenceSetStub
+createReferenceSetStub referenceSet =
+    { name = referenceSet.name
+    , description = referenceSet.description
+    , deleteStatus = referenceSet.deleteStatus
+    }

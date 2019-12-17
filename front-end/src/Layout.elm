@@ -27,23 +27,23 @@ view { page, route } =
 viewHeader : Route -> Element msg
 viewHeader currentRoute =
     row
-        [ padding 10
-        , width fill
+        [ width fill
         , Background.color colorPalette.c1
         , Font.color colorPalette.c4
         , Font.size 32
         , Font.bold
         , Region.navigation
         ]
-        [ link [ Region.heading 1 ] { url = "/", label = text "DE-STRESS" }
+        [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
         , row
-            [ alignRight
+            [ padding 10
+            , alignRight
             , spacingXY 10 0
             , Font.medium
             , Font.size 24
             ]
             ([ viewLink currentRoute ( "Designs", routes.designs )
-             , viewLink currentRoute ( "Reference Sets", routes.notFound )
+             , viewLink currentRoute ( "Reference Sets", routes.referenceSets )
              , viewLink currentRoute ( "Specifications", routes.specifications )
              , viewLink currentRoute ( "Settings", routes.notFound )
              ]

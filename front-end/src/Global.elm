@@ -5,6 +5,7 @@ module Global exposing
     , createInitialUuid
     , init
     , storedDesignToStub
+    , storedReferenceSetToStub
     , storedSpecificationToStub
     , subscriptions
     , update
