@@ -17,6 +17,7 @@ import Dict exposing (Dict)
 import Generated.Routes as Routes exposing (Route, routes)
 import Ports
 import Random
+import ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
 import Specification exposing (Specification, SpecificationStub)
 import Style
 import Task
@@ -36,6 +37,7 @@ type alias DecodedFlags =
     , mInitialState :
         Maybe
             { designs : Dict String StoredDesign
+            , referenceSets : Dict String StoredReferenceSet
             , specifications : Dict String StoredSpecification
             }
     }
@@ -56,11 +58,13 @@ flagsCodec =
 storedStateCodec :
     Codec
         { designs : Dict String StoredDesign
+        , referenceSets : Dict String StoredReferenceSet
         , specifications : Dict String StoredSpecification
         }
 storedStateCodec =
-    Codec.object (\ds ss -> { designs = ds, specifications = ss })
+    Codec.object (\ds rs ss -> { designs = ds, referenceSets = rs, specifications = ss })
         |> Codec.field "designs" .designs (Codec.dict storedDesignCodec)
+        |> Codec.field "referenceSets" .referenceSets (Codec.dict storedReferenceSetCodec)
         |> Codec.field "specifications" .specifications (Codec.dict storedSpecificationCodec)
         |> Codec.buildObject
 
@@ -93,6 +97,41 @@ mapStoredDesign stubFn storedDesign =
     case storedDesign of
         LocalDesign stub ->
             stubFn stub |> LocalDesign
+
+
+type StoredReferenceSet
+    = LocalReferenceSet ReferenceSetStub
+
+
+storedReferenceSetCodec : Codec StoredReferenceSet
+storedReferenceSetCodec =
+    Codec.custom
+        (\flocal value ->
+            case value of
+                LocalReferenceSet stub ->
+                    flocal stub
+        )
+        |> Codec.variant1 "LocalReferenceSet"
+            LocalReferenceSet
+            ReferenceSet.referenceSetStubCodec
+        |> Codec.buildCustom
+
+
+storedReferenceSetToStub : StoredReferenceSet -> ReferenceSetStub
+storedReferenceSetToStub storedReferenceSet =
+    case storedReferenceSet of
+        LocalReferenceSet stub ->
+            stub
+
+
+mapStoredReferenceSet :
+    (ReferenceSetStub -> ReferenceSetStub)
+    -> StoredReferenceSet
+    -> StoredReferenceSet
+mapStoredReferenceSet stubFn storedReferenceSet =
+    case storedReferenceSet of
+        LocalReferenceSet stub ->
+            stubFn stub |> LocalReferenceSet
 
 
 type StoredSpecification
@@ -139,12 +178,14 @@ type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
     , designs : Dict String StoredDesign
+    , referenceSets : Dict String StoredReferenceSet
     , specifications : Dict String StoredSpecification
     }
 
 
 encodeStoredState :
     { designs : Dict String StoredDesign
+    , referenceSets : Dict String StoredReferenceSet
     , specifications : Dict String StoredSpecification
     }
     -> Value
@@ -176,6 +217,27 @@ designAndKeyCodec =
     Codec.object DesignAndKey
         |> Codec.field "storeKey" .storeKey Codec.string
         |> Codec.field "design" .design Design.codec
+        |> Codec.buildObject
+
+
+type alias ReferenceSetAndKey =
+    { storeKey : String
+    , referenceSet : ReferenceSet
+    }
+
+
+encodeReferenceSetAndKey : ReferenceSetAndKey -> Value
+encodeReferenceSetAndKey referenceSetAndKey =
+    Codec.encoder
+        referenceSetAndKeyCodec
+        referenceSetAndKey
+
+
+referenceSetAndKeyCodec : Codec ReferenceSetAndKey
+referenceSetAndKeyCodec =
+    Codec.object ReferenceSetAndKey
+        |> Codec.field "storeKey" .storeKey Codec.string
+        |> Codec.field "referenceSet" .referenceSet ReferenceSet.codec
         |> Codec.buildObject
 
 
@@ -219,6 +281,7 @@ init _ flagsValue =
                         { randomSeed = randomSeed
                         , nextUuid = nextUuid
                         , designs = initialState.designs
+                        , referenceSets = initialState.referenceSets
                         , specifications = initialState.specifications
                         }
 
@@ -227,6 +290,7 @@ init _ flagsValue =
                         { randomSeed = randomSeed
                         , nextUuid = nextUuid
                         , designs = Dict.empty
+                        , referenceSets = Dict.empty
                         , specifications = Dict.empty
                         }
 
@@ -256,6 +320,10 @@ type Msg
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
     | DeleteFocussedDesign String Style.DangerStatus
+    | AddReferenceSet ReferenceSet
+    | DeleteReferenceSet String Style.DangerStatus
+    | GetReferenceSet String
+    | DeleteFocussedReferenceSet String Style.DangerStatus
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
@@ -383,6 +451,104 @@ updateRunState commands msg runState =
                 |> Ports.getDesign
             )
 
+        AddReferenceSet referenceSet ->
+            let
+                uuidString =
+                    Uuid.toString runState.nextUuid
+            in
+            ( { runState
+                | referenceSets =
+                    Dict.insert
+                        uuidString
+                        (referenceSet
+                            |> ReferenceSet.createReferenceSetStub
+                            |> LocalReferenceSet
+                        )
+                        runState.referenceSets
+              }
+                |> updateUuid
+            , Cmd.none
+            , encodeReferenceSetAndKey
+                { storeKey = uuidString
+                , referenceSet = referenceSet
+                }
+                |> Ports.storeReferenceSet
+            )
+
+        DeleteReferenceSet uuidString dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | referenceSets =
+                            Dict.remove uuidString runState.referenceSets
+                      }
+                    , Cmd.none
+                    , Codec.encoder Codec.string uuidString
+                        |> Ports.deleteReferenceSet
+                    )
+
+                _ ->
+                    ( { runState
+                        | referenceSets =
+                            Dict.update
+                                uuidString
+                                ((\d ->
+                                    { d
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                 )
+                                    |> mapStoredReferenceSet
+                                    |> Maybe.map
+                                )
+                                runState.referenceSets
+                      }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        DeleteFocussedReferenceSet uuidString dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | referenceSets =
+                            Dict.remove uuidString runState.referenceSets
+                      }
+                    , Cmd.none
+                    , Cmd.batch
+                        [ Codec.encoder Codec.string uuidString
+                            |> Ports.deleteReferenceSet
+                        , commands.navigate routes.referenceSets
+                        ]
+                    )
+
+                _ ->
+                    ( { runState
+                        | referenceSets =
+                            Dict.update
+                                uuidString
+                                ((\d ->
+                                    { d
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                 )
+                                    |> mapStoredReferenceSet
+                                    |> Maybe.map
+                                )
+                                runState.referenceSets
+                      }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        GetReferenceSet uuidString ->
+            ( runState
+            , Cmd.none
+            , Codec.encoder Codec.string uuidString
+                |> Ports.getReferenceSet
+            )
+
         AddSpecification spec ->
             let
                 uuidString =
@@ -495,8 +661,8 @@ addStoreCmd ( state, gCmd, pCmd ) =
         [ gCmd
         , encodeStoredState
             { designs = state.designs
-            , specifications =
-                state.specifications
+            , referenceSets = state.referenceSets
+            , specifications = state.specifications
             }
             |> Ports.storeRunState
         ]

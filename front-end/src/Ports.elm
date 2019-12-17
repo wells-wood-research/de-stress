@@ -1,11 +1,14 @@
 port module Ports exposing
     ( deleteDesign
+    , deleteReferenceSet
     , deleteSpecification
     , getDesign
+    , getReferenceSet
     , getSpecification
     , setFocussedDesign
     , setFocussedSpecification
     , storeDesign
+    , storeReferenceSet
     , storeRunState
     , storeSpecification
     , viewStructure
@@ -70,6 +73,34 @@ viewStructure pdbStringValue =
 
 
 
+-- Reference Set
+
+
+storeReferenceSet : Value -> Cmd msg
+storeReferenceSet referenceSetValue =
+    outgoing
+        { action = "STORE_REFERENCE_SET"
+        , data = referenceSetValue
+        }
+
+
+getReferenceSet : Value -> Cmd msg
+getReferenceSet uuidValue =
+    outgoing
+        { action = "GET_REFERENCE_SET"
+        , data = uuidValue
+        }
+
+
+deleteReferenceSet : Value -> Cmd msg
+deleteReferenceSet uuidValue =
+    outgoing
+        { action = "DELETE_REFERENCE_SET"
+        , data = uuidValue
+        }
+
+
+
 -- Specifications
 
 
@@ -102,10 +133,13 @@ deleteSpecification uuidValue =
 -- {{{ Incoming
 
 
-port setFocussedSpecification : (Value -> msg) -> Sub msg
-
-
 port setFocussedDesign : (Value -> msg) -> Sub msg
+
+
+port setFocussedReferenceSet : (Value -> msg) -> Sub msg
+
+
+port setFocussedSpecification : (Value -> msg) -> Sub msg
 
 
 
