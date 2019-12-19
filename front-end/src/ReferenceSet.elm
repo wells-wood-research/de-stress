@@ -1,9 +1,12 @@
 module ReferenceSet exposing
-    ( ReferenceSet
-    , ReferenceSetStub
+    ( ReferenceSet(..)
+    , ReferenceSetRemoteData
+    , ReferenceSetStub(..)
     , codec
     , createReferenceSetStub
     , generateRemoteDataCmd
+    , getParamsForStub
+    , highResBiolUnits
     , referenceSetStubCodec
     )
 
@@ -19,107 +22,109 @@ import RemoteData as RD exposing (RemoteData)
 import Style
 
 
-type alias ReferenceSet =
-    { name : String
-    , description : String
-    , setType : SetType
-    , remoteData : ReferenceSetRemoteData
+
+-- {{{ ReferenceSet
+
+
+type ReferenceSet
+    = HighResBiolUnit HighResBiolUnitParams
+    | PdbCodeList PdbCodeListParams
+
+
+type alias HighResBiolUnitParams =
+    { metrics : List DesignMetrics
     , deleteStatus : Style.DangerStatus
     }
 
 
-type SetType
-    = AllPrefBiolUnits
-    | PdbCodeList (List String)
+type alias PdbCodeListParams =
+    { name : String
+    , description : String
+    , pdbCodes : List String
+    , metrics : List DesignMetrics
+    , deleteStatus : Style.DangerStatus
+    }
+
+
+codec : Codec ReferenceSet
+codec =
+    Codec.custom
+        (\fhighResBiol fpdbCodeList value ->
+            case value of
+                HighResBiolUnit params ->
+                    fhighResBiol params
+
+                PdbCodeList params ->
+                    fpdbCodeList params
+        )
+        |> Codec.variant1 "HighResBiolUnit" HighResBiolUnit highResBiolUnitsParamsCodec
+        |> Codec.variant1 "PdbCodeList" PdbCodeList pdbCodeListParamsCodec
+        |> Codec.buildCustom
+
+
+highResBiolUnitsParamsCodec : Codec HighResBiolUnitParams
+highResBiolUnitsParamsCodec =
+    Codec.object HighResBiolUnitParams
+        |> Codec.field "metrics" .metrics (Codec.list DesignMetrics.codec)
+        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.buildObject
+
+
+pdbCodeListParamsCodec : Codec PdbCodeListParams
+pdbCodeListParamsCodec =
+    Codec.object PdbCodeListParams
+        |> Codec.field "name" .name Codec.string
+        |> Codec.field "description" .description Codec.string
+        |> Codec.field "pdbCodes" .pdbCodes (Codec.list Codec.string)
+        |> Codec.field "metrics" .metrics (Codec.list DesignMetrics.codec)
+        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.buildObject
 
 
 
--- | Pisces PiscesIdentity PiscesResolution PiscesRFactor
--- type PiscesIdentity
---     = Pc20
---     | Pc25
---     | Pc30
---     | Pc40
---     | Pc50
---     | Pc60
---     | Pc70
---     | Pc80
---     | Pc90
--- type PiscesResolution
---     = Res1_6
---     | Res1_8
---     | Res2_0
---     | Res2_2
---     | Res2_5
---     | Res3_0
--- type PiscesRFactor
---     = RF0_25
---     | RF1_0
+-- }}}
+-- {{{ ReferenceSetRemoteData
 
 
 type alias ReferenceSetRemoteData =
     RemoteData (Graphql.Http.Error (List DesignMetrics)) (List DesignMetrics)
 
 
-codec : Codec ReferenceSet
-codec =
-    Codec.object ReferenceSet
-        |> Codec.field "name" .name Codec.string
-        |> Codec.field "description" .description Codec.string
-        |> Codec.field "setType" .setType setTypeCodec
-        |> Codec.field "remoteData"
-            .remoteData
-            (Codec.map
-                (\mData ->
-                    case mData of
-                        Just data ->
-                            RD.Success data
+generateRemoteDataCmd : ReferenceSet -> (ReferenceSetRemoteData -> msg) -> Cmd msg
+generateRemoteDataCmd referenceSet msgConstructor =
+    case referenceSet of
+        HighResBiolUnit _ ->
+            queryToCmd highResBiolMetricQuery msgConstructor
 
-                        Nothing ->
-                            RD.NotAsked
-                )
-                (\remoteData ->
-                    case remoteData of
-                        RD.Success data ->
-                            Just data
-
-                        _ ->
-                            Nothing
-                )
-                (Codec.maybe <| Codec.list DesignMetrics.codec)
-            )
-        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
-        |> Codec.buildObject
-
-
-setTypeCodec : Codec SetType
-setTypeCodec =
-    Codec.custom
-        (\fallBiol fpdbCodeList value ->
-            case value of
-                AllPrefBiolUnits ->
-                    fallBiol
-
-                PdbCodeList codeList ->
-                    fpdbCodeList codeList
-        )
-        |> Codec.variant0 "AllPrefBiolUnits" AllPrefBiolUnits
-        |> Codec.variant1 "PdbCodeList" PdbCodeList (Codec.list Codec.string)
-        |> Codec.buildCustom
-
-
-generateRemoteDataCmd : SetType -> (ReferenceSetRemoteData -> msg) -> Cmd msg
-generateRemoteDataCmd setType msgConstructor =
-    case setType of
-        AllPrefBiolUnits ->
-            queryToCmd allPdbMetrics msgConstructor
-
-        PdbCodeList codeList ->
+        PdbCodeList params ->
             Debug.todo "Add this"
 
 
-allPdbMetrics : SelectionSet (List DesignMetrics) RootQuery
-allPdbMetrics =
+queryToCmd :
+    SelectionSet (List DesignMetrics) RootQuery
+    -> (ReferenceSetRemoteData -> msg)
+    -> Cmd msg
+queryToCmd query msgConstructor =
+    query
+        |> Graphql.Http.queryRequest "http://127.0.0.1:5000/graphql"
+        |> Graphql.Http.send (RD.fromResult >> msgConstructor)
+
+
+
+-- }}}
+-- {{{ Default Reference Sets
+
+
+highResBiolUnits =
+    { name = "High Res Biol Units"
+    , description =
+        """A set of high-resolution, non-redundant protein structures. Uses the
+        preferred biological unit as defined by PDBe."""
+    }
+
+
+highResBiolMetricQuery : SelectionSet (List DesignMetrics) RootQuery
+highResBiolMetricQuery =
     Query.preferredStates
         (\optionals -> { optionals | first = Absent })
         (SelectionSet.map7 DesignMetrics
@@ -134,17 +139,17 @@ allPdbMetrics =
         |> SelectionSet.map (List.filterMap identity)
 
 
-queryToCmd :
-    SelectionSet (List DesignMetrics) RootQuery
-    -> (ReferenceSetRemoteData -> msg)
-    -> Cmd msg
-queryToCmd query msgConstructor =
-    query
-        |> Graphql.Http.queryRequest "http://127.0.0.1:5000/graphql"
-        |> Graphql.Http.send (RD.fromResult >> msgConstructor)
+
+-- }}}
+-- {{{ ReferenceSetStub
 
 
-type alias ReferenceSetStub =
+type ReferenceSetStub
+    = HighResBiolUnitStub Style.DangerStatus
+    | PdbCodeListStub StubParams
+
+
+type alias StubParams =
     { name : String
     , description : String
     , deleteStatus : Style.DangerStatus
@@ -153,7 +158,26 @@ type alias ReferenceSetStub =
 
 referenceSetStubCodec : Codec ReferenceSetStub
 referenceSetStubCodec =
-    Codec.object ReferenceSetStub
+    Codec.custom
+        (\fhighResBiol fpdbCodeList value ->
+            case value of
+                HighResBiolUnitStub params ->
+                    fhighResBiol params
+
+                PdbCodeListStub params ->
+                    fpdbCodeList params
+        )
+        |> Codec.variant1
+            "HighResBiolUnitStub"
+            HighResBiolUnitStub
+            (Codec.constant Style.Unclicked)
+        |> Codec.variant1 "PdbCodeListStub" PdbCodeListStub stubParamsCodec
+        |> Codec.buildCustom
+
+
+stubParamsCodec : Codec StubParams
+stubParamsCodec =
+    Codec.object StubParams
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
@@ -162,7 +186,31 @@ referenceSetStubCodec =
 
 createReferenceSetStub : ReferenceSet -> ReferenceSetStub
 createReferenceSetStub referenceSet =
-    { name = referenceSet.name
-    , description = referenceSet.description
-    , deleteStatus = referenceSet.deleteStatus
-    }
+    case referenceSet of
+        HighResBiolUnit params ->
+            HighResBiolUnitStub params.deleteStatus
+
+        PdbCodeList { name, description, deleteStatus } ->
+            PdbCodeListStub
+                { name = name
+                , description = description
+                , deleteStatus =
+                    deleteStatus
+                }
+
+
+getParamsForStub : ReferenceSetStub -> StubParams
+getParamsForStub referenceSet =
+    case referenceSet of
+        HighResBiolUnitStub deleteStatus ->
+            { name = highResBiolUnits.name
+            , description = highResBiolUnits.description
+            , deleteStatus = deleteStatus
+            }
+
+        PdbCodeListStub params ->
+            params
+
+
+
+-- }}}

@@ -105,7 +105,11 @@ view { global } model =
 
 
 referenceSetStubView : ( String, ReferenceSetStub ) -> Element Msg
-referenceSetStubView ( uuidString, { name, description, deleteStatus } ) =
+referenceSetStubView ( uuidString, stub ) =
+    let
+        { name, description, deleteStatus } =
+            ReferenceSet.getParamsForStub stub
+    in
     column
         [ padding 15
         , spacing 10

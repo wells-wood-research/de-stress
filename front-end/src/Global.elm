@@ -18,7 +18,7 @@ import Dict exposing (Dict)
 import Generated.Routes as Routes exposing (Route, routes)
 import Ports
 import Random
-import ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
+import ReferenceSet exposing (ReferenceSet(..), ReferenceSetStub(..))
 import Specification exposing (Specification, SpecificationStub)
 import Style
 import Task
@@ -322,6 +322,7 @@ type Msg
     | GetDesign String
     | DeleteFocussedDesign String Style.DangerStatus
     | AddReferenceSet ReferenceSet
+    | AddNamedReferenceSet String ReferenceSet
     | DeleteReferenceSet String Style.DangerStatus
     | GetReferenceSet String
     | DeleteFocussedReferenceSet String Style.DangerStatus
@@ -476,6 +477,26 @@ updateRunState commands msg runState =
                 |> Ports.storeReferenceSet
             )
 
+        AddNamedReferenceSet name referenceSet ->
+            ( { runState
+                | referenceSets =
+                    Dict.insert
+                        name
+                        (referenceSet
+                            |> ReferenceSet.createReferenceSetStub
+                            |> LocalReferenceSet
+                        )
+                        runState.referenceSets
+              }
+                |> updateUuid
+            , Cmd.none
+            , encodeReferenceSetAndKey
+                { storeKey = name
+                , referenceSet = referenceSet
+                }
+                |> Ports.storeReferenceSet
+            )
+
         DeleteReferenceSet uuidString dangerStatus ->
             case dangerStatus of
                 Style.Confirmed ->
@@ -493,11 +514,17 @@ updateRunState commands msg runState =
                         | referenceSets =
                             Dict.update
                                 uuidString
-                                ((\d ->
-                                    { d
-                                        | deleteStatus =
-                                            dangerStatus
-                                    }
+                                ((\r ->
+                                    case r of
+                                        HighResBiolUnitStub _ ->
+                                            HighResBiolUnitStub dangerStatus
+
+                                        PdbCodeListStub params ->
+                                            PdbCodeListStub
+                                                { params
+                                                    | deleteStatus =
+                                                        dangerStatus
+                                                }
                                  )
                                     |> mapStoredReferenceSet
                                     |> Maybe.map
@@ -528,11 +555,17 @@ updateRunState commands msg runState =
                         | referenceSets =
                             Dict.update
                                 uuidString
-                                ((\d ->
-                                    { d
-                                        | deleteStatus =
-                                            dangerStatus
-                                    }
+                                ((\r ->
+                                    case r of
+                                        HighResBiolUnitStub _ ->
+                                            HighResBiolUnitStub dangerStatus
+
+                                        PdbCodeListStub params ->
+                                            PdbCodeListStub
+                                                { params
+                                                    | deleteStatus =
+                                                        dangerStatus
+                                                }
                                  )
                                     |> mapStoredReferenceSet
                                     |> Maybe.map
