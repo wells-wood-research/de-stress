@@ -57,6 +57,41 @@ const deleteDesign = (_, storeKey) => {
 };
 
 // }}}
+// {{{ Reference Sets
+//
+const referenceSetStore = new idbKeyval.Store(
+  "reference-sets",
+  "reference-set-store"
+);
+
+// Store reference set
+const storeReferenceSet = (_, referenceSetAndKey) => {
+  var { storeKey, referenceSet } = referenceSetAndKey;
+  if (idbAvailable) {
+    idbKeyval.set(storeKey, referenceSet, referenceSetStore);
+  } else {
+    console.log(
+      "Storage is not available. IndexedDB must be enabled to store state."
+    );
+  }
+};
+
+// Get referenceSet
+const getReferenceSet = (app, storeKey) => {
+  idbKeyval.get(storeKey, referenceSetStore).then(referenceSet => {
+    app.ports.setFocussedReferenceSet.send({
+      uuidString: storeKey,
+      referenceSet: referenceSet
+    });
+  });
+};
+
+// Delete referenceSet
+const deleteReferenceSet = (_, storeKey) => {
+  idbKeyval.del(storeKey, referenceSetStore);
+};
+
+// }}}
 // {{{ Specifications
 const specificationStore = new idbKeyval.Store(
   "specifications",
@@ -100,6 +135,10 @@ const actions = {
   STORE_DESIGN: storeDesign,
   GET_DESIGN: getDesign,
   DELETE_DESIGN: deleteDesign,
+  // Reference Sets
+  STORE_REFERENCE_SET: storeReferenceSet,
+  GET_REFERENCE_SET: getReferenceSet,
+  DELETE_REFERENCE_SET: deleteReferenceSet,
   // Specifications
   STORE_SPECIFICATION: storeSpecification,
   GET_SPECIFICATION: getSpecification,

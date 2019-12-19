@@ -159,7 +159,7 @@ update msg model =
                     ( NewHighResBiolUnit remoteData
                     , Cmd.none
                     , Global.AddNamedReferenceSet
-                        ReferenceSet.highResBiolUnits.name
+                        ReferenceSet.highResBiolUnits.id
                         (ReferenceSet.HighResBiolUnit
                             { metrics = metrics
                             , deleteStatus = Style.Unclicked

@@ -106,7 +106,8 @@ queryToCmd query msgConstructor =
 
 
 type alias DefaultReferenceSet =
-    { name : String
+    { id : String
+    , name : String
     , description : String
     , query : SelectionSet (List DesignMetrics) RootQuery
     }
@@ -114,7 +115,8 @@ type alias DefaultReferenceSet =
 
 highResBiolUnits : DefaultReferenceSet
 highResBiolUnits =
-    { name = "High Res Biol Units"
+    { id = "high-res-biol-units"
+    , name = "High Res Biol Units"
     , description =
         """A set of high-resolution, non-redundant protein structures. Uses the
         preferred biological unit as defined by PDBe."""
