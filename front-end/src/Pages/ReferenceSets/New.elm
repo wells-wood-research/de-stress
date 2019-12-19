@@ -31,7 +31,7 @@ page =
 
 
 type Model
-    = NewHighResBiolUnit
+    = NewHighResBiolUnit ReferenceSetRemoteData
     | NewPdbCodeList NewPdbCodeListParams
 
 
@@ -53,11 +53,30 @@ defaultCodeListParams =
 stringFromModelType : Model -> String
 stringFromModelType modelType =
     case modelType of
-        NewHighResBiolUnit ->
+        NewHighResBiolUnit _ ->
             ReferenceSet.highResBiolUnits.name
 
         NewPdbCodeList _ ->
             "PDB Subset"
+
+
+isDownloadingData : Model -> Bool
+isDownloadingData model =
+    let
+        modelRemoteData =
+            case model of
+                NewHighResBiolUnit remoteData ->
+                    remoteData
+
+                NewPdbCodeList { remoteData } ->
+                    remoteData
+    in
+    case modelRemoteData of
+        RD.Loading ->
+            True
+
+        _ ->
+            False
 
 
 
@@ -67,7 +86,7 @@ stringFromModelType modelType =
 
 init : Params.New -> ( Model, Cmd Msg, Cmd Global.Msg )
 init _ =
-    ( NewHighResBiolUnit
+    ( NewHighResBiolUnit RD.NotAsked
     , Cmd.none
     , Cmd.none
     )
@@ -83,6 +102,7 @@ type Msg
     | UpdatedName NewPdbCodeListParams String
     | UpdatedDescription NewPdbCodeListParams String
     | ClickedDownloadDefaultHighRes
+    | GotHighResBiolUnitsData ReferenceSetRemoteData
     | ClickedCreateReferenceSet
 
 
@@ -126,34 +146,38 @@ update msg model =
                 )
 
         ClickedDownloadDefaultHighRes ->
-            ( NewHighResBiolUnit
+            ( NewHighResBiolUnit RD.Loading
+            , ReferenceSet.queryToCmd
+                ReferenceSet.highResBiolUnits.query
+                GotHighResBiolUnitsData
             , Cmd.none
-            , Cmd.none
-              -- , Global.AddNamedReferenceSet
-              --     "high-res-biol-unit"
-              --     { name = "High Res Biol Units"
-              --     , description = highResBiolUnitsDescription
-              --     , deleteStatus = Style.Unclicked
-              --     }
-              --     |> send
             )
 
+        GotHighResBiolUnitsData remoteData ->
+            case remoteData of
+                RD.Success metrics ->
+                    ( NewHighResBiolUnit remoteData
+                    , Cmd.none
+                    , Global.AddNamedReferenceSet
+                        ReferenceSet.highResBiolUnits.name
+                        (ReferenceSet.HighResBiolUnit
+                            { metrics = metrics
+                            , deleteStatus = Style.Unclicked
+                            }
+                        )
+                        |> send
+                    )
+
+                _ ->
+                    ( NewHighResBiolUnit remoteData
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
         ClickedCreateReferenceSet ->
-            ( NewHighResBiolUnit
+            ( NewHighResBiolUnit RD.NotAsked
             , Cmd.none
             , Cmd.none
-              -- , Global.AddReferenceSet
-              --     { name =
-              --         Maybe.withDefault
-              --             "DEFAULT REF SET NAME"
-              --             model.name
-              --     , description =
-              --         Maybe.withDefault
-              --             "DEFAULT REF SET DESCRIPTION"
-              --             model.description
-              --     , deleteStatus = Style.Unclicked
-              --     }
-              --     |> send
             )
 
 
@@ -176,20 +200,25 @@ view : Model -> Element Msg
 view model =
     column
         [ width fill, spacing 30 ]
-        [ text "Create New Reference Set"
-            |> Style.h1
-            |> el [ centerX ]
-        , row [ centerX, spacing 15 ] <|
-            List.map
-                (modelTypeSelector model)
-                [ NewHighResBiolUnit, NewPdbCodeList defaultCodeListParams ]
-        , case model of
-            NewHighResBiolUnit ->
-                newHighResBiolUnitsView
+    <|
+        if isDownloadingData model then
+            [ text "Downloading metric data..." ]
 
-            NewPdbCodeList params ->
-                newPdbCodeListView params
-        ]
+        else
+            [ text "Create New Reference Set"
+                |> Style.h1
+                |> el [ centerX ]
+            , row [ centerX, spacing 15 ] <|
+                List.map
+                    (modelTypeSelector model)
+                    [ NewHighResBiolUnit RD.NotAsked, NewPdbCodeList defaultCodeListParams ]
+            , case model of
+                NewHighResBiolUnit _ ->
+                    newHighResBiolUnitsView
+
+                NewPdbCodeList params ->
+                    newPdbCodeListView params
+            ]
 
 
 modelTypeSelector : Model -> Model -> Element Msg

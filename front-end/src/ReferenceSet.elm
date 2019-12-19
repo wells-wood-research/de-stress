@@ -4,9 +4,9 @@ module ReferenceSet exposing
     , ReferenceSetStub(..)
     , codec
     , createReferenceSetStub
-    , generateRemoteDataCmd
     , getParamsForStub
     , highResBiolUnits
+    , queryToCmd
     , referenceSetStubCodec
     )
 
@@ -90,16 +90,6 @@ type alias ReferenceSetRemoteData =
     RemoteData (Graphql.Http.Error (List DesignMetrics)) (List DesignMetrics)
 
 
-generateRemoteDataCmd : ReferenceSet -> (ReferenceSetRemoteData -> msg) -> Cmd msg
-generateRemoteDataCmd referenceSet msgConstructor =
-    case referenceSet of
-        HighResBiolUnit _ ->
-            queryToCmd highResBiolMetricQuery msgConstructor
-
-        PdbCodeList params ->
-            Debug.todo "Add this"
-
-
 queryToCmd :
     SelectionSet (List DesignMetrics) RootQuery
     -> (ReferenceSetRemoteData -> msg)
@@ -115,11 +105,20 @@ queryToCmd query msgConstructor =
 -- {{{ Default Reference Sets
 
 
+type alias DefaultReferenceSet =
+    { name : String
+    , description : String
+    , query : SelectionSet (List DesignMetrics) RootQuery
+    }
+
+
+highResBiolUnits : DefaultReferenceSet
 highResBiolUnits =
     { name = "High Res Biol Units"
     , description =
         """A set of high-resolution, non-redundant protein structures. Uses the
         preferred biological unit as defined by PDBe."""
+    , query = highResBiolMetricQuery
     }
 
 

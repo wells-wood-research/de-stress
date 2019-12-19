@@ -490,11 +490,14 @@ updateRunState commands msg runState =
               }
                 |> updateUuid
             , Cmd.none
-            , encodeReferenceSetAndKey
-                { storeKey = name
-                , referenceSet = referenceSet
-                }
-                |> Ports.storeReferenceSet
+            , Cmd.batch
+                [ encodeReferenceSetAndKey
+                    { storeKey = name
+                    , referenceSet = referenceSet
+                    }
+                    |> Ports.storeReferenceSet
+                , commands.navigate routes.referenceSets
+                ]
             )
 
         DeleteReferenceSet uuidString dangerStatus ->
