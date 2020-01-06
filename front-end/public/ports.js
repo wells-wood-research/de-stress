@@ -56,6 +56,23 @@ const deleteDesign = (_, storeKey) => {
   idbKeyval.del(storeKey, designStore);
 };
 
+// View Structure
+const viewStructure = (_, pdbString) => {
+  window.requestAnimationFrame(() => {
+    const options = {
+      width: "auto",
+      height: "auto",
+      antialias: true,
+      quality: "medium"
+    };
+    var viewer = pv.Viewer(document.getElementById("viewer"), options);
+    viewer.fitParent();
+    var structure = pv.io.pdb(pdbString);
+    viewer.fitTo(structure);
+    viewer.trace("trace", structure, { color: pv.color.byChain() });
+  });
+};
+
 // }}}
 // {{{ Reference Sets
 //
@@ -135,6 +152,7 @@ const actions = {
   STORE_DESIGN: storeDesign,
   GET_DESIGN: getDesign,
   DELETE_DESIGN: deleteDesign,
+  VIEW_STRUCTURE: viewStructure,
   // Reference Sets
   STORE_REFERENCE_SET: storeReferenceSet,
   GET_REFERENCE_SET: getReferenceSet,
