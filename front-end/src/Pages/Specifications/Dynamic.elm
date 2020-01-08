@@ -1,11 +1,11 @@
 module Pages.Specifications.Dynamic exposing (Model, Msg, page, requirementView)
 
-import Codec exposing (Codec, Value)
+import Codec exposing (Value)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
 import FeatherIcons
-import Generated.Routes as Routes exposing (Route, routes)
+import Generated.Routes as Routes exposing (routes)
 import Generated.Specifications.Params as Params
 import Global
 import Ports

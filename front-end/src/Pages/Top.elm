@@ -1,7 +1,6 @@
 module Pages.Top exposing (Model, Msg, page)
 
 import Element exposing (..)
-import Element.Font as Font
 import Generated.Params as Params
 import Spa.Page
 import Style exposing (h1, h2)

@@ -4,7 +4,6 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
 import Element.Region as Region
-import FeatherIcons
 import Generated.Routes as Routes exposing (Route, routes)
 import Style exposing (colorPalette)
 import Utils.Spa as Spa

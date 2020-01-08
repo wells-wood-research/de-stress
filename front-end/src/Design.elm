@@ -93,7 +93,7 @@ designStubCodec =
 
 
 createDesignStub : Design -> DesignStub
-createDesignStub { name, fileName, metricsRemoteData, deleteStatus } =
+createDesignStub { name, fileName, deleteStatus } =
     { name = editableValue name
     , fileName = fileName
     , deleteStatus = deleteStatus

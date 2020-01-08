@@ -38,7 +38,7 @@ for more information about using codecs
 
 -}
 
-import Codec exposing (Codec, Value)
+import Codec exposing (Codec)
 import Dict
 import Http
 import Math.Vector3 exposing (Vec3, getX, getY, getZ, vec3)
@@ -207,12 +207,11 @@ parsePdbString name pdbString =
         atoms =
             extractAtoms pdbString
     in
-    case List.isEmpty atoms of
-        True ->
-            Err <| PdbParseError "No atom records found in the PDB string."
+    if List.isEmpty atoms then
+        Err <| PdbParseError "No atom records found in the PDB string."
 
-        False ->
-            Ok <| { atoms = atoms, name = name }
+    else
+        Ok <| { atoms = atoms, name = name }
 
 
 extractAtoms : String -> List Atom
@@ -232,11 +231,6 @@ extractAtomsLines allRecords =
                 String.startsWith "ATOM" string
                     || String.startsWith "HETATM" string
             )
-
-
-atomStringsToStateTuple : Int -> List String -> List Atom
-atomStringsToStateTuple stateNumber atomList =
-    stringsToAtoms stateNumber atomList
 
 
 {-| Converts each model record in the PDB to an Assembly.

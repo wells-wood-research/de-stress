@@ -556,17 +556,12 @@ failureView : Graphql.Http.Error DesignMetrics -> Element msg
 failureView error =
     case error of
         Graphql.Http.GraphqlError _ errorList ->
-            let
-                _ =
-                    Debug.log "errorDict" (List.map .message errorList)
-            in
             textColumn []
-                ([ paragraph []
+                (paragraph []
                     [ text
                         "One or more errors occurred while analysing the structure:"
                     ]
-                 ]
-                    ++ (List.map .message errorList
+                    :: (List.map .message errorList
                             |> List.map (\e -> paragraph [] [ text e ])
                        )
                 )

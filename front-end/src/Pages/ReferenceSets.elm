@@ -1,18 +1,13 @@
 module Pages.ReferenceSets exposing (Model, Msg, page)
 
-import Codec exposing (Codec, Value)
-import Dict exposing (Dict)
+import Dict
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
-import Element.Font as Font
 import Generated.Params as Params
-import Generated.Routes as Routes exposing (Route, routes)
+import Generated.Routes as Routes exposing (routes)
 import Global
-import Ports
-import ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
-import Spa
+import ReferenceSet exposing (ReferenceSetStub)
 import Spa.Page exposing (send)
 import Style exposing (h1)
 import Utils.Spa exposing (Page)
@@ -71,7 +66,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
@@ -81,7 +76,7 @@ subscriptions model =
 
 
 view : Utils.Spa.PageContext -> Model -> Element Msg
-view { global } model =
+view { global } _ =
     case global of
         Global.Running { referenceSets } ->
             column

@@ -1,21 +1,17 @@
 module Pages.Designs exposing (Model, Msg, page)
 
 import Ampal
-import Codec exposing (Value)
-import Design exposing (Design)
-import Dict exposing (Dict)
+import Design
+import Dict
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
-import Element.Font as Font
 import File exposing (File)
 import File.Select as FileSelect
 import Generated.Params as Params
 import Generated.Routes as Routes
 import Global
-import Ports
-import RemoteData as RD exposing (RemoteData)
+import RemoteData as RD
 import Spa.Page exposing (send)
 import Style exposing (h1, h2)
 import Task
@@ -113,7 +109,8 @@ update msg model =
                     Ampal.parsePdbString name contents
             in
             case rStructuralData of
-                Ok structuralData ->
+                Ok _ ->
+                    -- Currently this is only checking to see if the file is valid PDB
                     ( { model | loadingState = loadingState }
                     , Cmd.none
                     , { name =

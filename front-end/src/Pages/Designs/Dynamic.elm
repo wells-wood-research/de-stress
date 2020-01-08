@@ -1,11 +1,11 @@
 module Pages.Designs.Dynamic exposing (Model, Msg, page)
 
-import Codec exposing (Codec, Value)
+import Codec exposing (Value)
 import Design exposing (Design)
 import Element exposing (..)
 import Element.Keyed as Keyed
 import Generated.Designs.Params as Params
-import Generated.Routes as Routes exposing (Route, routes)
+import Generated.Routes as Routes exposing (routes)
 import Global
 import Html
 import Html.Attributes as HAtt

@@ -1,8 +1,6 @@
 module Pages.ReferenceSets.New exposing (Model, Msg, page)
 
 import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
@@ -107,7 +105,7 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
-update msg model =
+update msg _ =
     case msg of
         UpdatedType newModel ->
             ( newModel
@@ -187,7 +185,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 

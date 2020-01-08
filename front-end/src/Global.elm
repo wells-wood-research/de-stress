@@ -15,13 +15,12 @@ module Global exposing
 import Codec exposing (Codec, Value)
 import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
-import Generated.Routes as Routes exposing (Route, routes)
+import Generated.Routes exposing (Route, routes)
 import Ports
 import Random
 import ReferenceSet exposing (ReferenceSet(..), ReferenceSetStub(..))
 import Specification exposing (Specification, SpecificationStub)
 import Style
-import Task
 import Uuid exposing (Uuid)
 
 
@@ -341,7 +340,7 @@ update commands msg model =
                 |> addStoreCmd
                 |> asModel Running
 
-        FailedToLaunch launchError ->
+        FailedToLaunch _ ->
             case msg of
                 _ ->
                     ( model, Cmd.none, Cmd.none )

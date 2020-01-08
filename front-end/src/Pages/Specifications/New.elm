@@ -426,7 +426,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
@@ -915,7 +915,7 @@ valueSequenceInputView { msgConstructor, valueTypeName, mValue } =
         Nothing ->
             False
 
-        Just value ->
+        Just _ ->
             True
     , row [ spacing 10 ]
         [ text "Value"
