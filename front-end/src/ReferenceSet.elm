@@ -13,11 +13,11 @@ module ReferenceSet exposing
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
 import Codec exposing (Codec)
-import DesignMetrics exposing (DesignMetrics)
 import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Metrics exposing (RefSetMetrics)
 import RemoteData as RD exposing (RemoteData)
 import Style
 
@@ -32,7 +32,7 @@ type ReferenceSet
 
 
 type alias HighResBiolUnitParams =
-    { metrics : List DesignMetrics
+    { metrics : List RefSetMetrics
     , deleteStatus : Style.DangerStatus
     }
 
@@ -41,7 +41,7 @@ type alias PdbCodeListParams =
     { name : String
     , description : String
     , pdbCodes : List String
-    , metrics : List DesignMetrics
+    , metrics : List RefSetMetrics
     , deleteStatus : Style.DangerStatus
     }
 
@@ -65,7 +65,7 @@ codec =
 highResBiolUnitsParamsCodec : Codec HighResBiolUnitParams
 highResBiolUnitsParamsCodec =
     Codec.object HighResBiolUnitParams
-        |> Codec.field "metrics" .metrics (Codec.list DesignMetrics.codec)
+        |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
@@ -76,22 +76,21 @@ pdbCodeListParamsCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
         |> Codec.field "pdbCodes" .pdbCodes (Codec.list Codec.string)
-        |> Codec.field "metrics" .metrics (Codec.list DesignMetrics.codec)
+        |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
 
 
 -- }}}
--- {{{ ReferenceSetRemoteData
 
 
 type alias ReferenceSetRemoteData =
-    RemoteData (Graphql.Http.Error (List DesignMetrics)) (List DesignMetrics)
+    RemoteData (Graphql.Http.Error (List RefSetMetrics)) (List RefSetMetrics)
 
 
 queryToCmd :
-    SelectionSet (List DesignMetrics) RootQuery
+    SelectionSet (List RefSetMetrics) RootQuery
     -> (ReferenceSetRemoteData -> msg)
     -> Cmd msg
 queryToCmd query msgConstructor =
@@ -109,7 +108,7 @@ type alias DefaultReferenceSet =
     { id : String
     , name : String
     , description : String
-    , query : SelectionSet (List DesignMetrics) RootQuery
+    , query : SelectionSet (List RefSetMetrics) RootQuery
     }
 
 
@@ -124,13 +123,31 @@ highResBiolUnits =
     }
 
 
-highResBiolMetricQuery : SelectionSet (List DesignMetrics) RootQuery
+highResBiolMetricQuery : SelectionSet (List RefSetMetrics) RootQuery
 highResBiolMetricQuery =
     Query.preferredStates
         (\optionals -> { optionals | first = Absent })
-        (SelectionSet.map7 DesignMetrics
-            (SelectionSet.map DesignMetrics.compositionStringToDict State.composition)
-            (SelectionSet.map DesignMetrics.torsionAngleStringToDict State.torsionAngles)
+        (SelectionSet.map7 RefSetMetrics
+            -- (SelectionSet.map2
+            --     (\mLabels mSeqs ->
+            --         let
+            --             labels =
+            --                 List.filterMap identity mLabels
+            --             seqs =
+            --                 List.filterMap identity mSeqs
+            --         in
+            --         List.map2 Tuple.pair labels seqs
+            --             |> Dict.fromList
+            --     )
+            --     (State.chains Chain.chainLabel
+            --         |> SelectionSet.map (Maybe.withDefault [])
+            --     )
+            --     (State.chains Chain.sequence
+            --         |> SelectionSet.map (Maybe.withDefault [])
+            --     )
+            -- )
+            (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
             State.hydrophobicFitness
             State.isoelectricPoint
             State.mass

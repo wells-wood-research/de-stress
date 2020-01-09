@@ -9,8 +9,8 @@ module Design exposing
     )
 
 import Codec exposing (Codec)
-import DesignMetrics exposing (DesignMetrics)
 import Graphql.Http
+import Metrics exposing (DesignMetrics)
 import RemoteData as RD exposing (RemoteData)
 import Style
 
@@ -71,7 +71,7 @@ codec =
                         _ ->
                             Nothing
                 )
-                (Codec.maybe DesignMetrics.codec)
+                (Codec.maybe Metrics.desMetricsCodec)
             )
         |> Codec.buildObject
 

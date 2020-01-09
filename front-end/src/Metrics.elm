@@ -1,11 +1,14 @@
-module DesignMetrics exposing
+module Metrics exposing
     ( DesignMetrics
-    , codec
+    , RefSetMetrics
+    , RefSetMetricsRemoteData
     , compositionStringToDict
     , createAllHistogramsSpec
     , createCompositionSpec
     , createTorsionAngleSpec
+    , desMetricsCodec
     , metricsRemoteDataView
+    , refSetMetricsCodec
     , torsionAngleStringToDict
     )
 
@@ -20,7 +23,8 @@ import VegaLite as VL
 
 
 type alias DesignMetrics =
-    { composition : Dict String Float
+    { sequences : Dict String String
+    , composition : Dict String Float
     , torsionAngles : Dict String ( Float, Float, Float )
     , hydrophobicFitness : Maybe Float
     , isoelectricPoint : Float
@@ -30,9 +34,10 @@ type alias DesignMetrics =
     }
 
 
-codec : Codec DesignMetrics
-codec =
+desMetricsCodec : Codec DesignMetrics
+desMetricsCodec =
     Codec.object DesignMetrics
+        |> Codec.field "sequences" .sequences (Codec.dict Codec.string)
         |> Codec.field "composition" .composition (Codec.dict Codec.float)
         |> Codec.field "torsionAngles"
             .torsionAngles
@@ -51,8 +56,48 @@ codec =
         |> Codec.buildObject
 
 
-type alias MetricsRemoteData =
+type alias DesMetricsRemoteData =
     RemoteData (Graphql.Http.Error DesignMetrics) DesignMetrics
+
+
+type alias RefSetMetrics =
+    { composition : Dict String Float
+    , torsionAngles : Dict String ( Float, Float, Float )
+    , hydrophobicFitness : Maybe Float
+    , isoelectricPoint : Float
+    , mass : Float
+    , numOfResidues : Int
+    , packingDensity : Float
+    }
+
+
+refSetMetricsCodec : Codec RefSetMetrics
+refSetMetricsCodec =
+    Codec.object RefSetMetrics
+        |> Codec.field "composition" .composition (Codec.dict Codec.float)
+        |> Codec.field "torsionAngles"
+            .torsionAngles
+            (Codec.dict
+                (Codec.triple
+                    Codec.float
+                    Codec.float
+                    Codec.float
+                )
+            )
+        |> Codec.field "hydrophobicFitness" .hydrophobicFitness (Codec.maybe Codec.float)
+        |> Codec.field "isoelectricPoint" .isoelectricPoint Codec.float
+        |> Codec.field "mass" .mass Codec.float
+        |> Codec.field "numOfResidues" .numOfResidues Codec.int
+        |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.buildObject
+
+
+type alias RefSetMetricsRemoteData =
+    RemoteData (Graphql.Http.Error RefSetMetrics) RefSetMetrics
+
+
+
+-- {{{ Helper Functions
 
 
 compositionStringToDict : String -> Dict String Float
@@ -142,7 +187,55 @@ torsionAngleParser =
 
 
 
----- Plotting ----
+-- }}}
+-- {{{ Views
+
+
+metricsRemoteDataView :
+    (DesignMetrics -> Element msg)
+    -> DesMetricsRemoteData
+    -> Element msg
+metricsRemoteDataView successView remoteData =
+    case remoteData of
+        RD.NotAsked ->
+            text "Metrics have not been requested to run, try uploading the design again."
+
+        RD.Loading ->
+            text "Metrics requested, awaiting results..."
+
+        RD.Failure error ->
+            failureView error
+
+        RD.Success metricsRemoteData ->
+            successView metricsRemoteData
+
+
+failureView : Graphql.Http.Error DesignMetrics -> Element msg
+failureView error =
+    case error of
+        Graphql.Http.GraphqlError _ errorList ->
+            textColumn []
+                (paragraph []
+                    [ text
+                        "One or more errors occurred while analysing the structure:"
+                    ]
+                    :: (List.map .message errorList
+                            |> List.map (\e -> paragraph [] [ text e ])
+                       )
+                )
+
+        Graphql.Http.HttpError _ ->
+            paragraph []
+                [ text <|
+                    "Could not connect to the DE-STRESS server. Check your internet "
+                        ++ "connection and try again. If your connection is fine "
+                        ++ "then the DE-STRESS server might be unavailable."
+                ]
+
+
+
+-- }}}
+-- {{{ Plotting
 
 
 createAllHistogramsSpec : DesignMetrics -> List DesignMetrics -> VL.Spec
@@ -530,46 +623,4 @@ torsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
 
 
 
----- VIEWS ----
-
-
-metricsRemoteDataView :
-    (DesignMetrics -> Element msg)
-    -> MetricsRemoteData
-    -> Element msg
-metricsRemoteDataView successView remoteData =
-    case remoteData of
-        RD.NotAsked ->
-            text "Metrics have not been requested to run, try uploading the design again."
-
-        RD.Loading ->
-            text "Metrics requested, awaiting results..."
-
-        RD.Failure error ->
-            failureView error
-
-        RD.Success metricsRemoteData ->
-            successView metricsRemoteData
-
-
-failureView : Graphql.Http.Error DesignMetrics -> Element msg
-failureView error =
-    case error of
-        Graphql.Http.GraphqlError _ errorList ->
-            textColumn []
-                (paragraph []
-                    [ text
-                        "One or more errors occurred while analysing the structure:"
-                    ]
-                    :: (List.map .message errorList
-                            |> List.map (\e -> paragraph [] [ text e ])
-                       )
-                )
-
-        Graphql.Http.HttpError _ ->
-            paragraph []
-                [ text <|
-                    "Could not connect to the DE-STRESS server. Check your internet "
-                        ++ "connection and try again. If your connection is fine "
-                        ++ "then the DE-STRESS server might be unavailable."
-                ]
+-- }}}
