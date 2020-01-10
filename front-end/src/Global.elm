@@ -12,13 +12,23 @@ module Global exposing
     , updateUuid
     )
 
+import BigStructure.Mutation as Mutation
+import BigStructure.Object.CreateDesign as CreateDesign
+import BigStructure.Object.Design as Design
+import BigStructure.Object.DesignChain as DesignChain
 import Codec exposing (Codec, Value)
 import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
 import Generated.Routes exposing (Route, routes)
+import Graphql.Http
+import Graphql.Operation exposing (RootMutation, RootQuery)
+import Graphql.OptionalArgument exposing (OptionalArgument(..))
+import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Metrics exposing (DesignMetrics)
 import Ports
 import Random
 import ReferenceSet exposing (ReferenceSet(..), ReferenceSetStub(..))
+import RemoteData as RD
 import Specification exposing (Specification, SpecificationStub)
 import Style
 import Uuid exposing (Uuid)
@@ -220,6 +230,27 @@ designAndKeyCodec =
         |> Codec.buildObject
 
 
+type alias DesignMetricsRDAndKey =
+    { storeKey : String
+    , designMetricsRD : Metrics.DesMetricsRemoteData
+    }
+
+
+encodeDesignMetricsRDAndKey : DesignMetricsRDAndKey -> Value
+encodeDesignMetricsRDAndKey designMetricsRDAndKey =
+    Codec.encoder
+        designMetricsRDAndKeyCodec
+        designMetricsRDAndKey
+
+
+designMetricsRDAndKeyCodec : Codec DesignMetricsRDAndKey
+designMetricsRDAndKeyCodec =
+    Codec.object DesignMetricsRDAndKey
+        |> Codec.field "storeKey" .storeKey Codec.string
+        |> Codec.field "designMetricsRD" .designMetricsRD Design.metricsRDCodec
+        |> Codec.buildObject
+
+
 type alias ReferenceSetAndKey =
     { storeKey : String
     , referenceSet : ReferenceSet
@@ -317,6 +348,7 @@ createInitialUuid initialRandomNumber =
 
 type Msg
     = AddDesign Design
+    | GotDesignMetrics String Metrics.DesMetricsRemoteData
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
     | DeleteFocussedDesign String Style.DangerStatus
@@ -370,12 +402,23 @@ updateRunState commands msg runState =
                         runState.designs
               }
                 |> updateUuid
-            , Cmd.none
+            , requestDesignMetrics { uuid = uuidString, pdbString = design.pdbString }
             , encodeDesignAndKey
                 { storeKey = uuidString
                 , design = design
                 }
                 |> Ports.storeDesign
+            )
+
+        GotDesignMetrics uuid metricsRemoteData ->
+            ( runState
+            , encodeDesignMetricsRDAndKey
+                { storeKey = uuid
+                , designMetricsRD =
+                    metricsRemoteData
+                }
+                |> Ports.updateDesignMetricsRD
+            , Cmd.none
             )
 
         DeleteDesign uuidString dangerStatus ->
@@ -713,6 +756,50 @@ updateUuid runState =
             Random.step Uuid.uuidGenerator runState.randomSeed
     in
     { runState | randomSeed = newSeed, nextUuid = nextUuid }
+
+
+createDesignMutation :
+    { uuid : String, pdbString : String }
+    -> SelectionSet DesignMetrics RootMutation
+createDesignMutation requiredArgs =
+    Mutation.createDesign
+        requiredArgs
+        (CreateDesign.design <|
+            SelectionSet.map8 DesignMetrics
+                (SelectionSet.map2
+                    (\mLabels mSeqs ->
+                        let
+                            labels =
+                                List.filterMap identity mLabels
+
+                            seqs =
+                                List.filterMap identity mSeqs
+                        in
+                        List.map2 Tuple.pair labels seqs
+                            |> Dict.fromList
+                    )
+                    (Design.chains DesignChain.chainLabel
+                        |> SelectionSet.map (Maybe.withDefault [])
+                    )
+                    (Design.chains DesignChain.sequence
+                        |> SelectionSet.map (Maybe.withDefault [])
+                    )
+                )
+                (SelectionSet.map Metrics.compositionStringToDict Design.composition)
+                (SelectionSet.map Metrics.torsionAngleStringToDict Design.torsionAngles)
+                Design.hydrophobicFitness
+                Design.isoelectricPoint
+                Design.mass
+                Design.numOfResidues
+                Design.meanPackingDensity
+        )
+
+
+requestDesignMetrics : { uuid : String, pdbString : String } -> Cmd Msg
+requestDesignMetrics requiredArgs =
+    createDesignMutation requiredArgs
+        |> Graphql.Http.mutationRequest "http://127.0.0.1:5000/graphql"
+        |> Graphql.Http.send (RD.fromResult >> GotDesignMetrics requiredArgs.uuid)
 
 
 

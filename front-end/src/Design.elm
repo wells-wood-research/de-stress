@@ -6,13 +6,15 @@ module Design exposing
     , createDesignStub
     , designStubCodec
     , editableValue
+    , metricsRDCodec
     )
 
 import Codec exposing (Codec)
 import Graphql.Http
 import Metrics exposing (DesignMetrics)
-import RemoteData as RD exposing (RemoteData)
+import RemoteData exposing (RemoteData)
 import Style
+import Utils.RemoteDataExtra as RDE
 
 
 type alias Design =
@@ -52,28 +54,16 @@ codec =
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "pdbString" .pdbString Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
-        |> Codec.field "metricsRemoteData"
-            .metricsRemoteData
-            (Codec.map
-                (\mData ->
-                    case mData of
-                        Just data ->
-                            RD.Success data
-
-                        Nothing ->
-                            RD.NotAsked
-                )
-                (\remoteData ->
-                    case remoteData of
-                        RD.Success data ->
-                            Just data
-
-                        _ ->
-                            Nothing
-                )
-                (Codec.maybe Metrics.desMetricsCodec)
-            )
+        |> Codec.field "metricsRemoteData" .metricsRemoteData metricsRDCodec
         |> Codec.buildObject
+
+
+metricsRDCodec : Codec MetricsRemoteData
+metricsRDCodec =
+    RDE.codec
+        (Codec.constant <| Graphql.Http.HttpError Graphql.Http.Timeout)
+        Metrics.desMetricsCodec
+        |> Debug.log "This shouldn't be timeout"
 
 
 type alias DesignStub =

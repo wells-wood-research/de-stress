@@ -41,6 +41,16 @@ const storeDesign = (_, designAndKey) => {
   }
 };
 
+// Update design metrics for stored design
+const updateDesignMetrics = (_, metricsAndKey) => {
+  var { storeKey, designMetricsRD } = metricsAndKey;
+  console.log("Metrics", designMetricsRD);
+  idbKeyval.get(storeKey, designStore).then(design => {
+    design.metricsRemoteData = designMetricsRD;
+    idbKeyval.set(storeKey, design, designStore);
+  });
+};
+
 // Get design
 const getDesign = (app, storeKey) => {
   idbKeyval.get(storeKey, designStore).then(design => {
@@ -150,6 +160,7 @@ const actions = {
   STORE_STATE: storeRunState,
   // Designs
   STORE_DESIGN: storeDesign,
+  UPDATE_DESIGN_METRICS: updateDesignMetrics,
   GET_DESIGN: getDesign,
   DELETE_DESIGN: deleteDesign,
   VIEW_STRUCTURE: viewStructure,

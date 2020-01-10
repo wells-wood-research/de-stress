@@ -1,5 +1,6 @@
 module Metrics exposing
-    ( DesignMetrics
+    ( DesMetricsRemoteData
+    , DesignMetrics
     , RefSetMetrics
     , RefSetMetricsRemoteData
     , compositionStringToDict

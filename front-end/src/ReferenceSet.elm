@@ -128,24 +128,6 @@ highResBiolMetricQuery =
     Query.preferredStates
         (\optionals -> { optionals | first = Absent })
         (SelectionSet.map7 RefSetMetrics
-            -- (SelectionSet.map2
-            --     (\mLabels mSeqs ->
-            --         let
-            --             labels =
-            --                 List.filterMap identity mLabels
-            --             seqs =
-            --                 List.filterMap identity mSeqs
-            --         in
-            --         List.map2 Tuple.pair labels seqs
-            --             |> Dict.fromList
-            --     )
-            --     (State.chains Chain.chainLabel
-            --         |> SelectionSet.map (Maybe.withDefault [])
-            --     )
-            --     (State.chains Chain.sequence
-            --         |> SelectionSet.map (Maybe.withDefault [])
-            --     )
-            -- )
             (SelectionSet.map Metrics.compositionStringToDict State.composition)
             (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
             State.hydrophobicFitness

@@ -11,6 +11,7 @@ port module Ports exposing
     , storeReferenceSet
     , storeRunState
     , storeSpecification
+    , updateDesignMetricsRD
     , viewStructure
     )
 
@@ -41,10 +42,18 @@ storeRunState storedStateValue =
 
 
 storeDesign : Value -> Cmd msg
-storeDesign designValue =
+storeDesign designAndKey =
     outgoing
         { action = "STORE_DESIGN"
-        , data = designValue
+        , data = designAndKey
+        }
+
+
+updateDesignMetricsRD : Value -> Cmd msg
+updateDesignMetricsRD metricsAndKey =
+    outgoing
+        { action = "UPDATE_DESIGN_METRICS"
+        , data = metricsAndKey
         }
 
 
