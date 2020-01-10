@@ -10,6 +10,10 @@ from destres_big_structure.big_structure_models import (
     StateModel,
     ChainModel,
 )
+from destres_big_structure.design_models import (
+    DesignModel,
+    DesignChainModel,
+)
 from destres_big_structure import analysis
 
 
@@ -57,4 +61,23 @@ def create_state_entry(
 def create_chain_entry(chain: ampal.Polypeptide, state_model: StateModel) -> ChainModel:
     chain_analytics = analysis.analyse_chain(chain)
     chain_model = ChainModel(chain_label=chain.id, state=state_model, **chain_analytics)
+    return chain_model
+
+
+def create_design_entry(ampal_assembly: ampal.Assembly) -> DesignModel:
+    design_analytics = analysis.analyse_state(ampal_assembly)
+    design_model = DesignModel(**design_analytics)
+    for chain in ampal_assembly:
+        if isinstance(chain, ampal.Polypeptide):
+            create_design_chain_entry(chain, design_model)
+    return design_model
+
+
+def create_design_chain_entry(
+    chain: ampal.Polypeptide, design_model: DesignModel
+) -> ChainModel:
+    chain_analytics = analysis.analyse_chain(chain)
+    chain_model = DesignChainModel(
+        chain_label=chain.id, design=design_model, **chain_analytics
+    )
     return chain_model

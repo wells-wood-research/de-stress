@@ -1,11 +1,11 @@
 import ampal
 import graphene
-from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
+from graphene_sqlalchemy import SQLAlchemyObjectType
 
 from .big_structure_models import PdbModel, BiolUnitModel, StateModel, ChainModel
 from .design_models import DesignModel, DesignChainModel
-from destres_big_structure import analysis
 from destres_big_structure.design_models import designs_db_session
+from destres_big_structure.create_entry import create_design_entry
 
 
 class Pdb(SQLAlchemyObjectType):
@@ -195,8 +195,7 @@ class CreateDesign(graphene.Mutation):
         ampal_assembly = ampal.load_pdb(pdb_string, path=False)
         if not ampal_assembly._molecules:
             raise ValueError("No PDB format data found in file.")
-        design_analytics = analysis.analyse_state(ampal_assembly)
-        design = DesignModel(id=uuid, **design_analytics)
+        design = create_design_entry(ampal_assembly)
         designs_db_session.add_all([design])
         designs_db_session.commit()
         return CreateDesign(design=design)

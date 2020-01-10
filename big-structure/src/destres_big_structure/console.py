@@ -25,6 +25,10 @@ def dev_run():
     app.run()
 
 
+def create_designs_tables():
+    DesignsBase.metadata.create_all(bind=designs_engine)
+
+
 @click.command()
 @click.argument("path_to_data", type=click.Path(exists=True))
 @click.option("--take", default=-1, help="Number of entries to process.")
@@ -52,7 +56,6 @@ def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool):
 
     # Create the database tables
     BigStructureBase.metadata.create_all(bind=big_structure_engine)
-    DesignsBase.metadata.create_all(bind=designs_engine)
 
     taken = 0
     failed: tp.Dict[str, str] = {}

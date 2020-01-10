@@ -22,7 +22,7 @@ pytest = "^3.0"
 
 [tool.poetry.scripts]
 dev_run = 'destres_big_structure.console:dev_run'
-create_dummy_data = 'destres_big_structure.console:create_dummy_data'
+create_designs_tables = 'destres_big_structure.console:create_designs_tables'
 dbs_db_from_scratch = 'destres_big_structure.console:dbs_db_from_scratch'
 
 [build-system]

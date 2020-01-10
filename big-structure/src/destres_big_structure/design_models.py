@@ -21,7 +21,7 @@ DesignsBase.query = designs_db_session.query_property()
 
 class DesignModel(DesignsBase):  # type: ignore
     __tablename__ = "design"
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
     # Analysis
     composition = Column(String, nullable=False)
