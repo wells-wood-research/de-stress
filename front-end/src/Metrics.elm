@@ -7,8 +7,8 @@ module Metrics exposing
     , createAllHistogramsSpec
     , createCompositionSpec
     , createTorsionAngleSpec
+    , desMetRemoteDataView
     , desMetricsCodec
-    , metricsRemoteDataView
     , refSetMetricsCodec
     , torsionAngleStringToDict
     )
@@ -192,11 +192,11 @@ torsionAngleParser =
 -- {{{ Views
 
 
-metricsRemoteDataView :
+desMetRemoteDataView :
     (DesignMetrics -> Element msg)
     -> DesMetricsRemoteData
     -> Element msg
-metricsRemoteDataView successView remoteData =
+desMetRemoteDataView successView remoteData =
     case remoteData of
         RD.NotAsked ->
             text "Metrics have not been requested to run, try uploading the design again."

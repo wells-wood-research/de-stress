@@ -2,16 +2,20 @@ module Pages.Designs.Dynamic exposing (Model, Msg, page)
 
 import Codec exposing (Value)
 import Design exposing (Design)
+import Dict exposing (Dict)
 import Element exposing (..)
+import Element.Border as Border
+import Element.Font as Font
 import Element.Keyed as Keyed
 import Generated.Designs.Params as Params
 import Generated.Routes as Routes exposing (routes)
 import Global
 import Html
 import Html.Attributes as HAtt
+import Metrics exposing (DesignMetrics)
 import Ports
 import Spa.Page exposing (send)
-import Style exposing (h1, h2)
+import Style exposing (h1, h2, h3)
 import Utils.Spa exposing (Page)
 
 
@@ -156,12 +160,13 @@ view model =
             designDetailsView uuidString design
 
 
+sectionColumn : List (Element msg) -> Element msg
+sectionColumn =
+    column [ spacing 10, width fill ]
+
+
 designDetailsView : String -> Design -> Element Msg
-designDetailsView uuidString { name, fileName, deleteStatus } =
-    let
-        sectionColumn =
-            column [ spacing 10, width fill ]
-    in
+designDetailsView uuidString { name, fileName, deleteStatus, metricsRemoteData } =
     column
         [ spacing 15, width fill ]
         [ sectionColumn
@@ -183,7 +188,7 @@ designDetailsView uuidString { name, fileName, deleteStatus } =
             ]
         , sectionColumn
             [ h2 <| text "Structure"
-            , Keyed.el [ height <| px 300, width fill ]
+            , Keyed.el [ height <| px 300, width fill, Border.width 1 ]
                 ( "viewer"
                 , Html.div
                     [ HAtt.id "viewer"
@@ -194,9 +199,7 @@ designDetailsView uuidString { name, fileName, deleteStatus } =
                     |> html
                 )
             ]
-        , sectionColumn
-            [ h2 <| text "Sequences"
-            ]
+        , Metrics.desMetRemoteDataView basicMetrics metricsRemoteData
 
         -- , metricsView designMetrics
         -- , compareToPdb designMetrics referenceSetMetrics
@@ -208,6 +211,47 @@ designDetailsView uuidString { name, fileName, deleteStatus } =
         --             [ Common.h2 <| text "Active Requirement Specification"
         --             , specificationView sequenceStrings designMetrics specification
         --             ]
+        ]
+
+
+basicMetrics : DesignMetrics -> Element msg
+basicMetrics { sequences } =
+    sectionColumn
+        [ h2 <| text "Basic Metrics"
+        , h3 <| text "Sequences"
+        , sequenceDictView sequences
+        ]
+
+
+sequenceDictView : Dict String String -> Element msg
+sequenceDictView sequenceDict =
+    sequenceDict
+        |> Dict.toList
+        |> List.map sequenceView
+        |> column [ padding 15, spacing 5, width fill ]
+
+
+sequenceView : ( String, String ) -> Element msg
+sequenceView ( chainId, sequence ) =
+    let
+        aaView char =
+            char
+                |> String.fromChar
+                |> text
+                |> el []
+    in
+    column [ width fill ]
+        [ paragraph [ width fill, Font.bold ] [ "Chain: " ++ chainId |> text ]
+        , sequence
+            |> String.toList
+            |> List.map aaView
+            |> wrappedRow
+                [ width fill
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                ]
         ]
 
 

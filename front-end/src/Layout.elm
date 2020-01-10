@@ -11,7 +11,14 @@ import Utils.Spa as Spa
 
 view : Spa.LayoutContext msg -> Element msg
 view { page, route } =
-    column [ height fill, width fill ]
+    column
+        [ height fill
+        , width fill
+        , Font.family
+            [ Font.typeface "Roboto"
+            , Font.sansSerif
+            ]
+        ]
         [ viewHeader route
         , el
             [ centerX
