@@ -4,6 +4,7 @@ import Codec exposing (Value)
 import Design exposing (Design)
 import Dict exposing (Dict)
 import Element exposing (..)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Keyed as Keyed
@@ -14,6 +15,7 @@ import Html
 import Html.Attributes as HAtt
 import Metrics exposing (DesignMetrics)
 import Ports
+import Round
 import Spa.Page exposing (send)
 import Style exposing (h1, h2, h3)
 import Utils.Spa exposing (Page)
@@ -97,8 +99,10 @@ update msg model =
             case Codec.decodeValue focusCodec value of
                 Ok { uuidString, design } ->
                     ( Design uuidString design
-                    , Codec.encoder Codec.string design.pdbString
-                        |> Ports.viewStructure
+                    , Cmd.batch
+                        [ Codec.encoder Codec.string design.pdbString
+                            |> Ports.viewStructure
+                        ]
                     , Cmd.none
                     )
 
@@ -200,26 +204,96 @@ designDetailsView uuidString { name, fileName, deleteStatus, metricsRemoteData }
                 )
             ]
         , Metrics.desMetRemoteDataView basicMetrics metricsRemoteData
-
-        -- , metricsView designMetrics
-        -- , compareToPdb designMetrics referenceSetMetrics
-        -- , case mSpecification of
-        --     Nothing ->
-        --         none
-        --     Just specification ->
-        --         sectionColumn
-        --             [ Common.h2 <| text "Active Requirement Specification"
-        --             , specificationView sequenceStrings designMetrics specification
-        --             ]
         ]
 
 
 basicMetrics : DesignMetrics -> Element msg
-basicMetrics { sequences } =
+basicMetrics metrics =
+    let
+        { sequences, composition } =
+            metrics
+    in
     sectionColumn
         [ h2 <| text "Basic Metrics"
         , h3 <| text "Sequences"
         , sequenceDictView sequences
+        , compositionView composition
+        , metricsOverview metrics
+        ]
+
+
+compositionView : Dict String Float -> Element msg
+compositionView composition =
+    column
+        [ width fill ]
+        [ h2 <| text "Composition"
+        , Keyed.el [ centerX ]
+            ( "composition"
+            , Html.div [ HAtt.id "composition" ] []
+                |> html
+            )
+        ]
+
+
+metricsOverview : DesignMetrics -> Element msg
+metricsOverview metrics =
+    let
+        onePlaceFloatText =
+            Round.round 1
+                >> text
+                >> (\a -> cell a)
+
+        intText =
+            String.fromInt >> text >> (\a -> cell a)
+
+        cell =
+            el [ centerX, padding 10 ]
+
+        tableColumn =
+            column
+                [ alignTop
+                , width <| px 150
+                ]
+
+        headerParagraph =
+            paragraph
+                [ padding 10
+                , height <| px 70
+                , Background.color Style.colorPalette.c1
+                , Font.center
+                , Font.color Style.colorPalette.white
+                ]
+    in
+    column [ spacing 10, width fill ]
+        [ h2 <| text "Metrics"
+        , wrappedRow
+            []
+            [ tableColumn
+                [ headerParagraph [ text "Hydrophobic Fitness" ]
+                , case metrics.hydrophobicFitness of
+                    Just hf ->
+                        onePlaceFloatText hf
+
+                    Nothing ->
+                        text "--"
+                ]
+            , tableColumn
+                [ headerParagraph [ text "pI" ]
+                , onePlaceFloatText metrics.isoelectricPoint
+                ]
+            , tableColumn
+                [ headerParagraph [ text "# of Residues" ]
+                , intText metrics.numOfResidues
+                ]
+            , tableColumn
+                [ headerParagraph [ text "Mass (Da)" ]
+                , onePlaceFloatText metrics.mass
+                ]
+            , tableColumn
+                [ headerParagraph [ text "Mean Packing Density" ]
+                , onePlaceFloatText metrics.packingDensity
+                ]
+            ]
         ]
 
 

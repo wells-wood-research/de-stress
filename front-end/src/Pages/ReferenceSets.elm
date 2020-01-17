@@ -1,5 +1,6 @@
 module Pages.ReferenceSets exposing (Model, Msg, page)
 
+import Components.DropDown as DropDown
 import Dict
 import Element exposing (..)
 import Element.Background as Background
@@ -17,7 +18,7 @@ page : Page Params.ReferenceSets Model Msg model msg appMsg
 page =
     Spa.Page.component
         { title = always "ReferenceSets"
-        , init = always init
+        , init = init
         , update = always update
         , subscriptions = always subscriptions
         , view = view
@@ -29,12 +30,18 @@ page =
 
 
 type alias Model =
-    {}
+    { refSetDropDown : DropDown.Model (Maybe ReferenceSetStub)
+    }
 
 
-init : Params.ReferenceSets -> ( Model, Cmd Msg, Cmd Global.Msg )
-init _ =
-    ( {}
+init : Utils.Spa.PageContext -> Params.ReferenceSets -> ( Model, Cmd Msg, Cmd Global.Msg )
+init { global } _ =
+    ( case global of
+        Global.Running runState ->
+            { refSetDropDown = DropDown.init runState.mSelectedReferenceSet }
+
+        Global.FailedToLaunch _ ->
+            { refSetDropDown = DropDown.init Nothing }
     , Cmd.none
     , Cmd.none
     )
@@ -46,12 +53,23 @@ init _ =
 
 
 type Msg
-    = DeleteReferenceSet String Style.DangerStatus
+    = RefSetDropDownMsg (DropDown.Msg (Maybe ReferenceSetStub))
+    | DeleteReferenceSet String Style.DangerStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
 update msg model =
     case msg of
+        RefSetDropDownMsg cMsg ->
+            let
+                cModel =
+                    DropDown.update cMsg model.refSetDropDown
+            in
+            ( { model | refSetDropDown = cModel }
+            , Cmd.none
+            , Cmd.none
+            )
+
         DeleteReferenceSet uuidString dangerStatus ->
             ( model
             , Cmd.none
@@ -76,24 +94,48 @@ subscriptions _ =
 
 
 view : Utils.Spa.PageContext -> Model -> Element Msg
-view { global } _ =
+view { global } model =
     case global of
         Global.Running { referenceSets } ->
             column
                 [ width fill, spacing 30 ]
-                (row [ centerX, spacing 10 ]
+                [ row [ centerX, spacing 10 ]
                     [ Style.h1 <|
                         text "Reference Sets"
-                    , Style.linkButton { url = "/reference-sets/new", labelText = "New" }
+                    , Style.linkButton
+                        { url = "/reference-sets/new", labelText = "New" }
                     ]
-                    :: (Dict.toList referenceSets
-                            |> List.map
-                                (\( k, v ) ->
-                                    ( k, Global.storedReferenceSetToStub v )
-                                )
-                            |> List.map referenceSetStubView
-                       )
-                )
+                , Element.map RefSetDropDownMsg <|
+                    DropDown.view
+                        (\mStub ->
+                            case mStub of
+                                Just stub ->
+                                    let
+                                        { name } =
+                                            ReferenceSet.getParamsForStub stub
+                                    in
+                                    text name
+
+                                Nothing ->
+                                    text "--"
+                        )
+                        (Nothing
+                            :: (referenceSets
+                                    |> Dict.values
+                                    |> List.map Global.storedReferenceSetToStub
+                                    |> List.map Just
+                               )
+                        )
+                        model.refSetDropDown
+                , column []
+                    (Dict.toList referenceSets
+                        |> List.map
+                            (\( k, v ) ->
+                                ( k, Global.storedReferenceSetToStub v )
+                            )
+                        |> List.map referenceSetStubView
+                    )
+                ]
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"

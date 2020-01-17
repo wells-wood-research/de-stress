@@ -21,7 +21,7 @@ import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
 import Generated.Routes exposing (Route, routes)
 import Graphql.Http
-import Graphql.Operation exposing (RootMutation, RootQuery)
+import Graphql.Operation exposing (RootMutation)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Metrics exposing (DesignMetrics)
@@ -48,6 +48,7 @@ type alias DecodedFlags =
         Maybe
             { designs : Dict String StoredDesign
             , referenceSets : Dict String StoredReferenceSet
+            , mSelectedReferenceSet : Maybe ReferenceSetStub
             , specifications : Dict String StoredSpecification
             }
     }
@@ -69,13 +70,28 @@ storedStateCodec :
     Codec
         { designs : Dict String StoredDesign
         , referenceSets : Dict String StoredReferenceSet
+        , mSelectedReferenceSet : Maybe ReferenceSetStub
         , specifications : Dict String StoredSpecification
         }
 storedStateCodec =
-    Codec.object (\ds rs ss -> { designs = ds, referenceSets = rs, specifications = ss })
+    Codec.object
+        (\ds rs msrf ss ->
+            { designs = ds
+            , referenceSets = rs
+            , mSelectedReferenceSet = msrf
+            , specifications = ss
+            }
+        )
         |> Codec.field "designs" .designs (Codec.dict storedDesignCodec)
-        |> Codec.field "referenceSets" .referenceSets (Codec.dict storedReferenceSetCodec)
-        |> Codec.field "specifications" .specifications (Codec.dict storedSpecificationCodec)
+        |> Codec.field "referenceSets"
+            .referenceSets
+            (Codec.dict storedReferenceSetCodec)
+        |> Codec.field "mSelectedReferenceSet"
+            .mSelectedReferenceSet
+            (Codec.maybe ReferenceSet.referenceSetStubCodec)
+        |> Codec.field "specifications"
+            .specifications
+            (Codec.dict storedSpecificationCodec)
         |> Codec.buildObject
 
 
@@ -189,6 +205,7 @@ type alias RunState =
     , nextUuid : Uuid
     , designs : Dict String StoredDesign
     , referenceSets : Dict String StoredReferenceSet
+    , mSelectedReferenceSet : Maybe ReferenceSetStub
     , specifications : Dict String StoredSpecification
     }
 
@@ -196,6 +213,7 @@ type alias RunState =
 encodeStoredState :
     { designs : Dict String StoredDesign
     , referenceSets : Dict String StoredReferenceSet
+    , mSelectedReferenceSet : Maybe ReferenceSetStub
     , specifications : Dict String StoredSpecification
     }
     -> Value
@@ -313,6 +331,7 @@ init _ flagsValue =
                         , nextUuid = nextUuid
                         , designs = initialState.designs
                         , referenceSets = initialState.referenceSets
+                        , mSelectedReferenceSet = initialState.mSelectedReferenceSet
                         , specifications = initialState.specifications
                         }
 
@@ -322,6 +341,7 @@ init _ flagsValue =
                         , nextUuid = nextUuid
                         , designs = Dict.empty
                         , referenceSets = Dict.empty
+                        , mSelectedReferenceSet = Nothing
                         , specifications = Dict.empty
                         }
 
@@ -741,6 +761,7 @@ addStoreCmd ( state, gCmd, pCmd ) =
         , encodeStoredState
             { designs = state.designs
             , referenceSets = state.referenceSets
+            , mSelectedReferenceSet = state.mSelectedReferenceSet
             , specifications = state.specifications
             }
             |> Ports.storeRunState
