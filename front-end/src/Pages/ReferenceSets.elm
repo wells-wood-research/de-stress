@@ -5,6 +5,7 @@ import Dict
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Generated.Params as Params
 import Generated.Routes as Routes exposing (routes)
 import Global
@@ -18,7 +19,7 @@ page : Page Params.ReferenceSets Model Msg model msg appMsg
 page =
     Spa.Page.component
         { title = always "ReferenceSets"
-        , init = init
+        , init = always init
         , update = always update
         , subscriptions = always subscriptions
         , view = view
@@ -30,18 +31,12 @@ page =
 
 
 type alias Model =
-    { refSetDropDown : DropDown.Model (Maybe ReferenceSetStub)
-    }
+    {}
 
 
-init : Utils.Spa.PageContext -> Params.ReferenceSets -> ( Model, Cmd Msg, Cmd Global.Msg )
-init { global } _ =
-    ( case global of
-        Global.Running runState ->
-            { refSetDropDown = DropDown.init runState.mSelectedReferenceSet }
-
-        Global.FailedToLaunch _ ->
-            { refSetDropDown = DropDown.init Nothing }
+init : Params.ReferenceSets -> ( Model, Cmd Msg, Cmd Global.Msg )
+init _ =
+    ( {}
     , Cmd.none
     , Cmd.none
     )
@@ -53,21 +48,18 @@ init { global } _ =
 
 
 type Msg
-    = RefSetDropDownMsg (DropDown.Msg (Maybe ReferenceSetStub))
+    = ClickedSelectReferenceSet (Maybe String)
     | DeleteReferenceSet String Style.DangerStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
 update msg model =
     case msg of
-        RefSetDropDownMsg cMsg ->
-            let
-                cModel =
-                    DropDown.update cMsg model.refSetDropDown
-            in
-            ( { model | refSetDropDown = cModel }
+        ClickedSelectReferenceSet mSelectedReferenceSet ->
+            ( model
             , Cmd.none
-            , Cmd.none
+            , Global.SetSelectedReferenceSet mSelectedReferenceSet
+                |> send
             )
 
         DeleteReferenceSet uuidString dangerStatus ->
@@ -94,9 +86,9 @@ subscriptions _ =
 
 
 view : Utils.Spa.PageContext -> Model -> Element Msg
-view { global } model =
+view { global } _ =
     case global of
-        Global.Running { referenceSets } ->
+        Global.Running { mSelectedReferenceSet, referenceSets } ->
             column
                 [ width fill, spacing 30 ]
                 [ row [ centerX, spacing 10 ]
@@ -105,35 +97,13 @@ view { global } model =
                     , Style.linkButton
                         { url = "/reference-sets/new", labelText = "New" }
                     ]
-                , Element.map RefSetDropDownMsg <|
-                    DropDown.view
-                        (\mStub ->
-                            case mStub of
-                                Just stub ->
-                                    let
-                                        { name } =
-                                            ReferenceSet.getParamsForStub stub
-                                    in
-                                    text name
-
-                                Nothing ->
-                                    text "--"
-                        )
-                        (Nothing
-                            :: (referenceSets
-                                    |> Dict.values
-                                    |> List.map Global.storedReferenceSetToStub
-                                    |> List.map Just
-                               )
-                        )
-                        model.refSetDropDown
                 , column []
                     (Dict.toList referenceSets
                         |> List.map
                             (\( k, v ) ->
                                 ( k, Global.storedReferenceSetToStub v )
                             )
-                        |> List.map referenceSetStubView
+                        |> List.map (referenceSetStubView mSelectedReferenceSet)
                     )
                 ]
 
@@ -141,19 +111,42 @@ view { global } model =
             Debug.todo "Add common state page"
 
 
-referenceSetStubView : ( String, ReferenceSetStub ) -> Element Msg
-referenceSetStubView ( uuidString, stub ) =
+referenceSetStubView : Maybe String -> ( String, ReferenceSetStub ) -> Element Msg
+referenceSetStubView mSelectedReferenceSet ( uuidString, stub ) =
     let
         { name, description, deleteStatus } =
             ReferenceSet.getParamsForStub stub
     in
     column
-        [ padding 15
-        , spacing 10
-        , width fill
-        , Background.color Style.colorPalette.c5
-        , Border.rounded 10
-        ]
+        ([ padding 15
+         , spacing 10
+         , width fill
+         , Background.color Style.colorPalette.c5
+         , Border.rounded 10
+         , Border.width 3
+         ]
+            ++ (case mSelectedReferenceSet of
+                    Just selectedReferenceSet ->
+                        if selectedReferenceSet == uuidString then
+                            [ Border.color Style.colorPalette.black
+                            , Events.onClick <| ClickedSelectReferenceSet <| Nothing
+                            ]
+
+                        else
+                            [ Border.color Style.colorPalette.c5
+                            , Events.onClick <|
+                                ClickedSelectReferenceSet <|
+                                    Just uuidString
+                            ]
+
+                    Nothing ->
+                        [ Border.color Style.colorPalette.c5
+                        , Events.onClick <|
+                            ClickedSelectReferenceSet <|
+                                Just uuidString
+                        ]
+               )
+        )
         [ column
             [ pointer
             , spacing 10

@@ -12,6 +12,8 @@ module Global exposing
     , updateUuid
     )
 
+-- {{{ Imports
+
 import BigStructure.Mutation as Mutation
 import BigStructure.Object.CreateDesign as CreateDesign
 import BigStructure.Object.Design as Design
@@ -35,6 +37,7 @@ import Uuid exposing (Uuid)
 
 
 
+-- }}}
 -- {{{ Flags
 
 
@@ -48,7 +51,7 @@ type alias DecodedFlags =
         Maybe
             { designs : Dict String StoredDesign
             , referenceSets : Dict String StoredReferenceSet
-            , mSelectedReferenceSet : Maybe ReferenceSetStub
+            , mSelectedReferenceSet : Maybe String
             , specifications : Dict String StoredSpecification
             }
     }
@@ -60,35 +63,30 @@ flagsCodec =
         |> Codec.field "randomSeed" .randomSeed Codec.int
         |> Codec.field "mInitialState"
             .mInitialState
-            (storedStateCodec
-                |> Codec.maybe
-            )
+            (storedStateCodec |> Codec.maybe)
         |> Codec.buildObject
 
 
-storedStateCodec :
-    Codec
-        { designs : Dict String StoredDesign
-        , referenceSets : Dict String StoredReferenceSet
-        , mSelectedReferenceSet : Maybe ReferenceSetStub
-        , specifications : Dict String StoredSpecification
-        }
+type alias StoredState =
+    { designs : Dict String StoredDesign
+    , referenceSets : Dict String StoredReferenceSet
+    , mSelectedReferenceSet : Maybe String
+    , specifications : Dict String StoredSpecification
+    }
+
+
+storedStateCodec : Codec StoredState
 storedStateCodec =
-    Codec.object
-        (\ds rs msrf ss ->
-            { designs = ds
-            , referenceSets = rs
-            , mSelectedReferenceSet = msrf
-            , specifications = ss
-            }
-        )
+    Codec.object StoredState
         |> Codec.field "designs" .designs (Codec.dict storedDesignCodec)
         |> Codec.field "referenceSets"
             .referenceSets
             (Codec.dict storedReferenceSetCodec)
         |> Codec.field "mSelectedReferenceSet"
             .mSelectedReferenceSet
-            (Codec.maybe ReferenceSet.referenceSetStubCodec)
+            (Codec.string
+                |> Codec.maybe
+            )
         |> Codec.field "specifications"
             .specifications
             (Codec.dict storedSpecificationCodec)
@@ -205,18 +203,12 @@ type alias RunState =
     , nextUuid : Uuid
     , designs : Dict String StoredDesign
     , referenceSets : Dict String StoredReferenceSet
-    , mSelectedReferenceSet : Maybe ReferenceSetStub
+    , mSelectedReferenceSet : Maybe String
     , specifications : Dict String StoredSpecification
     }
 
 
-encodeStoredState :
-    { designs : Dict String StoredDesign
-    , referenceSets : Dict String StoredReferenceSet
-    , mSelectedReferenceSet : Maybe ReferenceSetStub
-    , specifications : Dict String StoredSpecification
-    }
-    -> Value
+encodeStoredState : StoredState -> Value
 encodeStoredState storedState =
     Codec.encoder
         storedStateCodec
@@ -331,7 +323,8 @@ init _ flagsValue =
                         , nextUuid = nextUuid
                         , designs = initialState.designs
                         , referenceSets = initialState.referenceSets
-                        , mSelectedReferenceSet = initialState.mSelectedReferenceSet
+                        , mSelectedReferenceSet =
+                            initialState.mSelectedReferenceSet
                         , specifications = initialState.specifications
                         }
 
@@ -377,6 +370,7 @@ type Msg
     | DeleteReferenceSet String Style.DangerStatus
     | GetReferenceSet String
     | DeleteFocussedReferenceSet String Style.DangerStatus
+    | SetSelectedReferenceSet (Maybe String)
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
@@ -507,6 +501,12 @@ updateRunState commands msg runState =
                     , Cmd.none
                     , Cmd.none
                     )
+
+        SetSelectedReferenceSet mSelectedReferenceSet ->
+            ( { runState | mSelectedReferenceSet = mSelectedReferenceSet }
+            , Cmd.none
+            , Cmd.none
+            )
 
         GetDesign uuidString ->
             ( runState
