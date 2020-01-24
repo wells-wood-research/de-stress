@@ -15,6 +15,7 @@ import Html
 import Html.Attributes as HAtt
 import Metrics exposing (DesignMetrics)
 import Ports
+import RemoteData as RD
 import Round
 import Spa.Page exposing (send)
 import Style exposing (h1, h2, h3)
@@ -100,9 +101,24 @@ update msg model =
                 Ok { uuidString, design } ->
                     ( Design uuidString design
                     , Cmd.batch
-                        [ Codec.encoder Codec.string design.pdbString
+                        ([ Codec.encoder Codec.string design.pdbString
                             |> Ports.viewStructure
-                        ]
+                         ]
+                            ++ (case design.metricsRemoteData of
+                                    RD.Success metrics ->
+                                        [ Ports.vegaPlot <|
+                                            { plotId = "composition"
+                                            , spec =
+                                                Metrics.createCompositionSpec
+                                                    metrics
+                                                    []
+                                            }
+                                        ]
+
+                                    _ ->
+                                        []
+                               )
+                        )
                     , Cmd.none
                     )
 

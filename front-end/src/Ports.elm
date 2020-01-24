@@ -12,10 +12,12 @@ port module Ports exposing
     , storeRunState
     , storeSpecification
     , updateDesignMetricsRD
+    , vegaPlot
     , viewStructure
     )
 
 import Codec exposing (Value)
+import VegaLite as VL
 
 
 
@@ -135,6 +137,13 @@ deleteSpecification uuidValue =
         { action = "DELETE_SPECIFICATION"
         , data = uuidValue
         }
+
+
+
+-- Vega Lite
+
+
+port vegaPlot : { plotId : String, spec : VL.Spec } -> Cmd msg
 
 
 

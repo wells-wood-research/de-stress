@@ -1,12 +1,22 @@
 // On load, listen to Elm!
 window.addEventListener("load", _ => {
   window.ports = {
-    init: app =>
+    init: app => {
       app.ports.outgoing.subscribe(({ action, data }) => {
         actions[action]
           ? actions[action](app, data)
           : console.warn(`I didn't recognize action "${action}".`);
-      })
+      });
+      // Vega Lite
+      // Plots a vega-lite specification created in Elm
+      app.ports.vegaPlot.subscribe(plotDetails => {
+        window.requestAnimationFrame(() => {
+          vegaEmbed("#" + plotDetails.plotId, plotDetails.spec, {
+            actions: false
+          }).catch(console.warn);
+        });
+      });
+    }
   };
 });
 
@@ -44,7 +54,6 @@ const storeDesign = (_, designAndKey) => {
 // Update design metrics for stored design
 const updateDesignMetrics = (_, metricsAndKey) => {
   var { storeKey, designMetricsRD } = metricsAndKey;
-  console.log("Metrics", designMetricsRD);
   idbKeyval.get(storeKey, designStore).then(design => {
     design.metricsRemoteData = designMetricsRD;
     idbKeyval.set(storeKey, design, designStore);
