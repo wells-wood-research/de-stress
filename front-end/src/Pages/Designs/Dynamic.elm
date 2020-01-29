@@ -8,6 +8,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Keyed as Keyed
+import FeatherIcons
 import Generated.Designs.Params as Params
 import Generated.Routes as Routes exposing (routes)
 import Global
@@ -330,14 +331,14 @@ view model =
         DesignNoReference design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView model.uuidString design
+                [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , text "No reference set selected."
                 ]
 
         DesignLoadingReference design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView model.uuidString design
+                [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , h2 <| text "Comparison to Reference Set"
                 , text "Loading reference set..."
                 ]
@@ -345,7 +346,7 @@ view model =
         DesignFailedToLoadReference error design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView model.uuidString design
+                [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , h2 <| text "Comparison to Reference Set"
                 , text
                     ("""Comparison to reference set is unavailable, as the reference set
@@ -357,7 +358,7 @@ view model =
         DesignWithReference design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView model.uuidString design
+                [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , referenceSetComparisonView
                 ]
 
@@ -367,8 +368,12 @@ sectionColumn =
     column [ spacing 10, width fill ]
 
 
-designDetailsView : String -> Design -> Element Msg
-designDetailsView uuidString { name, fileName, deleteStatus, metricsRemoteData } =
+designDetailsView :
+    String
+    -> Maybe Specification
+    -> Design
+    -> Element Msg
+designDetailsView uuidString mSelectedSpecification { name, fileName, deleteStatus, metricsRemoteData } =
     column
         [ spacing 15, width fill ]
         [ sectionColumn
@@ -401,12 +406,14 @@ designDetailsView uuidString { name, fileName, deleteStatus, metricsRemoteData }
                     |> html
                 )
             ]
-        , Metrics.desMetRemoteDataView basicMetrics metricsRemoteData
+        , Metrics.desMetRemoteDataView
+            (basicMetrics mSelectedSpecification)
+            metricsRemoteData
         ]
 
 
-basicMetrics : DesignMetrics -> Element msg
-basicMetrics metrics =
+basicMetrics : Maybe Specification -> DesignMetrics -> Element msg
+basicMetrics mSelectedSpecification metrics =
     let
         { sequences } =
             metrics
@@ -416,6 +423,12 @@ basicMetrics metrics =
         , h3 <| text "Sequences"
         , sequenceDictView sequences
         , metricsOverview metrics
+        , case mSelectedSpecification of
+            Just specification ->
+                specificationView metrics specification
+
+            Nothing ->
+                text "No specification selected."
         ]
 
 
@@ -595,6 +608,233 @@ metricsHistogramsView =
                 |> html
             )
         ]
+
+
+specificationView : DesignMetrics -> Specification -> Element msg
+specificationView metrics { name, description, requirements } =
+    sectionColumn
+        [ h2 <| text "Specification Evaluation"
+        , column
+            [ padding 15
+            , spacing 10
+            , width fill
+            , Background.color Style.colorPalette.c5
+            , Border.rounded 10
+            ]
+            [ h3 <| text "Name"
+            , paragraph [] [ text name ]
+            , h3 <| text "Description"
+            , paragraph [] [ text description ]
+            , h3 <| text "Requirements"
+            , requirementView metrics requirements
+            ]
+        ]
+
+
+requirementView :
+    DesignMetrics
+    -> Specification.Requirement Specification.RequirementData
+    -> Element msg
+requirementView metrics requirement =
+    let
+        requirementResolves =
+            resolveRequirement metrics requirement
+
+        arrowRow r =
+            row
+                [ padding 5, spacing 15, width fill ]
+                [ el []
+                    (FeatherIcons.chevronRight
+                        |> FeatherIcons.toHtml []
+                        |> html
+                    )
+                , requirementView metrics r
+                ]
+    in
+    el
+        ([ width fill, Border.rounded 10 ]
+            ++ (if requirementResolves then
+                    [ Background.color Style.colorPalette.c3 ]
+
+                else
+                    [ Background.color Style.colorPalette.red ]
+               )
+        )
+    <|
+        case requirement of
+            Specification.Data data ->
+                case data of
+                    Specification.Constant constantType ->
+                        let
+                            typeString =
+                                "Constant:"
+
+                            requirementString =
+                                case constantType of
+                                    Specification.Method methodType ->
+                                        let
+                                            constantTypeString =
+                                                typeString ++ "Method:"
+                                        in
+                                        case methodType of
+                                            Specification.SPPS ->
+                                                constantTypeString ++ "SPPS"
+
+                                            Specification.MolecularBiology ->
+                                                constantTypeString ++ "MolBio"
+                        in
+                        el [ padding 10 ] (text <| requirementString)
+
+                    Specification.Value valueType ->
+                        let
+                            typeString =
+                                "Value:"
+
+                            requirementString =
+                                case valueType of
+                                    Specification.IsoelectricPoint order value ->
+                                        typeString
+                                            ++ "IsoelectricPoint:"
+                                            ++ Specification.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Specification.HydrophobicFitness order value ->
+                                        typeString
+                                            ++ "HydrophobicFitness:"
+                                            ++ Specification.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Specification.MeanPackingDensity order value ->
+                                        typeString
+                                            ++ "MeanPackingDensity:"
+                                            ++ Specification.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Specification.SequenceContains string ->
+                                        typeString
+                                            ++ "SequenceContains:"
+                                            ++ string
+                        in
+                        el (Style.defaultBorder ++ [ padding 10, width fill ])
+                            (text <| requirementString)
+
+            Specification.Not subRequirement ->
+                row (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
+                    [ h3 <| el [ Font.bold ] (text <| "NOT")
+                    , requirementView metrics subRequirement
+                    ]
+
+            Specification.Or subRequirement1 subRequirement2 ->
+                column
+                    (Style.defaultBorder
+                        ++ [ padding 10
+                           , spacing 10
+                           , width fill
+                           ]
+                    )
+                    [ requirementView metrics subRequirement1
+                    , h3 <| el [ Font.bold ] (text "---- OR ----")
+                    , requirementView metrics subRequirement2
+                    ]
+
+            Specification.And requirement1 requirement2 ->
+                column
+                    (Style.defaultBorder
+                        ++ [ padding 10
+                           , spacing 10
+                           , width fill
+                           ]
+                    )
+                    [ requirementView metrics requirement1
+                    , el [ Font.bold ]
+                        (text "---- AND ----")
+                    , requirementView metrics requirement2
+                    ]
+
+            Specification.Any requirements ->
+                column
+                    (Style.defaultBorder
+                        ++ [ padding 10
+                           , spacing 10
+                           , width fill
+                           ]
+                    )
+                    [ el [ Font.bold ] (text "ANY")
+                    , column [ padding 10, spacing 10, width fill ] <|
+                        List.map arrowRow requirements
+                    ]
+
+            Specification.All requirements ->
+                column
+                    (Style.defaultBorder
+                        ++ [ padding 10
+                           , spacing 10
+                           , width fill
+                           ]
+                    )
+                    [ el [ Font.bold ] (text "ALL")
+                    , column [ padding 10, spacing 5, width fill ] <|
+                        List.map arrowRow requirements
+                    ]
+
+
+resolveRequirement :
+    DesignMetrics
+    -> Specification.Requirement Specification.RequirementData
+    -> Bool
+resolveRequirement metrics requirement =
+    case requirement of
+        Specification.All requirements ->
+            List.all (resolveRequirement metrics) requirements
+
+        Specification.Any requirements ->
+            List.any (resolveRequirement metrics) requirements
+
+        Specification.And subRequirement1 subRequirement2 ->
+            resolveRequirement metrics subRequirement1
+                && resolveRequirement metrics subRequirement2
+
+        Specification.Or subRequirement1 subRequirement2 ->
+            resolveRequirement metrics subRequirement1
+                || resolveRequirement metrics subRequirement2
+
+        Specification.Not subRequirement ->
+            not (resolveRequirement metrics subRequirement)
+
+        Specification.Data data ->
+            case data of
+                Specification.Value valueType ->
+                    case valueType of
+                        Specification.IsoelectricPoint order value ->
+                            compare metrics.isoelectricPoint value == order
+
+                        Specification.HydrophobicFitness order value ->
+                            case metrics.hydrophobicFitness of
+                                Nothing ->
+                                    False
+
+                                Just hf ->
+                                    compare hf value == order
+
+                        Specification.MeanPackingDensity order value ->
+                            compare metrics.packingDensity value == order
+
+                        Specification.SequenceContains seqString ->
+                            List.any (String.contains seqString)
+                                (Dict.values
+                                    metrics.sequences
+                                )
+
+                Specification.Constant constantType ->
+                    case constantType of
+                        Specification.Method _ ->
+                            Debug.log "This should do something" True
 
 
 
