@@ -4,6 +4,7 @@ module ReferenceSet exposing
     , ReferenceSetStub(..)
     , codec
     , createReferenceSetStub
+    , getMetrics
     , getParamsForStub
     , highResBiolUnits
     , queryToCmd
@@ -44,6 +45,16 @@ type alias PdbCodeListParams =
     , metrics : List RefSetMetrics
     , deleteStatus : Style.DangerStatus
     }
+
+
+getMetrics : ReferenceSet -> List RefSetMetrics
+getMetrics referenceSet =
+    case referenceSet of
+        HighResBiolUnit { metrics } ->
+            metrics
+
+        PdbCodeList { metrics } ->
+            metrics
 
 
 codec : Codec ReferenceSet

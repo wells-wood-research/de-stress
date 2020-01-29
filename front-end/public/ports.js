@@ -113,9 +113,9 @@ const storeReferenceSet = (_, referenceSetAndKey) => {
 };
 
 // Get referenceSet
-const getReferenceSet = (app, storeKey) => {
+const getReferenceSetForMetrics = (app, storeKey) => {
   idbKeyval.get(storeKey, referenceSetStore).then(referenceSet => {
-    app.ports.setFocussedReferenceSet.send({
+    app.ports.referenceSetForMetrics.send({
       uuidString: storeKey,
       referenceSet: referenceSet
     });
@@ -175,7 +175,7 @@ const actions = {
   VIEW_STRUCTURE: viewStructure,
   // Reference Sets
   STORE_REFERENCE_SET: storeReferenceSet,
-  GET_REFERENCE_SET: getReferenceSet,
+  GET_REFERENCE_SET_FOR_METRICS: getReferenceSetForMetrics,
   DELETE_REFERENCE_SET: deleteReferenceSet,
   // Specifications
   STORE_SPECIFICATION: storeSpecification,

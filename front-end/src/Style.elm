@@ -38,7 +38,7 @@ colorPalette =
 h1 : Element msg -> Element msg
 h1 content =
     el
-        [ paddingEach { top = 12, bottom = 8, left = 8, right = 8 }
+        [ paddingEach { top = 12, bottom = 8, left = 0, right = 0 }
         , Font.size 32
         , Region.heading 1
         ]
@@ -48,7 +48,7 @@ h1 content =
 h2 : Element msg -> Element msg
 h2 content =
     el
-        [ paddingEach { top = 12, bottom = 8, left = 8, right = 8 }
+        [ paddingEach { top = 12, bottom = 8, left = 0, right = 0 }
         , Font.bold
         , Font.size 24
         , Region.heading 2
@@ -59,7 +59,7 @@ h2 content =
 h3 : Element msg -> Element msg
 h3 content =
     el
-        [ paddingEach { top = 12, bottom = 8, left = 8, right = 8 }
+        [ paddingEach { top = 12, bottom = 8, left = 0, right = 0 }
         , Font.italic
         , Font.size 22
         , Region.heading 3

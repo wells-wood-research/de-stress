@@ -372,7 +372,10 @@ compositionDictWithDefaultValues inputDict =
         |> Dict.fromList
 
 
-createCompositionSpec : DesignMetrics -> List DesignMetrics -> VL.Spec
+createCompositionSpec :
+    DesignMetrics
+    -> List RefSetMetrics
+    -> VL.Spec
 createCompositionSpec designMetrics referenceSetMetricsList =
     let
         numberInReferenceSet =

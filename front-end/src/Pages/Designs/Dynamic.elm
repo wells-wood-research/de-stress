@@ -13,8 +13,10 @@ import Generated.Routes as Routes exposing (routes)
 import Global
 import Html
 import Html.Attributes as HAtt
+import Json.Decode exposing (errorToString)
 import Metrics exposing (DesignMetrics)
 import Ports
+import ReferenceSet
 import RemoteData as RD
 import Round
 import Spa.Page exposing (send)
@@ -27,7 +29,7 @@ page =
     Spa.Page.component
         { title = always "Design Details"
         , init = always init
-        , update = always update
+        , update = update
         , subscriptions = always subscriptions
         , view = always view
         }
@@ -39,28 +41,76 @@ page =
 
 type Model
     = Loading String
-    | DesignNotFound String
-    | Design String Design
+    | DesignNotFound String Codec.Error
+    | DesignNoReference String Design
+    | DesignLoadingReference String Design
+    | DesignFailedToLoadReference String Design Codec.Error
+    | DesignWithReference String Design
 
 
-mapModel :
+getUuidString : Model -> String
+getUuidString model =
+    case model of
+        Loading uuidString ->
+            uuidString
+
+        DesignNotFound uuidString _ ->
+            uuidString
+
+        DesignNoReference uuidString _ ->
+            uuidString
+
+        DesignLoadingReference uuidString _ ->
+            uuidString
+
+        DesignFailedToLoadReference uuidString _ _ ->
+            uuidString
+
+        DesignWithReference uuidString _ ->
+            uuidString
+
+
+mapDesign :
     ({ uuidString : String, design : Design }
      -> { uuidString : String, design : Design }
     )
     -> Model
     -> Model
-mapModel designFn focus =
+mapDesign designFn focus =
     case focus of
         Loading _ ->
             focus
 
-        DesignNotFound _ ->
+        DesignNotFound _ _ ->
             focus
 
-        Design uuidString design ->
+        DesignNoReference uuidString design ->
             { uuidString = uuidString, design = design }
                 |> designFn
-                |> (\idDesign -> Design idDesign.uuidString idDesign.design)
+                |> (\idDesign -> DesignNoReference idDesign.uuidString idDesign.design)
+
+        DesignFailedToLoadReference uuidString design errorString ->
+            { uuidString = uuidString, design = design }
+                |> designFn
+                |> (\idDesign ->
+                        DesignFailedToLoadReference
+                            idDesign.uuidString
+                            idDesign.design
+                            errorString
+                   )
+
+        DesignLoadingReference uuidString design ->
+            { uuidString = uuidString, design = design }
+                |> designFn
+                |> (\idDesign -> DesignLoadingReference idDesign.uuidString idDesign.design)
+
+        DesignWithReference uuidString design ->
+            { uuidString = uuidString, design = design }
+                |> designFn
+                |> (\idDesign ->
+                        DesignWithReference idDesign.uuidString
+                            idDesign.design
+                   )
 
 
 init : Params.Dynamic -> ( Model, Cmd Msg, Cmd Global.Msg )
@@ -78,11 +128,21 @@ init { param1 } =
 
 type Msg
     = SetFocus Value
+    | GotReferenceSet Value
     | DeleteFocussedDesign String Style.DangerStatus
 
 
-update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
-update msg model =
+update : Utils.Spa.PageContext -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
+update { global } msg model =
+    let
+        mSelectedReferenceSet =
+            case global of
+                Global.Running runState ->
+                    runState.mSelectedReferenceSet
+
+                _ ->
+                    Nothing
+    in
     case msg of
         SetFocus value ->
             let
@@ -99,31 +159,82 @@ update msg model =
             in
             case Codec.decodeValue focusCodec value of
                 Ok { uuidString, design } ->
-                    ( Design uuidString design
-                    , Cmd.batch
-                        ([ Codec.encoder Codec.string design.pdbString
-                            |> Ports.viewStructure
-                         ]
-                            ++ (case design.metricsRemoteData of
-                                    RD.Success metrics ->
-                                        [ Ports.vegaPlot <|
-                                            { plotId = "composition"
-                                            , spec =
-                                                Metrics.createCompositionSpec
-                                                    metrics
-                                                    []
-                                            }
-                                        ]
+                    case mSelectedReferenceSet of
+                        Just refSetId ->
+                            ( DesignLoadingReference uuidString design
+                            , Cmd.batch
+                                [ Codec.encoder Codec.string design.pdbString
+                                    |> Ports.viewStructure
+                                , Codec.encoder Codec.string refSetId
+                                    |> Ports.getReferenceSetForMetrics
+                                ]
+                            , Cmd.none
+                            )
 
-                                    _ ->
-                                        []
-                               )
-                        )
+                        Nothing ->
+                            ( DesignNoReference uuidString design
+                            , Cmd.batch
+                                [ Codec.encoder Codec.string design.pdbString
+                                    |> Ports.viewStructure
+                                ]
+                            , Cmd.none
+                            )
+
+                Err error ->
+                    ( DesignNotFound (getUuidString model) error
+                    , Cmd.none
                     , Cmd.none
                     )
 
-                Err errorString ->
-                    Debug.todo "Catch this error"
+        GotReferenceSet referenceSetValue ->
+            let
+                refSetWithUuidCodec =
+                    Codec.object
+                        (\uuidString referenceSet ->
+                            { uuidString = uuidString
+                            , referenceSet = referenceSet
+                            }
+                        )
+                        |> Codec.field "uuidString" .uuidString Codec.string
+                        |> Codec.field "referenceSet" .referenceSet ReferenceSet.codec
+                        |> Codec.buildObject
+            in
+            case Codec.decodeValue refSetWithUuidCodec referenceSetValue of
+                Ok { referenceSet } ->
+                    case model of
+                        DesignLoadingReference uuidString design ->
+                            ( DesignWithReference uuidString design
+                            , case design.metricsRemoteData of
+                                RD.Success metrics ->
+                                    Ports.vegaPlot <|
+                                        { plotId = "composition"
+                                        , spec =
+                                            Metrics.createCompositionSpec
+                                                metrics
+                                                (ReferenceSet.getMetrics referenceSet)
+                                        }
+
+                                _ ->
+                                    Cmd.none
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( model
+                            , Cmd.none
+                            , Cmd.none
+                            )
+
+                Err error ->
+                    case model of
+                        DesignLoadingReference uuidString design ->
+                            ( DesignFailedToLoadReference uuidString design error
+                            , Cmd.none
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( model, Cmd.none, Cmd.none )
 
         DeleteFocussedDesign globalUuidString dangerStatus ->
             case dangerStatus of
@@ -135,7 +246,7 @@ update msg model =
                     )
 
                 _ ->
-                    ( mapModel
+                    ( mapDesign
                         (\{ uuidString, design } ->
                             { uuidString = uuidString
                             , design =
@@ -159,7 +270,9 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ Ports.setFocussedDesign SetFocus ]
+        [ Ports.setFocussedDesign SetFocus
+        , Ports.referenceSetForMetrics GotReferenceSet
+        ]
 
 
 
@@ -173,11 +286,42 @@ view model =
         Loading _ ->
             el [] (text "Loading design...")
 
-        DesignNotFound designUuid ->
+        DesignNotFound designUuid _ ->
             el [] ("A design with ID \"" ++ designUuid ++ "\" was not found." |> text)
 
-        Design uuidString design ->
-            designDetailsView uuidString design
+        DesignNoReference uuidString design ->
+            column
+                [ spacing 15, width fill ]
+                [ designDetailsView uuidString design
+                , text "No reference set selected."
+                ]
+
+        DesignLoadingReference uuidString design ->
+            column
+                [ spacing 15, width fill ]
+                [ designDetailsView uuidString design
+                , h2 <| text "Comparison to Reference Set"
+                , text "Loading reference set..."
+                ]
+
+        DesignFailedToLoadReference uuidString design error ->
+            column
+                [ spacing 15, width fill ]
+                [ designDetailsView uuidString design
+                , h2 <| text "Comparison to Reference Set"
+                , text
+                    ("""Comparison to reference set is unavailable, as the reference set
+                    data failed to load:"""
+                        ++ errorToString error
+                    )
+                ]
+
+        DesignWithReference uuidString design ->
+            column
+                [ spacing 15, width fill ]
+                [ designDetailsView uuidString design
+                , referenceSetComparisonView
+                ]
 
 
 sectionColumn : List (Element msg) -> Element msg
@@ -226,23 +370,30 @@ designDetailsView uuidString { name, fileName, deleteStatus, metricsRemoteData }
 basicMetrics : DesignMetrics -> Element msg
 basicMetrics metrics =
     let
-        { sequences, composition } =
+        { sequences } =
             metrics
     in
     sectionColumn
         [ h2 <| text "Basic Metrics"
         , h3 <| text "Sequences"
         , sequenceDictView sequences
-        , compositionView composition
         , metricsOverview metrics
         ]
 
 
-compositionView : Dict String Float -> Element msg
-compositionView composition =
+referenceSetComparisonView : Element msg
+referenceSetComparisonView =
+    sectionColumn
+        [ h2 <| text "Comparison to Reference Set"
+        , compositionView
+        ]
+
+
+compositionView : Element msg
+compositionView =
     column
         [ width fill ]
-        [ h2 <| text "Composition"
+        [ h3 <| text "Composition"
         , Keyed.el [ centerX ]
             ( "composition"
             , Html.div [ HAtt.id "composition" ] []

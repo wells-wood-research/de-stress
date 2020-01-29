@@ -368,9 +368,8 @@ type Msg
     | AddReferenceSet ReferenceSet
     | AddNamedReferenceSet String ReferenceSet
     | DeleteReferenceSet String Style.DangerStatus
-    | GetReferenceSet String
     | DeleteFocussedReferenceSet String Style.DangerStatus
-    | SetSelectedReferenceSet (Maybe String)
+    | SetMSelectedReferenceSet (Maybe String)
     | AddSpecification Specification
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
@@ -502,8 +501,8 @@ updateRunState commands msg runState =
                     , Cmd.none
                     )
 
-        SetSelectedReferenceSet mSelectedReferenceSet ->
-            ( { runState | mSelectedReferenceSet = mSelectedReferenceSet }
+        SetMSelectedReferenceSet mId ->
+            ( { runState | mSelectedReferenceSet = mId }
             , Cmd.none
             , Cmd.none
             )
@@ -640,13 +639,6 @@ updateRunState commands msg runState =
                     , Cmd.none
                     , Cmd.none
                     )
-
-        GetReferenceSet uuidString ->
-            ( runState
-            , Cmd.none
-            , Codec.encoder Codec.string uuidString
-                |> Ports.getReferenceSet
-            )
 
         AddSpecification spec ->
             let
@@ -840,7 +832,8 @@ type alias Commands msg =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Sub.batch
+        []
 
 
 

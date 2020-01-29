@@ -1,6 +1,5 @@
 module Pages.ReferenceSets exposing (Model, Msg, page)
 
-import Components.DropDown as DropDown
 import Dict
 import Element exposing (..)
 import Element.Background as Background
@@ -58,7 +57,7 @@ update msg model =
         ClickedSelectReferenceSet mSelectedReferenceSet ->
             ( model
             , Cmd.none
-            , Global.SetSelectedReferenceSet mSelectedReferenceSet
+            , Global.SetMSelectedReferenceSet mSelectedReferenceSet
                 |> send
             )
 
@@ -103,7 +102,8 @@ view { global } _ =
                             (\( k, v ) ->
                                 ( k, Global.storedReferenceSetToStub v )
                             )
-                        |> List.map (referenceSetStubView mSelectedReferenceSet)
+                        |> List.map
+                            (referenceSetStubView mSelectedReferenceSet)
                     )
                 ]
 

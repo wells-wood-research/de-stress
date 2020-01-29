@@ -3,8 +3,9 @@ port module Ports exposing
     , deleteReferenceSet
     , deleteSpecification
     , getDesign
-    , getReferenceSet
+    , getReferenceSetForMetrics
     , getSpecification
+    , referenceSetForMetrics
     , setFocussedDesign
     , setFocussedSpecification
     , storeDesign
@@ -95,10 +96,10 @@ storeReferenceSet referenceSetValue =
         }
 
 
-getReferenceSet : Value -> Cmd msg
-getReferenceSet uuidValue =
+getReferenceSetForMetrics : Value -> Cmd msg
+getReferenceSetForMetrics uuidValue =
     outgoing
-        { action = "GET_REFERENCE_SET"
+        { action = "GET_REFERENCE_SET_FOR_METRICS"
         , data = uuidValue
         }
 
@@ -154,7 +155,7 @@ port vegaPlot : { plotId : String, spec : VL.Spec } -> Cmd msg
 port setFocussedDesign : (Value -> msg) -> Sub msg
 
 
-port setFocussedReferenceSet : (Value -> msg) -> Sub msg
+port referenceSetForMetrics : (Value -> msg) -> Sub msg
 
 
 port setFocussedSpecification : (Value -> msg) -> Sub msg
