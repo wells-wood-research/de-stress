@@ -1,4 +1,4 @@
-name: Big Structure Run Tests
+name: Big Structure Tests
 
 on:
   push:
