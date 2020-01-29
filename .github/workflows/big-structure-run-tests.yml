@@ -5,10 +5,12 @@ on:
     branches:
       - master
     paths:
-      'big-structure/*'
+      - '.github/workflows/big-structure-run-tests.yml'
+      - 'big-structure/**'
   pull_request:
     paths:
-      'big-structure/*'
+      - '.github/workflows/big-structure-run-tests.yml'
+      - 'big-structure/**'
 
 jobs:
   build:

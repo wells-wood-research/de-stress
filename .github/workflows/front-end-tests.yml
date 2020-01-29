@@ -5,9 +5,11 @@ on:
     branches:
       - master
     paths:
+      - '.github/workflows/front-end-tests.yml'
       - 'front-end/*'
   pull_request:
     paths:
+      - '.github/workflows/front-end-tests.yml'
       - 'front-end/*'
 jobs:
   build:
