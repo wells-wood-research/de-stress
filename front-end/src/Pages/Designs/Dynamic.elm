@@ -221,6 +221,13 @@ update { global } msg model =
                                                     metrics
                                                     (ReferenceSet.getMetrics referenceSet)
                                             }
+                                        , Ports.vegaPlot <|
+                                            { plotId = "metricsHistograms"
+                                            , spec =
+                                                Metrics.createAllHistogramsSpec
+                                                    metrics
+                                                    (ReferenceSet.getMetrics referenceSet)
+                                            }
                                         ]
 
                                 _ ->
@@ -390,41 +397,6 @@ basicMetrics metrics =
         ]
 
 
-referenceSetComparisonView : Element msg
-referenceSetComparisonView =
-    sectionColumn
-        [ h2 <| text "Comparison to Reference Set"
-        , compositionView
-        , torsionAnglesView
-        ]
-
-
-compositionView : Element msg
-compositionView =
-    column
-        [ width fill ]
-        [ h3 <| text "Composition"
-        , Keyed.el [ centerX ]
-            ( "composition"
-            , Html.div [ HAtt.id "composition" ] []
-                |> html
-            )
-        ]
-
-
-torsionAnglesView : Element msg
-torsionAnglesView =
-    column
-        [ width fill ]
-        [ h3 <| text "Backbone Torsion Angles"
-        , Keyed.el [ centerX ]
-            ( "torsionAngles"
-            , Html.div [ HAtt.id "torsionAngles" ] []
-                |> html
-            )
-        ]
-
-
 metricsOverview : DesignMetrics -> Element msg
 metricsOverview metrics =
     let
@@ -516,6 +488,54 @@ sequenceView ( chainId, sequence ) =
                     , Font.monospace
                     ]
                 ]
+        ]
+
+
+referenceSetComparisonView : Element msg
+referenceSetComparisonView =
+    sectionColumn
+        [ h2 <| text "Comparison to Reference Set"
+        , compositionView
+        , torsionAnglesView
+        , metricsHistogramsView
+        ]
+
+
+compositionView : Element msg
+compositionView =
+    column
+        [ width fill ]
+        [ h3 <| text "Composition"
+        , Keyed.el [ centerX ]
+            ( "composition"
+            , Html.div [ HAtt.id "composition" ] []
+                |> html
+            )
+        ]
+
+
+torsionAnglesView : Element msg
+torsionAnglesView =
+    column
+        [ width fill ]
+        [ h3 <| text "Backbone Torsion Angles"
+        , Keyed.el [ centerX ]
+            ( "torsionAngles"
+            , Html.div [ HAtt.id "torsionAngles" ] []
+                |> html
+            )
+        ]
+
+
+metricsHistogramsView : Element msg
+metricsHistogramsView =
+    column [ width fill ]
+        [ h3 <| text "Metrics Histograms"
+        , Keyed.el [ centerX ]
+            ( "metricsHistograms"
+            , Html.div [ HAtt.id "metricsHistograms" ] []
+                |> html
+            )
         ]
 
 

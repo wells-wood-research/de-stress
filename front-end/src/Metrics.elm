@@ -239,7 +239,7 @@ failureView error =
 -- {{{ Plotting
 
 
-createAllHistogramsSpec : DesignMetrics -> List DesignMetrics -> VL.Spec
+createAllHistogramsSpec : DesignMetrics -> List RefSetMetrics -> VL.Spec
 createAllHistogramsSpec designMetrics pdbMetricsList =
     case List.filter (\a -> a.hydrophobicFitness /= Nothing) pdbMetricsList of
         [] ->
@@ -268,15 +268,8 @@ createAllHistogramsSpec designMetrics pdbMetricsList =
             , VL.asSpec
                 [ List.map
                     (histogramSpec (pdbData []) (designData []))
-                    [ "# Residues"
-                    , "Mass"
-                    ]
-                    |> VL.hConcat
-                ]
-            , VL.asSpec
-                [ List.map
-                    (histogramSpec (pdbData []) (designData []))
                     [ "Mean Packing Density"
+                    , "# Residues"
                     ]
                     |> VL.hConcat
                 ]
@@ -286,12 +279,18 @@ createAllHistogramsSpec designMetrics pdbMetricsList =
                 |> VL.toVegaLite
 
 
-metricDataRow : DesignMetrics -> (List VL.DataRow -> List VL.DataRow)
-metricDataRow { hydrophobicFitness, isoelectricPoint, mass, numOfResidues, packingDensity } =
+metricDataRow :
+    { a
+        | hydrophobicFitness : Maybe Float
+        , isoelectricPoint : Float
+        , numOfResidues : Int
+        , packingDensity : Float
+    }
+    -> (List VL.DataRow -> List VL.DataRow)
+metricDataRow { hydrophobicFitness, isoelectricPoint, numOfResidues, packingDensity } =
     VL.dataRow
         [ ( "Hydrophobic Fitness", VL.num <| Maybe.withDefault 666 hydrophobicFitness )
         , ( "Isoelectric Point", VL.num isoelectricPoint )
-        , ( "Mass", VL.num mass )
         , ( "# Residues", VL.num <| toFloat numOfResidues )
         , ( "Mean Packing Density", VL.num packingDensity )
         ]
