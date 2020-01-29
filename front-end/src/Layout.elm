@@ -33,7 +33,8 @@ view { page, route } =
 viewHeader : Route -> Element msg
 viewHeader currentRoute =
     row
-        [ width fill
+        [ paddingXY 5 0
+        , width fill
         , Background.color colorPalette.c1
         , Font.color colorPalette.c4
         , Font.size 32
@@ -42,8 +43,7 @@ viewHeader currentRoute =
         ]
         [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
         , row
-            [ padding 10
-            , alignRight
+            [ alignRight
             , spacingXY 10 0
             , Font.medium
             , Font.size 24
