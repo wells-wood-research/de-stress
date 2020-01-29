@@ -113,9 +113,9 @@ const storeReferenceSet = (_, referenceSetAndKey) => {
 };
 
 // Get referenceSet
-const getReferenceSetForMetrics = (app, storeKey) => {
+const getReferenceSetForDesign = (app, storeKey) => {
   idbKeyval.get(storeKey, referenceSetStore).then(referenceSet => {
-    app.ports.referenceSetForMetrics.send({
+    app.ports.referenceSetForDesign.send({
       uuidString: storeKey,
       referenceSet: referenceSet
     });
@@ -156,6 +156,16 @@ const getSpecification = (app, storeKey) => {
   });
 };
 
+// Get specification for design page
+const getSpecificationForDesign = (app, storeKey) => {
+  idbKeyval.get(storeKey, specificationStore).then(specification => {
+    app.ports.specificationForDesign.send({
+      uuidString: storeKey,
+      specification: specification
+    });
+  });
+};
+
 // Delete specification
 const deleteSpecification = (_, storeKey) => {
   idbKeyval.del(storeKey, specificationStore);
@@ -175,11 +185,12 @@ const actions = {
   VIEW_STRUCTURE: viewStructure,
   // Reference Sets
   STORE_REFERENCE_SET: storeReferenceSet,
-  GET_REFERENCE_SET_FOR_METRICS: getReferenceSetForMetrics,
+  GET_REFERENCE_SET_FOR_DESIGN: getReferenceSetForDesign,
   DELETE_REFERENCE_SET: deleteReferenceSet,
   // Specifications
   STORE_SPECIFICATION: storeSpecification,
   GET_SPECIFICATION: getSpecification,
+  GET_SPECIFICATION_FOR_DESIGN: getSpecificationForDesign,
   DELETE_SPECIFICATION: deleteSpecification
 };
 

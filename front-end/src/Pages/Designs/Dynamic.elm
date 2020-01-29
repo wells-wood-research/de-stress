@@ -20,6 +20,7 @@ import ReferenceSet
 import RemoteData as RD
 import Round
 import Spa.Page exposing (send)
+import Specification exposing (Specification)
 import Style exposing (h1, h2, h3)
 import Utils.Spa exposing (Page)
 
@@ -28,7 +29,7 @@ page : Page Params.Dynamic Model Msg model msg appMsg
 page =
     Spa.Page.component
         { title = always "Design Details"
-        , init = always init
+        , init = init
         , update = update
         , subscriptions = always subscriptions
         , view = always view
@@ -39,85 +40,79 @@ page =
 -- {{{ Init
 
 
-type Model
-    = Loading String
-    | DesignNotFound String Codec.Error
-    | DesignNoReference String Design
-    | DesignLoadingReference String Design
-    | DesignFailedToLoadReference String Design Codec.Error
-    | DesignWithReference String Design
+type alias Model =
+    { uuidString : String
+    , mSelectedSpecification : Maybe Specification
+    , pageState : PageState
+    }
 
 
-getUuidString : Model -> String
-getUuidString model =
-    case model of
-        Loading uuidString ->
-            uuidString
-
-        DesignNotFound uuidString _ ->
-            uuidString
-
-        DesignNoReference uuidString _ ->
-            uuidString
-
-        DesignLoadingReference uuidString _ ->
-            uuidString
-
-        DesignFailedToLoadReference uuidString _ _ ->
-            uuidString
-
-        DesignWithReference uuidString _ ->
-            uuidString
+type PageState
+    = Loading
+    | DesignNotFound Codec.Error
+    | DesignNoReference Design
+    | DesignLoadingReference Design
+    | DesignFailedToLoadReference Codec.Error Design
+    | DesignWithReference Design
 
 
-mapDesign :
-    ({ uuidString : String, design : Design }
-     -> { uuidString : String, design : Design }
-    )
-    -> Model
-    -> Model
-mapDesign designFn focus =
+mapPageStateDesign :
+    (Design -> Design)
+    -> PageState
+    -> PageState
+mapPageStateDesign designFn focus =
     case focus of
-        Loading _ ->
+        Loading ->
             focus
 
-        DesignNotFound _ _ ->
+        DesignNotFound _ ->
             focus
 
-        DesignNoReference uuidString design ->
-            { uuidString = uuidString, design = design }
+        DesignNoReference design ->
+            design
                 |> designFn
-                |> (\idDesign -> DesignNoReference idDesign.uuidString idDesign.design)
+                |> DesignNoReference
 
-        DesignFailedToLoadReference uuidString design errorString ->
-            { uuidString = uuidString, design = design }
+        DesignFailedToLoadReference errorString design ->
+            design
                 |> designFn
-                |> (\idDesign ->
-                        DesignFailedToLoadReference
-                            idDesign.uuidString
-                            idDesign.design
-                            errorString
-                   )
+                |> DesignFailedToLoadReference
+                    errorString
 
-        DesignLoadingReference uuidString design ->
-            { uuidString = uuidString, design = design }
+        DesignLoadingReference design ->
+            design
                 |> designFn
-                |> (\idDesign -> DesignLoadingReference idDesign.uuidString idDesign.design)
+                |> DesignLoadingReference
 
-        DesignWithReference uuidString design ->
-            { uuidString = uuidString, design = design }
+        DesignWithReference design ->
+            design
                 |> designFn
-                |> (\idDesign ->
-                        DesignWithReference idDesign.uuidString
-                            idDesign.design
-                   )
+                |> DesignWithReference
 
 
-init : Params.Dynamic -> ( Model, Cmd Msg, Cmd Global.Msg )
-init { param1 } =
-    ( Loading param1
+init : Utils.Spa.PageContext -> Params.Dynamic -> ( Model, Cmd Msg, Cmd Global.Msg )
+init { global } { param1 } =
+    ( { uuidString = param1, mSelectedSpecification = Nothing, pageState = Loading }
     , Cmd.none
-    , Global.GetDesign param1 |> send
+    , Cmd.batch
+        ((Global.GetDesign param1
+            |> send
+         )
+            :: (case global of
+                    Global.Running runState ->
+                        case runState.mSelectedSpecification of
+                            Just uuidString ->
+                                [ Codec.encoder Codec.string uuidString
+                                    |> Ports.getSpecificationForDesign
+                                ]
+
+                            Nothing ->
+                                []
+
+                    _ ->
+                        []
+               )
+        )
     )
 
 
@@ -129,6 +124,7 @@ init { param1 } =
 type Msg
     = SetFocus Value
     | GotReferenceSet Value
+    | GotSpecification Value
     | DeleteFocussedDesign String Style.DangerStatus
 
 
@@ -158,21 +154,21 @@ update { global } msg model =
                         |> Codec.buildObject
             in
             case Codec.decodeValue focusCodec value of
-                Ok { uuidString, design } ->
+                Ok { design } ->
                     case mSelectedReferenceSet of
                         Just refSetId ->
-                            ( DesignLoadingReference uuidString design
+                            ( { model | pageState = DesignLoadingReference design }
                             , Cmd.batch
                                 [ Codec.encoder Codec.string design.pdbString
                                     |> Ports.viewStructure
                                 , Codec.encoder Codec.string refSetId
-                                    |> Ports.getReferenceSetForMetrics
+                                    |> Ports.getReferenceSetForDesign
                                 ]
                             , Cmd.none
                             )
 
                         Nothing ->
-                            ( DesignNoReference uuidString design
+                            ( { model | pageState = DesignNoReference design }
                             , Cmd.batch
                                 [ Codec.encoder Codec.string design.pdbString
                                     |> Ports.viewStructure
@@ -181,7 +177,7 @@ update { global } msg model =
                             )
 
                 Err error ->
-                    ( DesignNotFound (getUuidString model) error
+                    ( { model | pageState = DesignNotFound error }
                     , Cmd.none
                     , Cmd.none
                     )
@@ -201,9 +197,9 @@ update { global } msg model =
             in
             case Codec.decodeValue refSetWithUuidCodec referenceSetValue of
                 Ok { referenceSet } ->
-                    case model of
-                        DesignLoadingReference uuidString design ->
-                            ( DesignWithReference uuidString design
+                    case model.pageState of
+                        DesignLoadingReference design ->
+                            ( { model | pageState = DesignWithReference design }
                             , case design.metricsRemoteData of
                                 RD.Success metrics ->
                                     Cmd.batch
@@ -242,15 +238,40 @@ update { global } msg model =
                             )
 
                 Err error ->
-                    case model of
-                        DesignLoadingReference uuidString design ->
-                            ( DesignFailedToLoadReference uuidString design error
+                    case model.pageState of
+                        DesignLoadingReference design ->
+                            ( { model
+                                | pageState = DesignFailedToLoadReference error design
+                              }
                             , Cmd.none
                             , Cmd.none
                             )
 
                         _ ->
                             ( model, Cmd.none, Cmd.none )
+
+        GotSpecification specificationValue ->
+            let
+                specWithUuidCodec =
+                    Codec.object
+                        (\uuidString specification ->
+                            { uuidString = uuidString
+                            , specification = specification
+                            }
+                        )
+                        |> Codec.field "uuidString" .uuidString Codec.string
+                        |> Codec.field "specification" .specification Specification.codec
+                        |> Codec.buildObject
+            in
+            ( { model
+                | mSelectedSpecification =
+                    Codec.decodeValue specWithUuidCodec specificationValue
+                        |> Result.toMaybe
+                        |> Maybe.map .specification
+              }
+            , Cmd.none
+            , Cmd.none
+            )
 
         DeleteFocussedDesign globalUuidString dangerStatus ->
             case dangerStatus of
@@ -262,17 +283,17 @@ update { global } msg model =
                     )
 
                 _ ->
-                    ( mapDesign
-                        (\{ uuidString, design } ->
-                            { uuidString = uuidString
-                            , design =
-                                { design
-                                    | deleteStatus =
-                                        dangerStatus
-                                }
-                            }
-                        )
-                        model
+                    ( { model
+                        | pageState =
+                            mapPageStateDesign
+                                (\design ->
+                                    { design
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                )
+                                model.pageState
+                      }
                     , Cmd.none
                     , Cmd.none
                     )
@@ -287,7 +308,8 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Ports.setFocussedDesign SetFocus
-        , Ports.referenceSetForMetrics GotReferenceSet
+        , Ports.referenceSetForDesign GotReferenceSet
+        , Ports.specificationForDesign GotSpecification
         ]
 
 
@@ -298,32 +320,32 @@ subscriptions _ =
 
 view : Model -> Element Msg
 view model =
-    case model of
-        Loading _ ->
+    case model.pageState of
+        Loading ->
             el [] (text "Loading design...")
 
-        DesignNotFound designUuid _ ->
-            el [] ("A design with ID \"" ++ designUuid ++ "\" was not found." |> text)
+        DesignNotFound _ ->
+            el [] ("A design with ID \"" ++ model.uuidString ++ "\" was not found." |> text)
 
-        DesignNoReference uuidString design ->
+        DesignNoReference design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView uuidString design
+                [ designDetailsView model.uuidString design
                 , text "No reference set selected."
                 ]
 
-        DesignLoadingReference uuidString design ->
+        DesignLoadingReference design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView uuidString design
+                [ designDetailsView model.uuidString design
                 , h2 <| text "Comparison to Reference Set"
                 , text "Loading reference set..."
                 ]
 
-        DesignFailedToLoadReference uuidString design error ->
+        DesignFailedToLoadReference error design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView uuidString design
+                [ designDetailsView model.uuidString design
                 , h2 <| text "Comparison to Reference Set"
                 , text
                     ("""Comparison to reference set is unavailable, as the reference set
@@ -332,10 +354,10 @@ view model =
                     )
                 ]
 
-        DesignWithReference uuidString design ->
+        DesignWithReference design ->
             column
                 [ spacing 15, width fill ]
-                [ designDetailsView uuidString design
+                [ designDetailsView model.uuidString design
                 , referenceSetComparisonView
                 ]
 
