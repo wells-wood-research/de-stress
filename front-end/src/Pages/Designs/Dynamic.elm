@@ -506,9 +506,21 @@ compositionView =
     column
         [ width fill ]
         [ h3 <| text "Composition"
-        , Keyed.el [ centerX ]
+        , Keyed.el [ centerX, width fill ]
             ( "composition"
-            , Html.div [ HAtt.id "composition" ] []
+            , Html.div
+                [ HAtt.id "composition"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
                 |> html
             )
         ]
@@ -519,9 +531,21 @@ torsionAnglesView =
     column
         [ width fill ]
         [ h3 <| text "Backbone Torsion Angles"
-        , Keyed.el [ centerX ]
+        , Keyed.el [ centerX, width fill ]
             ( "torsionAngles"
-            , Html.div [ HAtt.id "torsionAngles" ] []
+            , Html.div
+                [ HAtt.id "torsionAngles"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
                 |> html
             )
         ]
@@ -531,9 +555,21 @@ metricsHistogramsView : Element msg
 metricsHistogramsView =
     column [ width fill ]
         [ h3 <| text "Metrics Histograms"
-        , Keyed.el [ centerX ]
+        , Keyed.el [ centerX, width fill ]
             ( "metricsHistograms"
-            , Html.div [ HAtt.id "metricsHistograms" ] []
+            , Html.div
+                [ HAtt.id "metricsHistograms"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
                 |> html
             )
         ]

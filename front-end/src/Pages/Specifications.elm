@@ -4,6 +4,7 @@ import Dict
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Generated.Params as Params
 import Generated.Routes as Routes exposing (routes)
 import Global
@@ -46,12 +47,20 @@ init _ =
 
 
 type Msg
-    = DeleteSpecification String Style.DangerStatus
+    = ClickedSelectSpecification (Maybe String)
+    | DeleteSpecification String Style.DangerStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
 update msg model =
     case msg of
+        ClickedSelectSpecification mSelectedSpecification ->
+            ( model
+            , Cmd.none
+            , Global.SetMSelectedSpecification mSelectedSpecification
+                |> send
+            )
+
         DeleteSpecification uuidString dangerStatus ->
             ( model
             , Cmd.none
@@ -78,7 +87,7 @@ subscriptions _ =
 view : Utils.Spa.PageContext -> Model -> Element Msg
 view { global } _ =
     case global of
-        Global.Running { specifications } ->
+        Global.Running { mSelectedSpecification, specifications } ->
             column
                 [ width fill, spacing 30 ]
                 (row [ centerX, spacing 10 ]
@@ -91,7 +100,7 @@ view { global } _ =
                                 (\( k, v ) ->
                                     ( k, Global.storedSpecificationToStub v )
                                 )
-                            |> List.map specificationStubView
+                            |> List.map (specificationStubView mSelectedSpecification)
                        )
                 )
 
@@ -99,15 +108,38 @@ view { global } _ =
             Debug.todo "Add common state page"
 
 
-specificationStubView : ( String, SpecificationStub ) -> Element Msg
-specificationStubView ( uuidString, { name, description, deleteStatus } ) =
+specificationStubView : Maybe String -> ( String, SpecificationStub ) -> Element Msg
+specificationStubView mSelectedSpecification ( uuidString, { name, description, deleteStatus } ) =
     column
-        [ padding 15
-        , spacing 10
-        , width fill
-        , Background.color Style.colorPalette.c5
-        , Border.rounded 10
-        ]
+        ([ padding 15
+         , spacing 10
+         , width fill
+         , Background.color Style.colorPalette.c5
+         , Border.rounded 10
+         , Border.width 3
+         ]
+            ++ (case mSelectedSpecification of
+                    Just selectedSpecification ->
+                        if selectedSpecification == uuidString then
+                            [ Border.color Style.colorPalette.black
+                            , Events.onClick <| ClickedSelectSpecification <| Nothing
+                            ]
+
+                        else
+                            [ Border.color Style.colorPalette.c5
+                            , Events.onClick <|
+                                ClickedSelectSpecification <|
+                                    Just uuidString
+                            ]
+
+                    Nothing ->
+                        [ Border.color Style.colorPalette.c5
+                        , Events.onClick <|
+                            ClickedSelectSpecification <|
+                                Just uuidString
+                        ]
+               )
+        )
         [ column
             [ pointer
             , spacing 10

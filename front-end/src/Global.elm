@@ -53,6 +53,7 @@ type alias DecodedFlags =
             , referenceSets : Dict String StoredReferenceSet
             , mSelectedReferenceSet : Maybe String
             , specifications : Dict String StoredSpecification
+            , mSelectedSpecification : Maybe String
             }
     }
 
@@ -72,6 +73,7 @@ type alias StoredState =
     , referenceSets : Dict String StoredReferenceSet
     , mSelectedReferenceSet : Maybe String
     , specifications : Dict String StoredSpecification
+    , mSelectedSpecification : Maybe String
     }
 
 
@@ -90,6 +92,11 @@ storedStateCodec =
         |> Codec.field "specifications"
             .specifications
             (Codec.dict storedSpecificationCodec)
+        |> Codec.field "mSelectedSpecification"
+            .mSelectedSpecification
+            (Codec.string
+                |> Codec.maybe
+            )
         |> Codec.buildObject
 
 
@@ -205,6 +212,7 @@ type alias RunState =
     , referenceSets : Dict String StoredReferenceSet
     , mSelectedReferenceSet : Maybe String
     , specifications : Dict String StoredSpecification
+    , mSelectedSpecification : Maybe String
     }
 
 
@@ -326,6 +334,8 @@ init _ flagsValue =
                         , mSelectedReferenceSet =
                             initialState.mSelectedReferenceSet
                         , specifications = initialState.specifications
+                        , mSelectedSpecification =
+                            initialState.mSelectedSpecification
                         }
 
                 Nothing ->
@@ -336,6 +346,7 @@ init _ flagsValue =
                         , referenceSets = Dict.empty
                         , mSelectedReferenceSet = Nothing
                         , specifications = Dict.empty
+                        , mSelectedSpecification = Nothing
                         }
 
         Err errString ->
@@ -374,6 +385,7 @@ type Msg
     | DeleteSpecification String Style.DangerStatus
     | GetSpecification String
     | DeleteFocussedSpecification String Style.DangerStatus
+    | SetMSelectedSpecification (Maybe String)
     | RequestedNewUuid
 
 
@@ -741,6 +753,12 @@ updateRunState commands msg runState =
                     , Cmd.none
                     )
 
+        SetMSelectedSpecification mId ->
+            ( { runState | mSelectedSpecification = mId }
+            , Cmd.none
+            , Cmd.none
+            )
+
         RequestedNewUuid ->
             ( runState, Cmd.none, Cmd.none )
 
@@ -755,6 +773,7 @@ addStoreCmd ( state, gCmd, pCmd ) =
             , referenceSets = state.referenceSets
             , mSelectedReferenceSet = state.mSelectedReferenceSet
             , specifications = state.specifications
+            , mSelectedSpecification = state.mSelectedSpecification
             }
             |> Ports.storeRunState
         ]
