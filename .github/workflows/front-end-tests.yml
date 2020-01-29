@@ -18,8 +18,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Build and test `big-structure`.
+      - name: Build and test `front-end`.
         run: |
           cd front-end/
           docker build -t destress-front-end .
-          docker run --rm destress-front-end npm test
+          docker run destress-front-end npm test
