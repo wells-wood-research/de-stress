@@ -485,7 +485,7 @@ type alias TorsionAnglesDict =
     Dict String ( Float, Float, Float )
 
 
-createTorsionAngleSpec : DesignMetrics -> List DesignMetrics -> VL.Spec
+createTorsionAngleSpec : DesignMetrics -> List RefSetMetrics -> VL.Spec
 createTorsionAngleSpec designMetrics referenceSetMetricsList =
     torsionAnglesSpec
         designMetrics.torsionAngles

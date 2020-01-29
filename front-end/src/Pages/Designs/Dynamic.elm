@@ -206,13 +206,22 @@ update { global } msg model =
                             ( DesignWithReference uuidString design
                             , case design.metricsRemoteData of
                                 RD.Success metrics ->
-                                    Ports.vegaPlot <|
-                                        { plotId = "composition"
-                                        , spec =
-                                            Metrics.createCompositionSpec
-                                                metrics
-                                                (ReferenceSet.getMetrics referenceSet)
-                                        }
+                                    Cmd.batch
+                                        [ Ports.vegaPlot <|
+                                            { plotId = "composition"
+                                            , spec =
+                                                Metrics.createCompositionSpec
+                                                    metrics
+                                                    (ReferenceSet.getMetrics referenceSet)
+                                            }
+                                        , Ports.vegaPlot <|
+                                            { plotId = "torsionAngles"
+                                            , spec =
+                                                Metrics.createTorsionAngleSpec
+                                                    metrics
+                                                    (ReferenceSet.getMetrics referenceSet)
+                                            }
+                                        ]
 
                                 _ ->
                                     Cmd.none
@@ -386,6 +395,7 @@ referenceSetComparisonView =
     sectionColumn
         [ h2 <| text "Comparison to Reference Set"
         , compositionView
+        , torsionAnglesView
         ]
 
 
@@ -397,6 +407,19 @@ compositionView =
         , Keyed.el [ centerX ]
             ( "composition"
             , Html.div [ HAtt.id "composition" ] []
+                |> html
+            )
+        ]
+
+
+torsionAnglesView : Element msg
+torsionAnglesView =
+    column
+        [ width fill ]
+        [ h3 <| text "Backbone Torsion Angles"
+        , Keyed.el [ centerX ]
+            ( "torsionAngles"
+            , Html.div [ HAtt.id "torsionAngles" ] []
                 |> html
             )
         ]
