@@ -25,6 +25,7 @@ all =
                             , referenceSets = Dict.empty
                             , mSelectedReferenceSet = Nothing
                             , specifications = Dict.empty
+                            , mSelectedSpecification = Nothing
                             }
                 in
                 newSeedAndUuid.nextUuid
