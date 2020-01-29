@@ -1,12 +1,10 @@
-module Tests exposing (..)
+module Tests exposing (all)
 
 import Dict
 import Expect
 import Fuzz exposing (int)
 import Global
-import Random
 import Test exposing (..)
-import Uuid
 
 
 all : Test
@@ -24,6 +22,8 @@ all =
                             , nextUuid =
                                 firstUuid
                             , designs = Dict.empty
+                            , referenceSets = Dict.empty
+                            , mSelectedReferenceSet = Nothing
                             , specifications = Dict.empty
                             }
                 in
