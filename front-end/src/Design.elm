@@ -23,6 +23,7 @@ type alias Design =
     , pdbString : String
     , deleteStatus : Style.DangerStatus
     , metricsRemoteData : MetricsRemoteData
+    , mMeetsActiveSpecification : Maybe Bool
     }
 
 
@@ -55,6 +56,9 @@ codec =
         |> Codec.field "pdbString" .pdbString Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.field "metricsRemoteData" .metricsRemoteData metricsRDCodec
+        |> Codec.field "mMeetsActiveSpecification"
+            .mMeetsActiveSpecification
+            (Codec.constant Nothing)
         |> Codec.buildObject
 
 
@@ -70,6 +74,7 @@ type alias DesignStub =
     { name : String
     , fileName : String
     , deleteStatus : Style.DangerStatus
+    , mMeetsActiveSpecification : Maybe Bool
     }
 
 
@@ -79,12 +84,16 @@ designStubCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.field "mMeetsActiveSpecification"
+            .mMeetsActiveSpecification
+            (Codec.constant Nothing)
         |> Codec.buildObject
 
 
 createDesignStub : Design -> DesignStub
-createDesignStub { name, fileName, deleteStatus } =
-    { name = editableValue name
-    , fileName = fileName
-    , deleteStatus = deleteStatus
+createDesignStub design =
+    { name = editableValue design.name
+    , fileName = design.fileName
+    , deleteStatus = design.deleteStatus
+    , mMeetsActiveSpecification = design.mMeetsActiveSpecification
     }

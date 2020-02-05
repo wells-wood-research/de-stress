@@ -1,6 +1,6 @@
-module TestDesign exposing (..)
+module TestDesign exposing (all)
 
-import Codec exposing (Codec)
+import Codec
 import Design exposing (Design, DesignStub)
 import Expect
 import RemoteData as RD
@@ -21,6 +21,7 @@ all =
                         , pdbString = "PDBSTRING"
                         , deleteStatus = Style.Unclicked
                         , metricsRemoteData = RD.NotAsked
+                        , mMeetsActiveSpecification = Nothing
                         }
 
                     encodedAndDecodedDesign : Result Codec.Error Design
@@ -49,6 +50,7 @@ all =
                         , pdbString = "PDBSTRING"
                         , deleteStatus = Style.Unclicked
                         , metricsRemoteData = RD.NotAsked
+                        , mMeetsActiveSpecification = Nothing
                         }
 
                     intendedStub : DesignStub
@@ -56,6 +58,7 @@ all =
                         { name = "NAME"
                         , fileName = "FILENAME"
                         , deleteStatus = Style.Unclicked
+                        , mMeetsActiveSpecification = Nothing
                         }
                 in
                 Expect.equal
@@ -69,6 +72,7 @@ all =
                         { name = "NAME"
                         , fileName = "FILENAME"
                         , deleteStatus = Style.Unclicked
+                        , mMeetsActiveSpecification = Nothing
                         }
 
                     encodedAndDecodedStub : Result Codec.Error DesignStub

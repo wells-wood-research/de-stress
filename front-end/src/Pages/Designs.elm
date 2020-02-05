@@ -1,6 +1,7 @@
 module Pages.Designs exposing (Model, Msg, page)
 
 import Ampal
+import Codec exposing (Value)
 import Design
 import Dict
 import Element exposing (..)
@@ -11,8 +12,10 @@ import File.Select as FileSelect
 import Generated.Params as Params
 import Generated.Routes as Routes
 import Global
+import Ports
 import RemoteData as RD
 import Spa.Page exposing (send)
+import Specification exposing (Specification)
 import Style exposing (h1, h2)
 import Task
 import Utils.Spa exposing (Page)
@@ -22,7 +25,7 @@ page : Page Params.Designs Model Msg model msg appMsg
 page =
     Spa.Page.component
         { title = always "Designs"
-        , init = always init
+        , init = init
         , update = always update
         , subscriptions = always subscriptions
         , view = view
@@ -36,6 +39,7 @@ page =
 type alias Model =
     { loadingState : DesignLoadingState
     , loadErrors : List String
+    , mSelectedSpecification : Maybe Specification
     }
 
 
@@ -44,11 +48,25 @@ type DesignLoadingState
     | Free
 
 
-init : Params.Designs -> ( Model, Cmd Msg, Cmd Global.Msg )
-init _ =
-    ( { loadingState = Free, loadErrors = [] }
+init : Utils.Spa.PageContext -> Params.Designs -> ( Model, Cmd Msg, Cmd Global.Msg )
+init { global } _ =
+    ( { loadingState = Free, loadErrors = [], mSelectedSpecification = Nothing }
     , Cmd.none
-    , Cmd.none
+    , Cmd.batch
+        (case global of
+            Global.Running runState ->
+                case runState.mSelectedSpecification of
+                    Just uuidString ->
+                        [ Codec.encoder Codec.string uuidString
+                            |> Ports.getSpecificationForDesignsPage
+                        ]
+
+                    Nothing ->
+                        []
+
+            _ ->
+                []
+        )
     )
 
 
@@ -61,6 +79,7 @@ type Msg
     = StructuresRequested
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
+    | GotSpecification Value
     | DeleteDesign String Style.DangerStatus
 
 
@@ -126,6 +145,7 @@ update msg model =
                                 |> String.join "\n"
                       , deleteStatus = Style.Unclicked
                       , metricsRemoteData = RD.Loading
+                      , mMeetsActiveSpecification = Nothing
                       }
                         |> Global.AddDesign
                         |> send
@@ -159,6 +179,31 @@ update msg model =
                     , Cmd.none
                     )
 
+        GotSpecification specificationValue ->
+            let
+                specWithUuidCodec =
+                    Codec.object
+                        (\uuidString specification ->
+                            { uuidString = uuidString
+                            , specification = specification
+                            }
+                        )
+                        |> Codec.field "uuidString" .uuidString Codec.string
+                        |> Codec.field "specification"
+                            .specification
+                            Specification.codec
+                        |> Codec.buildObject
+            in
+            ( { model
+                | mSelectedSpecification =
+                    Codec.decodeValue specWithUuidCodec specificationValue
+                        |> Result.toMaybe
+                        |> Maybe.map .specification
+              }
+            , Cmd.none
+            , Cmd.none
+            )
+
         DeleteDesign uuidString dangerStatus ->
             ( model
             , Cmd.none
@@ -179,7 +224,8 @@ structureRequested =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Sub.batch
+        [ Ports.specificationForDesignsPage GotSpecification ]
 
 
 

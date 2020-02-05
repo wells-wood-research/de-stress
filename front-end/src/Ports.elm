@@ -6,10 +6,12 @@ port module Ports exposing
     , getReferenceSetForDesign
     , getSpecification
     , getSpecificationForDesign
+    , getSpecificationForDesignsPage
     , referenceSetForDesign
     , setFocussedDesign
     , setFocussedSpecification
     , specificationForDesign
+    , specificationForDesignsPage
     , storeDesign
     , storeReferenceSet
     , storeRunState
@@ -142,6 +144,14 @@ getSpecificationForDesign uuidValue =
         }
 
 
+getSpecificationForDesignsPage : Value -> Cmd msg
+getSpecificationForDesignsPage uuidValue =
+    outgoing
+        { action = "GET_SPECIFICATION_FOR_DESIGNS_PAGE"
+        , data = uuidValue
+        }
+
+
 deleteSpecification : Value -> Cmd msg
 deleteSpecification uuidValue =
     outgoing
@@ -169,6 +179,9 @@ port referenceSetForDesign : (Value -> msg) -> Sub msg
 
 
 port specificationForDesign : (Value -> msg) -> Sub msg
+
+
+port specificationForDesignsPage : (Value -> msg) -> Sub msg
 
 
 port setFocussedSpecification : (Value -> msg) -> Sub msg

@@ -166,6 +166,16 @@ const getSpecificationForDesign = (app, storeKey) => {
   });
 };
 
+// Get specification for designs page
+const getSpecificationForDesignsPage = (app, storeKey) => {
+  idbKeyval.get(storeKey, specificationStore).then(specification => {
+    app.ports.specificationForDesignsPage.send({
+      uuidString: storeKey,
+      specification: specification
+    });
+  });
+};
+
 // Delete specification
 const deleteSpecification = (_, storeKey) => {
   idbKeyval.del(storeKey, specificationStore);
@@ -191,6 +201,7 @@ const actions = {
   STORE_SPECIFICATION: storeSpecification,
   GET_SPECIFICATION: getSpecification,
   GET_SPECIFICATION_FOR_DESIGN: getSpecificationForDesign,
+  GET_SPECIFICATION_FOR_DESIGNS_PAGE: getSpecificationForDesignsPage,
   DELETE_SPECIFICATION: deleteSpecification
 };
 
