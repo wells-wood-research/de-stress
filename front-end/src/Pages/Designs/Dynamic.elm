@@ -329,23 +329,20 @@ view model =
             el [] ("A design with ID \"" ++ model.uuidString ++ "\" was not found." |> text)
 
         DesignNoReference design ->
-            column
-                [ spacing 15, width fill ]
+            sectionColumn
                 [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , text "No reference set selected."
                 ]
 
         DesignLoadingReference design ->
-            column
-                [ spacing 15, width fill ]
+            sectionColumn
                 [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , h2 <| text "Comparison to Reference Set"
                 , text "Loading reference set..."
                 ]
 
         DesignFailedToLoadReference error design ->
-            column
-                [ spacing 15, width fill ]
+            sectionColumn
                 [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , h2 <| text "Comparison to Reference Set"
                 , text
@@ -356,8 +353,7 @@ view model =
                 ]
 
         DesignWithReference design ->
-            column
-                [ spacing 15, width fill ]
+            sectionColumn
                 [ designDetailsView model.uuidString model.mSelectedSpecification design
                 , referenceSetComparisonView
                 ]
@@ -564,9 +560,9 @@ compositionView =
 torsionAnglesView : Element msg
 torsionAnglesView =
     column
-        [ width fill ]
+        [ centerX ]
         [ h3 <| text "Backbone Torsion Angles"
-        , Keyed.el [ centerX, width fill ]
+        , Keyed.el []
             ( "torsionAngles"
             , Html.div
                 [ HAtt.id "torsionAngles"
@@ -590,11 +586,10 @@ metricsHistogramsView : Element msg
 metricsHistogramsView =
     column [ width fill ]
         [ h3 <| text "Metrics Histograms"
-        , Keyed.el [ centerX, width fill ]
+        , Keyed.el [ centerX ]
             ( "metricsHistograms"
             , Html.div
                 [ HAtt.id "metricsHistograms"
-                , HAtt.style "width" "100%"
                 ]
                 [ Html.div
                     [ HAtt.height 200
@@ -608,6 +603,10 @@ metricsHistogramsView =
                 |> html
             )
         ]
+
+
+
+-- {{{ specificationView
 
 
 specificationView : DesignMetrics -> Specification -> Element msg
@@ -838,4 +837,5 @@ resolveRequirement metrics requirement =
 
 
 
+-- }}}
 -- }}}
