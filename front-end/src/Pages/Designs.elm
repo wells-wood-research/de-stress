@@ -40,6 +40,7 @@ type alias Model =
     { loadingState : DesignLoadingState
     , loadErrors : List String
     , mSelectedSpecification : Maybe Specification
+    , deleteAllStatus : Style.DangerStatus
     }
 
 
@@ -50,7 +51,11 @@ type DesignLoadingState
 
 init : Utils.Spa.PageContext -> Params.Designs -> ( Model, Cmd Msg, Cmd Global.Msg )
 init { global } _ =
-    ( { loadingState = Free, loadErrors = [], mSelectedSpecification = Nothing }
+    ( { loadingState = Free
+      , loadErrors = []
+      , mSelectedSpecification = Nothing
+      , deleteAllStatus = Style.Unclicked
+      }
     , Cmd.none
     , Cmd.batch
         (case global of
@@ -81,6 +86,7 @@ type Msg
     | StructureLoaded String String
     | GotSpecification Value
     | DeleteDesign String Style.DangerStatus
+    | DeleteAllDesigns Style.DangerStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
@@ -211,6 +217,21 @@ update msg model =
                 |> send
             )
 
+        DeleteAllDesigns dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { model | deleteAllStatus = Style.Unclicked }
+                    , Cmd.none
+                    , Global.DeleteAllDesigns dangerStatus
+                        |> send
+                    )
+
+                _ ->
+                    ( { model | deleteAllStatus = dangerStatus }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -238,26 +259,32 @@ view { global } model =
     case global of
         Global.Running { designs } ->
             column [ spacing 15, width fill ]
-                [ row [ centerX, spacing 10 ]
-                    [ h1 <| text "Designs"
-                    , let
-                        ( buttonLabel, isActive ) =
-                            case model.loadingState of
-                                LoadingFiles total remaining ->
-                                    ( "Loaded "
-                                        ++ String.fromInt remaining
-                                        ++ "/"
-                                        ++ String.fromInt total
-                                    , False
-                                    )
+                [ let
+                    ( buttonLabel, isActive ) =
+                        case model.loadingState of
+                            LoadingFiles total remaining ->
+                                ( "Loaded "
+                                    ++ String.fromInt remaining
+                                    ++ "/"
+                                    ++ String.fromInt total
+                                , False
+                                )
 
-                                Free ->
-                                    ( "Load", True )
-                      in
-                      Style.conditionalButton
+                            Free ->
+                                ( "Load", True )
+                  in
+                  row [ centerX, spacing 10 ]
+                    [ h1 <| text "Designs"
+                    , Style.conditionalButton
                         { labelText = buttonLabel
                         , clickMsg = StructuresRequested
                         , isActive = isActive
+                        }
+                    , Style.dangerousButton
+                        { labelText = "Delete All"
+                        , confirmText = "Are you sure you want to delete ALL design?"
+                        , status = model.deleteAllStatus
+                        , dangerousMsg = DeleteAllDesigns
                         }
                     ]
                 , designs

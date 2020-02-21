@@ -376,6 +376,7 @@ type Msg
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
     | DeleteFocussedDesign String Style.DangerStatus
+    | DeleteAllDesigns Style.DangerStatus
     | AddReferenceSet ReferenceSet
     | AddNamedReferenceSet String ReferenceSet
     | DeleteReferenceSet String Style.DangerStatus
@@ -509,6 +510,29 @@ updateRunState commands msg runState =
                                 )
                                 runState.designs
                       }
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        DeleteAllDesigns dangerStatus ->
+            case dangerStatus of
+                Style.Confirmed ->
+                    ( { runState
+                        | designs =
+                            Dict.empty
+                      }
+                    , Cmd.none
+                    , Dict.keys runState.designs
+                        |> List.map
+                            (\uuidString ->
+                                Codec.encoder Codec.string uuidString
+                                    |> Ports.deleteDesign
+                            )
+                        |> Cmd.batch
+                    )
+
+                _ ->
+                    ( runState
                     , Cmd.none
                     , Cmd.none
                     )
