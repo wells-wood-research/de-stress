@@ -437,7 +437,22 @@ updateRunState commands msg runState =
             )
 
         GotDesignMetrics uuid metricsRemoteData ->
-            ( runState
+            ( { runState
+                | designs =
+                    Dict.update
+                        uuid
+                        (Maybe.map <|
+                            mapStoredDesign <|
+                                \designStub ->
+                                    case metricsRemoteData of
+                                        RD.Success _ ->
+                                            { designStub | metricsAvailable = True }
+
+                                        _ ->
+                                            designStub
+                        )
+                        runState.designs
+              }
             , encodeDesignMetricsRDAndKey
                 { storeKey = uuid
                 , designMetricsRD =

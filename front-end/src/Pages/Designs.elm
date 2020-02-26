@@ -332,6 +332,11 @@ designCard ( uuidString, designStub ) =
         ]
         [ Style.h2 <| text designStub.name
         , text ("Structure file: " ++ designStub.fileName)
+        , if designStub.metricsAvailable then
+            text "Metrics Available"
+
+          else
+            none
         , row [ spacing 10, width fill ]
             [ Style.linkButton
                 { labelText = "Details"
