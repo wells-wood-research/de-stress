@@ -287,32 +287,126 @@ view { global } model =
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
-                , designs
-                    |> Dict.toList
-                    |> List.map
-                        (\( k, v ) ->
-                            ( k, Global.storedDesignToStub v )
-                        )
-                    |> List.map designCard
-                    |> column [ spacing 15, width fill ]
+                , let
+                    designCardData =
+                        designs
+                            |> Dict.toList
+                            |> List.map
+                                (\( k, v ) ->
+                                    ( k, Global.storedDesignToStub v )
+                                )
+                            |> List.map (createDesignCardData model.mSelectedSpecification)
+                  in
+                  case model.mSelectedSpecification of
+                    Just _ ->
+                        let
+                            { meetsSpecification, failedSpecification, noMetrics } =
+                                partitionDesignCardData designCardData
+                                    { meetsSpecification = []
+                                    , failedSpecification = []
+                                    , noMetrics = []
+                                    }
+                        in
+                        column [ spacing 15, width fill ]
+                            [ h2 <| text "Meets Specification"
+                            , meetsSpecification
+                                |> List.map designCard
+                                |> column [ spacing 15, width fill ]
+                            , h2 <| text "Failed to Meet Specification"
+                            , failedSpecification
+                                |> List.map designCard
+                                |> column [ spacing 15, width fill ]
+                            , h2 <| text "No Metrics Available"
+                            , noMetrics
+                                |> List.map designCard
+                                |> column [ spacing 15, width fill ]
+                            ]
+
+                    Nothing ->
+                        designCardData
+                            |> List.map designCard
+                            |> column [ spacing 15, width fill ]
                 ]
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"
 
 
-designCard : ( String, Design.DesignStub ) -> Element Msg
-designCard ( uuidString, designStub ) =
-    let
-        mMeetsSpecification =
-            Nothing
+type alias DesignCardData =
+    { uuidString : String
+    , designStub : Design.DesignStub
+    , mMeetsSpecification :
+        Maybe Bool
+    }
 
-        --     case ( mSpecification, design.metricsRemoteData ) of
-        --         ( Just specification, RD.Success designMetrics ) ->
-        --             applySpecification sequenceStrings designMetrics specification |> Just
-        --         _ ->
-        --             Nothing
-    in
+
+createDesignCardData :
+    Maybe Specification
+    -> ( String, Design.DesignStub )
+    -> DesignCardData
+createDesignCardData mSpecification ( uuidString, designStub ) =
+    { uuidString = uuidString
+    , designStub = designStub
+    , mMeetsSpecification =
+        case ( mSpecification, designStub.metricsRemoteData ) of
+            ( Just specification, RD.Success designMetrics ) ->
+                Specification.applySpecification designMetrics specification |> Just
+
+            _ ->
+                Nothing
+    }
+
+
+partitionDesignCardData :
+    List DesignCardData
+    ->
+        { meetsSpecification : List DesignCardData
+        , failedSpecification : List DesignCardData
+        , noMetrics : List DesignCardData
+        }
+    ->
+        { meetsSpecification : List DesignCardData
+        , failedSpecification : List DesignCardData
+        , noMetrics : List DesignCardData
+        }
+partitionDesignCardData remainingData partitionedData =
+    case remainingData of
+        [] ->
+            partitionedData
+
+        data :: rest ->
+            let
+                newPartitioned =
+                    case data.mMeetsSpecification of
+                        Just True ->
+                            { partitionedData
+                                | meetsSpecification =
+                                    data :: partitionedData.meetsSpecification
+                            }
+
+                        Just False ->
+                            { partitionedData
+                                | failedSpecification =
+                                    data :: partitionedData.failedSpecification
+                            }
+
+                        Nothing ->
+                            { partitionedData
+                                | noMetrics =
+                                    data :: partitionedData.noMetrics
+                            }
+            in
+            partitionDesignCardData rest newPartitioned
+
+
+designCard :
+    { uuidString : String
+    , designStub : Design.DesignStub
+    , mMeetsSpecification :
+        Maybe Bool
+    }
+    -> Element Msg
+designCard { uuidString, designStub, mMeetsSpecification } =
     column
         [ padding 15
         , spacing 10
@@ -320,7 +414,7 @@ designCard ( uuidString, designStub ) =
         , Background.color Style.colorPalette.c5
         , case mMeetsSpecification of
             Nothing ->
-                Border.color Style.colorPalette.black
+                Border.color Style.colorPalette.c5
 
             Just False ->
                 Border.color Style.colorPalette.red
@@ -332,11 +426,12 @@ designCard ( uuidString, designStub ) =
         ]
         [ Style.h2 <| text designStub.name
         , text ("Structure file: " ++ designStub.fileName)
-        , if designStub.metricsAvailable then
-            text "Metrics Available"
+        , case designStub.metricsRemoteData of
+            RD.Success _ ->
+                text "Metrics Available"
 
-          else
-            none
+            _ ->
+                none
         , row [ spacing 10, width fill ]
             [ Style.linkButton
                 { labelText = "Details"

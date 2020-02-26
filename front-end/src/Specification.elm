@@ -6,13 +6,17 @@ module Specification exposing
     , Specification
     , SpecificationStub
     , ValueType(..)
+    , applySpecification
     , codec
     , createSpecificationStub
+    , resolveRequirement
     , specificationStubCodec
     , stringFromOrder
     )
 
 import Codec exposing (Codec, Value)
+import Dict
+import Metrics exposing (DesignMetrics)
 import Style
 
 
@@ -222,3 +226,61 @@ createSpecificationStub specification =
     , description = specification.description
     , deleteStatus = specification.deleteStatus
     }
+
+
+applySpecification : DesignMetrics -> Specification -> Bool
+applySpecification designMetrics specification =
+    resolveRequirement designMetrics specification.requirements
+
+
+resolveRequirement :
+    DesignMetrics
+    -> Requirement RequirementData
+    -> Bool
+resolveRequirement metrics requirement =
+    case requirement of
+        All requirements ->
+            List.all (resolveRequirement metrics) requirements
+
+        Any requirements ->
+            List.any (resolveRequirement metrics) requirements
+
+        And subRequirement1 subRequirement2 ->
+            resolveRequirement metrics subRequirement1
+                && resolveRequirement metrics subRequirement2
+
+        Or subRequirement1 subRequirement2 ->
+            resolveRequirement metrics subRequirement1
+                || resolveRequirement metrics subRequirement2
+
+        Not subRequirement ->
+            not (resolveRequirement metrics subRequirement)
+
+        Data data ->
+            case data of
+                Value valueType ->
+                    case valueType of
+                        IsoelectricPoint order value ->
+                            compare metrics.isoelectricPoint value == order
+
+                        HydrophobicFitness order value ->
+                            case metrics.hydrophobicFitness of
+                                Nothing ->
+                                    False
+
+                                Just hf ->
+                                    compare hf value == order
+
+                        MeanPackingDensity order value ->
+                            compare metrics.packingDensity value == order
+
+                        SequenceContains seqString ->
+                            List.any (String.contains seqString)
+                                (Dict.values
+                                    metrics.sequences
+                                )
+
+                Constant constantType ->
+                    case constantType of
+                        Method _ ->
+                            Debug.log "This should do something" True

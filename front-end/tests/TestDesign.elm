@@ -58,6 +58,7 @@ all =
                         { name = "NAME"
                         , fileName = "FILENAME"
                         , deleteStatus = Style.Unclicked
+                        , metricsRemoteData = RD.NotAsked
                         , mMeetsActiveSpecification = Nothing
                         }
                 in
@@ -72,6 +73,7 @@ all =
                         { name = "NAME"
                         , fileName = "FILENAME"
                         , deleteStatus = Style.Unclicked
+                        , metricsRemoteData = RD.NotAsked
                         , mMeetsActiveSpecification = Nothing
                         }
 
