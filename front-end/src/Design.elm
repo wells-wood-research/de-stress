@@ -12,7 +12,7 @@ module Design exposing
 import Codec exposing (Codec)
 import Graphql.Http
 import Metrics exposing (DesignMetrics)
-import RemoteData as RD exposing (RemoteData)
+import RemoteData exposing (RemoteData)
 import Style
 import Utils.RemoteDataExtra as RDE
 
@@ -74,7 +74,7 @@ type alias DesignStub =
     { name : String
     , fileName : String
     , deleteStatus : Style.DangerStatus
-    , metricsAvailable : Bool
+    , metricsRemoteData : MetricsRemoteData
     , mMeetsActiveSpecification : Maybe Bool
     }
 
@@ -85,7 +85,7 @@ designStubCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
-        |> Codec.field "metricsAvailable" .metricsAvailable Codec.bool
+        |> Codec.field "metricsRemoteData" .metricsRemoteData metricsRDCodec
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
@@ -97,12 +97,6 @@ createDesignStub design =
     { name = editableValue design.name
     , fileName = design.fileName
     , deleteStatus = design.deleteStatus
-    , metricsAvailable =
-        case design.metricsRemoteData of
-            RD.Success _ ->
-                True
-
-            _ ->
-                False
+    , metricsRemoteData = design.metricsRemoteData
     , mMeetsActiveSpecification = design.mMeetsActiveSpecification
     }

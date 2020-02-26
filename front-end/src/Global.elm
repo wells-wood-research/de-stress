@@ -444,12 +444,10 @@ updateRunState commands msg runState =
                         (Maybe.map <|
                             mapStoredDesign <|
                                 \designStub ->
-                                    case metricsRemoteData of
-                                        RD.Success _ ->
-                                            { designStub | metricsAvailable = True }
-
-                                        _ ->
-                                            designStub
+                                    { designStub
+                                        | metricsRemoteData =
+                                            metricsRemoteData
+                                    }
                         )
                         runState.designs
               }

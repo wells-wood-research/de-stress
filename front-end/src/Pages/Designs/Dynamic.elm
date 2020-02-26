@@ -637,7 +637,7 @@ requirementView :
 requirementView metrics requirement =
     let
         requirementResolves =
-            resolveRequirement metrics requirement
+            Specification.resolveRequirement metrics requirement
 
         arrowRow r =
             row
@@ -781,59 +781,6 @@ requirementView metrics requirement =
                     , column [ padding 10, spacing 5, width fill ] <|
                         List.map arrowRow requirements
                     ]
-
-
-resolveRequirement :
-    DesignMetrics
-    -> Specification.Requirement Specification.RequirementData
-    -> Bool
-resolveRequirement metrics requirement =
-    case requirement of
-        Specification.All requirements ->
-            List.all (resolveRequirement metrics) requirements
-
-        Specification.Any requirements ->
-            List.any (resolveRequirement metrics) requirements
-
-        Specification.And subRequirement1 subRequirement2 ->
-            resolveRequirement metrics subRequirement1
-                && resolveRequirement metrics subRequirement2
-
-        Specification.Or subRequirement1 subRequirement2 ->
-            resolveRequirement metrics subRequirement1
-                || resolveRequirement metrics subRequirement2
-
-        Specification.Not subRequirement ->
-            not (resolveRequirement metrics subRequirement)
-
-        Specification.Data data ->
-            case data of
-                Specification.Value valueType ->
-                    case valueType of
-                        Specification.IsoelectricPoint order value ->
-                            compare metrics.isoelectricPoint value == order
-
-                        Specification.HydrophobicFitness order value ->
-                            case metrics.hydrophobicFitness of
-                                Nothing ->
-                                    False
-
-                                Just hf ->
-                                    compare hf value == order
-
-                        Specification.MeanPackingDensity order value ->
-                            compare metrics.packingDensity value == order
-
-                        Specification.SequenceContains seqString ->
-                            List.any (String.contains seqString)
-                                (Dict.values
-                                    metrics.sequences
-                                )
-
-                Specification.Constant constantType ->
-                    case constantType of
-                        Specification.Method _ ->
-                            Debug.log "This should do something" True
 
 
 
