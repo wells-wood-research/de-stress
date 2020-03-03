@@ -8,6 +8,7 @@ import Generated.ReferenceSets.Params as Params
 import Global
 import ReferenceSet exposing (ReferenceSetRemoteData)
 import RemoteData as RD
+import Set exposing (Set)
 import Spa.Page exposing (send)
 import Style
 import Utils.Spa exposing (Page)
@@ -36,6 +37,9 @@ type Model
 type alias NewPdbCodeListParams =
     { mName : Maybe String
     , mDescription : Maybe String
+    , rawPdbCodeListInput : String
+    , pdbCodeList : Set String
+    , malformedPdbCodes : Set String
     , remoteData : ReferenceSetRemoteData
     }
 
@@ -44,6 +48,9 @@ defaultCodeListParams : NewPdbCodeListParams
 defaultCodeListParams =
     { mName = Nothing
     , mDescription = Nothing
+    , rawPdbCodeListInput = ""
+    , pdbCodeList = Set.empty
+    , malformedPdbCodes = Set.empty
     , remoteData = RD.NotAsked
     }
 
@@ -99,6 +106,7 @@ type Msg
     = UpdatedType Model
     | UpdatedName NewPdbCodeListParams String
     | UpdatedDescription NewPdbCodeListParams String
+    | UpdatedPdbCodes NewPdbCodeListParams String
     | ClickedDownloadDefaultHighRes
     | GotHighResBiolUnitsData ReferenceSetRemoteData
     | ClickedCreateReferenceSet
@@ -142,6 +150,29 @@ update msg _ =
                 , Cmd.none
                 , Cmd.none
                 )
+
+        UpdatedPdbCodes params rawCodes ->
+            let
+                isPdbCode str =
+                    (String.length str == 4)
+                        && (String.toList str
+                                |> List.all Char.isAlphaNum
+                           )
+
+                ( good, malformed ) =
+                    String.words rawCodes
+                        |> Set.fromList
+                        |> Set.partition isPdbCode
+            in
+            ( { params
+                | rawPdbCodeListInput = rawCodes
+                , pdbCodeList = good
+                , malformedPdbCodes = malformed
+              }
+                |> NewPdbCodeList
+            , Cmd.none
+            , Cmd.none
+            )
 
         ClickedDownloadDefaultHighRes ->
             ( NewHighResBiolUnit RD.Loading
@@ -251,7 +282,14 @@ newHighResBiolUnitsView =
 newPdbCodeListView : NewPdbCodeListParams -> Element Msg
 newPdbCodeListView params =
     column [ width fill, spacing 30 ]
-        [ Input.text
+        [ paragraph []
+            [ text
+                """Create a reference set from a list of PDB codes. The biological unit
+                of the structure, as defined on PDBe as assembly 1, will be used to
+                create the reference set.
+                """
+            ]
+        , Input.text
             Style.textInputStyle
             { onChange = UpdatedName params
             , text = Maybe.withDefault "" params.mName
@@ -268,8 +306,38 @@ newPdbCodeListView params =
             , label =
                 Input.labelAbove []
                     (Style.h2 <| text "Description")
+            , spellcheck = False
+            }
+        , Input.multiline
+            (Style.textInputStyle
+                ++ [ height <| px 200 ]
+            )
+            { onChange = UpdatedPdbCodes params
+            , text = params.rawPdbCodeListInput
+            , placeholder = Nothing
+            , label =
+                Input.labelAbove []
+                    (Style.h2 <|
+                        text "PDB Codes (whitespace separated)"
+                    )
             , spellcheck = True
             }
+        , paragraph []
+            [ "Found "
+                ++ (Set.size params.pdbCodeList |> String.fromInt)
+                ++ " PDB codes. "
+                ++ (Set.size params.malformedPdbCodes |> String.fromInt)
+                ++ " "
+                ++ (if Set.size params.malformedPdbCodes > 1 then
+                        "entries do"
+
+                    else
+                        "entry does"
+                   )
+                ++ " not look a like PDB code:\n"
+                ++ (Set.toList params.malformedPdbCodes |> String.join " ")
+                |> text
+            ]
         , let
             validName =
                 case params.mName of
@@ -288,7 +356,7 @@ newPdbCodeListView params =
                         True
 
             complete =
-                validName && validDescription
+                validName && validDescription && (Set.isEmpty >> not) params.pdbCodeList
           in
           Style.conditionalButton
             { clickMsg =
