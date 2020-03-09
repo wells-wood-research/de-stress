@@ -19,9 +19,9 @@ import Graphql.SelectionSet exposing (SelectionSet)
 import Json.Decode as Decode
 
 
-id : SelectionSet String BigStructure.Object.Design
+id : SelectionSet BigStructure.ScalarCodecs.Id BigStructure.Object.Design
 id =
-    Object.selectionForField "String" "id" [] Decode.string
+    Object.selectionForField "ScalarCodecs.Id" "id" [] (BigStructure.ScalarCodecs.codecs |> BigStructure.Scalar.unwrapCodecs |> .codecId |> .decoder)
 
 
 composition : SelectionSet String BigStructure.Object.Design

@@ -20,6 +20,7 @@ import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Metrics exposing (RefSetMetrics)
 import RemoteData as RD exposing (RemoteData)
+import Set exposing (Set)
 import Style
 
 
@@ -41,7 +42,7 @@ type alias HighResBiolUnitParams =
 type alias PdbCodeListParams =
     { name : String
     , description : String
-    , pdbCodes : List String
+    , pdbCodeList : Set String
     , metrics : List RefSetMetrics
     , deleteStatus : Style.DangerStatus
     }
@@ -86,7 +87,7 @@ pdbCodeListParamsCodec =
     Codec.object PdbCodeListParams
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
-        |> Codec.field "pdbCodes" .pdbCodes (Codec.list Codec.string)
+        |> Codec.field "pdbCodeList" .pdbCodeList (Codec.set Codec.string)
         |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
@@ -148,7 +149,6 @@ highResBiolMetricQuery =
             State.numOfResidues
             State.meanPackingDensity
         )
-        |> SelectionSet.map (List.filterMap identity)
 
 
 

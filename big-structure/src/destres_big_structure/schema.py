@@ -31,7 +31,7 @@ class Chain(SQLAlchemyObjectType):
 class Query(graphene.ObjectType):
 
     all_pdbs = graphene.NonNull(
-        graphene.List(Pdb, required=True),
+        graphene.List(graphene.NonNull(Pdb), required=True),
         description=(
             "Gets all PDB records. Accepts the argument `first`, which "
             "allows you to limit the number of results."
@@ -56,7 +56,7 @@ class Query(graphene.ObjectType):
 
     all_biol_units = graphene.NonNull(
         graphene.List(
-            BiolUnit,
+            graphene.NonNull(BiolUnit),
             description=(
                 "Gets all biological unit records. Accepts the argument `first`, which "
                 "allows you to limit the number of results."
@@ -74,7 +74,7 @@ class Query(graphene.ObjectType):
         return query.all()
 
     preferred_biol_units = graphene.NonNull(
-        graphene.List(BiolUnit, required=True),
+        graphene.List(graphene.NonNull(BiolUnit), required=True),
         description=(
             "Gets preferred biological unit records. Accepts the argument `first`,"
             " which allows you to limit the number of results."
@@ -99,7 +99,7 @@ class Query(graphene.ObjectType):
         return query.count()
 
     all_states = graphene.NonNull(
-        graphene.List(State, required=True),
+        graphene.List(graphene.NonNull(State), required=True),
         description=(
             "Gets all states. Accepts the argument `first`, which "
             "allows you to limit the number of results."
@@ -115,7 +115,7 @@ class Query(graphene.ObjectType):
         return query.all()
 
     preferred_states = graphene.NonNull(
-        graphene.List(State, required=True),
+        graphene.List(graphene.NonNull(State), required=True),
         description=(
             "Gets the preferred state for all preferred biological units. "
             "Accepts the arguments:\n"
@@ -139,6 +139,25 @@ class Query(graphene.ObjectType):
             return query.limit(first).all()
         return query.all()
 
+    preferred_states_subset = graphene.NonNull(
+        graphene.List(graphene.NonNull(State), required=True),
+        description=(
+            "Gets preferred biological unit state records. It requires the `codes`"
+            "parameter, which is a list of PDB codes to create the subset."
+        ),
+        codes=graphene.List(graphene.NonNull(graphene.String), required=True),
+    )
+
+    def resolve_preferred_states_subset(self, info, **args):
+        codes = args.get("codes")
+        query = (
+            State.get_query(info)
+            .join(BiolUnitModel, PdbModel)
+            .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(PdbModel.pdb_code.in_(codes))
+        )
+        return query.all()
+
     state_count = graphene.Int(
         description="Returns a count of the state records.", required=True
     )
@@ -148,7 +167,7 @@ class Query(graphene.ObjectType):
         return query.count()
 
     all_chains = graphene.NonNull(
-        graphene.List(Chain, required=True),
+        graphene.List(graphene.NonNull(Chain), required=True),
         description=(
             "Gets all chains. Accepts the argument `first`, which "
             "allows you to limit the number of results."

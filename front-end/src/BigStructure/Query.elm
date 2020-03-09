@@ -25,7 +25,7 @@ type alias AllPdbsOptionalArguments =
 
 {-| Gets all PDB records. Accepts the argument `first`, which allows you to limit the number of results.
 -}
-allPdbs : (AllPdbsOptionalArguments -> AllPdbsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.Pdb -> SelectionSet (List (Maybe decodesTo)) RootQuery
+allPdbs : (AllPdbsOptionalArguments -> AllPdbsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.Pdb -> SelectionSet (List decodesTo) RootQuery
 allPdbs fillInOptionals object_ =
     let
         filledInOptionals =
@@ -35,7 +35,7 @@ allPdbs fillInOptionals object_ =
             [ Argument.optional "first" filledInOptionals.first Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allPdbs" optionalArgs object_ (identity >> Decode.nullable >> Decode.list)
+    Object.selectionForCompositeField "allPdbs" optionalArgs object_ (identity >> Decode.list)
 
 
 {-| Returns a count of the PDB records.
@@ -49,7 +49,7 @@ type alias AllBiolUnitsOptionalArguments =
     { first : OptionalArgument Int }
 
 
-allBiolUnits : (AllBiolUnitsOptionalArguments -> AllBiolUnitsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.BiolUnit -> SelectionSet (List (Maybe decodesTo)) RootQuery
+allBiolUnits : (AllBiolUnitsOptionalArguments -> AllBiolUnitsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.BiolUnit -> SelectionSet (List decodesTo) RootQuery
 allBiolUnits fillInOptionals object_ =
     let
         filledInOptionals =
@@ -59,7 +59,7 @@ allBiolUnits fillInOptionals object_ =
             [ Argument.optional "first" filledInOptionals.first Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allBiolUnits" optionalArgs object_ (identity >> Decode.nullable >> Decode.list)
+    Object.selectionForCompositeField "allBiolUnits" optionalArgs object_ (identity >> Decode.list)
 
 
 type alias PreferredBiolUnitsOptionalArguments =
@@ -68,7 +68,7 @@ type alias PreferredBiolUnitsOptionalArguments =
 
 {-| Gets preferred biological unit records. Accepts the argument `first`, which allows you to limit the number of results.
 -}
-preferredBiolUnits : (PreferredBiolUnitsOptionalArguments -> PreferredBiolUnitsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.BiolUnit -> SelectionSet (List (Maybe decodesTo)) RootQuery
+preferredBiolUnits : (PreferredBiolUnitsOptionalArguments -> PreferredBiolUnitsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.BiolUnit -> SelectionSet (List decodesTo) RootQuery
 preferredBiolUnits fillInOptionals object_ =
     let
         filledInOptionals =
@@ -78,7 +78,7 @@ preferredBiolUnits fillInOptionals object_ =
             [ Argument.optional "first" filledInOptionals.first Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "preferredBiolUnits" optionalArgs object_ (identity >> Decode.nullable >> Decode.list)
+    Object.selectionForCompositeField "preferredBiolUnits" optionalArgs object_ (identity >> Decode.list)
 
 
 {-| Returns a count of the biological unit records.
@@ -94,7 +94,7 @@ type alias AllStatesOptionalArguments =
 
 {-| Gets all states. Accepts the argument `first`, which allows you to limit the number of results.
 -}
-allStates : (AllStatesOptionalArguments -> AllStatesOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.State -> SelectionSet (List (Maybe decodesTo)) RootQuery
+allStates : (AllStatesOptionalArguments -> AllStatesOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.State -> SelectionSet (List decodesTo) RootQuery
 allStates fillInOptionals object_ =
     let
         filledInOptionals =
@@ -104,7 +104,7 @@ allStates fillInOptionals object_ =
             [ Argument.optional "first" filledInOptionals.first Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allStates" optionalArgs object_ (identity >> Decode.nullable >> Decode.list)
+    Object.selectionForCompositeField "allStates" optionalArgs object_ (identity >> Decode.list)
 
 
 type alias PreferredStatesOptionalArguments =
@@ -117,7 +117,7 @@ type alias PreferredStatesOptionalArguments =
 `state_number`, which allows you specify the preferred state number.
 `first`, which allows you to limit the number of results.
 -}
-preferredStates : (PreferredStatesOptionalArguments -> PreferredStatesOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.State -> SelectionSet (List (Maybe decodesTo)) RootQuery
+preferredStates : (PreferredStatesOptionalArguments -> PreferredStatesOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.State -> SelectionSet (List decodesTo) RootQuery
 preferredStates fillInOptionals object_ =
     let
         filledInOptionals =
@@ -127,7 +127,18 @@ preferredStates fillInOptionals object_ =
             [ Argument.optional "first" filledInOptionals.first Encode.int, Argument.optional "stateNumber" filledInOptionals.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "preferredStates" optionalArgs object_ (identity >> Decode.nullable >> Decode.list)
+    Object.selectionForCompositeField "preferredStates" optionalArgs object_ (identity >> Decode.list)
+
+
+type alias PreferredStatesSubsetRequiredArguments =
+    { codes : List String }
+
+
+{-| Gets preferred biological unit state records. It requires the `codes`parameter, which is a list of PDB codes to create the subset.
+-}
+preferredStatesSubset : PreferredStatesSubsetRequiredArguments -> SelectionSet decodesTo BigStructure.Object.State -> SelectionSet (List decodesTo) RootQuery
+preferredStatesSubset requiredArgs object_ =
+    Object.selectionForCompositeField "preferredStatesSubset" [ Argument.required "codes" requiredArgs.codes (Encode.string |> Encode.list) ] object_ (identity >> Decode.list)
 
 
 {-| Returns a count of the state records.
@@ -143,7 +154,7 @@ type alias AllChainsOptionalArguments =
 
 {-| Gets all chains. Accepts the argument `first`, which allows you to limit the number of results.
 -}
-allChains : (AllChainsOptionalArguments -> AllChainsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.Chain -> SelectionSet (List (Maybe decodesTo)) RootQuery
+allChains : (AllChainsOptionalArguments -> AllChainsOptionalArguments) -> SelectionSet decodesTo BigStructure.Object.Chain -> SelectionSet (List decodesTo) RootQuery
 allChains fillInOptionals object_ =
     let
         filledInOptionals =
@@ -153,7 +164,7 @@ allChains fillInOptionals object_ =
             [ Argument.optional "first" filledInOptionals.first Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allChains" optionalArgs object_ (identity >> Decode.nullable >> Decode.list)
+    Object.selectionForCompositeField "allChains" optionalArgs object_ (identity >> Decode.list)
 
 
 {-| Returns a count of the chain records.

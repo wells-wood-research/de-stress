@@ -1,11 +1,17 @@
 module Pages.ReferenceSets.New exposing (Model, Msg, page)
 
+import BigStructure.Object.State as State
+import BigStructure.Query as Query
 import Element exposing (..)
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Generated.ReferenceSets.Params as Params
 import Global
+import Graphql.Operation exposing (RootQuery)
+import Graphql.OptionalArgument exposing (OptionalArgument(..))
+import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Metrics exposing (RefSetMetrics)
 import ReferenceSet exposing (ReferenceSetRemoteData)
 import RemoteData as RD
 import Set exposing (Set)
@@ -104,16 +110,17 @@ init _ =
 
 type Msg
     = UpdatedType Model
+    | ClickedDownloadDefaultHighRes
+    | GotHighResBiolUnitsData ReferenceSetRemoteData
     | UpdatedName NewPdbCodeListParams String
     | UpdatedDescription NewPdbCodeListParams String
     | UpdatedPdbCodes NewPdbCodeListParams String
-    | ClickedDownloadDefaultHighRes
-    | GotHighResBiolUnitsData ReferenceSetRemoteData
-    | ClickedCreateReferenceSet
+    | ClickedDownloadPreferredSubset
+    | GotPreferredSubsetData ReferenceSetRemoteData
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
-update msg _ =
+update msg model =
     case msg of
         UpdatedType newModel ->
             ( newModel
@@ -121,6 +128,37 @@ update msg _ =
             , Cmd.none
             )
 
+        -- High Res Biol Unit
+        ClickedDownloadDefaultHighRes ->
+            ( NewHighResBiolUnit RD.Loading
+            , ReferenceSet.queryToCmd
+                ReferenceSet.highResBiolUnits.query
+                GotHighResBiolUnitsData
+            , Cmd.none
+            )
+
+        GotHighResBiolUnitsData remoteData ->
+            case remoteData of
+                RD.Success metrics ->
+                    ( NewHighResBiolUnit remoteData
+                    , Cmd.none
+                    , Global.AddNamedReferenceSet
+                        ReferenceSet.highResBiolUnits.id
+                        (ReferenceSet.HighResBiolUnit
+                            { metrics = metrics
+                            , deleteStatus = Style.Unclicked
+                            }
+                        )
+                        |> send
+                    )
+
+                _ ->
+                    ( NewHighResBiolUnit remoteData
+                    , Cmd.none
+                    , Cmd.none
+                    )
+
+        -- Preferred State Subset
         UpdatedName params name ->
             if String.isEmpty name then
                 ( { params | mName = Nothing }
@@ -174,23 +212,37 @@ update msg _ =
             , Cmd.none
             )
 
-        ClickedDownloadDefaultHighRes ->
-            ( NewHighResBiolUnit RD.Loading
-            , ReferenceSet.queryToCmd
-                ReferenceSet.highResBiolUnits.query
-                GotHighResBiolUnitsData
-            , Cmd.none
-            )
+        ClickedDownloadPreferredSubset ->
+            case model of
+                NewPdbCodeList params ->
+                    ( NewPdbCodeList
+                        { params
+                            | remoteData = RD.Loading
+                        }
+                    , ReferenceSet.queryToCmd
+                        (preferredStatesSubsetQuery params.pdbCodeList)
+                        GotPreferredSubsetData
+                    , Cmd.none
+                    )
 
-        GotHighResBiolUnitsData remoteData ->
-            case remoteData of
-                RD.Success metrics ->
+                _ ->
+                    Debug.todo "Catch this"
+
+        GotPreferredSubsetData remoteData ->
+            case ( model, remoteData ) of
+                ( NewPdbCodeList params, RD.Success metrics ) ->
                     ( NewHighResBiolUnit remoteData
                     , Cmd.none
-                    , Global.AddNamedReferenceSet
-                        ReferenceSet.highResBiolUnits.id
-                        (ReferenceSet.HighResBiolUnit
+                    , Global.AddReferenceSet
+                        (ReferenceSet.PdbCodeList
                             { metrics = metrics
+                            , description =
+                                Maybe.withDefault "DESCRIPTION"
+                                    params.mDescription
+                            , pdbCodeList = params.pdbCodeList
+                            , name =
+                                Maybe.withDefault "NAME"
+                                    params.mDescription
                             , deleteStatus = Style.Unclicked
                             }
                         )
@@ -203,11 +255,24 @@ update msg _ =
                     , Cmd.none
                     )
 
-        ClickedCreateReferenceSet ->
-            ( NewHighResBiolUnit RD.NotAsked
-            , Cmd.none
-            , Cmd.none
-            )
+
+
+-- }}}
+-- {{{ GraphQL
+
+
+preferredStatesSubsetQuery : Set String -> SelectionSet (List RefSetMetrics) RootQuery
+preferredStatesSubsetQuery pdbCodeList =
+    Query.preferredStatesSubset { codes = Set.toList pdbCodeList }
+        (SelectionSet.map7 RefSetMetrics
+            (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            State.hydrophobicFitness
+            State.isoelectricPoint
+            State.mass
+            State.numOfResidues
+            State.meanPackingDensity
+        )
 
 
 
@@ -360,7 +425,7 @@ newPdbCodeListView params =
           in
           Style.conditionalButton
             { clickMsg =
-                ClickedCreateReferenceSet
+                ClickedDownloadPreferredSubset
             , labelText = "Create Reference Set"
             , isActive = complete
             }
