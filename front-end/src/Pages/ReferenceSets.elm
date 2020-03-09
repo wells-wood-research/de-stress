@@ -96,7 +96,7 @@ view { global } _ =
                     , Style.linkButton
                         { url = "/reference-sets/new", labelText = "New" }
                     ]
-                , column []
+                , column [ width fill, spacing 15 ]
                     (Dict.toList referenceSets
                         |> List.map
                             (\( k, v ) ->
