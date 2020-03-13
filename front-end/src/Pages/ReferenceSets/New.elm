@@ -236,13 +236,13 @@ update msg model =
                     , Global.AddReferenceSet
                         (ReferenceSet.PdbCodeList
                             { metrics = metrics
+                            , name =
+                                Maybe.withDefault "NAME"
+                                    params.mName
                             , description =
                                 Maybe.withDefault "DESCRIPTION"
                                     params.mDescription
                             , pdbCodeList = params.pdbCodeList
-                            , name =
-                                Maybe.withDefault "NAME"
-                                    params.mDescription
                             , deleteStatus = Style.Unclicked
                             }
                         )
