@@ -1,5 +1,10 @@
 port module Ports exposing
-    ( deleteDesign
+    ( MetricsServerJob
+    , MetricsServerJobStatus
+    , ServerJobStatus(..)
+    , WebSocketIncoming(..)
+    , WebsocketOutgoing(..)
+    , deleteDesign
     , deleteReferenceSet
     , deleteSpecification
     , getDesign
@@ -7,6 +12,9 @@ port module Ports exposing
     , getSpecification
     , getSpecificationForDesign
     , getSpecificationForDesignsPage
+    , metricsServerJobCodec
+    , metricsServerJobStatusCodec
+    , newMetricsServerJob
     , referenceSetForDesign
     , setFocussedDesign
     , setFocussedSpecification
@@ -16,12 +24,16 @@ port module Ports exposing
     , storeReferenceSet
     , storeRunState
     , storeSpecification
-    , updateDesignMetricsRD
+    , updateMetricsJobStatus
     , vegaPlot
     , viewStructure
+    , webSocketIncoming
+    , websocketIncomingCodec
+    , websocketOutgoingToCmd
     )
 
-import Codec exposing (Value)
+import Codec exposing (Codec, Value)
+import Metrics
 import VegaLite as VL
 
 
@@ -56,11 +68,11 @@ storeDesign designAndKey =
         }
 
 
-updateDesignMetricsRD : Value -> Cmd msg
-updateDesignMetricsRD metricsAndKey =
+updateMetricsJobStatus : Value -> Cmd msg
+updateMetricsJobStatus metricsStatusAndKey =
     outgoing
-        { action = "UPDATE_DESIGN_METRICS"
-        , data = metricsAndKey
+        { action = "UPDATE_METRICS_STATUS"
+        , data = metricsStatusAndKey
         }
 
 
@@ -185,6 +197,164 @@ port specificationForDesignsPage : (Value -> msg) -> Sub msg
 
 
 port setFocussedSpecification : (Value -> msg) -> Sub msg
+
+
+
+-- }}}
+-- {{{ Websockets
+
+
+type WebsocketOutgoing
+    = RequestMetrics MetricsServerJob
+
+
+type alias MetricsServerJob =
+    ServerJob RequestMetricsInput Metrics.DesignMetrics
+
+
+metricsServerJobCodec : Codec MetricsServerJob
+metricsServerJobCodec =
+    serverJobCodec requestMetricsInputCodec Metrics.desMetricsCodec
+
+
+type alias RequestMetricsInput =
+    { pdbString : String
+    }
+
+
+newMetricsServerJob : { uuid : String, pdbString : String } -> MetricsServerJob
+newMetricsServerJob { uuid, pdbString } =
+    { uuid = uuid
+    , status = Submitted { pdbString = pdbString }
+    }
+
+
+requestMetricsInputCodec : Codec RequestMetricsInput
+requestMetricsInputCodec =
+    Codec.object
+        RequestMetricsInput
+        |> Codec.field "pdbString" .pdbString Codec.string
+        |> Codec.buildObject
+
+
+websocketOutgoingCodec : Codec WebsocketOutgoing
+websocketOutgoingCodec =
+    Codec.custom
+        (\fRequestMetrics value ->
+            case value of
+                RequestMetrics data ->
+                    fRequestMetrics data
+        )
+        |> Codec.variant1 "RequestMetrics"
+            RequestMetrics
+            (serverJobCodec requestMetricsInputCodec Metrics.desMetricsCodec)
+        |> Codec.buildCustom
+
+
+websocketOutgoingToCmd : WebsocketOutgoing -> Cmd msg
+websocketOutgoingToCmd action =
+    Codec.encoder websocketOutgoingCodec action
+        |> webSocketOutgoing
+
+
+port webSocketOutgoing : Value -> Cmd msg
+
+
+port webSocketIncoming : (Value -> msg) -> Sub msg
+
+
+type WebSocketIncoming
+    = ReceivedMetricsJob (ServerJob RequestMetricsInput Metrics.DesignMetrics)
+    | CommunicationError
+
+
+type alias ServerJob input output =
+    { uuid : String
+    , status : ServerJobStatus input output
+    }
+
+
+type ServerJobStatus input output
+    = Ready
+    | Submitted input
+    | Queued
+    | InProgress
+    | Cancelled
+    | Failed String
+    | Complete output
+
+
+type alias MetricsServerJobStatus =
+    ServerJobStatus RequestMetricsInput Metrics.DesignMetrics
+
+
+metricsServerJobStatusCodec : Codec MetricsServerJobStatus
+metricsServerJobStatusCodec =
+    serverJobStatusCodec requestMetricsInputCodec Metrics.desMetricsCodec
+
+
+websocketIncomingCodec : Codec WebSocketIncoming
+websocketIncomingCodec =
+    Codec.custom
+        (\fReceivedMetricsJob fCommunicationError value ->
+            case value of
+                ReceivedMetricsJob serverJob ->
+                    fReceivedMetricsJob serverJob
+
+                CommunicationError ->
+                    fCommunicationError
+        )
+        |> Codec.variant1 "ReceivedMetricsJob"
+            ReceivedMetricsJob
+            (serverJobCodec requestMetricsInputCodec Metrics.desMetricsCodec)
+        |> Codec.variant0 "CommunicationError"
+            CommunicationError
+        |> Codec.buildCustom
+
+
+serverJobCodec : Codec a -> Codec b -> Codec (ServerJob a b)
+serverJobCodec codecA codecB =
+    Codec.object
+        ServerJob
+        |> Codec.field "uuid" .uuid Codec.string
+        |> Codec.field "status" .status (serverJobStatusCodec codecA codecB)
+        |> Codec.buildObject
+
+
+serverJobStatusCodec : Codec a -> Codec b -> Codec (ServerJobStatus a b)
+serverJobStatusCodec codecA codecB =
+    Codec.custom
+        (\fReady fSubmitted fQueued fInProgress fCancelled fFailed fComplete value ->
+            case value of
+                Ready ->
+                    fReady
+
+                Submitted input ->
+                    fSubmitted input
+
+                Queued ->
+                    fQueued
+
+                InProgress ->
+                    fInProgress
+
+                Cancelled ->
+                    fCancelled
+
+                Failed errorString ->
+                    fFailed errorString
+
+                Complete output ->
+                    fComplete output
+        )
+        |> Codec.variant0 "Ready" Ready
+        |> Codec.variant1 "Submitted" Submitted codecA
+        |> Codec.variant0 "Queued" Queued
+        |> Codec.variant0 "InProgress" InProgress
+        |> Codec.variant0 "Cancelled" Cancelled
+        |> Codec.variant1 "Failed" Failed Codec.string
+        |> Codec.variant1 "Complete" Complete codecB
+        |> Codec.buildCustom
 
 
 

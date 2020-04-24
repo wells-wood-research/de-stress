@@ -1,3 +1,6 @@
+import json
+import typing as t
+
 from flask import Flask
 from flask_cors import CORS
 from flask_graphql import GraphQLView
@@ -5,6 +8,7 @@ from flask_sockets import Sockets
 
 from .big_structure_models import big_structure_db_session
 from .design_models import designs_db_session
+from .elm_types import ServerJob, ServerJobStatus, RequestMetricsInput, DesignMetrics
 
 from .schema import schema
 
@@ -24,7 +28,29 @@ def app_comms_socket(ws):
     """
     while not ws.closed:
         message = ws.receive()
-        ws.send(message)
+        print("Got message")
+        # First check is message is None, seems to do this on init
+        if message:
+            message_dict = json.loads(message)
+            if message_dict["tag"] == "RequestMetrics":
+                server_job = ServerJob.from_dict(
+                    message_dict["args"][0], RequestMetricsInput, DesignMetrics
+                )
+                server_job.status = ServerJobStatus.QUEUED()
+                outgoing_message = {
+                    "tag": "ReceivedMetricsJob",
+                    "args": [server_job.to_dict()],
+                }
+
+                ws.send(json.dumps(outgoing_message))
+                server_job.status = ServerJobStatus.INPROGRESS()
+                outgoing_message = {
+                    "tag": "ReceivedMetricsJob",
+                    "args": [server_job.to_dict()],
+                }
+                ws.send(json.dumps(outgoing_message))
+        else:
+            print("Received empty message.")
 
 
 app.add_url_rule(

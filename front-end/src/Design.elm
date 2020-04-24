@@ -6,15 +6,11 @@ module Design exposing
     , createDesignStub
     , designStubCodec
     , editableValue
-    , metricsRDCodec
     )
 
 import Codec exposing (Codec)
-import Graphql.Http
-import Metrics exposing (DesignMetrics)
-import RemoteData exposing (RemoteData)
+import Ports
 import Style
-import Utils.RemoteDataExtra as RDE
 
 
 type alias Design =
@@ -22,13 +18,9 @@ type alias Design =
     , fileName : String
     , pdbString : String
     , deleteStatus : Style.DangerStatus
-    , metricsRemoteData : MetricsRemoteData
+    , metricsJobStatus : Ports.MetricsServerJobStatus
     , mMeetsActiveSpecification : Maybe Bool
     }
-
-
-type alias MetricsRemoteData =
-    RemoteData (Graphql.Http.Error DesignMetrics) DesignMetrics
 
 
 type Editable a
@@ -55,26 +47,18 @@ codec =
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "pdbString" .pdbString Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
-        |> Codec.field "metricsRemoteData" .metricsRemoteData metricsRDCodec
+        |> Codec.field "metricsJobStatus" .metricsJobStatus Ports.metricsServerJobStatusCodec
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
         |> Codec.buildObject
 
 
-metricsRDCodec : Codec MetricsRemoteData
-metricsRDCodec =
-    RDE.codec
-        (Codec.constant <| Graphql.Http.HttpError Graphql.Http.Timeout)
-        Metrics.desMetricsCodec
-        |> Debug.log "This shouldn't be timeout"
-
-
 type alias DesignStub =
     { name : String
     , fileName : String
     , deleteStatus : Style.DangerStatus
-    , metricsRemoteData : MetricsRemoteData
+    , metricsJobStatus : Ports.MetricsServerJobStatus
     , mMeetsActiveSpecification : Maybe Bool
     }
 
@@ -85,7 +69,7 @@ designStubCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
-        |> Codec.field "metricsRemoteData" .metricsRemoteData metricsRDCodec
+        |> Codec.field "metricsJobStatus" .metricsJobStatus Ports.metricsServerJobStatusCodec
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
@@ -97,6 +81,6 @@ createDesignStub design =
     { name = editableValue design.name
     , fileName = design.fileName
     , deleteStatus = design.deleteStatus
-    , metricsRemoteData = design.metricsRemoteData
+    , metricsJobStatus = design.metricsJobStatus
     , mMeetsActiveSpecification = design.mMeetsActiveSpecification
     }

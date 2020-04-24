@@ -18,7 +18,6 @@ import Json.Decode exposing (errorToString)
 import Metrics exposing (DesignMetrics)
 import Ports
 import ReferenceSet
-import RemoteData as RD
 import Round
 import Spa.Page exposing (send)
 import Specification exposing (Specification)
@@ -201,8 +200,8 @@ update { global } msg model =
                     case model.pageState of
                         DesignLoadingReference design ->
                             ( { model | pageState = DesignWithReference design }
-                            , case design.metricsRemoteData of
-                                RD.Success metrics ->
+                            , case design.metricsJobStatus of
+                                Ports.Complete metrics ->
                                     Cmd.batch
                                         [ Ports.vegaPlot <|
                                             { plotId = "composition"
@@ -369,7 +368,11 @@ designDetailsView :
     -> Maybe Specification
     -> Design
     -> Element Msg
-designDetailsView uuidString mSelectedSpecification { name, fileName, deleteStatus, metricsRemoteData } =
+designDetailsView uuidString mSelectedSpecification design =
+    let
+        { name, fileName, deleteStatus, metricsJobStatus } =
+            design
+    in
     column
         [ spacing 15, width fill ]
         [ sectionColumn
@@ -402,9 +405,29 @@ designDetailsView uuidString mSelectedSpecification { name, fileName, deleteStat
                     |> html
                 )
             ]
-        , Metrics.desMetRemoteDataView
-            (basicMetrics mSelectedSpecification)
-            metricsRemoteData
+        , case metricsJobStatus of
+            Ports.Ready ->
+                text "Ready for server submission."
+
+            Ports.Submitted _ ->
+                text "Job submitted to server."
+
+            Ports.Queued ->
+                text "Job queued on server."
+
+            Ports.InProgress ->
+                text "Job is running on server."
+
+            Ports.Cancelled ->
+                text "Job was cancelled by user."
+
+            Ports.Failed errorString ->
+                "Server error while creating metrics: "
+                    ++ errorString
+                    |> text
+
+            Ports.Complete designMetrics ->
+                basicMetrics mSelectedSpecification designMetrics
         ]
 
 

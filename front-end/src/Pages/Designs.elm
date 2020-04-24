@@ -13,7 +13,6 @@ import Generated.Params as Params
 import Generated.Routes as Routes
 import Global
 import Ports
-import RemoteData as RD
 import Spa.Page exposing (send)
 import Specification exposing (Specification)
 import Style exposing (h1, h2)
@@ -150,7 +149,7 @@ update msg model =
                                 |> List.filter (String.startsWith "ATOM")
                                 |> String.join "\n"
                       , deleteStatus = Style.Unclicked
-                      , metricsRemoteData = RD.Loading
+                      , metricsJobStatus = Ports.Ready
                       , mMeetsActiveSpecification = Nothing
                       }
                         |> Global.AddDesign
@@ -348,8 +347,8 @@ createDesignCardData mSpecification ( uuidString, designStub ) =
     { uuidString = uuidString
     , designStub = designStub
     , mMeetsSpecification =
-        case ( mSpecification, designStub.metricsRemoteData ) of
-            ( Just specification, RD.Success designMetrics ) ->
+        case ( mSpecification, designStub.metricsJobStatus ) of
+            ( Just specification, Ports.Complete designMetrics ) ->
                 Specification.applySpecification designMetrics specification |> Just
 
             _ ->
@@ -426,12 +425,29 @@ designCard { uuidString, designStub, mMeetsSpecification } =
         ]
         [ Style.h2 <| text designStub.name
         , text ("Structure file: " ++ designStub.fileName)
-        , case designStub.metricsRemoteData of
-            RD.Success _ ->
-                text "Metrics Available"
+        , case designStub.metricsJobStatus of
+            Ports.Ready ->
+                text "Ready for server submission."
 
-            _ ->
-                none
+            Ports.Submitted _ ->
+                text "Job submitted to server."
+
+            Ports.Queued ->
+                text "Job queued on server."
+
+            Ports.InProgress ->
+                text "Job is running on server."
+
+            Ports.Cancelled ->
+                text "Job was cancelled by user."
+
+            Ports.Failed errorString ->
+                "Server error while creating metrics: "
+                    ++ errorString
+                    |> text
+
+            Ports.Complete _ ->
+                text "Metrics Available"
         , row [ spacing 10, width fill ]
             [ Style.linkButton
                 { labelText = "Details"

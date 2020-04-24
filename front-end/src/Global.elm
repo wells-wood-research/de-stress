@@ -22,7 +22,6 @@ import Codec exposing (Codec, Value)
 import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
 import Generated.Routes exposing (Route, routes)
-import Graphql.Http
 import Graphql.Operation exposing (RootMutation)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
@@ -30,7 +29,6 @@ import Metrics exposing (DesignMetrics)
 import Ports
 import Random
 import ReferenceSet exposing (ReferenceSet(..), ReferenceSetStub(..))
-import RemoteData as RD
 import Specification exposing (Specification, SpecificationStub)
 import Style
 import Uuid exposing (Uuid)
@@ -248,24 +246,24 @@ designAndKeyCodec =
         |> Codec.buildObject
 
 
-type alias DesignMetricsRDAndKey =
+type alias MetricsJobStatusAndKey =
     { storeKey : String
-    , designMetricsRD : Metrics.DesMetricsRemoteData
+    , metricsJobStatus : Ports.MetricsServerJobStatus
     }
 
 
-encodeDesignMetricsRDAndKey : DesignMetricsRDAndKey -> Value
-encodeDesignMetricsRDAndKey designMetricsRDAndKey =
+encodeDesignMetricsJobAndKey : MetricsJobStatusAndKey -> Value
+encodeDesignMetricsJobAndKey metricsJobStatusAndKey =
     Codec.encoder
-        designMetricsRDAndKeyCodec
-        designMetricsRDAndKey
+        metricsJobStatusAndKeyCodec
+        metricsJobStatusAndKey
 
 
-designMetricsRDAndKeyCodec : Codec DesignMetricsRDAndKey
-designMetricsRDAndKeyCodec =
-    Codec.object DesignMetricsRDAndKey
+metricsJobStatusAndKeyCodec : Codec MetricsJobStatusAndKey
+metricsJobStatusAndKeyCodec =
+    Codec.object MetricsJobStatusAndKey
         |> Codec.field "storeKey" .storeKey Codec.string
-        |> Codec.field "designMetricsRD" .designMetricsRD Design.metricsRDCodec
+        |> Codec.field "metricsJobStatus" .metricsJobStatus Ports.metricsServerJobStatusCodec
         |> Codec.buildObject
 
 
@@ -372,7 +370,7 @@ createInitialUuid initialRandomNumber =
 
 type Msg
     = AddDesign Design
-    | GotDesignMetrics String Metrics.DesMetricsRemoteData
+    | UpdateDesignMetricsJob Ports.MetricsServerJob
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
     | DeleteFocussedDesign String Style.DangerStatus
@@ -388,6 +386,7 @@ type Msg
     | DeleteFocussedSpecification String Style.DangerStatus
     | SetMSelectedSpecification (Maybe String)
     | RequestedNewUuid
+    | WebSocketIncoming Value
 
 
 update : Commands msg -> Msg -> Model -> ( Model, Cmd Msg, Cmd msg )
@@ -416,47 +415,56 @@ updateRunState commands msg runState =
             let
                 uuidString =
                     Uuid.toString runState.nextUuid
+
+                metricsServerJob =
+                    Ports.newMetricsServerJob { uuid = uuidString, pdbString = design.pdbString }
+
+                submittedDesign =
+                    { design | metricsJobStatus = metricsServerJob.status }
             in
             ( { runState
                 | designs =
                     Dict.insert
                         uuidString
-                        (design
+                        (submittedDesign
                             |> Design.createDesignStub
                             |> LocalDesign
                         )
                         runState.designs
               }
                 |> updateUuid
-            , requestDesignMetrics { uuid = uuidString, pdbString = design.pdbString }
+            , Cmd.batch
+                [ metricsServerJob
+                    |> Ports.RequestMetrics
+                    |> Ports.websocketOutgoingToCmd
+                ]
             , encodeDesignAndKey
                 { storeKey = uuidString
-                , design = design
+                , design = submittedDesign
                 }
                 |> Ports.storeDesign
             )
 
-        GotDesignMetrics uuid metricsRemoteData ->
+        UpdateDesignMetricsJob metricsServerJob ->
             ( { runState
                 | designs =
                     Dict.update
-                        uuid
+                        metricsServerJob.uuid
                         (Maybe.map <|
                             mapStoredDesign <|
                                 \designStub ->
                                     { designStub
-                                        | metricsRemoteData =
-                                            metricsRemoteData
+                                        | metricsJobStatus =
+                                            metricsServerJob.status
                                     }
                         )
                         runState.designs
               }
-            , encodeDesignMetricsRDAndKey
-                { storeKey = uuid
-                , designMetricsRD =
-                    metricsRemoteData
+            , encodeDesignMetricsJobAndKey
+                { storeKey = metricsServerJob.uuid
+                , metricsJobStatus = metricsServerJob.status
                 }
-                |> Ports.updateDesignMetricsRD
+                |> Ports.updateMetricsJobStatus
             , Cmd.none
             )
 
@@ -799,6 +807,30 @@ updateRunState commands msg runState =
         RequestedNewUuid ->
             ( runState, Cmd.none, Cmd.none )
 
+        WebSocketIncoming value ->
+            let
+                webSocketIncomingAction =
+                    case Codec.decodeValue Ports.websocketIncomingCodec value of
+                        Ok val ->
+                            val
+
+                        Err errString ->
+                            let
+                                _ =
+                                    Debug.log "Err" errString
+                            in
+                            Ports.CommunicationError
+            in
+            case webSocketIncomingAction of
+                Ports.ReceivedMetricsJob serverJob ->
+                    updateRunState
+                        commands
+                        (UpdateDesignMetricsJob serverJob)
+                        runState
+
+                Ports.CommunicationError ->
+                    Debug.todo "Deal with this!"
+
 
 addStoreCmd : ( RunState, Cmd Msg, Cmd msg ) -> ( RunState, Cmd Msg, Cmd msg )
 addStoreCmd ( state, gCmd, pCmd ) =
@@ -864,14 +896,12 @@ createDesignMutation requiredArgs =
         )
 
 
-requestDesignMetrics : { uuid : String, pdbString : String } -> Cmd Msg
-requestDesignMetrics requiredArgs =
-    createDesignMutation requiredArgs
-        |> Graphql.Http.mutationRequest "http://127.0.0.1:5000/graphql"
-        |> Graphql.Http.send (RD.fromResult >> GotDesignMetrics requiredArgs.uuid)
 
-
-
+-- requestDesignMetrics : { uuid : String, pdbString : String } -> Cmd Msg
+-- requestDesignMetrics requiredArgs =
+--     createDesignMutation requiredArgs
+--         |> Graphql.Http.mutationRequest "http://127.0.0.1:8181/graphql"
+--         |> Graphql.Http.send (RD.fromResult >> UpdateDesignMetricsJob requiredArgs.uuid)
 -- }}}
 -- {{{ Commands
 
@@ -889,7 +919,7 @@ type alias Commands msg =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        []
+        [ Ports.webSocketIncoming WebSocketIncoming ]
 
 
 

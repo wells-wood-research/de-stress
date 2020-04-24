@@ -29,4 +29,5 @@ CMD gunicorn \
     -w ${GUNICORN_WORKERS} \
     -b 0.0.0.0:${APP_PORT} \
     -k flask_sockets.worker \
+    --reload \
     destress_big_structure:app

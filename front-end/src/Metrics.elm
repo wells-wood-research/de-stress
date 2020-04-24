@@ -1,13 +1,10 @@
 module Metrics exposing
-    ( DesMetricsRemoteData
-    , DesignMetrics
+    ( DesignMetrics
     , RefSetMetrics
-    , RefSetMetricsRemoteData
     , compositionStringToDict
     , createAllHistogramsSpec
     , createCompositionSpec
     , createTorsionAngleSpec
-    , desMetRemoteDataView
     , desMetricsCodec
     , refSetMetricsCodec
     , torsionAngleStringToDict
@@ -16,9 +13,7 @@ module Metrics exposing
 import Codec exposing (Codec)
 import Dict exposing (Dict)
 import Element exposing (..)
-import Graphql.Http
 import Parser exposing ((|.), (|=))
-import RemoteData as RD exposing (RemoteData)
 import Utils.ListExtra as ListExtra
 import VegaLite as VL
 
@@ -57,10 +52,6 @@ desMetricsCodec =
         |> Codec.buildObject
 
 
-type alias DesMetricsRemoteData =
-    RemoteData (Graphql.Http.Error DesignMetrics) DesignMetrics
-
-
 type alias RefSetMetrics =
     { composition : Dict String Float
     , torsionAngles : Dict String ( Float, Float, Float )
@@ -91,10 +82,6 @@ refSetMetricsCodec =
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
         |> Codec.buildObject
-
-
-type alias RefSetMetricsRemoteData =
-    RemoteData (Graphql.Http.Error RefSetMetrics) RefSetMetrics
 
 
 
@@ -185,53 +172,6 @@ torsionAngleParser =
         |= negativeFloatParser
         |. Parser.symbol ","
         |= negativeFloatParser
-
-
-
--- }}}
--- {{{ Views
-
-
-desMetRemoteDataView :
-    (DesignMetrics -> Element msg)
-    -> DesMetricsRemoteData
-    -> Element msg
-desMetRemoteDataView successView remoteData =
-    case remoteData of
-        RD.NotAsked ->
-            text "Metrics have not been requested to run, try uploading the design again."
-
-        RD.Loading ->
-            text "Metrics requested, awaiting results..."
-
-        RD.Failure error ->
-            failureView error
-
-        RD.Success metricsRemoteData ->
-            successView metricsRemoteData
-
-
-failureView : Graphql.Http.Error DesignMetrics -> Element msg
-failureView error =
-    case error of
-        Graphql.Http.GraphqlError _ errorList ->
-            textColumn []
-                (paragraph []
-                    [ text
-                        "One or more errors occurred while analysing the structure:"
-                    ]
-                    :: (List.map .message errorList
-                            |> List.map (\e -> paragraph [] [ text e ])
-                       )
-                )
-
-        Graphql.Http.HttpError _ ->
-            paragraph []
-                [ text <|
-                    "Could not connect to the DE-STRESS server. Check your internet "
-                        ++ "connection and try again. If your connection is fine "
-                        ++ "then the DE-STRESS server might be unavailable."
-                ]
 
 
 

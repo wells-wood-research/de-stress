@@ -1,22 +1,35 @@
 // On load, listen to Elm!
-window.addEventListener("load", _ => {
+window.addEventListener("load", (_) => {
+  window.sessionCommsSocket = new WebSocket("ws://localhost:8181/app-comms");
   window.ports = {
-    init: app => {
+    init: (app) => {
       app.ports.outgoing.subscribe(({ action, data }) => {
         actions[action]
           ? actions[action](app, data)
           : console.warn(`I didn't recognize action "${action}".`);
       });
+
+      // Session comms using WebSockets
+      app.ports.webSocketOutgoing.subscribe((action) => {
+        console.log("Outgoing to server: " + action.tag);
+        window.sessionCommsSocket.send(JSON.stringify(action));
+      });
+      window.sessionCommsSocket.onmessage = function(event) {
+        console.log("Incomin from server...");
+        console.log(event.data);
+        app.ports.webSocketIncoming.send(JSON.parse(event.data));
+      };
+
       // Vega Lite
       // Plots a vega-lite specification created in Elm
-      app.ports.vegaPlot.subscribe(plotDetails => {
+      app.ports.vegaPlot.subscribe((plotDetails) => {
         window.requestAnimationFrame(() => {
           vegaEmbed("#" + plotDetails.plotId, plotDetails.spec, {
-            actions: false
+            actions: false,
           }).catch(console.warn);
         });
       });
-    }
+    },
   };
 });
 
@@ -52,20 +65,20 @@ const storeDesign = (_, designAndKey) => {
 };
 
 // Update design metrics for stored design
-const updateDesignMetrics = (_, metricsAndKey) => {
-  var { storeKey, designMetricsRD } = metricsAndKey;
-  idbKeyval.get(storeKey, designStore).then(design => {
-    design.metricsRemoteData = designMetricsRD;
+const updateMetricsJobStatus = (_, metricsAndKey) => {
+  var { storeKey, metricsJobStatus } = metricsAndKey;
+  idbKeyval.get(storeKey, designStore).then((design) => {
+    design.metricsJobStatus = metricsJobStatus;
     idbKeyval.set(storeKey, design, designStore);
   });
 };
 
 // Get design
 const getDesign = (app, storeKey) => {
-  idbKeyval.get(storeKey, designStore).then(design => {
+  idbKeyval.get(storeKey, designStore).then((design) => {
     app.ports.setFocussedDesign.send({
       uuidString: storeKey,
-      design: design
+      design: design,
     });
   });
 };
@@ -82,7 +95,7 @@ const viewStructure = (_, pdbString) => {
       width: "auto",
       height: "auto",
       antialias: true,
-      quality: "medium"
+      quality: "medium",
     };
     var viewer = pv.Viewer(document.getElementById("viewer"), options);
     viewer.fitParent();
@@ -114,10 +127,10 @@ const storeReferenceSet = (_, referenceSetAndKey) => {
 
 // Get referenceSet
 const getReferenceSetForDesign = (app, storeKey) => {
-  idbKeyval.get(storeKey, referenceSetStore).then(referenceSet => {
+  idbKeyval.get(storeKey, referenceSetStore).then((referenceSet) => {
     app.ports.referenceSetForDesign.send({
       uuidString: storeKey,
-      referenceSet: referenceSet
+      referenceSet: referenceSet,
     });
   });
 };
@@ -148,30 +161,30 @@ const storeSpecification = (_, specificationAndKey) => {
 
 // Get specification
 const getSpecification = (app, storeKey) => {
-  idbKeyval.get(storeKey, specificationStore).then(specification => {
+  idbKeyval.get(storeKey, specificationStore).then((specification) => {
     app.ports.setFocussedSpecification.send({
       uuidString: storeKey,
-      specification: specification
+      specification: specification,
     });
   });
 };
 
 // Get specification for design page
 const getSpecificationForDesign = (app, storeKey) => {
-  idbKeyval.get(storeKey, specificationStore).then(specification => {
+  idbKeyval.get(storeKey, specificationStore).then((specification) => {
     app.ports.specificationForDesign.send({
       uuidString: storeKey,
-      specification: specification
+      specification: specification,
     });
   });
 };
 
 // Get specification for designs page
 const getSpecificationForDesignsPage = (app, storeKey) => {
-  idbKeyval.get(storeKey, specificationStore).then(specification => {
+  idbKeyval.get(storeKey, specificationStore).then((specification) => {
     app.ports.specificationForDesignsPage.send({
       uuidString: storeKey,
-      specification: specification
+      specification: specification,
     });
   });
 };
@@ -189,7 +202,7 @@ const actions = {
   STORE_STATE: storeRunState,
   // Designs
   STORE_DESIGN: storeDesign,
-  UPDATE_DESIGN_METRICS: updateDesignMetrics,
+  UPDATE_METRICS_STATUS: updateMetricsJobStatus,
   GET_DESIGN: getDesign,
   DELETE_DESIGN: deleteDesign,
   VIEW_STRUCTURE: viewStructure,
@@ -202,7 +215,7 @@ const actions = {
   GET_SPECIFICATION: getSpecification,
   GET_SPECIFICATION_FOR_DESIGN: getSpecificationForDesign,
   GET_SPECIFICATION_FOR_DESIGNS_PAGE: getSpecificationForDesignsPage,
-  DELETE_SPECIFICATION: deleteSpecification
+  DELETE_SPECIFICATION: deleteSpecification,
 };
 
 // {{{ Utilities
