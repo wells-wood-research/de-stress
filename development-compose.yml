@@ -1,0 +1,18 @@
+version: '2'
+services:
+  big-structure:
+    build:
+      context: ./big-structure/
+    environment:
+      - GUNICORN_WORKERS=2
+      - APP_PORT=8181
+    depends_on:
+      - redis
+    ports:
+      - "8181:8181"
+    restart: on-failure
+    volumes:
+      - ./big-structure:/app
+  redis:
+    image: redis
+    restart: on-failure

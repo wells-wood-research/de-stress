@@ -4,8 +4,8 @@ from graphene_sqlalchemy import SQLAlchemyObjectType
 
 from .big_structure_models import PdbModel, BiolUnitModel, StateModel, ChainModel
 from .design_models import DesignModel, DesignChainModel
-from destres_big_structure.design_models import designs_db_session
-from destres_big_structure.create_entry import create_design_entry
+from destress_big_structure.design_models import designs_db_session
+from destress_big_structure.create_entry import create_design_entry
 
 
 class Pdb(SQLAlchemyObjectType):

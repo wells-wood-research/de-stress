@@ -9,16 +9,16 @@ import click
 import bs4
 import ampal
 
-from destres_big_structure import app
-from destres_big_structure.big_structure_models import (
+from destress_big_structure import app
+from destress_big_structure.big_structure_models import (
     big_structure_engine,
     big_structure_db_session,
     BigStructureBase,
     PdbModel,
     BiolUnitModel,
 )
-from destres_big_structure.design_models import designs_engine, DesignsBase
-import destres_big_structure.create_entry as create_entry
+from destress_big_structure.design_models import designs_engine, DesignsBase
+import destress_big_structure.create_entry as create_entry
 
 
 def dev_run():

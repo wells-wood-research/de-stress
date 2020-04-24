@@ -4,17 +4,17 @@ import typing as tp
 
 import ampal
 
-from destres_big_structure.big_structure_models import (
+from destress_big_structure.big_structure_models import (
     PdbModel,
     BiolUnitModel,
     StateModel,
     ChainModel,
 )
-from destres_big_structure.design_models import (
+from destress_big_structure.design_models import (
     DesignModel,
     DesignChainModel,
 )
-from destres_big_structure import analysis
+from destress_big_structure import analysis
 
 
 def create_biounit_entry(
