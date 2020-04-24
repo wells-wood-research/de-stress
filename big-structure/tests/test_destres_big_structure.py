@@ -1,5 +1,5 @@
-from destres_big_structure import __version__
+from destress_big_structure import __version__
 
 
 def test_version():
-    assert __version__ == '0.1.0'
+    assert __version__ == "0.1.0"
