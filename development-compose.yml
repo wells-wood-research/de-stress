@@ -7,12 +7,14 @@ services:
       - GUNICORN_WORKERS=2
       - APP_PORT=8181
     depends_on:
+      - mongo
       - redis
     ports:
       - "8181:8181"
     restart: on-failure
     volumes:
       - ./big-structure:/app
+  mongo:
+    image: mongo
   redis:
     image: redis
-    restart: on-failure
