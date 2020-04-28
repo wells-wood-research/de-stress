@@ -8,7 +8,14 @@ from flask_sockets import Sockets
 
 from .big_structure_models import big_structure_db_session
 from .design_models import designs_db_session
-from .elm_types import ServerJob, ServerJobStatus, RequestMetricsInput, DesignMetrics
+from .elm_types import (
+    ClientWebsocketIncoming,
+    ClientWebsocketOutgoing,
+    DesignMetrics,
+    RequestMetricsInput,
+    ServerJob,
+    ServerJobStatus,
+)
 
 from .schema import schema
 
@@ -27,28 +34,30 @@ def app_comms_socket(ws):
     be mapped to Python dataclasses.
     """
     while not ws.closed:
-        message = ws.receive()
-        print("Got message")
+        message_string: t.Optional[str] = ws.receive()
+
         # First check is message is None, seems to do this on init
-        if message:
-            message_dict = json.loads(message)
+        if message_string:
+
+            message_dict = json.loads(message_string)
+            message = ClientWebsocketOutgoing.from_dict(message_dict)
+            print(message.__repr__())
+
             if message_dict["tag"] == "RequestMetrics":
                 server_job = ServerJob.from_dict(
                     message_dict["args"][0], RequestMetricsInput, DesignMetrics
                 )
                 server_job.status = ServerJobStatus.QUEUED()
-                outgoing_message = {
-                    "tag": "ReceivedMetricsJob",
-                    "args": [server_job.to_dict()],
-                }
+                outgoing_message = ClientWebsocketIncoming.RECEIVEDMETRICSJOB(
+                    server_job
+                )
 
-                ws.send(json.dumps(outgoing_message))
+                ws.send(outgoing_message.to_json())
                 server_job.status = ServerJobStatus.INPROGRESS()
-                outgoing_message = {
-                    "tag": "ReceivedMetricsJob",
-                    "args": [server_job.to_dict()],
-                }
-                ws.send(json.dumps(outgoing_message))
+                outgoing_message = ClientWebsocketIncoming.RECEIVEDMETRICSJOB(
+                    server_job
+                )
+                ws.send(outgoing_message.to_json())
         else:
             print("Received empty message.")
 

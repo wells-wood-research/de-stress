@@ -11,7 +11,7 @@ services:
       - redis
     ports:
       - "8181:8181"
-    restart: on-failure
+    restart: always
     volumes:
       - ./big-structure:/app
   mongo:

@@ -1,5 +1,6 @@
 """Algebraic datatypes that mirror Elm types."""
 from dataclasses import dataclass
+import json
 from typing import Any, Dict, Generic, Optional, Tuple, TypeVar
 
 from adt import adt, Case
@@ -7,6 +8,25 @@ from dataclasses_json import dataclass_json, LetterCase
 
 A = TypeVar("A")
 B = TypeVar("B")
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class RequestMetricsInput:
+    pdb_string: str
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class DesignMetrics:
+    sequences: Dict[str, str]
+    composition: Dict[str, float]
+    torsion_angles: Dict[str, Tuple[float, float, float]]
+    hydrophobic_fitness: Optional[float]
+    isoelectric_point: float
+    mass: float
+    num_of_residues: int
+    packing_density: float
 
 
 @adt
@@ -19,8 +39,20 @@ class ServerJobStatus(Generic[A, B]):
     FAILED: Case[str]
     COMPLETE: Case[B]
 
-    def to_dict(self) -> Any:
-        return self.match(
+    def __repr__(self) -> str:
+        case_string = self.match(  # type: ignore
+            ready=lambda: "READY",
+            submitted=lambda _: "SUBMITTED",
+            queued=lambda: "QUEUED",
+            inprogress=lambda: "INPROGRESS",
+            cancelled=lambda: "CANCELLED",
+            failed=lambda _: "FAILED",
+            complete=lambda _: "COMPLETE",
+        )
+        return f"<ServerJobStatus: {case_string}>"
+
+    def to_dict(self) -> Dict:
+        return self.match(  # type: ignore
             ready=lambda: {"tag": "Ready", "args": []},
             submitted=lambda in_value: {
                 "tag": "Submitted",
@@ -52,12 +84,17 @@ class ServerJobStatus(Generic[A, B]):
             return cls.Failed(json_dict["args"][0])
         elif json_dict["tag"] == "Complete":
             return cls.COMPLETE(constructor_b.from_dict(json_dict["args"][0]))
+        else:
+            raise ValueError(f"Cannot parse JSON as ServerJobStatus:\n\t{json_dict}")
 
 
 @dataclass
 class ServerJob(Generic[A, B]):
     uuid: str
     status: ServerJobStatus[A, B]
+
+    def __repr__(self) -> str:
+        return f"<ServerJob: uuid={self.uuid},status={self.status.__repr__()}>"
 
     def to_dict(self):
         return {"uuid": self.uuid, "status": self.status.to_dict()}
@@ -72,20 +109,44 @@ class ServerJob(Generic[A, B]):
         )
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
-@dataclass
-class RequestMetricsInput:
-    pdb_string: str
+@adt
+class ClientWebsocketOutgoing:
+    REQUESTMETRICS: Case[ServerJob[RequestMetricsInput, DesignMetrics]]
+
+    def __repr__(self):
+        case_string, server_job = self.match(  # type: ignore
+            requestmetrics=lambda sj: ("REQUESTMETRICS", sj)
+        )
+        return f"<ClientWebsocketOutgoing: {case_string}\n\t{server_job.__repr__()}\n>"
+
+    @classmethod
+    def from_dict(cls, json_dict):
+        if json_dict["tag"] == "RequestMetrics":
+            return cls.REQUESTMETRICS(
+                ServerJob.from_dict(
+                    json_dict["args"][0], RequestMetricsInput, DesignMetrics
+                )
+            )
+        else:
+            raise ValueError(
+                f"Cannot parse JSON as ClientWebsocketOutgoing:\n\t{json_dict}"
+            )
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
-@dataclass
-class DesignMetrics:
-    sequences: Dict[str, str]
-    composition: Dict[str, float]
-    torsion_angles: Dict[str, Tuple[float, float, float]]
-    hydrophobic_fitness: Optional[float]
-    isoelectric_point: float
-    mass: float
-    num_of_residues: int
-    packing_density: float
+@adt
+class ClientWebsocketIncoming:
+    RECEIVEDMETRICSJOB: Case[ServerJob[RequestMetricsInput, DesignMetrics]]
+    COMMUNICATIONERROR: Case
+
+    def to_dict(self) -> Dict:
+        return self.match(  # type: ignore
+            receivedmetricsjob=lambda server_job: {
+                "tag": "ReceivedMetricsJob",
+                "args": [server_job.to_dict()],
+            },
+            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
+        )
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
