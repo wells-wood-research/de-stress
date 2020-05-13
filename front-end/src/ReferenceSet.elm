@@ -108,7 +108,7 @@ queryToCmd :
     -> Cmd msg
 queryToCmd query msgConstructor =
     query
-        |> Graphql.Http.queryRequest "http://127.0.0.1:5000/graphql"
+        |> Graphql.Http.queryRequest "http://127.0.0.1:8181/graphql"
         |> Graphql.Http.send (RD.fromResult >> msgConstructor)
 
 
