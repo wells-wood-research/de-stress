@@ -1,11 +1,13 @@
 import json
 import typing as t
+import time
 
 from flask import Flask
 from flask_cors import CORS
 from flask_graphql import GraphQLView
 from flask_sockets import Sockets
 
+from .analysis import create_metrics_from_pdb
 from .big_structure_models import big_structure_db_session
 from .design_models import designs_db_session
 from .elm_types import (
@@ -25,6 +27,28 @@ CORS(app)
 app.debug = True
 
 
+class ServerJobManager:
+    def __init__(
+        self,
+        server_job: ServerJob,
+        websocket,
+        out_msg_constructor: t.Callable[[ServerJobStatus], ClientWebsocketIncoming],
+    ):
+        self.server_job = server_job
+        self.websocket = websocket
+        self.out_msg_constructor = out_msg_constructor
+
+    @property
+    def status(self):
+        return self.server_job.status
+
+    @status.setter
+    def status(self, new_status):
+        self.server_job.status = new_status
+        outgoing_message = self.out_msg_constructor(self.server_job)
+        self.websocket.send(outgoing_message.to_json())
+
+
 @sockets.route("/app-comms")
 def app_comms_socket(ws):
     """Provides 2-way communication for the app.
@@ -41,23 +65,26 @@ def app_comms_socket(ws):
 
             message_dict = json.loads(message_string)
             message = ClientWebsocketOutgoing.from_dict(message_dict)
-            print(message.__repr__())
 
             if message_dict["tag"] == "RequestMetrics":
-                server_job = ServerJob.from_dict(
-                    message_dict["args"][0], RequestMetricsInput, DesignMetrics
+                server_job = ServerJobManager(
+                    ServerJob.from_dict(
+                        message_dict["args"][0], RequestMetricsInput, DesignMetrics
+                    ),
+                    ws,
+                    ClientWebsocketIncoming.RECEIVEDMETRICSJOB,
                 )
-                server_job.status = ServerJobStatus.QUEUED()
-                outgoing_message = ClientWebsocketIncoming.RECEIVEDMETRICSJOB(
-                    server_job
-                )
+                # This should always succeed as the job is always the submitted type
+                input_pdb_string = server_job.status.submitted().pdb_string
 
-                ws.send(outgoing_message.to_json())
+                server_job.status = ServerJobStatus.QUEUED()
+                time.sleep(3)
+
                 server_job.status = ServerJobStatus.INPROGRESS()
-                outgoing_message = ClientWebsocketIncoming.RECEIVEDMETRICSJOB(
-                    server_job
-                )
-                ws.send(outgoing_message.to_json())
+                time.sleep(3)
+
+                design_metrics = create_metrics_from_pdb(input_pdb_string)
+                server_job.status = ServerJobStatus.COMPLETE(design_metrics)
         else:
             print("Received empty message.")
 

@@ -56,7 +56,7 @@ class ServerJobStatus(Generic[A, B]):
             ready=lambda: {"tag": "Ready", "args": []},
             submitted=lambda in_value: {
                 "tag": "Submitted",
-                "args": [in_value.to_dict()],
+                "args": [in_value.to_dict()],  # type: ignore
             },
             queued=lambda: {"tag": "Queued", "args": []},
             inprogress=lambda: {"tag": "InProgress", "args": []},
@@ -64,7 +64,7 @@ class ServerJobStatus(Generic[A, B]):
             failed=lambda err_str: {"tag": "Failed", "args": [err_str]},
             complete=lambda out_value: {
                 "tag": "Complete",
-                "args": [out_value.to_dict()],
+                "args": [out_value.to_dict()],  # type: ignore
             },
         )
 
