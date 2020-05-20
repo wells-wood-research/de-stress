@@ -1,3 +1,30 @@
+function connect_to_server(app) {
+  window.sessionCommsSocket = new WebSocket("ws://localhost:8181/app-comms");
+  sessionCommsSocket.onopen = function() {
+    // subscribe to some channels
+    console.log("Established connection to server.");
+  };
+
+  sessionCommsSocket.onmessage = function(event) {
+    app.ports.webSocketIncoming.send(JSON.parse(event.data));
+  };
+
+  sessionCommsSocket.onclose = function(event) {
+    console.log(
+      "Socket is closed. Reconnect will be attempted in 1 second.",
+      event.reason
+    );
+    setTimeout(function() {
+      connect_to_server(app);
+    }, 1000);
+  };
+
+  sessionCommsSocket.onerror = function(err) {
+    console.error("Socket encountered error: ", err.message, "Closing socket");
+    sessionCommsSocket.close();
+  };
+}
+
 // On load, listen to Elm!
 window.addEventListener("load", (_) => {
   window.sessionCommsSocket = new WebSocket("ws://localhost:8181/app-comms");
@@ -10,15 +37,10 @@ window.addEventListener("load", (_) => {
       });
 
       // Session comms using WebSockets
+      connect_to_server(app);
       app.ports.webSocketOutgoing.subscribe((action) => {
-        console.log("Outgoing to server: " + action.tag);
         window.sessionCommsSocket.send(JSON.stringify(action));
       });
-      window.sessionCommsSocket.onmessage = function(event) {
-        console.log("Incomin from server...");
-        console.log(event.data);
-        app.ports.webSocketIncoming.send(JSON.parse(event.data));
-      };
 
       // Vega Lite
       // Plots a vega-lite specification created in Elm
