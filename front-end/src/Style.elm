@@ -153,8 +153,13 @@ linkButton { labelText, url } =
 
 type DangerStatus
     = Unclicked
-    | Clicked
+    | Clicked HoverState
     | Confirmed
+
+
+type HoverState
+    = Hovered
+    | NotHovered
 
 
 dangerousButton :
@@ -172,42 +177,71 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                     ++ [ Background.color colorPalette.red
                        ]
                 )
-                { onPress = Just <| dangerousMsg Clicked
+                { onPress = Just <| dangerousMsg <| Clicked NotHovered
                 , label = text labelText
                 }
 
-        Clicked ->
-            column
-                [ padding 10
-                , spacing 10
-                , width <| px 250
-                , Background.color colorPalette.red
-                , Border.rounded 6
-                , Events.onMouseLeave <| dangerousMsg Unclicked
-                , Font.color colorPalette.black
-                ]
-                [ paragraph [] [ text confirmText ]
-                , row [ spacing 10 ]
-                    [ Input.button
-                        (buttonStyle
-                            ++ [ focused []
-                               , Border.width 2
-                               ]
-                        )
-                        { onPress = Just <| dangerousMsg Confirmed
-                        , label = text "Yes"
-                        }
-                    , Input.button
-                        (buttonStyle
-                            ++ [ focused []
-                               , Border.width 2
-                               ]
-                        )
-                        { onPress = Just <| dangerousMsg Unclicked
-                        , label = text "No"
-                        }
-                    ]
-                ]
+        Clicked hoverState ->
+            Input.button
+                (buttonStyle
+                    ++ (case hoverState of
+                            Hovered ->
+                                []
+
+                            NotHovered ->
+                                [ Events.onLoseFocus <| dangerousMsg Unclicked ]
+                       )
+                    ++ [ Background.color colorPalette.red
+                       , Border.roundEach
+                            { topLeft = 6
+                            , topRight = 6
+                            , bottomLeft = 0
+                            , bottomRight = 0
+                            }
+                       , below <|
+                            column
+                                [ padding 10
+                                , spacing 10
+                                , width <| px 250
+                                , Background.color colorPalette.red
+                                , Border.roundEach
+                                    { topLeft = 0
+                                    , topRight = 6
+                                    , bottomLeft = 6
+                                    , bottomRight = 6
+                                    }
+                                , Events.onMouseEnter <| dangerousMsg <| Clicked Hovered
+                                , Events.onMouseLeave <| dangerousMsg <| Clicked NotHovered
+                                , Font.color colorPalette.black
+                                ]
+                                [ paragraph [] [ text confirmText ]
+                                , row [ spacing 10 ]
+                                    [ Input.button
+                                        (buttonStyle
+                                            ++ [ focused []
+                                               , Border.width 2
+                                               ]
+                                        )
+                                        { onPress = Just <| dangerousMsg Confirmed
+                                        , label = text "Yes"
+                                        }
+                                    , Input.button
+                                        (buttonStyle
+                                            ++ [ focused []
+                                               , Border.width 2
+                                               , Input.focusedOnLoad
+                                               ]
+                                        )
+                                        { onPress = Just <| dangerousMsg Unclicked
+                                        , label = text "No"
+                                        }
+                                    ]
+                                ]
+                       ]
+                )
+                { onPress = Nothing
+                , label = text labelText
+                }
 
         Confirmed ->
             Input.button
