@@ -7,14 +7,21 @@ services:
       - GUNICORN_WORKERS=2
       - APP_PORT=8181
     depends_on:
-      - mongo
       - redis
     ports:
       - "8181:8181"
     restart: always
     volumes:
       - ./big-structure:/app
-  mongo:
-    image: mongo
+  rq-worker:
+    build:
+      context: ./big-structure/
+    depends_on:
+      - big-structure
+      - redis
+    restart: always
+    volumes:
+      - ./big-structure:/app
+    command: rq worker --url redis://redis:6379 --disable-job-desc-logging
   redis:
     image: redis
