@@ -2,6 +2,7 @@ function connect_to_server(app) {
   window.sessionCommsSocket = new WebSocket("ws://localhost:8181/app-comms");
   sessionCommsSocket.onopen = function() {
     // subscribe to some channels
+    app.ports.setWebSocketConnectionStatus.send(true);
     console.log("Established connection to server.");
   };
 
@@ -14,6 +15,7 @@ function connect_to_server(app) {
       "Socket is closed. Reconnect will be attempted in 1 second.",
       event.reason
     );
+    app.ports.setWebSocketConnectionStatus.send(false);
     setTimeout(function() {
       connect_to_server(app);
     }, 1000);

@@ -18,6 +18,7 @@ port module Ports exposing
     , referenceSetForDesign
     , setFocussedDesign
     , setFocussedSpecification
+    , setWebSocketConnectionStatus
     , specificationForDesign
     , specificationForDesignsPage
     , storeDesign
@@ -202,6 +203,9 @@ port setFocussedSpecification : (Value -> msg) -> Sub msg
 
 -- }}}
 -- {{{ Websockets
+
+
+port setWebSocketConnectionStatus : (Value -> msg) -> Sub msg
 
 
 type WebsocketOutgoing

@@ -2,6 +2,7 @@ module Global exposing
     ( Flags
     , Model(..)
     , Msg(..)
+    , WebSocketConnectionStatus(..)
     , createInitialUuid
     , init
     , storedDesignToStub
@@ -206,12 +207,19 @@ type Model
 type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
+    , webSocketConnectionStatus : WebSocketConnectionStatus
     , designs : Dict String StoredDesign
     , referenceSets : Dict String StoredReferenceSet
     , mSelectedReferenceSet : Maybe String
     , specifications : Dict String StoredSpecification
     , mSelectedSpecification : Maybe String
     }
+
+
+type WebSocketConnectionStatus
+    = Unknown
+    | Disconnected
+    | Connected
 
 
 encodeStoredState : StoredState -> Value
@@ -327,6 +335,7 @@ init _ flagsValue =
                     Running
                         { randomSeed = randomSeed
                         , nextUuid = nextUuid
+                        , webSocketConnectionStatus = Unknown
                         , designs = initialState.designs
                         , referenceSets = initialState.referenceSets
                         , mSelectedReferenceSet =
@@ -340,6 +349,7 @@ init _ flagsValue =
                     Running
                         { randomSeed = randomSeed
                         , nextUuid = nextUuid
+                        , webSocketConnectionStatus = Unknown
                         , designs = Dict.empty
                         , referenceSets = Dict.empty
                         , mSelectedReferenceSet = Nothing
@@ -386,6 +396,7 @@ type Msg
     | DeleteFocussedSpecification String Style.DangerStatus
     | SetMSelectedSpecification (Maybe String)
     | RequestedNewUuid
+    | SetWebSocketConnectionStatus Value
     | WebSocketIncoming Value
 
 
@@ -807,6 +818,29 @@ updateRunState commands msg runState =
         RequestedNewUuid ->
             ( runState, Cmd.none, Cmd.none )
 
+        SetWebSocketConnectionStatus value ->
+            let
+                updatedConnectionStatus =
+                    case Codec.decodeValue Codec.bool value of
+                        Ok bool ->
+                            if bool then
+                                Connected
+
+                            else
+                                Disconnected
+
+                        Err errString ->
+                            let
+                                _ =
+                                    Debug.log "Err" errString
+                            in
+                            Unknown
+            in
+            ( { runState | webSocketConnectionStatus = updatedConnectionStatus }
+            , Cmd.none
+            , Cmd.none
+            )
+
         WebSocketIncoming value ->
             let
                 webSocketIncomingAction =
@@ -919,7 +953,9 @@ type alias Commands msg =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ Ports.webSocketIncoming WebSocketIncoming ]
+        [ Ports.setWebSocketConnectionStatus SetWebSocketConnectionStatus
+        , Ports.webSocketIncoming WebSocketIncoming
+        ]
 
 
 

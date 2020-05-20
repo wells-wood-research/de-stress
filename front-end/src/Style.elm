@@ -7,6 +7,12 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
+import FeatherIcons
+
+
+featherIconToElmUi : FeatherIcons.Icon -> Element msg
+featherIconToElmUi =
+    FeatherIcons.toHtml [] >> html
 
 
 colorPalette :
