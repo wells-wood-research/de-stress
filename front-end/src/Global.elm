@@ -893,49 +893,7 @@ updateUuid runState =
     { runState | randomSeed = newSeed, nextUuid = nextUuid }
 
 
-createDesignMutation :
-    { uuid : String, pdbString : String }
-    -> SelectionSet DesignMetrics RootMutation
-createDesignMutation requiredArgs =
-    Mutation.createDesign
-        requiredArgs
-        (CreateDesign.design <|
-            SelectionSet.map8 DesignMetrics
-                (SelectionSet.map2
-                    (\mLabels mSeqs ->
-                        let
-                            labels =
-                                List.filterMap identity mLabels
 
-                            seqs =
-                                List.filterMap identity mSeqs
-                        in
-                        List.map2 Tuple.pair labels seqs
-                            |> Dict.fromList
-                    )
-                    (Design.chains DesignChain.chainLabel
-                        |> SelectionSet.map (Maybe.withDefault [])
-                    )
-                    (Design.chains DesignChain.sequence
-                        |> SelectionSet.map (Maybe.withDefault [])
-                    )
-                )
-                (SelectionSet.map Metrics.compositionStringToDict Design.composition)
-                (SelectionSet.map Metrics.torsionAngleStringToDict Design.torsionAngles)
-                Design.hydrophobicFitness
-                Design.isoelectricPoint
-                Design.mass
-                Design.numOfResidues
-                Design.meanPackingDensity
-        )
-
-
-
--- requestDesignMetrics : { uuid : String, pdbString : String } -> Cmd Msg
--- requestDesignMetrics requiredArgs =
---     createDesignMutation requiredArgs
---         |> Graphql.Http.mutationRequest "http://127.0.0.1:8181/graphql"
---         |> Graphql.Http.send (RD.fromResult >> UpdateDesignMetricsJob requiredArgs.uuid)
 -- }}}
 -- {{{ Commands
 

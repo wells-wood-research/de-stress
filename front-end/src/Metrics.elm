@@ -1,6 +1,7 @@
 module Metrics exposing
     ( DesignMetrics
     , RefSetMetrics
+    , SequenceInfo
     , compositionStringToDict
     , createAllHistogramsSpec
     , createCompositionSpec
@@ -19,7 +20,7 @@ import VegaLite as VL
 
 
 type alias DesignMetrics =
-    { sequences : Dict String String
+    { sequenceInfo : Dict String SequenceInfo
     , composition : Dict String Float
     , torsionAngles : Dict String ( Float, Float, Float )
     , hydrophobicFitness : Maybe Float
@@ -33,7 +34,7 @@ type alias DesignMetrics =
 desMetricsCodec : Codec DesignMetrics
 desMetricsCodec =
     Codec.object DesignMetrics
-        |> Codec.field "sequences" .sequences (Codec.dict Codec.string)
+        |> Codec.field "sequenceInfo" .sequenceInfo (Codec.dict sequenceInfoCodec)
         |> Codec.field "composition" .composition (Codec.dict Codec.float)
         |> Codec.field "torsionAngles"
             .torsionAngles
@@ -44,11 +45,27 @@ desMetricsCodec =
                     Codec.float
                 )
             )
-        |> Codec.field "hydrophobicFitness" .hydrophobicFitness (Codec.maybe Codec.float)
+        |> Codec.field "hydrophobicFitness"
+            .hydrophobicFitness
+            (Codec.maybe Codec.float)
         |> Codec.field "isoelectricPoint" .isoelectricPoint Codec.float
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.buildObject
+
+
+type alias SequenceInfo =
+    { sequence : String
+    , dsspAssignment : String
+    }
+
+
+sequenceInfoCodec : Codec SequenceInfo
+sequenceInfoCodec =
+    Codec.object SequenceInfo
+        |> Codec.field "sequence" .sequence Codec.string
+        |> Codec.field "dsspAssignment" .dsspAssignment Codec.string
         |> Codec.buildObject
 
 

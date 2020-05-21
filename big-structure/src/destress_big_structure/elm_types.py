@@ -18,8 +18,15 @@ class RequestMetricsInput:
 
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
+class SequenceInfo:
+    sequence: str
+    dssp_assignment: str
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
 class DesignMetrics:
-    sequences: Dict[str, str]
+    sequence_info: Dict[str, SequenceInfo]
     composition: Dict[str, float]
     torsion_angles: Dict[str, Tuple[float, float, float]]
     hydrophobic_fitness: Optional[float]

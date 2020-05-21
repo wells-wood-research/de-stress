@@ -434,13 +434,13 @@ designDetailsView uuidString mSelectedSpecification design =
 basicMetrics : Maybe Specification -> DesignMetrics -> Element msg
 basicMetrics mSelectedSpecification metrics =
     let
-        { sequences } =
+        { sequenceInfo } =
             metrics
     in
     sectionColumn
         [ h2 <| text "Basic Metrics"
-        , h3 <| text "Sequences"
-        , sequenceDictView sequences
+        , h3 <| text "Sequences and DSSP Assignment"
+        , sequenceInfoDictView sequenceInfo
         , metricsOverview metrics
         , case mSelectedSpecification of
             Just specification ->
@@ -513,35 +513,52 @@ metricsOverview metrics =
         ]
 
 
-sequenceDictView : Dict String String -> Element msg
-sequenceDictView sequenceDict =
-    sequenceDict
+sequenceInfoDictView : Dict String Metrics.SequenceInfo -> Element msg
+sequenceInfoDictView sequenceInfoDict =
+    sequenceInfoDict
         |> Dict.toList
-        |> List.map sequenceView
+        |> List.map sequenceInfoView
         |> column [ padding 15, spacing 5, width fill ]
 
 
-sequenceView : ( String, String ) -> Element msg
-sequenceView ( chainId, sequence ) =
+sequenceInfoView : ( String, Metrics.SequenceInfo ) -> Element msg
+sequenceInfoView ( chainId, sequenceInfo ) =
     let
-        aaView char =
-            char
-                |> String.fromChar
-                |> text
-                |> el []
+        aaView ( aa, dssp ) =
+            column []
+                [ String.fromChar aa |> text
+                , String.fromChar dssp |> text
+                ]
+
+        aaList =
+            String.toList sequenceInfo.sequence
+
+        dsspList =
+            String.toList sequenceInfo.dsspAssignment
+                |> List.map
+                    (\c ->
+                        if c == ' ' then
+                            '-'
+
+                        else
+                            c
+                    )
+
+        zippedSequenceInfo =
+            List.map2 Tuple.pair aaList dsspList
     in
     column [ width fill ]
         [ paragraph [ width fill, Font.bold ] [ "Chain: " ++ chainId |> text ]
-        , sequence
-            |> String.toList
-            |> List.map aaView
-            |> wrappedRow
-                [ width fill
-                , Font.family
-                    [ Font.typeface "Roboto Mono"
-                    , Font.monospace
-                    ]
+        , wrappedRow
+            [ width fill
+            , spacingXY 0 10
+            , Font.family
+                [ Font.typeface "Roboto Mono"
+                , Font.monospace
                 ]
+            , Font.size 14
+            ]
+            (List.map aaView zippedSequenceInfo)
         ]
 
 

@@ -277,7 +277,8 @@ resolveRequirement metrics requirement =
                         SequenceContains seqString ->
                             List.any (String.contains seqString)
                                 (Dict.values
-                                    metrics.sequences
+                                    metrics.sequenceInfo
+                                    |> List.map .sequence
                                 )
 
                 Constant constantType ->

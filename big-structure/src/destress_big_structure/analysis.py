@@ -9,7 +9,7 @@ import isambard
 import isambard.evaluation as ev
 import numpy as np
 
-from .elm_types import DesignMetrics
+from .elm_types import DesignMetrics, SequenceInfo
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
@@ -23,12 +23,18 @@ def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
 
 
 def analyse_design(design: ampal.Assembly) -> DesignMetrics:
-    sequences = {
-        chain.id: chain.sequence
+    ev.tag_dssp_data(design)
+    sequence_info = {
+        chain.id: SequenceInfo(
+            sequence="".join(m.mol_letter for m in chain),
+            dssp_assignment="".join(
+                m.tags["dssp_data"]["ss_definition"] for m in chain
+            ),
+        )
         for chain in design
         if isinstance(chain, ampal.Polypeptide)
     }
-    full_sequence = "".join(sequences.values())
+    full_sequence = "".join(si.sequence for si in sequence_info.values())
     num_of_residues = len(full_sequence)
     isoelectric_point = ampal.analyse_protein.sequence_isoelectric_point(
         full_sequence.replace("X", "")
@@ -37,7 +43,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         full_sequence.replace("X", "")
     )
     design_metrics = DesignMetrics(
-        sequences=sequences,
+        sequence_info=sequence_info,
         composition={
             k: v / num_of_residues for (k, v) in Counter(full_sequence).items()
         },

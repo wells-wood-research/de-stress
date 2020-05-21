@@ -21,6 +21,7 @@ RUN poetry config virtualenvs.create false \
 
 # Creating folders, and files for a project:
 COPY . /app
+RUN ln -s /app/dependencies_for_isambard/dssp/dssp-2.0.4 /usr/local/bin/mkdssp
 
 RUN poetry install --no-interaction --no-ansi
 
