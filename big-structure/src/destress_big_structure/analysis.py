@@ -2,14 +2,110 @@
 from collections import Counter
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+import re
 
-import ampal
+from bs4 import BeautifulSoup
 from dataclasses_json import dataclass_json, LetterCase
+import ampal
 import isambard
 import isambard.evaluation as ev
 import numpy as np
+import requests
 
 from .elm_types import DesignMetrics, SequenceInfo
+
+
+class JpredSubmissionError(Exception):
+    pass
+
+
+class JpredStatusError(Exception):
+    pass
+
+
+class JpredResultsError(Exception):
+    pass
+
+
+class JpredSubmission:
+    host = "http://www.compbio.dundee.ac.uk/jpred4/"
+    rest_endpoint = host + "cgi-bin/rest/"
+    results_endpoint = host + "results/"
+
+    def __init__(self, sequences: List[str]):
+        self.unique_sequences = set(sequences)
+        self.total_sequences = len(list(self.unique_sequences))
+        self.submission_reponses = [
+            requests.post(
+                f"{self.rest_endpoint}/job",
+                data=query.encode("utf-8"),
+                headers={"Content-type": "text/txt"},
+            )
+            for query in self.make_queries()
+        ]
+        self.inprogress_job_urls: List[str] = []
+        for sr in self.submission_reponses:
+            if sr.status_code == 202:
+                self.inprogress_job_urls.append(sr.headers["Location"])
+            else:
+                raise JpredSubmissionError(
+                    "Failed to submit job to JPred, error code: {sr.stastatus_code}"
+                )
+        self.complete_job_urls: List[str] = []
+
+    def make_queries(self) -> List[str]:
+        options: Dict[str, str] = {
+            "format": "single",
+            "skipPDB": "on",
+        }
+        queries = []
+        for seq in self.unique_sequences:
+            option_strings = ["=".join(i) for i in options.items()]
+            seq_string = f">query\n{seq}"
+            queries.append("£€£€".join(option_strings + [seq_string]))
+        return queries
+
+    def update_status(self) -> bool:
+        """Updates the status of Jpred jobs and returns true if all are complete."""
+        status_responses = [requests.get(url) for url in self.inprogress_job_urls]
+        updated_in_progress: List[str] = []
+        for url in self.inprogress_job_urls:
+            response = requests.get(url)
+            if response.reason != "OK":
+                raise JpredStatusError(
+                    "An error has occurred with a JPred job: {sr.reason}"
+                )
+                if "finished" in response.text.lower():
+                    self.complete_job_urls.append(url)
+                else:
+                    updated_in_progress.append(url)
+        self.inprogress_job_urls = updated_in_progress
+        assert (
+            len(self.inprogress_job_urls) + len(self.complete_job_urls)
+        ) == self.total_sequences, (
+            "Sequence JPred jobs have been lost, how did this happen!"
+        )
+        return len(self.complete_job_urls) == self.total_sequences
+
+    def get_results(self) -> Optional[Dict[str, str]]:
+        if len(self.complete_job_urls) == self.total_sequences:
+            results_dict: Dict[str, str] = {}
+            for url in self.complete_job_urls:
+                job_id_match = re.search(r"(jp_.*)$", url)
+                if job_id_match:
+                    job_id = job_id_match.group(1)
+                else:
+                    raise JpredResultsError("No job id found: {url}")
+                simple_results = requests.get(
+                    self.results_endpoint + f"/{job_id}/{job_id}.simple.html"
+                )
+                (seq, pred) = BeautifulSoup(simple_results.text).code.text.split("\n")[
+                    :2
+                ]
+                results_dict[seq] = pred
+            return results_dict
+        else:
+            return None
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
@@ -96,3 +192,4 @@ def analyse_chain(chain: ampal.Polymer) -> Dict:
 
 def chain_sequence(chain: ampal.Polypeptide) -> str:
     return chain.sequence
+
