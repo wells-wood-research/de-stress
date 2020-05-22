@@ -30,6 +30,7 @@ black = "^19.10b0"
 flake8 = "^3.7.9"
 mypy = "^0.770"
 ipython = "^7.13.0"
+hypothesis = "^5.15.1"
 
 [tool.poetry.scripts]
 run_server = 'destres_big_structure.console:run_server'

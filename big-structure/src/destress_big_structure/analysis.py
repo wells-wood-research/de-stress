@@ -33,24 +33,14 @@ class JpredSubmission:
     results_endpoint = host + "results/"
 
     def __init__(self, sequences: List[str]):
+        assert sequences, "No sequences provided."
+        assert all(sequences), "An empty string was given as an input."
+        assert all(
+            s.isalnum() for s in sequences
+        ), "Sequences should use single letter codes"
         self.unique_sequences = set(sequences)
         self.total_sequences = len(list(self.unique_sequences))
-        self.submission_reponses = [
-            requests.post(
-                f"{self.rest_endpoint}/job",
-                data=query.encode("utf-8"),
-                headers={"Content-type": "text/txt"},
-            )
-            for query in self.make_queries()
-        ]
         self.inprogress_job_urls: List[str] = []
-        for sr in self.submission_reponses:
-            if sr.status_code == 202:
-                self.inprogress_job_urls.append(sr.headers["Location"])
-            else:
-                raise JpredSubmissionError(
-                    "Failed to submit job to JPred, error code: {sr.stastatus_code}"
-                )
         self.complete_job_urls: List[str] = []
 
     def make_queries(self) -> List[str]:
@@ -64,6 +54,24 @@ class JpredSubmission:
             seq_string = f">query\n{seq}"
             queries.append("£€£€".join(option_strings + [seq_string]))
         return queries
+
+    def submit_jobs(self):
+        submission_reponses = [
+            requests.post(
+                f"{self.rest_endpoint}/job",
+                data=query.encode("utf-8"),
+                headers={"Content-type": "text/txt"},
+            )
+            for query in self.make_queries()
+        ]
+        for sr in submission_reponses:
+            if sr.status_code == 202:
+                self.inprogress_job_urls.append(sr.headers["Location"])
+            else:
+                raise JpredSubmissionError(
+                    "Failed to submit job to JPred, error code: {sr.stastatus_code}"
+                )
+        return
 
     def update_status(self) -> bool:
         """Updates the status of Jpred jobs and returns true if all are complete."""

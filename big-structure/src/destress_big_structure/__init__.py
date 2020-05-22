@@ -12,7 +12,7 @@ import redis
 import rq
 from rq.job import Job
 
-from .analysis import create_metrics_from_pdb
+from .analysis import create_metrics_from_pdb, JpredSubmission
 from .big_structure_models import big_structure_db_session
 from .design_models import designs_db_session
 from .elm_types import (
