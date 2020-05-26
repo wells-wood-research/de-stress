@@ -466,7 +466,7 @@ view model =
             View ->
                 Style.alwaysActiveButton
                     { clickMsg = ClickedNewRequirement
-                    , labelText = "New Requirement"
+                    , label = text "New Requirement"
                     }
 
             Add mNewRequirement ->
@@ -509,7 +509,7 @@ view model =
           Style.conditionalButton
             { clickMsg =
                 ClickedCreateSpecification
-            , labelText = "Create Specification"
+            , label = text "Create Specification"
             , isActive = complete
             }
         ]
@@ -551,12 +551,12 @@ addRequirementView errors mNewRequirement =
             [ spacing 10 ]
             [ Style.conditionalButton
                 { clickMsg = ClickedAddRequirement
-                , labelText = "Add"
+                , label = text "Add"
                 , isActive = requirementComplete
                 }
             , Style.alwaysActiveButton
                 { clickMsg = CancelledAdd
-                , labelText = "Cancel"
+                , label = text "Cancel"
                 }
             ]
         ]

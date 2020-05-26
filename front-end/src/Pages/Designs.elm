@@ -7,6 +7,7 @@ import Dict
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
 import Generated.Params as Params
@@ -275,12 +276,12 @@ view { global } model =
                   row [ centerX, spacing 10 ]
                     [ h1 <| text "Designs"
                     , Style.conditionalButton
-                        { labelText = buttonLabel
+                        { label = text buttonLabel
                         , clickMsg = StructuresRequested
                         , isActive = isActive
                         }
                     , Style.dangerousButton
-                        { labelText = "Delete All"
+                        { label = text "Delete All"
                         , confirmText = "Are you sure you want to delete ALL design?"
                         , status = model.deleteAllStatus
                         , dangerousMsg = DeleteAllDesigns
@@ -450,11 +451,11 @@ designCard { uuidString, designStub, mMeetsSpecification } =
                 text "Metrics Available"
         , row [ spacing 10, width fill ]
             [ Style.linkButton
-                { labelText = "Details"
+                { label = text "Details"
                 , url = Routes.toPath <| Routes.routes.designs_dynamic uuidString
                 }
             , Style.dangerousButton
-                { labelText = "Delete"
+                { label = text "Delete"
                 , confirmText = "Are you sure you want to delete this design?"
                 , status = designStub.deleteStatus
                 , dangerousMsg = DeleteDesign uuidString

@@ -382,11 +382,11 @@ designDetailsView uuidString mSelectedSpecification design =
             ]
         , row [ spacing 10 ]
             [ Style.linkButton
-                { labelText = "Back"
+                { label = text "Back"
                 , url = Routes.toPath routes.designs
                 }
             , Style.dangerousButton
-                { labelText = "Delete"
+                { label = text "Delete"
                 , confirmText = "Are you sure you want to delete this design?"
                 , status = deleteStatus
                 , dangerousMsg = DeleteFocussedDesign uuidString

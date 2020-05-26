@@ -93,7 +93,7 @@ view { global } _ =
                 (row [ centerX, spacing 10 ]
                     [ Style.h1 <|
                         text "Requirement Specifications"
-                    , Style.linkButton { url = "/specifications/new", labelText = "New" }
+                    , Style.linkButton { url = "/specifications/new", label = text "New" }
                     ]
                     :: (Dict.toList specifications
                             |> List.map
@@ -150,11 +150,11 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
             ]
         , row [ spacing 10, width fill ]
             [ Style.linkButton
-                { labelText = "Details"
+                { label = text "Details"
                 , url = Routes.toPath <| routes.specifications_dynamic uuidString
                 }
             , Style.dangerousButton
-                { labelText = "Delete"
+                { label = text "Delete"
                 , confirmText = "Are you sure you want to delete this specification?"
                 , status = deleteStatus
                 , dangerousMsg = DeleteSpecification uuidString

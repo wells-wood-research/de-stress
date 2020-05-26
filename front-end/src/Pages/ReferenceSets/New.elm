@@ -339,7 +339,7 @@ newHighResBiolUnitsView =
         , Style.alwaysActiveButton
             { clickMsg =
                 ClickedDownloadDefaultHighRes
-            , labelText = "Download Reference Set"
+            , label = text "Download Reference Set"
             }
         ]
 
@@ -426,7 +426,7 @@ newPdbCodeListView params =
           Style.conditionalButton
             { clickMsg =
                 ClickedDownloadPreferredSubset
-            , labelText = "Create Reference Set"
+            , label = text "Create Reference Set"
             , isActive = complete
             }
         ]

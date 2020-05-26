@@ -105,32 +105,32 @@ buttonStyle =
     ]
 
 
-alwaysActiveButton : { labelText : String, clickMsg : msg } -> Element msg
-alwaysActiveButton { labelText, clickMsg } =
+alwaysActiveButton : { label : Element msg, clickMsg : msg } -> Element msg
+alwaysActiveButton { label, clickMsg } =
     Input.button
         (buttonStyle
             ++ [ Background.color colorPalette.c3
                ]
         )
         { onPress = Just clickMsg
-        , label = text labelText
+        , label = label
         }
 
 
 conditionalButton :
-    { labelText : String
+    { label : Element msg
     , clickMsg : msg
     , isActive : Bool
     }
     -> Element msg
-conditionalButton { labelText, clickMsg, isActive } =
+conditionalButton { label, clickMsg, isActive } =
     if isActive then
         Input.button
             (buttonStyle
                 ++ [ Background.color colorPalette.c3 ]
             )
             { onPress = Just clickMsg
-            , label = text labelText
+            , label = label
             }
 
     else
@@ -143,18 +143,18 @@ conditionalButton { labelText, clickMsg, isActive } =
                    ]
             )
             { onPress = Nothing
-            , label = text labelText
+            , label = label
             }
 
 
-linkButton : { labelText : String, url : String } -> Element msg
-linkButton { labelText, url } =
+linkButton : { label : Element msg, url : String } -> Element msg
+linkButton { label, url } =
     link
         (buttonStyle
             ++ [ Background.color colorPalette.c3
                ]
         )
-        { url = url, label = text labelText }
+        { url = url, label = label }
 
 
 type DangerStatus
@@ -169,13 +169,13 @@ type HoverState
 
 
 dangerousButton :
-    { labelText : String
+    { label : Element msg
     , confirmText : String
     , status : DangerStatus
     , dangerousMsg : DangerStatus -> msg
     }
     -> Element msg
-dangerousButton { labelText, confirmText, status, dangerousMsg } =
+dangerousButton { label, confirmText, status, dangerousMsg } =
     case status of
         Unclicked ->
             Input.button
@@ -184,7 +184,7 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                        ]
                 )
                 { onPress = Just <| dangerousMsg <| Clicked NotHovered
-                , label = text labelText
+                , label = label
                 }
 
         Clicked hoverState ->
@@ -246,7 +246,7 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                        ]
                 )
                 { onPress = Nothing
-                , label = text labelText
+                , label = label
                 }
 
         Confirmed ->
@@ -257,7 +257,7 @@ dangerousButton { labelText, confirmText, status, dangerousMsg } =
                        ]
                 )
                 { onPress = Nothing
-                , label = text labelText
+                , label = label
                 }
 
 

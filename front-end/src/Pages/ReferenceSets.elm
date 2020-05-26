@@ -94,7 +94,7 @@ view { global } _ =
                     [ Style.h1 <|
                         text "Reference Sets"
                     , Style.linkButton
-                        { url = "/reference-sets/new", labelText = "New" }
+                        { url = "/reference-sets/new", label = text "New" }
                     ]
                 , column [ width fill, spacing 15 ]
                     (Dict.toList referenceSets
@@ -157,11 +157,11 @@ referenceSetStubView mSelectedReferenceSet ( uuidString, stub ) =
             ]
         , row [ spacing 10, width fill ]
             [ Style.linkButton
-                { labelText = "Details"
+                { label = text "Details"
                 , url = Routes.toPath <| routes.referenceSets_dynamic uuidString
                 }
             , Style.dangerousButton
-                { labelText = "Delete"
+                { label = text "Delete"
                 , confirmText = "Are you sure you want to delete this specification?"
                 , status = deleteStatus
                 , dangerousMsg = DeleteReferenceSet uuidString

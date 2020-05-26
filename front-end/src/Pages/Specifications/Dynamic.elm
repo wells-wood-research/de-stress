@@ -167,11 +167,11 @@ specificationDetailsView uuidString { name, description, requirements, deleteSta
         [ Style.h1 <| text "Specification Details"
         , row [ spacing 10 ]
             [ Style.linkButton
-                { labelText = "Back"
+                { label = text "Back"
                 , url = Routes.toPath routes.specifications
                 }
             , Style.dangerousButton
-                { labelText = "Delete"
+                { label = text "Delete"
                 , confirmText = "Are you sure you want to delete this specification?"
                 , status = deleteStatus
                 , dangerousMsg = DeleteFocussedSpecification uuidString
