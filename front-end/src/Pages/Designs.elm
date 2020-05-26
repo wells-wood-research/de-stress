@@ -7,6 +7,7 @@ import Dict
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
@@ -85,6 +86,7 @@ type Msg
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
     | GotSpecification Value
+    | ShowDesignDetails String
     | DeleteDesign String Style.DangerStatus
     | DeleteAllDesigns Style.DangerStatus
 
@@ -208,6 +210,14 @@ update msg model =
               }
             , Cmd.none
             , Cmd.none
+            )
+
+        ShowDesignDetails uuidString ->
+            ( model
+            , Cmd.none
+            , Routes.routes.designs_dynamic uuidString
+                |> Global.NavigateTo
+                |> send
             )
 
         DeleteDesign uuidString dangerStatus ->
@@ -407,11 +417,10 @@ designCard :
     }
     -> Element Msg
 designCard { uuidString, designStub, mMeetsSpecification } =
-    column
-        [ padding 15
-        , spacing 10
-        , width fill
+    row
+        [ width fill
         , Background.color Style.colorPalette.c5
+        , mouseOver [ Background.color Style.colorPalette.c4 ]
         , case mMeetsSpecification of
             Nothing ->
                 Border.color Style.colorPalette.c5
@@ -424,43 +433,44 @@ designCard { uuidString, designStub, mMeetsSpecification } =
         , Border.width 4
         , Border.rounded 10
         ]
-        [ Style.h2 <| text designStub.name
-        , text ("Structure file: " ++ designStub.fileName)
-        , case designStub.metricsJobStatus of
-            Ports.Ready ->
-                text "Ready for server submission."
+        [ column
+            [ padding 10
+            , width fill
+            , Events.onMouseUp <|
+                ShowDesignDetails uuidString
+            ]
+            [ Style.h2 <| text designStub.name
+            , case designStub.metricsJobStatus of
+                Ports.Ready ->
+                    text "Ready for server submission."
 
-            Ports.Submitted _ ->
-                text "Job submitted to server."
+                Ports.Submitted _ ->
+                    text "Job submitted to server."
 
-            Ports.Queued ->
-                text "Job queued on server."
+                Ports.Queued ->
+                    text "Job queued on server."
 
-            Ports.InProgress ->
-                text "Job is running on server."
+                Ports.InProgress ->
+                    text "Job is running on server."
 
-            Ports.Cancelled ->
-                text "Job was cancelled by user."
+                Ports.Cancelled ->
+                    text "Job was cancelled by user."
 
-            Ports.Failed errorString ->
-                "Server error while creating metrics: "
-                    ++ errorString
-                    |> text
+                Ports.Failed errorString ->
+                    "Server error while creating metrics: "
+                        ++ errorString
+                        |> text
 
-            Ports.Complete _ ->
-                text "Metrics Available"
-        , row [ spacing 10, width fill ]
-            [ Style.linkButton
-                { label = text "Details"
-                , url = Routes.toPath <| Routes.routes.designs_dynamic uuidString
-                }
-            , Style.dangerousButton
-                { label = text "Delete"
+                Ports.Complete _ ->
+                    text "Metrics Available"
+            ]
+        , el [ alignRight, padding 10 ] <|
+            Style.dangerousButton
+                { label = Style.featherIconToElmUi FeatherIcons.trash2
                 , confirmText = "Are you sure you want to delete this design?"
                 , status = designStub.deleteStatus
                 , dangerousMsg = DeleteDesign uuidString
                 }
-            ]
         ]
 
 

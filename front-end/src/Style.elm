@@ -31,7 +31,7 @@ colorPalette =
     , c1 = rgb255 76 120 168 -- #626368
     , c2 = rgb255 160 160 160 -- #FFFAB6
     , c3 = rgb255 217 184 97 -- #EAD3A7
-    , c4 = rgb255 220 220 220 -- #DCDED1
+    , c4 = rgb255 190 190 190 -- #DCDED1
     , c5 = rgb255 220 220 220 -- #FAF7E4
     , white = rgb255 255 255 255
     }
@@ -208,7 +208,7 @@ dangerousButton { label, confirmText, status, dangerousMsg } =
                             column
                                 [ padding 10
                                 , spacing 10
-                                , width <| px 250
+                                , width <| px 150
                                 , Background.color colorPalette.red
                                 , Border.roundEach
                                     { topLeft = 0
@@ -245,7 +245,7 @@ dangerousButton { label, confirmText, status, dangerousMsg } =
                                 ]
                        ]
                 )
-                { onPress = Nothing
+                { onPress = Just <| dangerousMsg Unclicked
                 , label = label
                 }
 

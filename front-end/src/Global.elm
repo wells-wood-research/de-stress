@@ -15,18 +15,11 @@ module Global exposing
 
 -- {{{ Imports
 
-import BigStructure.Mutation as Mutation
-import BigStructure.Object.CreateDesign as CreateDesign
-import BigStructure.Object.Design as Design
-import BigStructure.Object.DesignChain as DesignChain
 import Codec exposing (Codec, Value)
 import Design exposing (Design, DesignStub)
 import Dict exposing (Dict)
 import Generated.Routes exposing (Route, routes)
-import Graphql.Operation exposing (RootMutation)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
-import Metrics exposing (DesignMetrics)
 import Ports
 import Random
 import ReferenceSet exposing (ReferenceSet(..), ReferenceSetStub(..))
@@ -379,7 +372,8 @@ createInitialUuid initialRandomNumber =
 
 
 type Msg
-    = AddDesign Design
+    = NavigateTo Route
+    | AddDesign Design
     | UpdateDesignMetricsJob Ports.MetricsServerJob
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
@@ -422,6 +416,12 @@ asModel constructor ( state, gCmd, pCmd ) =
 updateRunState : Commands msg -> Msg -> RunState -> ( RunState, Cmd Msg, Cmd msg )
 updateRunState commands msg runState =
     case msg of
+        NavigateTo route ->
+            ( runState
+            , Cmd.none
+            , commands.navigate route
+            )
+
         AddDesign design ->
             let
                 uuidString =
