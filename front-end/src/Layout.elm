@@ -31,7 +31,7 @@ view { global, page, route } =
             [ centerX
             , paddingXY 50 30
             , spacing 30
-            , width (fill |> maximum 800)
+            , width fill
             ]
             page
         ]

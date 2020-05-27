@@ -320,42 +320,43 @@ subscriptions _ =
 
 view : Model -> Element Msg
 view model =
-    case model.pageState of
-        Loading ->
-            el [] (text "Loading design...")
+    el [ centerX, width <| maximum 800 <| fill ] <|
+        case model.pageState of
+            Loading ->
+                el [] (text "Loading design...")
 
-        DesignNotFound _ ->
-            el [] ("A design with ID \"" ++ model.uuidString ++ "\" was not found." |> text)
+            DesignNotFound _ ->
+                el [] ("A design with ID \"" ++ model.uuidString ++ "\" was not found." |> text)
 
-        DesignNoReference design ->
-            sectionColumn
-                [ designDetailsView model.uuidString model.mSelectedSpecification design
-                , text "No reference set selected."
-                ]
+            DesignNoReference design ->
+                sectionColumn
+                    [ designDetailsView model.uuidString model.mSelectedSpecification design
+                    , text "No reference set selected."
+                    ]
 
-        DesignLoadingReference design ->
-            sectionColumn
-                [ designDetailsView model.uuidString model.mSelectedSpecification design
-                , h2 <| text "Comparison to Reference Set"
-                , text "Loading reference set..."
-                ]
+            DesignLoadingReference design ->
+                sectionColumn
+                    [ designDetailsView model.uuidString model.mSelectedSpecification design
+                    , h2 <| text "Comparison to Reference Set"
+                    , text "Loading reference set..."
+                    ]
 
-        DesignFailedToLoadReference error design ->
-            sectionColumn
-                [ designDetailsView model.uuidString model.mSelectedSpecification design
-                , h2 <| text "Comparison to Reference Set"
-                , text
-                    ("""Comparison to reference set is unavailable, as the reference set
+            DesignFailedToLoadReference error design ->
+                sectionColumn
+                    [ designDetailsView model.uuidString model.mSelectedSpecification design
+                    , h2 <| text "Comparison to Reference Set"
+                    , text
+                        ("""Comparison to reference set is unavailable, as the reference set
                     data failed to load:"""
-                        ++ errorToString error
-                    )
-                ]
+                            ++ errorToString error
+                        )
+                    ]
 
-        DesignWithReference design ->
-            sectionColumn
-                [ designDetailsView model.uuidString model.mSelectedSpecification design
-                , referenceSetComparisonView
-                ]
+            DesignWithReference design ->
+                sectionColumn
+                    [ designDetailsView model.uuidString model.mSelectedSpecification design
+                    , referenceSetComparisonView
+                    ]
 
 
 sectionColumn : List (Element msg) -> Element msg
@@ -394,7 +395,7 @@ designDetailsView uuidString mSelectedSpecification design =
             ]
         , sectionColumn
             [ h2 <| text "Structure"
-            , Keyed.el [ height <| px 300, width fill, Border.width 1 ]
+            , Keyed.el [ height <| px 400, width fill, padding 5, Border.width 1 ]
                 ( "viewer"
                 , Html.div
                     [ HAtt.id "viewer"

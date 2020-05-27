@@ -310,6 +310,9 @@ view { global } model =
                                     ( k, Global.storedDesignToStub v )
                                 )
                             |> List.map (createDesignCardData model.mSelectedSpecification)
+
+                    cardContainer =
+                        wrappedRow [ spacing 10, width fill ]
                   in
                   case model.mSelectedSpecification of
                     Just _ ->
@@ -325,21 +328,21 @@ view { global } model =
                             [ h2 <| text "Meets Specification"
                             , meetsSpecification
                                 |> List.map designCard
-                                |> column [ spacing 15, width fill ]
+                                |> cardContainer
                             , h2 <| text "Failed to Meet Specification"
                             , failedSpecification
                                 |> List.map designCard
-                                |> column [ spacing 15, width fill ]
+                                |> cardContainer
                             , h2 <| text "No Metrics Available"
                             , noMetrics
                                 |> List.map designCard
-                                |> column [ spacing 15, width fill ]
+                                |> cardContainer
                             ]
 
                     Nothing ->
                         designCardData
                             |> List.map designCard
-                            |> column [ spacing 15, width fill ]
+                            |> cardContainer
                 ]
 
         Global.FailedToLaunch _ ->
@@ -422,9 +425,9 @@ designCard :
     -> Element Msg
 designCard { uuidString, designStub, mMeetsSpecification } =
     row
-        [ width fill
+        [ mouseOver [ Background.color Style.colorPalette.c4 ]
+        , fillPortion 1 |> width
         , Background.color Style.colorPalette.c5
-        , mouseOver [ Background.color Style.colorPalette.c4 ]
         , case mMeetsSpecification of
             Nothing ->
                 Border.color Style.colorPalette.c5
@@ -479,15 +482,15 @@ designCard { uuidString, designStub, mMeetsSpecification } =
 
 
 
--- }}}
 -- {{{ Overview Plots
 
 
 overviewPlots : List ( String, Design.DesignStub ) -> Element Msg
 overviewPlots designStubs =
-    column [ spacing 10, width fill ]
+    column [ spacing 10, fill |> maximum 500 |> height, width fill ]
         [ Style.h2 <| text "Overview"
         , List.indexedMap Tuple.pair designStubs
+            |> List.reverse
             |> List.filterMap makeColumnData
             |> MetricPlots.metricOverview ShowDesignDetails
             |> html
@@ -510,4 +513,5 @@ makeColumnData ( index, ( uuidString, { name, metricsJobStatus } ) ) =
 
 
 
+-- }}}
 -- }}}
