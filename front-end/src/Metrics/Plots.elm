@@ -1,23 +1,30 @@
-module Metrics.Plots exposing (histogramView)
+module Metrics.Plots exposing (ColumnData, metricOverview)
 
 import Axis
-import Color
-import Histogram exposing (Bin)
-import Html exposing (Html)
-import Metrics exposing (DesignMetrics)
-import Scale exposing (BandConfig, BandScale, ContinuousScale, defaultBandConfig)
-import TypedSvg exposing (g, rect, svg)
-import TypedSvg.Attributes exposing (class, fill, transform, viewBox)
-import TypedSvg.Attributes.InPx exposing (height, width, x, y)
-import TypedSvg.Core exposing (Svg)
-import TypedSvg.Types exposing (Paint(..), Transform(..))
-
-
-histogram : List Float -> List (Bin Float Float)
-histogram model =
-    Histogram.float
-        |> Histogram.withDomain ( 0, 20 )
-        |> Histogram.compute model
+import Round
+import Scale exposing (BandScale, ContinuousScale, defaultBandConfig)
+import TypedSvg exposing (g, rect, style, svg, text_)
+import TypedSvg.Attributes
+    exposing
+        ( class
+        , dominantBaseline
+        , height
+        , textAnchor
+        , transform
+        , viewBox
+        , width
+        , x
+        , y
+        )
+import TypedSvg.Core exposing (Svg, text)
+import TypedSvg.Events exposing (onClick)
+import TypedSvg.Types
+    exposing
+        ( AnchorAlignment(..)
+        , DominantBaseline(..)
+        , Length(..)
+        , Transform(..)
+        )
 
 
 w : Float
@@ -32,69 +39,84 @@ h =
 
 padding : Float
 padding =
-    30
+    50
 
 
-type alias XScaleParameters =
-    { width : Float
-    , height : Float
-    , min : Float
-    , max : Float
-    , padding : Float
+type alias ColumnData =
+    { index : Float
+    , name : String
+    , uuidString : String
+    , value : Float
     }
 
 
-xScale : ContinuousScale Float
-xScale =
-    Scale.linear ( 0, w - 2 * padding ) ( 0, 20 )
+xScale : List ColumnData -> BandScale ColumnData
+xScale datapoints =
+    Scale.band
+        { defaultBandConfig | paddingInner = 0.1, paddingOuter = 0.2 }
+        ( 0, w - 2 * padding )
+        datapoints
 
 
-yScaleFromBins : List (Bin Float Float) -> ContinuousScale Float
-yScaleFromBins bins =
-    List.map .length bins
-        |> List.maximum
-        |> Maybe.withDefault 0
-        |> toFloat
-        |> Tuple.pair 0
-        |> Scale.linear ( h - 2 * padding, 0 )
+yScale : ContinuousScale Float
+yScale =
+    Scale.linear ( h - 2 * padding, 0 ) ( 0, 100 )
 
 
-xAxis : List Float -> Svg msg
-xAxis model =
-    Axis.bottom [] xScale
+yAxis : Svg msg
+yAxis =
+    Axis.left [ Axis.tickCount 5 ] yScale
 
 
-yAxis : List (Bin Float Float) -> Svg msg
-yAxis bins =
-    Axis.left [ Axis.tickCount 5 ] (yScaleFromBins bins)
+column : (String -> msg) -> BandScale ColumnData -> ColumnData -> Svg msg
+column clickMsg scale ({ value, name, uuidString } as datapoint) =
+    g [ class [ "column" ], onClick <| clickMsg uuidString ]
+        [ rect
+            [ x <| Px <| Scale.convert scale datapoint
+            , y <| Px <| Scale.convert yScale value
+            , width <| Px <| Scale.bandwidth scale
+            , height <| Px <| h - Scale.convert yScale value - 2 * padding
+            ]
+            []
+        , text_
+            [ x <| Px <| Scale.convert (Scale.toRenderable .name scale) datapoint
+            , y <| Px <| Scale.convert yScale value - 5
+            , textAnchor AnchorMiddle
+            ]
+            [ text <| Round.round 1 value ]
+        , text_
+            (let
+                xVal =
+                    Scale.convert (Scale.toRenderable .name scale) datapoint
 
-
-column : ContinuousScale Float -> Bin Float Float -> Svg msg
-column yScale { length, x0, x1 } =
-    rect
-        [ x <| Scale.convert xScale x0
-        , y <| Scale.convert yScale (toFloat length)
-        , width <| Scale.convert xScale x1 - Scale.convert xScale x0
-        , height <| h - Scale.convert yScale (toFloat length) - 2 * padding
-        , fill <| Paint <| Color.rgb255 46 118 149
+                yVal =
+                    Scale.convert yScale value + 10
+             in
+             [ x <| Px xVal
+             , y <| Px yVal
+             , textAnchor AnchorStart
+             , dominantBaseline DominantBaselineMiddle
+             , transform [ Rotate 90 xVal yVal ]
+             ]
+            )
+            [ text name ]
         ]
-        []
 
 
-histogramView : List DesignMetrics -> Html msg
-histogramView designMetrics =
-    let
-        data =
-            List.map .packingDensity designMetrics
-
-        bins =
-            histogram data
-    in
+metricOverview : (String -> msg) -> List ColumnData -> Svg msg
+metricOverview clickMsg data =
     svg [ viewBox 0 0 w h ]
-        [ g [ transform [ Translate (padding - 1) (h - padding) ] ]
-            [ xAxis data ]
+        [ style []
+            [ text """
+            .tick text { font-size: 24px; }
+            .column rect { fill: rgba(118, 214, 78, 0.8); }
+            .column text { display: none; }
+            .column:hover rect { fill: rgb(118, 214, 78); }
+            .column:hover text { display: inline; }
+            """
+            ]
         , g [ transform [ Translate (padding - 1) padding ] ]
-            [ yAxis bins ]
+            [ yAxis ]
         , g [ transform [ Translate padding padding ], class [ "series" ] ] <|
-            List.map (column (yScaleFromBins bins)) bins
+            List.map (column clickMsg (xScale data)) data
         ]
