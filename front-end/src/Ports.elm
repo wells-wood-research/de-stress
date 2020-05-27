@@ -268,7 +268,7 @@ port webSocketIncoming : (Value -> msg) -> Sub msg
 
 
 type WebSocketIncoming
-    = ReceivedMetricsJob (ServerJob RequestMetricsInput Metrics.DesignMetrics)
+    = ReceivedMetricsJob MetricsServerJob
     | CommunicationError
 
 

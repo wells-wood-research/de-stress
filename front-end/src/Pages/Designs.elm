@@ -14,6 +14,8 @@ import File.Select as FileSelect
 import Generated.Params as Params
 import Generated.Routes as Routes
 import Global
+import Metrics exposing (DesignMetrics)
+import Metrics.Plots as MetricPlots
 import Ports
 import Spa.Page exposing (send)
 import Specification exposing (Specification)
@@ -297,6 +299,9 @@ view { global } model =
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
+                , Dict.values designs
+                    |> List.map Global.storedDesignToStub
+                    |> overviewPlots
                 , let
                     designCardData =
                         designs
@@ -471,6 +476,31 @@ designCard { uuidString, designStub, mMeetsSpecification } =
                 , status = designStub.deleteStatus
                 , dangerousMsg = DeleteDesign uuidString
                 }
+        ]
+
+
+
+-- }}}
+-- {{{ Overview Plots
+
+
+overviewPlots : List Design.DesignStub -> Element Msg
+overviewPlots designStubs =
+    let
+        getMetrics : Design.DesignStub -> Maybe DesignMetrics
+        getMetrics stub =
+            case stub.metricsJobStatus of
+                Ports.Complete metrics ->
+                    Just metrics
+
+                _ ->
+                    Nothing
+    in
+    column [ spacing 10, width fill ]
+        [ Style.h2 <| text "Overview"
+        , List.filterMap getMetrics designStubs
+            |> MetricPlots.histogramView
+            |> html
         ]
 
 
