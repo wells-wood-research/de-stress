@@ -63,8 +63,8 @@ yScale =
     Scale.linear ( h - 2 * padding, 0 ) ( 0, 100 )
 
 
-yAxis : Svg msg
-yAxis =
+yAxis : String -> Svg msg
+yAxis yLabel =
     g []
         [ Axis.left [ Axis.tickCount 5 ] yScale
         , text_
@@ -73,7 +73,7 @@ yAxis =
             , dominantBaseline DominantBaselineMiddle
             , transform [ Rotate 90 -padding 0 ]
             ]
-            [ text "Packing Density" ]
+            [ text yLabel ]
         ]
 
 
@@ -112,8 +112,8 @@ column clickMsg scale ({ value, name, uuidString } as datapoint) =
         ]
 
 
-metricOverview : (String -> msg) -> List ColumnData -> Svg msg
-metricOverview clickMsg data =
+metricOverview : (String -> msg) -> String -> List ColumnData -> Svg msg
+metricOverview clickMsg yLabel data =
     svg [ viewBox 0 0 w h ]
         [ style []
             [ text """
@@ -125,7 +125,7 @@ metricOverview clickMsg data =
             """
             ]
         , g [ transform [ Translate (padding - 1) padding ] ]
-            [ yAxis ]
+            [ yAxis yLabel ]
         , g [ transform [ Translate padding padding ], class [ "series" ] ] <|
             List.map (column clickMsg (xScale data)) data
         ]

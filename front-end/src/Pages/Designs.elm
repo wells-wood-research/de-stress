@@ -492,7 +492,7 @@ overviewPlots designStubs =
         , List.indexedMap Tuple.pair designStubs
             |> List.reverse
             |> List.filterMap makeColumnData
-            |> MetricPlots.metricOverview ShowDesignDetails
+            |> MetricPlots.metricOverview ShowDesignDetails "Packing Density"
             |> html
         ]
 
