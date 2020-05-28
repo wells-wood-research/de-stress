@@ -39,7 +39,7 @@ h =
 
 padding : Float
 padding =
-    50
+    70
 
 
 type alias ColumnData =
@@ -65,7 +65,16 @@ yScale =
 
 yAxis : Svg msg
 yAxis =
-    Axis.left [ Axis.tickCount 5 ] yScale
+    g []
+        [ Axis.left [ Axis.tickCount 5 ] yScale
+        , text_
+            [ x <| Px -padding
+            , textAnchor AnchorStart
+            , dominantBaseline DominantBaselineMiddle
+            , transform [ Rotate 90 -padding 0 ]
+            ]
+            [ text "Packing Density" ]
+        ]
 
 
 column : (String -> msg) -> BandScale ColumnData -> ColumnData -> Svg msg
