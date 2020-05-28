@@ -2,8 +2,9 @@ module Pages.Designs exposing (Model, Msg, page)
 
 import Ampal
 import Codec exposing (Value)
+import Components.DropDown as DropDown
 import Design
-import Dict
+import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -14,6 +15,7 @@ import File.Select as FileSelect
 import Generated.Params as Params
 import Generated.Routes as Routes
 import Global
+import Metrics exposing (DesignMetrics)
 import Metrics.Plots as MetricPlots
 import Ports
 import Spa.Page exposing (send)
@@ -42,6 +44,7 @@ type alias Model =
     { loadingState : DesignLoadingState
     , loadErrors : List String
     , mSelectedSpecification : Maybe Specification
+    , overviewOptionDropDown : DropDown.Model String
     , deleteAllStatus : Style.DangerStatus
     }
 
@@ -56,6 +59,7 @@ init { global } _ =
     ( { loadingState = Free
       , loadErrors = []
       , mSelectedSpecification = Nothing
+      , overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
       , deleteAllStatus = Style.Unclicked
       }
     , Cmd.none
@@ -90,6 +94,8 @@ type Msg
     | ShowDesignDetails String
     | DeleteDesign String Style.DangerStatus
     | DeleteAllDesigns Style.DangerStatus
+      -- DropDowns
+    | OverviewOptionDropDownMsg (DropDown.Msg String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
@@ -243,6 +249,17 @@ update msg model =
                     , Cmd.none
                     )
 
+        -- Drop Downs
+        OverviewOptionDropDownMsg cMsg ->
+            let
+                cModel =
+                    DropDown.update cMsg model.overviewOptionDropDown
+            in
+            ( { model | overviewOptionDropDown = cModel }
+            , Cmd.none
+            , Cmd.none
+            )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -300,7 +317,7 @@ view { global } model =
                     ]
                 , Dict.toList designs
                     |> List.map (Tuple.mapSecond Global.storedDesignToStub)
-                    |> overviewPlots
+                    |> overviewPlots model.overviewOptionDropDown
                 , let
                     designCardData =
                         designs
@@ -485,27 +502,62 @@ designCard { uuidString, designStub, mMeetsSpecification } =
 -- {{{ Overview Plots
 
 
-overviewPlots : List ( String, Design.DesignStub ) -> Element Msg
-overviewPlots designStubs =
+defaultPlotableOption : ( String, DesignMetrics -> Float )
+defaultPlotableOption =
+    ( "Packing Density", .packingDensity )
+
+
+plotableMetrics : Dict String (DesignMetrics -> Float)
+plotableMetrics =
+    [ defaultPlotableOption
+    , ( "Hydrophobic Fitness"
+      , .hydrophobicFitness
+            >> Maybe.withDefault 77
+            >> abs
+      )
+    , ( "Isoelectric Point", .isoelectricPoint )
+    , ( "Mass", .mass )
+    ]
+        |> Dict.fromList
+
+
+overviewPlots :
+    DropDown.Model String
+    -> List ( String, Design.DesignStub )
+    -> Element Msg
+overviewPlots ({ selected } as dropDownModel) designStubs =
+    let
+        getDataFn =
+            Dict.get selected plotableMetrics
+                |> Maybe.withDefault (Tuple.second defaultPlotableOption)
+    in
     column [ spacing 10, fill |> maximum 500 |> height, width fill ]
         [ Style.h2 <| text "Overview"
+        , el [ width <| maximum 400 <| fill ]
+            (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
+                |> map OverviewOptionDropDownMsg
+            )
         , List.indexedMap Tuple.pair designStubs
             |> List.reverse
-            |> List.filterMap makeColumnData
-            |> MetricPlots.metricOverview ShowDesignDetails "Packing Density"
+            |> List.filterMap (makeColumnData getDataFn)
+            |> Debug.log "Filtered things"
+            |> MetricPlots.metricOverview ShowDesignDetails selected
             |> html
         ]
 
 
-makeColumnData : ( Int, ( String, Design.DesignStub ) ) -> Maybe MetricPlots.ColumnData
-makeColumnData ( index, ( uuidString, { name, metricsJobStatus } ) ) =
+makeColumnData :
+    (DesignMetrics -> Float)
+    -> ( Int, ( String, Design.DesignStub ) )
+    -> Maybe MetricPlots.ColumnData
+makeColumnData getDataFn ( index, ( uuidString, { name, metricsJobStatus } ) ) =
     case metricsJobStatus of
         Ports.Complete metrics ->
             Just
                 { index = toFloat index
                 , name = name
                 , uuidString = uuidString
-                , value = metrics.packingDensity
+                , value = getDataFn metrics
                 }
 
         _ ->
