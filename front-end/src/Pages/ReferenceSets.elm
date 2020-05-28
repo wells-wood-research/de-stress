@@ -88,24 +88,25 @@ view : Utils.Spa.PageContext -> Model -> Element Msg
 view { global } _ =
     case global of
         Global.Running { mSelectedReferenceSet, referenceSets } ->
-            column
-                [ width fill, spacing 30 ]
-                [ row [ centerX, spacing 10 ]
-                    [ Style.h1 <|
-                        text "Reference Sets"
-                    , Style.linkButton
-                        { url = "/reference-sets/new", label = text "New" }
+            el [ centerX, width <| maximum 800 <| fill ] <|
+                column
+                    [ width fill, spacing 30 ]
+                    [ row [ centerX, spacing 10 ]
+                        [ Style.h1 <|
+                            text "Reference Sets"
+                        , Style.linkButton
+                            { url = "/reference-sets/new", label = text "New" }
+                        ]
+                    , column [ width fill, spacing 15 ]
+                        (Dict.toList referenceSets
+                            |> List.map
+                                (\( k, v ) ->
+                                    ( k, Global.storedReferenceSetToStub v )
+                                )
+                            |> List.map
+                                (referenceSetStubView mSelectedReferenceSet)
+                        )
                     ]
-                , column [ width fill, spacing 15 ]
-                    (Dict.toList referenceSets
-                        |> List.map
-                            (\( k, v ) ->
-                                ( k, Global.storedReferenceSetToStub v )
-                            )
-                        |> List.map
-                            (referenceSetStubView mSelectedReferenceSet)
-                    )
-                ]
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"

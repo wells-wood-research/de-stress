@@ -88,21 +88,22 @@ view : Utils.Spa.PageContext -> Model -> Element Msg
 view { global } _ =
     case global of
         Global.Running { mSelectedSpecification, specifications } ->
-            column
-                [ width fill, spacing 30 ]
-                (row [ centerX, spacing 10 ]
-                    [ Style.h1 <|
-                        text "Requirement Specifications"
-                    , Style.linkButton { url = "/specifications/new", label = text "New" }
-                    ]
-                    :: (Dict.toList specifications
-                            |> List.map
-                                (\( k, v ) ->
-                                    ( k, Global.storedSpecificationToStub v )
-                                )
-                            |> List.map (specificationStubView mSelectedSpecification)
-                       )
-                )
+            el [ centerX, width <| maximum 800 <| fill ] <|
+                column
+                    [ width fill, spacing 30 ]
+                    (row [ centerX, spacing 10 ]
+                        [ Style.h1 <|
+                            text "Requirement Specifications"
+                        , Style.linkButton { url = "/specifications/new", label = text "New" }
+                        ]
+                        :: (Dict.toList specifications
+                                |> List.map
+                                    (\( k, v ) ->
+                                        ( k, Global.storedSpecificationToStub v )
+                                    )
+                                |> List.map (specificationStubView mSelectedSpecification)
+                           )
+                    )
 
         Global.FailedToLaunch _ ->
             Debug.todo "Add common state page"

@@ -29,7 +29,11 @@ page =
 
 view : Element Msg
 view =
-    column [ spacing 20 ]
+    column
+        [ centerX
+        , spacing 20
+        , width <| maximum 800 <| fill
+        ]
         [ text "Homepage"
             |> h1
         , paragraph []

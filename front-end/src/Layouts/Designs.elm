@@ -6,4 +6,5 @@ import Utils.Spa as Spa
 
 view : Spa.LayoutContext msg -> Element msg
 view { page } =
-    page
+    el [ centerX, width <| maximum 800 <| fill ] page
+
