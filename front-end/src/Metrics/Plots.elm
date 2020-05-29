@@ -1,6 +1,7 @@
 module Metrics.Plots exposing (ColumnData, metricOverview)
 
 import Axis
+import Color
 import Round
 import Scale exposing (BandScale, ContinuousScale, defaultBandConfig)
 import TypedSvg exposing (g, rect, style, svg, text_)
@@ -8,6 +9,7 @@ import TypedSvg.Attributes
     exposing
         ( class
         , dominantBaseline
+        , fill
         , height
         , textAnchor
         , transform
@@ -23,6 +25,7 @@ import TypedSvg.Types
         ( AnchorAlignment(..)
         , DominantBaseline(..)
         , Length(..)
+        , Paint(..)
         , Transform(..)
         )
 
@@ -47,6 +50,7 @@ type alias ColumnData =
     , name : String
     , uuidString : String
     , value : Float
+    , mMeetsSpecification : Maybe Bool
     }
 
 
@@ -78,11 +82,24 @@ yAxis yLabel =
 
 
 column : (String -> msg) -> BandScale ColumnData -> ColumnData -> Svg msg
-column clickMsg scale ({ value, name, uuidString } as datapoint) =
+column clickMsg scale ({ value, name, uuidString, mMeetsSpecification } as datapoint) =
     g [ class [ "column" ], onClick <| clickMsg uuidString ]
         [ rect
             [ x <| Px <| Scale.convert scale datapoint
             , y <| Px <| Scale.convert yScale value
+            , case mMeetsSpecification of
+                Just meetsSpecification ->
+                    if meetsSpecification then
+                        -- #D9B861
+                        fill <| Paint <| Color.rgb255 217 184 97
+
+                    else
+                        -- #CA6B68
+                        fill <| Paint <| Color.rgb255 202 107 104
+
+                Nothing ->
+                    -- #D9B861
+                    fill <| Paint <| Color.rgb255 217 184 97
             , width <| Px <| Scale.bandwidth scale
             , height <| Px <| h - Scale.convert yScale value - 2 * padding
             ]
@@ -118,9 +135,7 @@ metricOverview clickMsg yLabel data =
         [ style []
             [ text """
             .tick text { font-size: 24px; }
-            .column rect { fill: rgba(118, 214, 78, 0.8); }
             .column text { display: none; }
-            .column:hover rect { fill: rgb(118, 214, 78); }
             .column:hover text { display: inline; }
             """
             ]

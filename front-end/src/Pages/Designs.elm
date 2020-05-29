@@ -286,6 +286,16 @@ view : Utils.Spa.PageContext -> Model -> Element Msg
 view { global } model =
     case global of
         Global.Running { designs } ->
+            let
+                designCardData =
+                    designs
+                        |> Dict.toList
+                        |> List.map
+                            (\( k, v ) ->
+                                ( k, Global.storedDesignToStub v )
+                            )
+                        |> List.map (createDesignCardData model.mSelectedSpecification)
+            in
             column [ spacing 15, width fill ]
                 [ let
                     ( buttonLabel, isActive ) =
@@ -315,19 +325,9 @@ view { global } model =
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
-                , Dict.toList designs
-                    |> List.map (Tuple.mapSecond Global.storedDesignToStub)
+                , designCardData
                     |> overviewPlots model.overviewOptionDropDown
                 , let
-                    designCardData =
-                        designs
-                            |> Dict.toList
-                            |> List.map
-                                (\( k, v ) ->
-                                    ( k, Global.storedDesignToStub v )
-                                )
-                            |> List.map (createDesignCardData model.mSelectedSpecification)
-
                     cardContainer =
                         wrappedRow [ spacing 10, width fill ]
                   in
@@ -512,7 +512,7 @@ plotableMetrics =
     [ defaultPlotableOption
     , ( "Hydrophobic Fitness"
       , .hydrophobicFitness
-            >> Maybe.withDefault 77
+            >> Maybe.withDefault (0 / 0)
             >> abs
       )
     , ( "Isoelectric Point", .isoelectricPoint )
@@ -523,9 +523,9 @@ plotableMetrics =
 
 overviewPlots :
     DropDown.Model String
-    -> List ( String, Design.DesignStub )
+    -> List DesignCardData
     -> Element Msg
-overviewPlots ({ selected } as dropDownModel) designStubs =
+overviewPlots ({ selected } as dropDownModel) designCardData =
     let
         getDataFn =
             Dict.get selected plotableMetrics
@@ -537,10 +537,9 @@ overviewPlots ({ selected } as dropDownModel) designStubs =
             (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
                 |> map OverviewOptionDropDownMsg
             )
-        , List.indexedMap Tuple.pair designStubs
+        , List.indexedMap Tuple.pair designCardData
             |> List.reverse
             |> List.filterMap (makeColumnData getDataFn)
-            |> Debug.log "Filtered things"
             |> MetricPlots.metricOverview ShowDesignDetails selected
             |> html
         ]
@@ -548,16 +547,17 @@ overviewPlots ({ selected } as dropDownModel) designStubs =
 
 makeColumnData :
     (DesignMetrics -> Float)
-    -> ( Int, ( String, Design.DesignStub ) )
+    -> ( Int, DesignCardData )
     -> Maybe MetricPlots.ColumnData
-makeColumnData getDataFn ( index, ( uuidString, { name, metricsJobStatus } ) ) =
-    case metricsJobStatus of
+makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification } ) =
+    case designStub.metricsJobStatus of
         Ports.Complete metrics ->
             Just
                 { index = toFloat index
-                , name = name
+                , name = designStub.name
                 , uuidString = uuidString
                 , value = getDataFn metrics
+                , mMeetsSpecification = mMeetsSpecification
                 }
 
         _ ->
