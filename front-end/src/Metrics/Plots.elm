@@ -4,13 +4,19 @@ import Axis
 import Color
 import Round
 import Scale exposing (BandScale, ContinuousScale, defaultBandConfig)
-import TypedSvg exposing (g, rect, style, svg, text_)
+import TypedSvg exposing (g, path, rect, style, svg, text_)
 import TypedSvg.Attributes
     exposing
         ( class
+        , d
         , dominantBaseline
+        , dx
+        , dy
         , fill
         , height
+        , noFill
+        , stroke
+        , strokeWidth
         , textAnchor
         , transform
         , viewBox
@@ -19,7 +25,7 @@ import TypedSvg.Attributes
         , y
         )
 import TypedSvg.Core exposing (Svg, text)
-import TypedSvg.Events exposing (onClick)
+import TypedSvg.Events as Events
 import TypedSvg.Types
     exposing
         ( AnchorAlignment(..)
@@ -81,12 +87,26 @@ yAxis yLabel =
         ]
 
 
-column : (String -> msg) -> BandScale ColumnData -> ColumnData -> Svg msg
+column :
+    (String -> msg)
+    -> BandScale ColumnData
+    -> ColumnData
+    -> Svg msg
 column clickMsg scale ({ value, name, uuidString, mMeetsSpecification } as datapoint) =
-    g [ class [ "column" ], onClick <| clickMsg uuidString ]
+    let
+        xval =
+            Scale.convert scale datapoint
+
+        yval =
+            Scale.convert yScale value
+    in
+    g
+        [ class [ "column" ]
+        , Events.onClick <| clickMsg uuidString
+        ]
         [ rect
-            [ x <| Px <| Scale.convert scale datapoint
-            , y <| Px <| Scale.convert yScale value
+            [ x <| Px xval
+            , y <| Px yval
             , case mMeetsSpecification of
                 Just meetsSpecification ->
                     if meetsSpecification then
@@ -101,46 +121,47 @@ column clickMsg scale ({ value, name, uuidString, mMeetsSpecification } as datap
                     -- #D9B861
                     fill <| Paint <| Color.rgb255 217 184 97
             , width <| Px <| Scale.bandwidth scale
-            , height <| Px <| h - Scale.convert yScale value - 2 * padding
+            , height <| Px <| h - yval - 2 * padding
             ]
             []
         , text_
-            [ x <| Px <| Scale.convert (Scale.toRenderable .name scale) datapoint
-            , y <| Px <| Scale.convert yScale value - 5
-            , textAnchor AnchorMiddle
+            [ x <| Px xval
+            , y <| Px <| yval - 40
+            , textAnchor AnchorStart
             ]
-            [ text <| Round.round 1 value ]
-        , text_
-            (let
-                xVal =
-                    Scale.convert (Scale.toRenderable .name scale) datapoint
-
-                yVal =
-                    Scale.convert yScale value + 10
-             in
-             [ x <| Px xVal
-             , y <| Px yVal
-             , textAnchor AnchorStart
-             , dominantBaseline DominantBaselineMiddle
-             , transform [ Rotate 90 xVal yVal ]
-             ]
-            )
             [ text name ]
+        , text_
+            [ x <| Px xval
+            , y <| Px <| yval - 15
+            , textAnchor AnchorStart
+            ]
+            [ text <| Round.round 2 value ]
         ]
 
 
-metricOverview : (String -> msg) -> String -> List ColumnData -> Svg msg
+metricOverview :
+    (String -> msg)
+    -> String
+    -> List ColumnData
+    -> Svg msg
 metricOverview clickMsg yLabel data =
     svg [ viewBox 0 0 w h ]
         [ style []
-            [ text """
-            .tick text { font-size: 24px; }
-            .column text { display: none; }
-            .column:hover text { display: inline; }
-            """
+            [ text styleSheet
             ]
         , g [ transform [ Translate (padding - 1) padding ] ]
             [ yAxis yLabel ]
         , g [ transform [ Translate padding padding ], class [ "series" ] ] <|
             List.map (column clickMsg (xScale data)) data
         ]
+
+
+styleSheet : String
+styleSheet =
+    """
+    .tick text { font-size: 24px; }
+    .column { opacity: 0.8; }
+    .column:hover { opacity: 1; }
+    .column text { display: none; }
+    .column:hover text { display: inline; }
+    """

@@ -9,6 +9,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Lazy as Lazy
 import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
@@ -45,6 +46,7 @@ type alias Model =
     , loadErrors : List String
     , mSelectedSpecification : Maybe Specification
     , overviewOptionDropDown : DropDown.Model String
+    , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Style.DangerStatus
     }
 
@@ -60,6 +62,7 @@ init { global } _ =
       , loadErrors = []
       , mSelectedSpecification = Nothing
       , overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
+      , mOverviewInfo = Nothing
       , deleteAllStatus = Style.Unclicked
       }
     , Cmd.none
@@ -325,41 +328,12 @@ view { global } model =
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
-                , designCardData
-                    |> overviewPlots model.overviewOptionDropDown
-                , let
-                    cardContainer =
-                        wrappedRow [ spacing 10, width fill ]
-                  in
-                  case model.mSelectedSpecification of
-                    Just _ ->
-                        let
-                            { meetsSpecification, failedSpecification, noMetrics } =
-                                partitionDesignCardData designCardData
-                                    { meetsSpecification = []
-                                    , failedSpecification = []
-                                    , noMetrics = []
-                                    }
-                        in
-                        column [ spacing 15, width fill ]
-                            [ h2 <| text "Meets Specification"
-                            , meetsSpecification
-                                |> List.map designCard
-                                |> cardContainer
-                            , h2 <| text "Failed to Meet Specification"
-                            , failedSpecification
-                                |> List.map designCard
-                                |> cardContainer
-                            , h2 <| text "No Metrics Available"
-                            , noMetrics
-                                |> List.map designCard
-                                |> cardContainer
-                            ]
-
-                    Nothing ->
-                        designCardData
-                            |> List.map designCard
-                            |> cardContainer
+                , overviewPlots
+                    model.overviewOptionDropDown
+                    designCardData
+                , Lazy.lazy
+                    (designCardsView model.mSelectedSpecification)
+                    designCardData
                 ]
 
         Global.FailedToLaunch _ ->
@@ -498,6 +472,43 @@ designCard { uuidString, designStub, mMeetsSpecification } =
         ]
 
 
+designCardsView : Maybe Specification -> List DesignCardData -> Element Msg
+designCardsView mSelectedSpecification designCardData =
+    let
+        cardContainer =
+            wrappedRow [ spacing 10, width fill ]
+    in
+    case mSelectedSpecification of
+        Just _ ->
+            let
+                { meetsSpecification, failedSpecification, noMetrics } =
+                    partitionDesignCardData designCardData
+                        { meetsSpecification = []
+                        , failedSpecification = []
+                        , noMetrics = []
+                        }
+            in
+            column [ spacing 15, width fill ]
+                [ h2 <| text "Meets Specification"
+                , meetsSpecification
+                    |> List.map designCard
+                    |> cardContainer
+                , h2 <| text "Failed to Meet Specification"
+                , failedSpecification
+                    |> List.map designCard
+                    |> cardContainer
+                , h2 <| text "No Metrics Available"
+                , noMetrics
+                    |> List.map designCard
+                    |> cardContainer
+                ]
+
+        Nothing ->
+            designCardData
+                |> List.map designCard
+                |> cardContainer
+
+
 
 -- {{{ Overview Plots
 
@@ -540,7 +551,9 @@ overviewPlots ({ selected } as dropDownModel) designCardData =
         , List.indexedMap Tuple.pair designCardData
             |> List.reverse
             |> List.filterMap (makeColumnData getDataFn)
-            |> MetricPlots.metricOverview ShowDesignDetails selected
+            |> MetricPlots.metricOverview
+                ShowDesignDetails
+                selected
             |> html
         ]
 
