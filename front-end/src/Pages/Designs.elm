@@ -331,8 +331,8 @@ view { global } model =
                 , overviewPlots
                     model.overviewOptionDropDown
                     designCardData
-                , Lazy.lazy
-                    (designCardsView model.mSelectedSpecification)
+                , designCardsView
+                    model.mSelectedSpecification
                     designCardData
                 ]
 
@@ -551,6 +551,8 @@ overviewPlots ({ selected } as dropDownModel) designCardData =
         , List.indexedMap Tuple.pair designCardData
             |> List.reverse
             |> List.filterMap (makeColumnData getDataFn)
+            |> List.sortBy .value
+            |> List.reverse
             |> MetricPlots.metricOverview
                 ShowDesignDetails
                 selected
