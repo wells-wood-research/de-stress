@@ -377,6 +377,7 @@ type Msg
     | UpdateDesignMetricsJob Ports.MetricsServerJob
     | DeleteDesign String Style.DangerStatus
     | GetDesign String
+    | UpdateFocussedDesign String Design
     | DeleteFocussedDesign String Style.DangerStatus
     | DeleteAllDesigns Style.DangerStatus
     | AddReferenceSet ReferenceSet
@@ -510,6 +511,25 @@ updateRunState commands msg runState =
                     , Cmd.none
                     , Cmd.none
                     )
+
+        UpdateFocussedDesign uuidString design ->
+            ( { runState
+                | designs =
+                    Dict.insert
+                        uuidString
+                        (design
+                            |> Design.createDesignStub
+                            |> LocalDesign
+                        )
+                        runState.designs
+              }
+            , Cmd.none
+            , encodeDesignAndKey
+                { storeKey = uuidString
+                , design = design
+                }
+                |> Ports.storeDesign
+            )
 
         DeleteFocussedDesign uuidString dangerStatus ->
             case dangerStatus of

@@ -1,12 +1,14 @@
 module Pages.Designs.Dynamic exposing (Model, Msg, page)
 
 import Codec exposing (Value)
-import Design exposing (Design)
+import Design exposing (Design, Editable(..))
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
+import Element.Input as Input
 import Element.Keyed as Keyed
 import FeatherIcons
 import Generated.Designs.Params as Params
@@ -90,6 +92,28 @@ mapPageStateDesign designFn focus =
                 |> DesignWithReference
 
 
+getDesignFromPageState : PageState -> Maybe Design
+getDesignFromPageState pageState =
+    case pageState of
+        Loading ->
+            Nothing
+
+        DesignNotFound _ ->
+            Nothing
+
+        DesignNoReference design ->
+            Just design
+
+        DesignFailedToLoadReference _ design ->
+            Just design
+
+        DesignLoadingReference design ->
+            Just design
+
+        DesignWithReference design ->
+            Just design
+
+
 init : Utils.Spa.PageContext -> Params.Dynamic -> ( Model, Cmd Msg, Cmd Global.Msg )
 init { global } { param1 } =
     ( { uuidString = param1, mSelectedSpecification = Nothing, pageState = Loading }
@@ -125,6 +149,10 @@ type Msg
     = SetFocus Value
     | GotReferenceSet Value
     | GotSpecification Value
+    | ClickedNameEdit
+    | EditedName String
+    | ClickedAcceptNameEdit
+    | ClickedCancelNameEdit
     | DeleteFocussedDesign String Style.DangerStatus
 
 
@@ -273,6 +301,103 @@ update { global } msg model =
             , Cmd.none
             )
 
+        ClickedNameEdit ->
+            let
+                updateDesignName design =
+                    case design.name of
+                        NotEditing currentName ->
+                            { design | name = Editing currentName <| Just currentName }
+
+                        Editing _ _ ->
+                            design
+            in
+            ( { model
+                | pageState = mapPageStateDesign updateDesignName model.pageState
+              }
+            , Cmd.none
+            , Cmd.none
+            )
+
+        EditedName newName ->
+            let
+                updateDesignName design =
+                    case design.name of
+                        NotEditing _ ->
+                            design
+
+                        Editing oldName _ ->
+                            { design
+                                | name =
+                                    if String.isEmpty newName then
+                                        Editing oldName Nothing
+
+                                    else
+                                        Editing oldName <| Just newName
+                            }
+            in
+            ( { model
+                | pageState =
+                    mapPageStateDesign
+                        updateDesignName
+                        model.pageState
+              }
+            , Cmd.none
+            , Cmd.none
+            )
+
+        ClickedAcceptNameEdit ->
+            let
+                updateDesignName design =
+                    case design.name of
+                        NotEditing _ ->
+                            design
+
+                        Editing currentName newName ->
+                            { design
+                                | name =
+                                    Maybe.withDefault currentName newName
+                                        |> NotEditing
+                            }
+
+                updatedModel =
+                    { model
+                        | pageState =
+                            mapPageStateDesign
+                                updateDesignName
+                                model.pageState
+                    }
+            in
+            ( updatedModel
+            , Cmd.none
+            , case getDesignFromPageState updatedModel.pageState of
+                Just design ->
+                    Global.UpdateFocussedDesign model.uuidString design
+                        |> send
+
+                Nothing ->
+                    Debug.todo "Catch this"
+            )
+
+        ClickedCancelNameEdit ->
+            let
+                updateDesignName design =
+                    case design.name of
+                        NotEditing _ ->
+                            design
+
+                        Editing currentName _ ->
+                            { design | name = NotEditing currentName }
+            in
+            ( { model
+                | pageState =
+                    mapPageStateDesign
+                        updateDesignName
+                        model.pageState
+              }
+            , Cmd.none
+            , Cmd.none
+            )
+
         DeleteFocussedDesign globalUuidString dangerStatus ->
             case dangerStatus of
                 Style.Confirmed ->
@@ -361,7 +486,7 @@ view model =
 
 sectionColumn : List (Element msg) -> Element msg
 sectionColumn =
-    column [ spacing 10, width fill ]
+    column [ spacing 12, width fill ]
 
 
 designDetailsView :
@@ -371,14 +496,55 @@ designDetailsView :
     -> Element Msg
 designDetailsView uuidString mSelectedSpecification design =
     let
-        { name, fileName, deleteStatus, metricsJobStatus } =
+        { fileName, deleteStatus, metricsJobStatus } =
             design
     in
     column
         [ spacing 15, width fill ]
         [ sectionColumn
             [ paragraph [ centerX ]
-                [ h1 <| text (Design.editableValue name ++ " Design Details") ]
+                [ h1 <| text "Design Details" ]
+            , row [ height fill, spacing 10 ]
+                (case design.name of
+                    NotEditing currentName ->
+                        [ paragraph [] [ Style.h2 <| text <| "Name: " ++ currentName ]
+                        , el [ centerY, Events.onClick <| ClickedNameEdit ]
+                            (FeatherIcons.edit
+                                |> FeatherIcons.toHtml []
+                                |> html
+                            )
+                        ]
+
+                    Editing _ mNewName ->
+                        [ Input.text
+                            Style.textInputStyle
+                            { onChange = EditedName
+                            , text = Maybe.withDefault "" mNewName
+                            , placeholder = Nothing
+                            , label =
+                                Input.labelRight [ centerY ]
+                                    (row [ spacing 5 ]
+                                        [ Style.conditionalButton
+                                            { label = text "Ok"
+                                            , clickMsg = ClickedAcceptNameEdit
+                                            , isActive =
+                                                case mNewName of
+                                                    Just newName ->
+                                                        String.isEmpty newName
+                                                            |> not
+
+                                                    Nothing ->
+                                                        False
+                                            }
+                                        , Style.alwaysActiveButton
+                                            { label = text "Cancel"
+                                            , clickMsg = ClickedCancelNameEdit
+                                            }
+                                        ]
+                                    )
+                            }
+                        ]
+                )
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
             ]
         , row [ spacing 10 ]
