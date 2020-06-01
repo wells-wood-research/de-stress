@@ -4,19 +4,13 @@ import Axis
 import Color
 import Round
 import Scale exposing (BandScale, ContinuousScale, defaultBandConfig)
-import TypedSvg exposing (g, path, rect, style, svg, text_)
+import TypedSvg exposing (g, rect, style, svg, text_)
 import TypedSvg.Attributes
     exposing
         ( class
-        , d
         , dominantBaseline
-        , dx
-        , dy
         , fill
         , height
-        , noFill
-        , stroke
-        , strokeWidth
         , textAnchor
         , transform
         , viewBox
@@ -68,15 +62,19 @@ xScale datapoints =
         datapoints
 
 
-yScale : ContinuousScale Float
-yScale =
-    Scale.linear ( h - 2 * padding, 0 ) ( 0, 100 )
+yScale : { minValue : Float, maxValue : Float } -> ContinuousScale Float
+yScale { minValue, maxValue } =
+    let
+        buffer =
+            (maxValue - minValue) * 0.2
+    in
+    Scale.linear ( h - 2 * padding, 0 ) ( minValue - buffer, maxValue + buffer )
 
 
-yAxis : String -> Svg msg
-yAxis yLabel =
+yAxis : { minValue : Float, maxValue : Float } -> String -> Svg msg
+yAxis range yLabel =
     g []
-        [ Axis.left [ Axis.tickCount 5 ] yScale
+        [ Axis.left [ Axis.tickCount 5 ] <| yScale range
         , text_
             [ x <| Px -padding
             , textAnchor AnchorStart
@@ -89,16 +87,17 @@ yAxis yLabel =
 
 column :
     (String -> msg)
+    -> { minValue : Float, maxValue : Float }
     -> BandScale ColumnData
     -> ColumnData
     -> Svg msg
-column clickMsg scale ({ value, name, uuidString, mMeetsSpecification } as datapoint) =
+column clickMsg range scale ({ value, name, uuidString, mMeetsSpecification } as datapoint) =
     let
         xval =
             Scale.convert scale datapoint
 
         yval =
-            Scale.convert yScale value
+            Scale.convert (yScale range) value
     in
     g
         [ class [ "column" ]
@@ -145,14 +144,27 @@ metricOverview :
     -> List ColumnData
     -> Svg msg
 metricOverview clickMsg yLabel data =
+    let
+        values =
+            List.map .value data
+
+        minValue =
+            List.minimum values |> Maybe.withDefault 0
+
+        maxValue =
+            List.maximum values |> Maybe.withDefault 100
+
+        range =
+            { minValue = minValue, maxValue = maxValue }
+    in
     svg [ viewBox 0 0 w h ]
         [ style []
             [ text styleSheet
             ]
         , g [ transform [ Translate (padding - 1) padding ] ]
-            [ yAxis yLabel ]
+            [ yAxis range yLabel ]
         , g [ transform [ Translate padding padding ], class [ "series" ] ] <|
-            List.map (column clickMsg (xScale data)) data
+            List.map (column clickMsg range (xScale data)) data
         ]
 
 
