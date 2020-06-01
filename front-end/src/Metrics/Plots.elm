@@ -171,7 +171,7 @@ metricOverview clickMsg yLabel data =
 styleSheet : String
 styleSheet =
     """
-    .tick text { font-size: 24px; }
+    .tick text { font-size: 16px; }
     .column { opacity: 0.8; }
     .column:hover { opacity: 1; }
     .column text { display: none; }

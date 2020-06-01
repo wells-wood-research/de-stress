@@ -328,12 +328,20 @@ view { global } model =
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
-                , overviewPlots
-                    model.overviewOptionDropDown
-                    designCardData
-                , designCardsView
-                    model.mSelectedSpecification
-                    designCardData
+                , el [ width fill ] <|
+                    if List.isEmpty designCardData then
+                        el [ centerX ] (text "Click \"Load\" to add models.")
+
+                    else
+                        column
+                            [ width fill ]
+                            [ overviewPlots
+                                model.overviewOptionDropDown
+                                designCardData
+                            , designCardsView
+                                model.mSelectedSpecification
+                                designCardData
+                            ]
                 ]
 
         Global.FailedToLaunch _ ->
