@@ -502,7 +502,7 @@ designDetailsView uuidString mSelectedSpecification design =
     column
         [ spacing 15, width fill ]
         [ sectionColumn
-            [ paragraph [ centerX ]
+            [ paragraph []
                 [ h1 <| text "Design Details" ]
             , row [ height fill, spacing 10 ]
                 (case design.name of

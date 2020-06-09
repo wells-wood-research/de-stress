@@ -9,7 +9,6 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
-import Element.Lazy as Lazy
 import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
@@ -552,7 +551,7 @@ overviewPlots ({ selected } as dropDownModel) designCardData =
     in
     column [ spacing 10, fill |> maximum 500 |> height, width fill ]
         [ Style.h2 <| text "Overview"
-        , el [ width <| maximum 400 <| fill ]
+        , el [ width <| maximum 300 <| fill ]
             (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
                 |> map OverviewOptionDropDownMsg
             )

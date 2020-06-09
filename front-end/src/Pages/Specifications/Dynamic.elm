@@ -157,14 +157,21 @@ view model =
             specificationDetailsView uuidString specification
 
 
+sectionColumn : List (Element msg) -> Element msg
+sectionColumn =
+    column [ spacing 12, width fill ]
+
+
 specificationDetailsView : String -> Specification -> Element Msg
 specificationDetailsView uuidString { name, description, requirements, deleteStatus } =
     column
-        [ padding 15
-        , spacing 15
+        [ spacing 12
         , width fill
         ]
-        [ Style.h1 <| text "Specification Details"
+        [ sectionColumn
+            [ paragraph [] [ Style.h1 <| text "Specification Details" ]
+            , Style.h2 <| text <| "Name: " ++ name
+            ]
         , row [ spacing 10 ]
             [ Style.linkButton
                 { label = text "Back"
@@ -177,10 +184,17 @@ specificationDetailsView uuidString { name, description, requirements, deleteSta
                 , dangerousMsg = DeleteFocussedSpecification uuidString
                 }
             ]
-        , Style.h2 <| text name
-        , paragraph [] [ text description ]
-        , Style.h2 <| text "Requirements"
-        , requirementView requirements
+        , sectionColumn
+            [ Style.h2 <|
+                text "Description"
+            , paragraph
+                []
+                [ text description ]
+            ]
+        , sectionColumn
+            [ Style.h2 <| text "Requirements"
+            , requirementView requirements
+            ]
         ]
 
 

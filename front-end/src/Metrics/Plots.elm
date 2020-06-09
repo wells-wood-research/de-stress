@@ -32,17 +32,17 @@ import TypedSvg.Types
 
 w : Float
 w =
-    900
+    800
 
 
 h : Float
 h =
-    450
+    400
 
 
 padding : Float
 padding =
-    70
+    100
 
 
 type alias ColumnData =
@@ -76,10 +76,9 @@ yAxis range yLabel =
     g []
         [ Axis.left [ Axis.tickCount 5 ] <| yScale range
         , text_
-            [ x <| Px -padding
-            , textAnchor AnchorStart
+            [ textAnchor AnchorMiddle
             , dominantBaseline DominantBaselineMiddle
-            , transform [ Rotate 90 -padding 0 ]
+            , transform [ Rotate 90 -(padding * (3 / 4)) 0 ]
             ]
             [ text yLabel ]
         ]

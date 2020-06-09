@@ -39,9 +39,9 @@ view { global, page, route } =
 
 viewHeader : Route -> Global.WebSocketConnectionStatus -> Element msg
 viewHeader currentRoute connStat =
-    row
-        [ paddingXY 5 0
-        , spacing 10
+    column
+        [ padding 10
+        , spacing 5
         , width fill
         , Background.color colorPalette.c1
         , Font.color colorPalette.c4
@@ -49,21 +49,23 @@ viewHeader currentRoute connStat =
         , Font.bold
         , Region.navigation
         ]
-        [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
-        , el []
-            (case connStat of
-                Global.Unknown ->
-                    FeatherIcons.cloudLightning |> Style.featherIconToElmUi
+        [ row [ centerX, spacing 10 ]
+            [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
+            , el []
+                (case connStat of
+                    Global.Unknown ->
+                        FeatherIcons.cloudLightning |> Style.featherIconToElmUi
 
-                Global.Disconnected ->
-                    FeatherIcons.cloudOff |> Style.featherIconToElmUi
+                    Global.Disconnected ->
+                        FeatherIcons.cloudOff |> Style.featherIconToElmUi
 
-                Global.Connected ->
-                    FeatherIcons.cloud |> Style.featherIconToElmUi
-            )
-        , row
-            [ alignRight
-            , spacingXY 10 0
+                    Global.Connected ->
+                        FeatherIcons.cloud |> Style.featherIconToElmUi
+                )
+            ]
+        , wrappedRow
+            [ centerX
+            , spacing 10
             , Font.medium
             , Font.size 24
             ]
