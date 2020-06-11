@@ -438,7 +438,7 @@ subscriptions _ =
 view : Model -> Element Msg
 view model =
     column
-        [ width fill, spacing 30 ]
+        [ width fill, spacing 15 ]
         [ text "Create New Specification"
             |> Style.h1
             |> el [ centerX ]
@@ -587,11 +587,22 @@ newRequirementView msgConstructor mNewRequirement =
         Just newRequirement ->
             case newRequirement of
                 Data data ->
+                    let
+                        noConstantValueMsg =
+                            Constant Nothing
+                                |> Data
+                                |> msgConstructor
+
+                        noValueSetMsg =
+                            Value Nothing
+                                |> Data
+                                |> msgConstructor
+                    in
                     case data of
                         Constant Nothing ->
                             ( False
                             , row [ spacing 10 ]
-                                [ (stringFromNewRequirement >> text) newRequirement
+                                [ newRequirement |> stringFromNewRequirement |> text
                                 , optionsView
                                     { msgConstructor =
                                         \constantType ->
@@ -605,37 +616,26 @@ newRequirementView msgConstructor mNewRequirement =
                                 ]
                             )
 
-                        Constant (Just ((Method Nothing) as constantType)) ->
-                            ( False
-                            , row [ spacing 10 ]
-                                [ (stringFromNewRequirement >> text) newRequirement
-                                , (stringFromConstantType >> text) constantType
-                                , optionsView
-                                    { msgConstructor =
-                                        \methodType ->
-                                            Constant (Just (Method (Just methodType)))
-                                                |> Data
-                                                |> msgConstructor
-                                    , optionToString = stringFromMethodType
-                                    , optionName = stringFromConstantType constantType
-                                    , options = [ SPPS, MolecularBiology ]
-                                    }
-                                ]
-                            )
-
-                        Constant (Just ((Method (Just methodType)) as constantType)) ->
-                            ( True
-                            , row [ spacing 10 ]
-                                [ (stringFromNewRequirement >> text) newRequirement
-                                , (stringFromConstantType >> text) constantType
-                                , (stringFromMethodType >> text) methodType
-                                ]
-                            )
+                        Constant (Just constantType) ->
+                            constantTypeView
+                                { msgConstructor =
+                                    Just
+                                        >> Constant
+                                        >> Data
+                                        >> msgConstructor
+                                , previousStateMsg =
+                                    Nothing
+                                        |> Constant
+                                        |> Data
+                                        |> msgConstructor
+                                , noConstantValueMsg = noConstantValueMsg
+                                }
+                                constantType
 
                         Value Nothing ->
                             ( False
                             , row [ spacing 10 ]
-                                [ (stringFromNewRequirement >> text) newRequirement
+                                [ newRequirement |> stringFromNewRequirement |> text
                                 , optionsView
                                     { msgConstructor =
                                         \valueType ->
@@ -654,115 +654,16 @@ newRequirementView msgConstructor mNewRequirement =
                                 ]
                             )
 
-                        Value (Just ((IsoelectricPoint Nothing Nothing) as valueType)) ->
-                            valueOrderView
-                                { valueTypeName = stringFromValueType valueType
-                                , msgConstructor =
-                                    \order ->
-                                        Value (Just (IsoelectricPoint (Just order) Nothing))
-                                            |> Data
-                                            |> msgConstructor
-                                }
-
-                        Value (Just (IsoelectricPoint Nothing (Just _))) ->
-                            ( False
-                            , text <|
-                                "Something went wrong while defining your value, hit "
-                                    ++ "cancel and start again."
-                            )
-
-                        Value (Just ((IsoelectricPoint (Just order) mValue) as valueType)) ->
-                            valueFloatInputView
-                                { valueTypeName = stringFromValueType valueType
-                                , mValue = mValue
-                                , order = order
-                                , msgConstructor =
-                                    (\s ->
-                                        Just s
-                                            |> IsoelectricPoint (Just order)
-                                            |> Just
-                                            |> Value
-                                            |> Data
-                                    )
+                        Value (Just valueType) ->
+                            valueTypeView
+                                { msgConstructor =
+                                    Just
+                                        >> Value
+                                        >> Data
                                         >> msgConstructor
+                                , noValueSetMsg = noValueSetMsg
                                 }
-
-                        Value (Just ((HydrophobicFitness Nothing Nothing) as valueType)) ->
-                            valueOrderView
-                                { valueTypeName = stringFromValueType valueType
-                                , msgConstructor =
-                                    \order ->
-                                        Value (Just (HydrophobicFitness (Just order) Nothing))
-                                            |> Data
-                                            |> msgConstructor
-                                }
-
-                        Value (Just (HydrophobicFitness Nothing (Just _))) ->
-                            ( False
-                            , text <|
-                                "Something went wrong while defining your value, hit "
-                                    ++ "cancel and start again."
-                            )
-
-                        Value (Just ((HydrophobicFitness (Just order) mValue) as valueType)) ->
-                            valueFloatInputView
-                                { valueTypeName = stringFromValueType valueType
-                                , mValue = mValue
-                                , order = order
-                                , msgConstructor =
-                                    (\s ->
-                                        Just s
-                                            |> HydrophobicFitness (Just order)
-                                            |> Just
-                                            |> Value
-                                            |> Data
-                                    )
-                                        >> msgConstructor
-                                }
-
-                        Value (Just ((MeanPackingDensity Nothing Nothing) as valueType)) ->
-                            valueOrderView
-                                { valueTypeName = stringFromValueType valueType
-                                , msgConstructor =
-                                    \order ->
-                                        Value (Just (MeanPackingDensity (Just order) Nothing))
-                                            |> Data
-                                            |> msgConstructor
-                                }
-
-                        Value (Just (MeanPackingDensity Nothing (Just _))) ->
-                            ( False
-                            , text <|
-                                "Something went wrong while defining your value, hit "
-                                    ++ "cancel and start again."
-                            )
-
-                        Value (Just ((MeanPackingDensity (Just order) mValue) as valueType)) ->
-                            valueFloatInputView
-                                { valueTypeName = stringFromValueType valueType
-                                , mValue = mValue
-                                , order = order
-                                , msgConstructor =
-                                    (\s ->
-                                        Just s
-                                            |> MeanPackingDensity (Just order)
-                                            |> Just
-                                            |> Value
-                                            |> Data
-                                    )
-                                        >> msgConstructor
-                                }
-
-                        Value (Just ((SequenceContains mValue) as valueType)) ->
-                            valueSequenceInputView
-                                { valueTypeName = stringFromValueType valueType
-                                , mValue = mValue
-                                , msgConstructor =
-                                    \sequence ->
-                                        Value (Just (SequenceContains (Just sequence)))
-                                            |> Data
-                                            |> msgConstructor
-                                }
+                                valueType
 
                 Not mNewSubRequirement ->
                     let
@@ -773,7 +674,13 @@ newRequirementView msgConstructor mNewRequirement =
                     in
                     ( requirementComplete
                     , column [ spacing 10 ]
-                        [ el [ Font.bold ] (text "Not")
+                        [ el
+                            [ Not Nothing
+                                |> msgConstructor
+                                |> Events.onClick
+                            , Font.bold
+                            ]
+                            (text "Not")
                         , el (Style.defaultBorder ++ [ padding 10 ]) requirementView
                         ]
                     )
@@ -827,6 +734,162 @@ newRequirementView msgConstructor mNewRequirement =
                     )
 
 
+constantTypeView :
+    { msgConstructor : ConstantType -> Msg
+    , previousStateMsg : Msg
+    , noConstantValueMsg : Msg
+    }
+    -> ConstantType
+    -> ( Bool, Element Msg )
+constantTypeView { msgConstructor, previousStateMsg, noConstantValueMsg } constantType =
+    case constantType of
+        Method Nothing ->
+            ( False
+            , row [ spacing 10 ]
+                -- [ newRequirement |> stringFromNewRequirement |> text
+                [ el
+                    [ Events.onClick previousStateMsg
+                    ]
+                  <|
+                    text "Constant"
+                , el
+                    [ Events.onClick noConstantValueMsg
+                    ]
+                  <|
+                    (constantType |> stringFromConstantType |> text)
+                , optionsView
+                    { msgConstructor =
+                        \methodType ->
+                            Method (Just methodType)
+                                |> msgConstructor
+                    , optionToString = stringFromMethodType
+                    , optionName = stringFromConstantType constantType
+                    , options = [ SPPS, MolecularBiology ]
+                    }
+                ]
+            )
+
+        Method (Just methodType) ->
+            ( True
+            , row [ spacing 10 ]
+                [ text "Constant"
+                , el
+                    [ Events.onClick noConstantValueMsg
+                    ]
+                  <|
+                    (constantType |> stringFromConstantType |> text)
+                , methodType |> stringFromMethodType |> text
+                ]
+            )
+
+
+valueTypeView :
+    { msgConstructor : ValueType -> Msg
+    , noValueSetMsg : Msg
+    }
+    -> ValueType
+    -> ( Bool, Element Msg )
+valueTypeView { msgConstructor, noValueSetMsg } valueType =
+    case valueType of
+        IsoelectricPoint Nothing Nothing ->
+            valueOrderView
+                { valueTypeName = stringFromValueType valueType
+                , msgConstructor =
+                    \order ->
+                        IsoelectricPoint (Just order) Nothing
+                            |> msgConstructor
+                , previousStateMsg = noValueSetMsg
+                }
+
+        IsoelectricPoint Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        IsoelectricPoint (Just order) mValue ->
+            valueFloatInputView
+                { valueTypeName = stringFromValueType valueType
+                , mValue = mValue
+                , order = order
+                , msgConstructor =
+                    (\s ->
+                        Just s
+                            |> IsoelectricPoint (Just order)
+                    )
+                        >> msgConstructor
+                }
+
+        HydrophobicFitness Nothing Nothing ->
+            valueOrderView
+                { valueTypeName = stringFromValueType valueType
+                , msgConstructor =
+                    \order ->
+                        HydrophobicFitness (Just order) Nothing
+                            |> msgConstructor
+                , previousStateMsg = noValueSetMsg
+                }
+
+        HydrophobicFitness Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        HydrophobicFitness (Just order) mValue ->
+            valueFloatInputView
+                { valueTypeName = stringFromValueType valueType
+                , mValue = mValue
+                , order = order
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> HydrophobicFitness (Just order)
+                            |> msgConstructor
+                }
+
+        MeanPackingDensity Nothing Nothing ->
+            valueOrderView
+                { valueTypeName = stringFromValueType valueType
+                , msgConstructor =
+                    \order ->
+                        MeanPackingDensity (Just order) Nothing
+                            |> msgConstructor
+                , previousStateMsg = noValueSetMsg
+                }
+
+        MeanPackingDensity Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        MeanPackingDensity (Just order) mValue ->
+            valueFloatInputView
+                { valueTypeName = stringFromValueType valueType
+                , mValue = mValue
+                , order = order
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> MeanPackingDensity (Just order)
+                            |> msgConstructor
+                }
+
+        SequenceContains mValue ->
+            valueSequenceInputView
+                { valueTypeName = stringFromValueType valueType
+                , mValue = mValue
+                , msgConstructor =
+                    \sequence ->
+                        SequenceContains (Just sequence)
+                            |> msgConstructor
+                }
+
+
 optionsView :
     { msgConstructor : a -> msg
     , optionToString : a -> String
@@ -837,7 +900,12 @@ optionsView :
 optionsView { msgConstructor, optionToString, optionName, options } =
     let
         optionView option =
-            el [ Events.onClick <| msgConstructor option ]
+            el
+                (Style.defaultBorder
+                    ++ [ padding 5
+                       , Events.onClick <| msgConstructor option
+                       ]
+                )
                 (optionToString option |> text)
     in
     column
@@ -849,13 +917,18 @@ optionsView { msgConstructor, optionToString, optionName, options } =
 
 valueOrderView :
     { valueTypeName : String
+    , previousStateMsg : Msg
     , msgConstructor : Order -> Msg
     }
     -> ( Bool, Element Msg )
-valueOrderView { valueTypeName, msgConstructor } =
+valueOrderView { valueTypeName, previousStateMsg, msgConstructor } =
     ( False
     , row [ spacing 10 ]
-        [ text "Value"
+        [ el
+            [ Events.onClick previousStateMsg
+            ]
+          <|
+            text "Value"
         , text valueTypeName
         , optionsView
             { msgConstructor = msgConstructor
