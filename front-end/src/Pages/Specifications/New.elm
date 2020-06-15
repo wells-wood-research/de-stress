@@ -588,12 +588,6 @@ newRequirementView msgConstructor mNewRequirement =
             case newRequirement of
                 Data data ->
                     let
-                        noConstantValueMsg =
-                            Constant Nothing
-                                |> Data
-                                |> Just
-                                |> msgConstructor
-
                         noValueSetMsg =
                             Value Nothing
                                 |> Data
@@ -604,7 +598,16 @@ newRequirementView msgConstructor mNewRequirement =
                         Constant Nothing ->
                             ( False
                             , row [ spacing 10 ]
-                                [ newRequirement |> stringFromNewRequirement |> text
+                                [ el
+                                    [ Nothing
+                                        |> msgConstructor
+                                        |> Events.onClick
+                                    ]
+                                  <|
+                                    (newRequirement
+                                        |> stringFromNewRequirement
+                                        |> text
+                                    )
                                 , optionsView
                                     { msgConstructor =
                                         \constantType ->
@@ -621,20 +624,7 @@ newRequirementView msgConstructor mNewRequirement =
 
                         Constant (Just constantType) ->
                             constantTypeView
-                                { msgConstructor =
-                                    Just
-                                        >> Constant
-                                        >> Data
-                                        >> Just
-                                        >> msgConstructor
-                                , previousStateMsg =
-                                    Nothing
-                                        |> Constant
-                                        |> Data
-                                        |> Just
-                                        |> msgConstructor
-                                , noConstantValueMsg = noConstantValueMsg
-                                }
+                                msgConstructor
                                 constantType
 
                         Value Nothing ->
@@ -747,33 +737,48 @@ newRequirementView msgConstructor mNewRequirement =
 
 
 constantTypeView :
-    { msgConstructor : ConstantType -> Msg
-    , previousStateMsg : Msg
-    , noConstantValueMsg : Msg
-    }
+    (Maybe (NewRequirement NewRequirementData) -> Msg)
     -> ConstantType
     -> ( Bool, Element Msg )
-constantTypeView { msgConstructor, previousStateMsg, noConstantValueMsg } constantType =
+constantTypeView msgConstructor constantType =
+    let
+        constantLabel =
+            el
+                [ Nothing |> msgConstructor |> Events.onClick
+                ]
+            <|
+                text "Constant"
+
+        constantTypeLabel =
+            el
+                [ Constant Nothing
+                    |> Data
+                    |> Just
+                    |> msgConstructor
+                    |> Events.onClick
+                ]
+            <|
+                (constantType |> stringFromConstantType |> text)
+
+        constantTypeConstructor : ConstantType -> Msg
+        constantTypeConstructor =
+            Just
+                >> Constant
+                >> Data
+                >> Just
+                >> msgConstructor
+    in
     case constantType of
         Method Nothing ->
             ( False
             , row [ spacing 10 ]
-                -- [ newRequirement |> stringFromNewRequirement |> text
-                [ el
-                    [ Events.onClick previousStateMsg
-                    ]
-                  <|
-                    text "Constant"
-                , el
-                    [ Events.onClick noConstantValueMsg
-                    ]
-                  <|
-                    (constantType |> stringFromConstantType |> text)
+                [ constantLabel
+                , constantTypeLabel
                 , optionsView
                     { msgConstructor =
                         \methodType ->
                             Method (Just methodType)
-                                |> msgConstructor
+                                |> constantTypeConstructor
                     , optionToString = stringFromMethodType
                     , optionName = stringFromConstantType constantType
                     , options = [ SPPS, MolecularBiology ]
@@ -784,13 +789,14 @@ constantTypeView { msgConstructor, previousStateMsg, noConstantValueMsg } consta
         Method (Just methodType) ->
             ( True
             , row [ spacing 10 ]
-                [ text "Constant"
+                [ constantLabel
+                , constantTypeLabel
                 , el
-                    [ Events.onClick noConstantValueMsg
+                    [ Method Nothing
+                        |> constantTypeConstructor
+                        |> Events.onClick
                     ]
-                  <|
-                    (constantType |> stringFromConstantType |> text)
-                , methodType |> stringFromMethodType |> text
+                    (methodType |> stringFromMethodType |> text)
                 ]
             )
 
