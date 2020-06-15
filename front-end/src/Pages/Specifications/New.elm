@@ -299,7 +299,7 @@ type Msg
     | UpdatedDescription String
     | ClickedNewRequirement
     | CancelledAdd
-    | UpdatedNewRequirement (NewRequirement NewRequirementData)
+    | UpdatedNewRequirement (Maybe (NewRequirement NewRequirementData))
     | ClickedAddRequirement
     | ClickedCreateSpecification
 
@@ -346,7 +346,7 @@ update msg model =
             )
 
         UpdatedNewRequirement requirement ->
-            ( { model | mode = Add <| Just requirement }
+            ( { model | mode = Add <| requirement }
             , Cmd.none
             , Cmd.none
             )
@@ -563,7 +563,7 @@ addRequirementView errors mNewRequirement =
 
 
 newRequirementView :
-    (NewRequirement NewRequirementData -> Msg)
+    (Maybe (NewRequirement NewRequirementData) -> Msg)
     -> Maybe (NewRequirement NewRequirementData)
     -> ( Bool, Element Msg )
 newRequirementView msgConstructor mNewRequirement =
@@ -571,7 +571,7 @@ newRequirementView msgConstructor mNewRequirement =
         Nothing ->
             ( False
             , optionsView
-                { msgConstructor = msgConstructor
+                { msgConstructor = Just >> msgConstructor
                 , optionName = "Requirement"
                 , optionToString = stringFromNewRequirement
                 , options =
@@ -591,11 +591,13 @@ newRequirementView msgConstructor mNewRequirement =
                         noConstantValueMsg =
                             Constant Nothing
                                 |> Data
+                                |> Just
                                 |> msgConstructor
 
                         noValueSetMsg =
                             Value Nothing
                                 |> Data
+                                |> Just
                                 |> msgConstructor
                     in
                     case data of
@@ -608,6 +610,7 @@ newRequirementView msgConstructor mNewRequirement =
                                         \constantType ->
                                             Constant (Just constantType)
                                                 |> Data
+                                                |> Just
                                                 |> msgConstructor
                                     , optionToString = stringFromConstantType
                                     , optionName = "Value"
@@ -622,11 +625,13 @@ newRequirementView msgConstructor mNewRequirement =
                                     Just
                                         >> Constant
                                         >> Data
+                                        >> Just
                                         >> msgConstructor
                                 , previousStateMsg =
                                     Nothing
                                         |> Constant
                                         |> Data
+                                        |> Just
                                         |> msgConstructor
                                 , noConstantValueMsg = noConstantValueMsg
                                 }
@@ -641,6 +646,7 @@ newRequirementView msgConstructor mNewRequirement =
                                         \valueType ->
                                             Value (Just valueType)
                                                 |> Data
+                                                |> Just
                                                 |> msgConstructor
                                     , optionToString = stringFromValueType
                                     , optionName = "Type"
@@ -660,6 +666,7 @@ newRequirementView msgConstructor mNewRequirement =
                                     Just
                                         >> Value
                                         >> Data
+                                        >> Just
                                         >> msgConstructor
                                 , noValueSetMsg = noValueSetMsg
                                 }
@@ -669,13 +676,14 @@ newRequirementView msgConstructor mNewRequirement =
                     let
                         ( requirementComplete, requirementView ) =
                             newRequirementView
-                                (Just >> Not >> msgConstructor)
+                                (Not >> Just >> msgConstructor)
                                 mNewSubRequirement
                     in
                     ( requirementComplete
                     , column [ spacing 10 ]
                         [ el
                             [ Not Nothing
+                                |> Just
                                 |> msgConstructor
                                 |> Events.onClick
                             , Font.bold
@@ -689,14 +697,16 @@ newRequirementView msgConstructor mNewRequirement =
                     let
                         ( requirementComplete1, requirementView1 ) =
                             newRequirementView
-                                ((\r -> Or (Just r) mNewSubRequirement2)
+                                ((\r -> Or r mNewSubRequirement2)
+                                    >> Just
                                     >> msgConstructor
                                 )
                                 mNewSubRequirement1
 
                         ( requirementComplete2, requirementView2 ) =
                             newRequirementView
-                                ((\r -> Or mNewSubRequirement1 (Just r))
+                                ((\r -> Or mNewSubRequirement1 r)
+                                    >> Just
                                     >> msgConstructor
                                 )
                                 mNewSubRequirement2
@@ -713,14 +723,16 @@ newRequirementView msgConstructor mNewRequirement =
                     let
                         ( requirementComplete1, requirementView1 ) =
                             newRequirementView
-                                ((\r -> And (Just r) mNewSubRequirement2)
+                                ((\r -> And r mNewSubRequirement2)
+                                    >> Just
                                     >> msgConstructor
                                 )
                                 mNewSubRequirement1
 
                         ( requirementComplete2, requirementView2 ) =
                             newRequirementView
-                                ((\r -> And mNewSubRequirement1 (Just r))
+                                ((\r -> And mNewSubRequirement1 r)
+                                    >> Just
                                     >> msgConstructor
                                 )
                                 mNewSubRequirement2
