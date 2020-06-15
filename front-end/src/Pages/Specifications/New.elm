@@ -585,6 +585,19 @@ newRequirementView msgConstructor mNewRequirement =
             )
 
         Just newRequirement ->
+            let
+                requirementLabel =
+                    el
+                        [ Nothing
+                            |> msgConstructor
+                            |> Events.onClick
+                        ]
+                    <|
+                        (newRequirement
+                            |> stringFromNewRequirement
+                            |> text
+                        )
+            in
             case newRequirement of
                 Data data ->
                     let
@@ -598,16 +611,7 @@ newRequirementView msgConstructor mNewRequirement =
                         Constant Nothing ->
                             ( False
                             , row [ spacing 10 ]
-                                [ el
-                                    [ Nothing
-                                        |> msgConstructor
-                                        |> Events.onClick
-                                    ]
-                                  <|
-                                    (newRequirement
-                                        |> stringFromNewRequirement
-                                        |> text
-                                    )
+                                [ requirementLabel
                                 , optionsView
                                     { msgConstructor =
                                         \constantType ->
@@ -630,7 +634,7 @@ newRequirementView msgConstructor mNewRequirement =
                         Value Nothing ->
                             ( False
                             , row [ spacing 10 ]
-                                [ newRequirement |> stringFromNewRequirement |> text
+                                [ requirementLabel
                                 , optionsView
                                     { msgConstructor =
                                         \valueType ->
@@ -671,14 +675,7 @@ newRequirementView msgConstructor mNewRequirement =
                     in
                     ( requirementComplete
                     , column [ spacing 10 ]
-                        [ el
-                            [ Not Nothing
-                                |> Just
-                                |> msgConstructor
-                                |> Events.onClick
-                            , Font.bold
-                            ]
-                            (text "Not")
+                        [ requirementLabel
                         , el (Style.defaultBorder ++ [ padding 10 ]) requirementView
                         ]
                     )
@@ -703,7 +700,7 @@ newRequirementView msgConstructor mNewRequirement =
                     in
                     ( requirementComplete1 && requirementComplete2
                     , column [ spacing 10 ]
-                        [ el [ Font.bold ] (text "Or")
+                        [ requirementLabel
                         , el (Style.defaultBorder ++ [ padding 10 ]) requirementView1
                         , el (Style.defaultBorder ++ [ padding 10 ]) requirementView2
                         ]
@@ -729,7 +726,7 @@ newRequirementView msgConstructor mNewRequirement =
                     in
                     ( requirementComplete1 && requirementComplete2
                     , column [ spacing 10 ]
-                        [ el [ Font.bold ] (text "And")
+                        [ requirementLabel
                         , el (Style.defaultBorder ++ [ padding 10 ]) requirementView1
                         , el (Style.defaultBorder ++ [ padding 10 ]) requirementView2
                         ]
