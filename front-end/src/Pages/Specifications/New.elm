@@ -565,6 +565,7 @@ labelStyle : List (Attribute msg)
 labelStyle =
     [ alignBottom
     , paddingXY 0 10
+    , pointer
     ]
 
 
@@ -976,6 +977,7 @@ optionsView { msgConstructor, optionToString, optionName, options } =
             el
                 (Style.defaultBorder
                     ++ [ padding 5
+                       , pointer
                        , Events.onClick <| msgConstructor option
                        ]
                 )
