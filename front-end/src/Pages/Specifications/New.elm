@@ -561,6 +561,13 @@ addRequirementView errors mNewRequirement =
         ]
 
 
+labelStyle : List (Attribute msg)
+labelStyle =
+    [ alignBottom
+    , paddingXY 0 10
+    ]
+
+
 newRequirementView :
     (Maybe (NewRequirement NewRequirementData) -> Msg)
     -> Maybe (NewRequirement NewRequirementData)
@@ -587,10 +594,12 @@ newRequirementView msgConstructor mNewRequirement =
             let
                 requirementLabel =
                     el
-                        [ Nothing
+                        ((Nothing
                             |> msgConstructor
                             |> Events.onClick
-                        ]
+                         )
+                            :: labelStyle
+                        )
                     <|
                         (newRequirement
                             |> stringFromNewRequirement
@@ -726,19 +735,22 @@ constantTypeView msgConstructor constantType =
     let
         constantLabel =
             el
-                [ Nothing |> msgConstructor |> Events.onClick
-                ]
+                ((Nothing |> msgConstructor |> Events.onClick)
+                    :: labelStyle
+                )
             <|
                 text "Constant"
 
         constantTypeLabel =
             el
-                [ Constant Nothing
+                ((Constant Nothing
                     |> Data
                     |> Just
                     |> msgConstructor
                     |> Events.onClick
-                ]
+                 )
+                    :: labelStyle
+                )
             <|
                 (constantType |> stringFromConstantType |> text)
 
@@ -798,21 +810,25 @@ valueTypeView msgConstructor valueType =
 
         valueLabel =
             el
-                [ Nothing
+                ((Nothing
                     |> msgConstructor
                     |> Events.onClick
-                ]
+                 )
+                    :: labelStyle
+                )
             <|
                 text "Value"
 
         valueTypeLabel =
             el
-                [ Value Nothing
+                ((Value Nothing
                     |> Data
                     |> Just
                     |> msgConstructor
                     |> Events.onClick
-                ]
+                 )
+                    :: labelStyle
+                )
             <|
                 (stringFromValueType valueType
                     |> text
@@ -821,7 +837,9 @@ valueTypeView msgConstructor valueType =
         orderLabel : Order -> Msg -> Element Msg
         orderLabel order noOrderMsg =
             el
-                [ noOrderMsg |> Events.onClick ]
+                ((noOrderMsg |> Events.onClick)
+                    :: labelStyle
+                )
             <|
                 (Specs.stringFromOrder order
                     |> text
