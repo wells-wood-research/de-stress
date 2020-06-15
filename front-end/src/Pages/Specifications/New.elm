@@ -532,8 +532,7 @@ addRequirementView errors mNewRequirement =
                , Border.color Style.colorPalette.c1
                ]
         )
-        [ text "New Requirement"
-        , case errors of
+        [ case errors of
             [] ->
                 none
 
@@ -600,13 +599,6 @@ newRequirementView msgConstructor mNewRequirement =
             in
             case newRequirement of
                 Data data ->
-                    let
-                        noValueSetMsg =
-                            Value Nothing
-                                |> Data
-                                |> Just
-                                |> msgConstructor
-                    in
                     case data of
                         Constant Nothing ->
                             ( False
@@ -656,14 +648,7 @@ newRequirementView msgConstructor mNewRequirement =
 
                         Value (Just valueType) ->
                             valueTypeView
-                                { msgConstructor =
-                                    Just
-                                        >> Value
-                                        >> Data
-                                        >> Just
-                                        >> msgConstructor
-                                , noValueSetMsg = noValueSetMsg
-                                }
+                                msgConstructor
                                 valueType
 
                 Not mNewSubRequirement ->
@@ -799,21 +784,58 @@ constantTypeView msgConstructor constantType =
 
 
 valueTypeView :
-    { msgConstructor : ValueType -> Msg
-    , noValueSetMsg : Msg
-    }
+    (Maybe (NewRequirement NewRequirementData) -> Msg)
     -> ValueType
     -> ( Bool, Element Msg )
-valueTypeView { msgConstructor, noValueSetMsg } valueType =
+valueTypeView msgConstructor valueType =
+    let
+        valueConstructor =
+            Just
+                >> Value
+                >> Data
+                >> Just
+                >> msgConstructor
+
+        valueLabel =
+            el
+                [ Nothing
+                    |> msgConstructor
+                    |> Events.onClick
+                ]
+            <|
+                text "Value"
+
+        valueTypeLabel =
+            el
+                [ Value Nothing
+                    |> Data
+                    |> Just
+                    |> msgConstructor
+                    |> Events.onClick
+                ]
+            <|
+                (stringFromValueType valueType
+                    |> text
+                )
+
+        orderLabel : Order -> Msg -> Element Msg
+        orderLabel order noOrderMsg =
+            el
+                [ noOrderMsg |> Events.onClick ]
+            <|
+                (Specs.stringFromOrder order
+                    |> text
+                )
+    in
     case valueType of
         IsoelectricPoint Nothing Nothing ->
             valueOrderView
-                { valueTypeName = stringFromValueType valueType
-                , msgConstructor =
+                { msgConstructor =
                     \order ->
                         IsoelectricPoint (Just order) Nothing
-                            |> msgConstructor
-                , previousStateMsg = noValueSetMsg
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
                 }
 
         IsoelectricPoint Nothing (Just _) ->
@@ -825,25 +847,30 @@ valueTypeView { msgConstructor, noValueSetMsg } valueType =
 
         IsoelectricPoint (Just order) mValue ->
             valueFloatInputView
-                { valueTypeName = stringFromValueType valueType
+                { valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
+                , orderLabel =
+                    orderLabel order
+                        (IsoelectricPoint Nothing Nothing
+                            |> valueConstructor
+                        )
                 , mValue = mValue
-                , order = order
                 , msgConstructor =
                     (\s ->
                         Just s
                             |> IsoelectricPoint (Just order)
                     )
-                        >> msgConstructor
+                        >> valueConstructor
                 }
 
         HydrophobicFitness Nothing Nothing ->
             valueOrderView
-                { valueTypeName = stringFromValueType valueType
-                , msgConstructor =
+                { msgConstructor =
                     \order ->
                         HydrophobicFitness (Just order) Nothing
-                            |> msgConstructor
-                , previousStateMsg = noValueSetMsg
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
                 }
 
         HydrophobicFitness Nothing (Just _) ->
@@ -855,24 +882,30 @@ valueTypeView { msgConstructor, noValueSetMsg } valueType =
 
         HydrophobicFitness (Just order) mValue ->
             valueFloatInputView
-                { valueTypeName = stringFromValueType valueType
+                { valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
                 , mValue = mValue
-                , order = order
+                , orderLabel =
+                    orderLabel
+                        order
+                        (HydrophobicFitness Nothing Nothing
+                            |> valueConstructor
+                        )
                 , msgConstructor =
                     \s ->
                         Just s
                             |> HydrophobicFitness (Just order)
-                            |> msgConstructor
+                            |> valueConstructor
                 }
 
         MeanPackingDensity Nothing Nothing ->
             valueOrderView
-                { valueTypeName = stringFromValueType valueType
-                , msgConstructor =
+                { msgConstructor =
                     \order ->
                         MeanPackingDensity (Just order) Nothing
-                            |> msgConstructor
-                , previousStateMsg = noValueSetMsg
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
                 }
 
         MeanPackingDensity Nothing (Just _) ->
@@ -884,24 +917,31 @@ valueTypeView { msgConstructor, noValueSetMsg } valueType =
 
         MeanPackingDensity (Just order) mValue ->
             valueFloatInputView
-                { valueTypeName = stringFromValueType valueType
+                { valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
                 , mValue = mValue
-                , order = order
+                , orderLabel =
+                    orderLabel
+                        order
+                        (MeanPackingDensity Nothing Nothing
+                            |> valueConstructor
+                        )
                 , msgConstructor =
                     \s ->
                         Just s
                             |> MeanPackingDensity (Just order)
-                            |> msgConstructor
+                            |> valueConstructor
                 }
 
         SequenceContains mValue ->
             valueSequenceInputView
-                { valueTypeName = stringFromValueType valueType
+                { valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
                 , mValue = mValue
                 , msgConstructor =
                     \sequence ->
                         SequenceContains (Just sequence)
-                            |> msgConstructor
+                            |> valueConstructor
                 }
 
 
@@ -931,20 +971,16 @@ optionsView { msgConstructor, optionToString, optionName, options } =
 
 
 valueOrderView :
-    { valueTypeName : String
-    , previousStateMsg : Msg
-    , msgConstructor : Order -> Msg
+    { msgConstructor : Order -> Msg
+    , valueLabel : Element Msg
+    , valueTypeLabel : Element Msg
     }
     -> ( Bool, Element Msg )
-valueOrderView { valueTypeName, previousStateMsg, msgConstructor } =
+valueOrderView { valueTypeLabel, valueLabel, msgConstructor } =
     ( False
     , row [ spacing 10 ]
-        [ el
-            [ Events.onClick previousStateMsg
-            ]
-          <|
-            text "Value"
-        , text valueTypeName
+        [ valueLabel
+        , valueTypeLabel
         , optionsView
             { msgConstructor = msgConstructor
             , optionToString = Specs.stringFromOrder
@@ -956,13 +992,14 @@ valueOrderView { valueTypeName, previousStateMsg, msgConstructor } =
 
 
 valueFloatInputView :
-    { valueTypeName : String
-    , mValue : Maybe String
-    , order : Order
+    { mValue : Maybe String
     , msgConstructor : String -> Msg
+    , valueLabel : Element Msg
+    , valueTypeLabel : Element Msg
+    , orderLabel : Element Msg
     }
     -> ( Bool, Element Msg )
-valueFloatInputView { msgConstructor, valueTypeName, mValue, order } =
+valueFloatInputView { valueLabel, msgConstructor, valueTypeLabel, mValue, orderLabel } =
     ( case mValue of
         Nothing ->
             False
@@ -975,9 +1012,9 @@ valueFloatInputView { msgConstructor, valueTypeName, mValue, order } =
                 _ ->
                     False
     , row [ spacing 10 ]
-        [ text "Value"
-        , text valueTypeName
-        , (Specs.stringFromOrder >> text) order
+        [ valueLabel
+        , valueTypeLabel
+        , orderLabel
         , Input.text
             Style.textInputStyle
             { onChange =
@@ -993,12 +1030,13 @@ valueFloatInputView { msgConstructor, valueTypeName, mValue, order } =
 
 
 valueSequenceInputView :
-    { valueTypeName : String
-    , mValue : Maybe String
+    { mValue : Maybe String
     , msgConstructor : String -> Msg
+    , valueLabel : Element Msg
+    , valueTypeLabel : Element Msg
     }
     -> ( Bool, Element Msg )
-valueSequenceInputView { msgConstructor, valueTypeName, mValue } =
+valueSequenceInputView { valueLabel, valueTypeLabel, msgConstructor, mValue } =
     ( case mValue of
         Nothing ->
             False
@@ -1006,8 +1044,8 @@ valueSequenceInputView { msgConstructor, valueTypeName, mValue } =
         Just _ ->
             True
     , row [ spacing 10 ]
-        [ text "Value"
-        , text valueTypeName
+        [ valueLabel
+        , valueTypeLabel
         , Input.text
             Style.textInputStyle
             { onChange =
