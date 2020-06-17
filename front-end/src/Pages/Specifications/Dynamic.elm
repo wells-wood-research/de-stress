@@ -270,6 +270,13 @@ requirementView requirement =
                                     typeString
                                         ++ "SequenceContains:"
                                         ++ string
+
+                                Spec.CompositionDeviation unitType value ->
+                                    typeString
+                                        ++ "CompositionDeviation:"
+                                        ++ Spec.stringFromUnitType unitType
+                                        ++ ":"
+                                        ++ String.fromFloat value
                     in
                     el [] (text <| requirementString)
 

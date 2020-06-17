@@ -1,8 +1,9 @@
 module Pages.Designs.Dynamic exposing (Model, Msg, page)
 
 import Codec exposing (Value)
-import Design exposing (Design, Editable(..))
+import Design exposing (Design)
 import Dict exposing (Dict)
+import Editable exposing (Editable(..))
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -926,6 +927,13 @@ requirementView metrics requirement =
                                         typeString
                                             ++ "SequenceContains:"
                                             ++ string
+
+                                    Specification.CompositionDeviation unitType value ->
+                                        typeString
+                                            ++ "CompositionDeviation:"
+                                            ++ Specification.stringFromUnitType unitType
+                                            ++ ":"
+                                            ++ String.fromFloat value
                         in
                         el (Style.defaultBorder ++ [ padding 10, width fill ])
                             (text <| requirementString)

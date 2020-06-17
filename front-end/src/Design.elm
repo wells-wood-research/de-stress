@@ -1,14 +1,13 @@
 module Design exposing
     ( Design
     , DesignStub
-    , Editable(..)
     , codec
     , createDesignStub
     , designStubCodec
-    , editableValue
     )
 
 import Codec exposing (Codec)
+import Editable exposing (Editable)
 import Ports
 import Style
 
@@ -23,27 +22,12 @@ type alias Design =
     }
 
 
-type Editable a
-    = Editing a (Maybe a)
-    | NotEditing a
-
-
-editableValue : Editable a -> a
-editableValue e =
-    case e of
-        Editing a _ ->
-            a
-
-        NotEditing a ->
-            a
-
-
 codec : Codec Design
 codec =
     Codec.object Design
         |> Codec.field "name"
             .name
-            (Codec.map NotEditing (\a -> editableValue a) Codec.string)
+            (Codec.map Editable.NotEditing (\a -> Editable.editableValue a) Codec.string)
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "pdbString" .pdbString Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
@@ -78,7 +62,7 @@ designStubCodec =
 
 createDesignStub : Design -> DesignStub
 createDesignStub design =
-    { name = editableValue design.name
+    { name = Editable.editableValue design.name
     , fileName = design.fileName
     , deleteStatus = design.deleteStatus
     , metricsJobStatus = design.metricsJobStatus

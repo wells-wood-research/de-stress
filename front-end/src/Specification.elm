@@ -5,6 +5,7 @@ module Specification exposing
     , RequirementData(..)
     , Specification
     , SpecificationStub
+    , UnitType(..)
     , ValueType(..)
     , applySpecification
     , codec
@@ -12,6 +13,7 @@ module Specification exposing
     , resolveRequirement
     , specificationStubCodec
     , stringFromOrder
+    , stringFromUnitType
     )
 
 import Codec exposing (Codec, Value)
@@ -145,12 +147,13 @@ type ValueType
     | HydrophobicFitness Order Float
     | MeanPackingDensity Order Float
     | SequenceContains String
+    | CompositionDeviation UnitType Float
 
 
 valueTypeCodec : Codec ValueType
 valueTypeCodec =
     Codec.custom
-        (\fisoelectric fhfitness fmpdensity fseqcontains value ->
+        (\fisoelectric fhfitness fmpdensity fseqcontains fcompdeviation value ->
             case value of
                 IsoelectricPoint order float ->
                     fisoelectric order float
@@ -163,11 +166,15 @@ valueTypeCodec =
 
                 SequenceContains sequence ->
                     fseqcontains sequence
+
+                CompositionDeviation unitType float ->
+                    fcompdeviation unitType float
         )
         |> Codec.variant2 "IsoelectricPoint" IsoelectricPoint orderCodec Codec.float
         |> Codec.variant2 "HydrophobicFitness" HydrophobicFitness orderCodec Codec.float
         |> Codec.variant2 "MeanPackingDensity" MeanPackingDensity orderCodec Codec.float
         |> Codec.variant1 "SequenceContains" SequenceContains Codec.string
+        |> Codec.variant2 "CompositionDeviation" CompositionDeviation unitTypeCodec Codec.float
         |> Codec.buildCustom
 
 
@@ -202,6 +209,37 @@ stringFromOrder order =
 
         GT ->
             "GreaterThan"
+
+
+type UnitType
+    = StdDevs
+    | Percent
+
+
+stringFromUnitType : UnitType -> String
+stringFromUnitType unitType =
+    case unitType of
+        StdDevs ->
+            "Standard Deviations"
+
+        Percent ->
+            "Percent"
+
+
+unitTypeCodec : Codec UnitType
+unitTypeCodec =
+    Codec.custom
+        (\fsd fpc value ->
+            case value of
+                StdDevs ->
+                    fsd
+
+                Percent ->
+                    fpc
+        )
+        |> Codec.variant0 "StdDevs" StdDevs
+        |> Codec.variant0 "Percent" Percent
+        |> Codec.buildCustom
 
 
 type alias SpecificationStub =
@@ -280,6 +318,9 @@ resolveRequirement metrics requirement =
                                     metrics.sequenceInfo
                                     |> List.map .sequence
                                 )
+
+                        CompositionDeviation unitType value ->
+                            Debug.log "This should do something" True
 
                 Constant constantType ->
                     case constantType of

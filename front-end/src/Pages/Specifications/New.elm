@@ -1,5 +1,6 @@
 module Pages.Specifications.New exposing (Model, Msg, page)
 
+import Editable exposing (Editable(..))
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -14,6 +15,7 @@ import Specification as Specs
     exposing
         ( Requirement
         , RequirementData
+        , UnitType(..)
         )
 import Style
 import Utils.Spa exposing (Page)
@@ -100,13 +102,6 @@ stringFromMethodType methodType =
             "Molecular Biology"
 
 
-type ValueType
-    = IsoelectricPoint (Maybe Order) (Maybe String)
-    | HydrophobicFitness (Maybe Order) (Maybe String)
-    | MeanPackingDensity (Maybe Order) (Maybe String)
-    | SequenceContains (Maybe String)
-
-
 stringFromValueType : ValueType -> String
 stringFromValueType valueType =
     case valueType of
@@ -121,6 +116,21 @@ stringFromValueType valueType =
 
         SequenceContains _ ->
             "Sequence Contains"
+
+        CompositionDeviation _ _ ->
+            "Composition Deviation"
+
+
+
+-- Consider unifying to use relative value to replace order definition
+
+
+type ValueType
+    = IsoelectricPoint (Maybe Order) (Maybe String)
+    | HydrophobicFitness (Maybe Order) (Maybe String)
+    | MeanPackingDensity (Maybe Order) (Maybe String)
+    | SequenceContains (Maybe String)
+    | CompositionDeviation (Maybe UnitType) (Maybe String)
 
 
 stringFromNewRequirement : NewRequirement NewRequirementData -> String
@@ -244,6 +254,21 @@ newRequirementToRequirement newRequirement =
 
                                 SequenceContains _ ->
                                     Err "Sequence contains value was not fully defined."
+
+                                CompositionDeviation (Just unitType) (Just value) ->
+                                    case String.toFloat value of
+                                        Just floatValue ->
+                                            Specs.CompositionDeviation unitType floatValue
+                                                |> valueConstructor
+                                                |> Ok
+
+                                        Nothing ->
+                                            Err <|
+                                                "The value you've provided for "
+                                                    ++ "composition deviation is not a number."
+
+                                CompositionDeviation _ _ ->
+                                    Err "Composition deviation value was not fully defined."
 
         Not mNewSubRequirement ->
             case mNewSubRequirement of
@@ -651,6 +676,7 @@ newRequirementView msgConstructor mNewRequirement =
                                         , HydrophobicFitness Nothing Nothing
                                         , MeanPackingDensity Nothing Nothing
                                         , SequenceContains Nothing
+                                        , CompositionDeviation Nothing Nothing
                                         ]
                                     }
                                 ]
@@ -845,6 +871,17 @@ valueTypeView msgConstructor valueType =
                 (Specs.stringFromOrder order
                     |> text
                 )
+
+        unitTypeLabel : UnitType -> Msg -> Element Msg
+        unitTypeLabel unitType noUnitTypeMsg =
+            el
+                ((noUnitTypeMsg |> Events.onClick)
+                    :: labelStyle
+                )
+            <|
+                (Specs.stringFromUnitType unitType
+                    |> text
+                )
     in
     case valueType of
         IsoelectricPoint Nothing Nothing ->
@@ -866,20 +903,21 @@ valueTypeView msgConstructor valueType =
 
         IsoelectricPoint (Just order) mValue ->
             valueFloatInputView
-                { valueLabel = valueLabel
-                , valueTypeLabel = valueTypeLabel
-                , orderLabel =
-                    orderLabel order
-                        (IsoelectricPoint Nothing Nothing
-                            |> valueConstructor
-                        )
-                , mValue = mValue
+                { mValue = mValue
                 , msgConstructor =
                     (\s ->
                         Just s
                             |> IsoelectricPoint (Just order)
                     )
                         >> valueConstructor
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel order
+                        (IsoelectricPoint Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
                 }
 
         HydrophobicFitness Nothing Nothing ->
@@ -901,15 +939,16 @@ valueTypeView msgConstructor valueType =
 
         HydrophobicFitness (Just order) mValue ->
             valueFloatInputView
-                { valueLabel = valueLabel
-                , valueTypeLabel = valueTypeLabel
-                , mValue = mValue
-                , orderLabel =
-                    orderLabel
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
                         order
                         (HydrophobicFitness Nothing Nothing
                             |> valueConstructor
                         )
+                    ]
                 , msgConstructor =
                     \s ->
                         Just s
@@ -936,15 +975,16 @@ valueTypeView msgConstructor valueType =
 
         MeanPackingDensity (Just order) mValue ->
             valueFloatInputView
-                { valueLabel = valueLabel
-                , valueTypeLabel = valueTypeLabel
-                , mValue = mValue
-                , orderLabel =
-                    orderLabel
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
                         order
                         (MeanPackingDensity Nothing Nothing
                             |> valueConstructor
                         )
+                    ]
                 , msgConstructor =
                     \s ->
                         Just s
@@ -962,6 +1002,46 @@ valueTypeView msgConstructor valueType =
                         SequenceContains (Just sequence)
                             |> valueConstructor
                 }
+
+        CompositionDeviation Nothing Nothing ->
+            valueUnitTypeView
+                { msgConstructor =
+                    \unitType ->
+                        CompositionDeviation
+                            (Just unitType)
+                            Nothing
+                            |> valueConstructor
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    ]
+                }
+
+        CompositionDeviation (Just unitType) mValue ->
+            valueFloatInputView
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , unitTypeLabel
+                        unitType
+                        (CompositionDeviation Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> CompositionDeviation (Just unitType)
+                            |> valueConstructor
+                }
+
+        CompositionDeviation _ _ ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
 
 
 optionsView :
@@ -1011,15 +1091,76 @@ valueOrderView { valueTypeLabel, valueLabel, msgConstructor } =
     )
 
 
+valueUnitTypeView :
+    { msgConstructor : UnitType -> Msg
+    , labels : List (Element Msg)
+    }
+    -> ( Bool, Element Msg )
+valueUnitTypeView { msgConstructor, labels } =
+    ( False
+    , row [ spacing 10 ]
+        (labels
+            ++ [ optionsView
+                    { msgConstructor = msgConstructor
+                    , optionToString = Specs.stringFromUnitType
+                    , optionName = "Unit Type"
+                    , options = [ StdDevs, Percent ]
+                    }
+               ]
+        )
+    )
+
+
+valueRelationshipFloatInputView :
+    { msgConstructor : Msg
+    , inputTextMsg : String -> Msg
+    , maybeString : Maybe String
+    , labels : List (Element Msg)
+    }
+    -> ( Bool, Element Msg )
+valueRelationshipFloatInputView { msgConstructor, inputTextMsg, maybeString, labels } =
+    let
+        ( floatString, completionStatus ) =
+            case maybeString of
+                Just string ->
+                    ( string, True )
+
+                Nothing ->
+                    ( "", False )
+    in
+    ( completionStatus
+    , row [ spacing 10 ]
+        (labels
+            ++ [ row [ spacing 5 ]
+                    [ Input.text
+                        Style.textInputStyle
+                        { onChange =
+                            inputTextMsg
+                        , text = floatString
+                        , placeholder = Nothing
+                        , label =
+                            Input.labelAbove []
+                                (el [ Font.bold ] <| text "Value")
+                        }
+                    , el [ alignBottom ] <|
+                        Style.conditionalButton
+                            { label = text "Ok"
+                            , clickMsg = msgConstructor
+                            , isActive = completionStatus
+                            }
+                    ]
+               ]
+        )
+    )
+
+
 valueFloatInputView :
     { mValue : Maybe String
     , msgConstructor : String -> Msg
-    , valueLabel : Element Msg
-    , valueTypeLabel : Element Msg
-    , orderLabel : Element Msg
+    , labels : List (Element Msg)
     }
     -> ( Bool, Element Msg )
-valueFloatInputView { valueLabel, msgConstructor, valueTypeLabel, mValue, orderLabel } =
+valueFloatInputView { mValue, msgConstructor, labels } =
     ( case mValue of
         Nothing ->
             False
@@ -1032,20 +1173,19 @@ valueFloatInputView { valueLabel, msgConstructor, valueTypeLabel, mValue, orderL
                 _ ->
                     False
     , row [ spacing 10 ]
-        [ valueLabel
-        , valueTypeLabel
-        , orderLabel
-        , Input.text
-            Style.textInputStyle
-            { onChange =
-                msgConstructor
-            , text = Maybe.withDefault "" mValue
-            , placeholder = Nothing
-            , label =
-                Input.labelAbove []
-                    (el [ Font.bold ] <| text "Value")
-            }
-        ]
+        (labels
+            ++ [ Input.text
+                    Style.textInputStyle
+                    { onChange =
+                        msgConstructor
+                    , text = Maybe.withDefault "" mValue
+                    , placeholder = Nothing
+                    , label =
+                        Input.labelAbove []
+                            (el [ Font.bold ] <| text "Value")
+                    }
+               ]
+        )
     )
 
 

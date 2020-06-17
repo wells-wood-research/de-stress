@@ -5,6 +5,7 @@ import Codec exposing (Value)
 import Components.DropDown as DropDown
 import Design
 import Dict exposing (Dict)
+import Editable exposing (Editable(..))
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -153,7 +154,7 @@ update msg model =
                             String.split "." name
                                 |> List.head
                                 |> Maybe.withDefault name
-                                |> Design.NotEditing
+                                |> NotEditing
                       , fileName = name
                       , pdbString =
                             contents
