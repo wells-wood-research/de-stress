@@ -236,8 +236,10 @@ update { global } msg model =
                                             { plotId = "composition"
                                             , spec =
                                                 Metrics.createCompositionSpec
+                                                    (referenceSet
+                                                        |> ReferenceSet.getAggregateData
+                                                    )
                                                     metrics
-                                                    (ReferenceSet.getMetrics referenceSet)
                                             }
                                         , Ports.vegaPlot <|
                                             { plotId = "torsionAngles"

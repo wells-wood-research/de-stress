@@ -20,6 +20,7 @@ import Dict exposing (Dict)
 import Element exposing (..)
 import Parser exposing ((|.), (|=))
 import Utils.ListExtra as ListExtra
+import Utils.Stats as Stats
 import VegaLite as VL
 
 
@@ -106,7 +107,13 @@ refSetMetricsCodec =
 
 
 type alias AggregateData =
-    { meanComposition : Dict String Float }
+    { meanComposition : Dict String (Maybe MeanAndStdDev) }
+
+
+type alias MeanAndStdDev =
+    { mean : Float
+    , stdDev : Float
+    }
 
 
 createAggregateData : List RefSetMetrics -> AggregateData
@@ -121,7 +128,21 @@ createAggregateData refSetMetricsList =
 aggregateDataCodec : Codec AggregateData
 aggregateDataCodec =
     Codec.object AggregateData
-        |> Codec.field "meanComposition" .meanComposition (Codec.dict Codec.float)
+        |> Codec.field "meanComposition"
+            .meanComposition
+            (Codec.dict
+                (Codec.maybe
+                    meanAndStdDevCodec
+                )
+            )
+        |> Codec.buildObject
+
+
+meanAndStdDevCodec : Codec MeanAndStdDev
+meanAndStdDevCodec =
+    Codec.object MeanAndStdDev
+        |> Codec.field "mean" .mean Codec.float
+        |> Codec.field "stdDev" .stdDev Codec.float
         |> Codec.buildObject
 
 
@@ -316,56 +337,53 @@ histogramSpec pdbData designData fieldName =
         ]
 
 
+compositionLabels : List String
+compositionLabels =
+    [ "A"
+    , "C"
+    , "D"
+    , "E"
+    , "F"
+    , "G"
+    , "H"
+    , "I"
+    , "K"
+    , "L"
+    , "M"
+    , "N"
+    , "P"
+    , "Q"
+    , "R"
+    , "S"
+    , "T"
+    , "V"
+    , "W"
+    , "X"
+    , "Y"
+    ]
+
+
 compositionDictWithDefaultValues : Dict String Float -> Dict String Float
 compositionDictWithDefaultValues inputDict =
     let
-        expectedKeys =
-            [ "A"
-            , "C"
-            , "D"
-            , "E"
-            , "F"
-            , "G"
-            , "H"
-            , "I"
-            , "K"
-            , "L"
-            , "M"
-            , "N"
-            , "P"
-            , "Q"
-            , "R"
-            , "S"
-            , "T"
-            , "V"
-            , "W"
-            , "X"
-            , "Y"
-            ]
-
         getWithDefault dict k =
             Dict.get k dict
                 |> Maybe.withDefault 0
                 |> Tuple.pair k
     in
-    List.map (getWithDefault inputDict) expectedKeys
+    List.map (getWithDefault inputDict) compositionLabels
         |> Dict.fromList
 
 
-calculateMeanComposition : List (Dict String Float) -> Dict String Float
+calculateMeanComposition : List (Dict String Float) -> Dict String (Maybe MeanAndStdDev)
 calculateMeanComposition compositionList =
-    let
-        numberInReferenceSet =
-            List.length compositionList
-                |> toFloat
-    in
     compositionList
         |> List.foldl
-            (\dictA dictB ->
+            (\dictB dictA ->
                 Dict.merge
                     (\key a -> Dict.insert key a)
-                    (\key a b -> Dict.insert key (a + b))
-                    (\key b -> Dict.insert key b)
+                    (\key a b -> Dict.insert key (b :: a))
+                    (\key b -> Dict.insert key [ b ])
                     dictA
                     dictB
                     Dict.empty
@@ -375,31 +393,36 @@ calculateMeanComposition compositionList =
         |> List.map
             (Tuple.mapSecond
                 (\v ->
-                    v / numberInReferenceSet
+                    case ( Stats.mean v, Stats.stdDeviation v ) of
+                        ( Just mean, Just stdDev ) ->
+                            Just
+                                { mean = mean
+                                , stdDev = stdDev
+                                }
+
+                        _ ->
+                            Nothing
                 )
             )
         |> Dict.fromList
-        |> compositionDictWithDefaultValues
 
 
 createCompositionSpec :
-    DesignMetrics
-    -> List RefSetMetrics
+    AggregateData
+    -> DesignMetrics
     -> VL.Spec
-createCompositionSpec designMetrics referenceSetMetricsList =
+createCompositionSpec aggregateData designMetrics =
     let
         designComposition =
             designMetrics.composition
                 |> compositionDictWithDefaultValues
-
-        referenceSetComposition =
-            List.map
-                .composition
-                referenceSetMetricsList
-                |> calculateMeanComposition
-                |> Debug.log "TODO: pass in from stub"
     in
-    compositionSpec designComposition referenceSetComposition
+    compositionSpec designComposition
+        (Dict.toList aggregateData.meanComposition
+            |> List.map
+                (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+            |> Dict.fromList
+        )
 
 
 compositionSpec : Dict String Float -> Dict String Float -> VL.Spec

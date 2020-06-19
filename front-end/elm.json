@@ -20,6 +20,7 @@
             "elm/url": "1.0.0",
             "elm-community/typed-svg": "6.0.0",
             "elm-explorations/linear-algebra": "1.0.3",
+            "f0i/statistics": "1.0.0",
             "feathericons/elm-feather": "1.3.0",
             "gampleman/elm-visualization": "2.1.1",
             "gicentre/elm-vegalite": "1.12.0",

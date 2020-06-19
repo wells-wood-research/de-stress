@@ -19,6 +19,7 @@ import Global
 import Metrics exposing (DesignMetrics)
 import Metrics.Plots as MetricPlots
 import Ports
+import ReferenceSet
 import Spa.Page exposing (send)
 import Specification exposing (Specification)
 import Style exposing (h1, h2)
@@ -288,7 +289,7 @@ subscriptions _ =
 view : Utils.Spa.PageContext -> Model -> Element Msg
 view { global } model =
     case global of
-        Global.Running { designs } ->
+        Global.Running { designs, mSelectedReferenceSet, referenceSets } ->
             let
                 designCardData =
                     designs
@@ -297,7 +298,19 @@ view { global } model =
                             (\( k, v ) ->
                                 ( k, Global.storedDesignToStub v )
                             )
-                        |> List.map (createDesignCardData model.mSelectedSpecification)
+                        |> List.map
+                            (createDesignCardData
+                                (mSelectedReferenceSet
+                                    |> Maybe.andThen
+                                        (\k -> Dict.get k referenceSets)
+                                    |> Maybe.map
+                                        (Global.storedReferenceSetToStub
+                                            >> ReferenceSet.getParamsForStub
+                                            >> .aggregateData
+                                        )
+                                )
+                                model.mSelectedSpecification
+                            )
             in
             column [ spacing 15, width fill ]
                 [ let
@@ -357,16 +370,20 @@ type alias DesignCardData =
 
 
 createDesignCardData :
-    Maybe Specification
+    Maybe Metrics.AggregateData
+    -> Maybe Specification
     -> ( String, Design.DesignStub )
     -> DesignCardData
-createDesignCardData mSpecification ( uuidString, designStub ) =
+createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
     { uuidString = uuidString
     , designStub = designStub
     , mMeetsSpecification =
         case ( mSpecification, designStub.metricsJobStatus ) of
             ( Just specification, Ports.Complete designMetrics ) ->
-                Specification.applySpecification designMetrics specification |> Just
+                Specification.applySpecification mAggregateData
+                    designMetrics
+                    specification
+                    |> Just
 
             _ ->
                 Nothing

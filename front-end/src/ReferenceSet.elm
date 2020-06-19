@@ -4,6 +4,7 @@ module ReferenceSet exposing
     , ReferenceSetStub(..)
     , codec
     , createReferenceSetStub
+    , getAggregateData
     , getMetrics
     , getParamsForStub
     , highResBiolUnits
@@ -58,6 +59,16 @@ getMetrics referenceSet =
 
         PdbCodeList { metrics } ->
             metrics
+
+
+getAggregateData : ReferenceSet -> Metrics.AggregateData
+getAggregateData referenceSet =
+    case referenceSet of
+        HighResBiolUnit { aggregateData } ->
+            aggregateData
+
+        PdbCodeList { aggregateData } ->
+            aggregateData
 
 
 codec : Codec ReferenceSet

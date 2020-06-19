@@ -266,33 +266,34 @@ createSpecificationStub specification =
     }
 
 
-applySpecification : DesignMetrics -> Specification -> Bool
-applySpecification designMetrics specification =
-    resolveRequirement designMetrics specification.requirements
+applySpecification : Maybe Metrics.AggregateData -> DesignMetrics -> Specification -> Bool
+applySpecification mAggregateData designMetrics specification =
+    resolveRequirement mAggregateData designMetrics specification.requirements
 
 
 resolveRequirement :
-    DesignMetrics
+    Maybe Metrics.AggregateData
+    -> DesignMetrics
     -> Requirement RequirementData
     -> Bool
-resolveRequirement metrics requirement =
+resolveRequirement mAggregateData metrics requirement =
     case requirement of
         All requirements ->
-            List.all (resolveRequirement metrics) requirements
+            List.all (resolveRequirement mAggregateData metrics) requirements
 
         Any requirements ->
-            List.any (resolveRequirement metrics) requirements
+            List.any (resolveRequirement mAggregateData metrics) requirements
 
         And subRequirement1 subRequirement2 ->
-            resolveRequirement metrics subRequirement1
-                && resolveRequirement metrics subRequirement2
+            resolveRequirement mAggregateData metrics subRequirement1
+                && resolveRequirement mAggregateData metrics subRequirement2
 
         Or subRequirement1 subRequirement2 ->
-            resolveRequirement metrics subRequirement1
-                || resolveRequirement metrics subRequirement2
+            resolveRequirement mAggregateData metrics subRequirement1
+                || resolveRequirement mAggregateData metrics subRequirement2
 
         Not subRequirement ->
-            not (resolveRequirement metrics subRequirement)
+            not (resolveRequirement mAggregateData metrics subRequirement)
 
         Data data ->
             case data of
