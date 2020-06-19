@@ -845,7 +845,7 @@ requirementView :
 requirementView metrics requirement =
     let
         requirementResolves =
-            Specification.resolveRequirement metrics requirement
+            Specification.resolveRequirement Nothing metrics requirement
 
         arrowRow r =
             row

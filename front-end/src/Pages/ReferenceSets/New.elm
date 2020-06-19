@@ -146,6 +146,9 @@ update msg model =
                         ReferenceSet.highResBiolUnits.id
                         (ReferenceSet.HighResBiolUnit
                             { metrics = metrics
+                            , aggregateData =
+                                Metrics.createAggregateData
+                                    metrics
                             , deleteStatus = Style.Unclicked
                             }
                         )
@@ -232,10 +235,12 @@ update msg model =
             case ( model, remoteData ) of
                 ( NewPdbCodeList params, RD.Success metrics ) ->
                     ( NewHighResBiolUnit remoteData
+                        |> Debug.log "TODO: This seems weird, check it out."
                     , Cmd.none
                     , Global.AddReferenceSet
                         (ReferenceSet.PdbCodeList
                             { metrics = metrics
+                            , aggregateData = Metrics.createAggregateData metrics
                             , name =
                                 Maybe.withDefault "NAME"
                                     params.mName

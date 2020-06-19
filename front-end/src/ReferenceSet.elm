@@ -35,6 +35,7 @@ type ReferenceSet
 
 type alias HighResBiolUnitParams =
     { metrics : List RefSetMetrics
+    , aggregateData : Metrics.AggregateData
     , deleteStatus : Style.DangerStatus
     }
 
@@ -44,6 +45,7 @@ type alias PdbCodeListParams =
     , description : String
     , pdbCodeList : Set String
     , metrics : List RefSetMetrics
+    , aggregateData : Metrics.AggregateData
     , deleteStatus : Style.DangerStatus
     }
 
@@ -78,6 +80,7 @@ highResBiolUnitsParamsCodec : Codec HighResBiolUnitParams
 highResBiolUnitsParamsCodec =
     Codec.object HighResBiolUnitParams
         |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
+        |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
@@ -89,6 +92,7 @@ pdbCodeListParamsCodec =
         |> Codec.field "description" .description Codec.string
         |> Codec.field "pdbCodeList" .pdbCodeList (Codec.set Codec.string)
         |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
+        |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
@@ -157,13 +161,14 @@ highResBiolMetricQuery =
 
 
 type ReferenceSetStub
-    = HighResBiolUnitStub Style.DangerStatus
+    = HighResBiolUnitStub StubParams
     | PdbCodeListStub StubParams
 
 
 type alias StubParams =
     { name : String
     , description : String
+    , aggregateData : Metrics.AggregateData
     , deleteStatus : Style.DangerStatus
     }
 
@@ -179,10 +184,9 @@ referenceSetStubCodec =
                 PdbCodeListStub params ->
                     fpdbCodeList params
         )
-        |> Codec.variant1
-            "HighResBiolUnitStub"
+        |> Codec.variant1 "HighResBiolUnitStub"
             HighResBiolUnitStub
-            (Codec.constant Style.Unclicked)
+            stubParamsCodec
         |> Codec.variant1 "PdbCodeListStub" PdbCodeListStub stubParamsCodec
         |> Codec.buildCustom
 
@@ -192,6 +196,7 @@ stubParamsCodec =
     Codec.object StubParams
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
+        |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
@@ -199,13 +204,19 @@ stubParamsCodec =
 createReferenceSetStub : ReferenceSet -> ReferenceSetStub
 createReferenceSetStub referenceSet =
     case referenceSet of
-        HighResBiolUnit params ->
-            HighResBiolUnitStub params.deleteStatus
+        HighResBiolUnit { deleteStatus, aggregateData } ->
+            HighResBiolUnitStub
+                { name = highResBiolUnits.name
+                , description = highResBiolUnits.description
+                , aggregateData = aggregateData
+                , deleteStatus = deleteStatus
+                }
 
-        PdbCodeList { name, description, deleteStatus } ->
+        PdbCodeList { name, description, aggregateData, deleteStatus } ->
             PdbCodeListStub
                 { name = name
                 , description = description
+                , aggregateData = aggregateData
                 , deleteStatus =
                     deleteStatus
                 }
@@ -214,9 +225,10 @@ createReferenceSetStub referenceSet =
 getParamsForStub : ReferenceSetStub -> StubParams
 getParamsForStub referenceSet =
     case referenceSet of
-        HighResBiolUnitStub deleteStatus ->
+        HighResBiolUnitStub { deleteStatus, aggregateData } ->
             { name = highResBiolUnits.name
             , description = highResBiolUnits.description
+            , aggregateData = aggregateData
             , deleteStatus = deleteStatus
             }
 

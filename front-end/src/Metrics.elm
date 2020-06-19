@@ -1,8 +1,12 @@
 module Metrics exposing
-    ( DesignMetrics
+    ( AggregateData
+    , DesignMetrics
     , RefSetMetrics
     , SequenceInfo
+    , aggregateDataCodec
+    , calculateMeanComposition
     , compositionStringToDict
+    , createAggregateData
     , createAllHistogramsSpec
     , createCompositionSpec
     , createTorsionAngleSpec
@@ -98,6 +102,26 @@ refSetMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.buildObject
+
+
+type alias AggregateData =
+    { meanComposition : Dict String Float }
+
+
+createAggregateData : List RefSetMetrics -> AggregateData
+createAggregateData refSetMetricsList =
+    { meanComposition =
+        refSetMetricsList
+            |> List.map .composition
+            |> calculateMeanComposition
+    }
+
+
+aggregateDataCodec : Codec AggregateData
+aggregateDataCodec =
+    Codec.object AggregateData
+        |> Codec.field "meanComposition" .meanComposition (Codec.dict Codec.float)
         |> Codec.buildObject
 
 
@@ -328,16 +352,42 @@ compositionDictWithDefaultValues inputDict =
         |> Dict.fromList
 
 
+calculateMeanComposition : List (Dict String Float) -> Dict String Float
+calculateMeanComposition compositionList =
+    let
+        numberInReferenceSet =
+            List.length compositionList
+                |> toFloat
+    in
+    compositionList
+        |> List.foldl
+            (\dictA dictB ->
+                Dict.merge
+                    (\key a -> Dict.insert key a)
+                    (\key a b -> Dict.insert key (a + b))
+                    (\key b -> Dict.insert key b)
+                    dictA
+                    dictB
+                    Dict.empty
+            )
+            Dict.empty
+        |> Dict.toList
+        |> List.map
+            (Tuple.mapSecond
+                (\v ->
+                    v / numberInReferenceSet
+                )
+            )
+        |> Dict.fromList
+        |> compositionDictWithDefaultValues
+
+
 createCompositionSpec :
     DesignMetrics
     -> List RefSetMetrics
     -> VL.Spec
 createCompositionSpec designMetrics referenceSetMetricsList =
     let
-        numberInReferenceSet =
-            List.length referenceSetMetricsList
-                |> toFloat
-
         designComposition =
             designMetrics.composition
                 |> compositionDictWithDefaultValues
@@ -346,26 +396,8 @@ createCompositionSpec designMetrics referenceSetMetricsList =
             List.map
                 .composition
                 referenceSetMetricsList
-                |> List.foldl
-                    (\dictA dictB ->
-                        Dict.merge
-                            (\key a -> Dict.insert key a)
-                            (\key a b -> Dict.insert key (a + b))
-                            (\key b -> Dict.insert key b)
-                            dictA
-                            dictB
-                            Dict.empty
-                    )
-                    Dict.empty
-                |> Dict.toList
-                |> List.map
-                    (Tuple.mapSecond
-                        (\v ->
-                            v / numberInReferenceSet
-                        )
-                    )
-                |> Dict.fromList
-                |> compositionDictWithDefaultValues
+                |> calculateMeanComposition
+                |> Debug.log "TODO: pass in from stub"
     in
     compositionSpec designComposition referenceSetComposition
 

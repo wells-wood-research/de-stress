@@ -668,8 +668,12 @@ updateRunState commands msg runState =
                                 uuidString
                                 ((\r ->
                                     case r of
-                                        HighResBiolUnitStub _ ->
-                                            HighResBiolUnitStub dangerStatus
+                                        HighResBiolUnitStub params ->
+                                            HighResBiolUnitStub
+                                                { params
+                                                    | deleteStatus =
+                                                        dangerStatus
+                                                }
 
                                         PdbCodeListStub params ->
                                             PdbCodeListStub
@@ -709,8 +713,12 @@ updateRunState commands msg runState =
                                 uuidString
                                 ((\r ->
                                     case r of
-                                        HighResBiolUnitStub _ ->
-                                            HighResBiolUnitStub dangerStatus
+                                        HighResBiolUnitStub params ->
+                                            HighResBiolUnitStub
+                                                { params
+                                                    | deleteStatus =
+                                                        dangerStatus
+                                                }
 
                                         PdbCodeListStub params ->
                                             PdbCodeListStub
