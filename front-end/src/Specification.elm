@@ -17,7 +17,7 @@ module Specification exposing
     )
 
 import Codec exposing (Codec, Value)
-import Dict
+import Dict exposing (Dict)
 import Metrics exposing (DesignMetrics)
 import Style
 
@@ -35,7 +35,9 @@ codec =
     Codec.object Specification
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
-        |> Codec.field "requirements" .requirements (requirementCodec requirementDataTypeCodec)
+        |> Codec.field "requirements"
+            .requirements
+            (requirementCodec requirementDataTypeCodec)
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
         |> Codec.buildObject
 
@@ -320,10 +322,88 @@ resolveRequirement mAggregateData metrics requirement =
                                     |> List.map .sequence
                                 )
 
-                        CompositionDeviation unitType value ->
-                            Debug.log "This should do something" True
+                        CompositionDeviation unitType threshold ->
+                            case mAggregateData of
+                                Just aggregateData ->
+                                    resolveCompositionDeviation
+                                        unitType
+                                        threshold
+                                        aggregateData.meanComposition
+                                        metrics.composition
+
+                                Nothing ->
+                                    True
 
                 Constant constantType ->
                     case constantType of
                         Method _ ->
                             Debug.log "This should do something" True
+
+
+resolveCompositionDeviation :
+    UnitType
+    -> Float
+    -> Dict String (Maybe Metrics.MeanAndStdDev)
+    -> Dict String Float
+    -> Bool
+resolveCompositionDeviation unitType threshold meanComposition designComposition =
+    case unitType of
+        Percent ->
+            {- This looks horrible, but it's not too
+               bad, it basically takes the aggregate
+               composition dict and the design composition
+               dict and makes a new dict where the key is
+               the amino acid label and the value is a
+               Bool that is True if the difference
+               between the reference set composition and
+               the designs composition is less than the
+               allowed composition deviation from the
+               specification
+            -}
+            Dict.merge
+                (\k _ -> Dict.insert k True)
+                (\k a b ->
+                    Dict.insert k
+                        (((Maybe.map .mean a
+                            |> Maybe.withDefault 0
+                          )
+                            - b
+                         )
+                            |> abs
+                            |> (\d ->
+                                    d
+                                        < (threshold
+                                            * 0.01
+                                          )
+                               )
+                        )
+                )
+                (\k _ -> Dict.insert k True)
+                meanComposition
+                designComposition
+                Dict.empty
+                |> Dict.values
+                |> List.all identity
+
+        StdDevs ->
+            Dict.merge
+                (\k _ -> Dict.insert k True)
+                (\k a b ->
+                    Dict.insert k
+                        (case a of
+                            Just { mean, stdDev } ->
+                                mean
+                                    - b
+                                    |> abs
+                                    |> (\d -> d < (threshold * stdDev))
+
+                            Nothing ->
+                                True
+                        )
+                )
+                (\k _ -> Dict.insert k True)
+                meanComposition
+                designComposition
+                Dict.empty
+                |> Dict.values
+                |> List.all identity

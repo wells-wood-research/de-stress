@@ -1,6 +1,7 @@
 module Metrics exposing
     ( AggregateData
     , DesignMetrics
+    , MeanAndStdDev
     , RefSetMetrics
     , SequenceInfo
     , aggregateDataCodec
