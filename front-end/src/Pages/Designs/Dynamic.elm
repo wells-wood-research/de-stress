@@ -529,7 +529,7 @@ designDetailsView uuidString mSelectedSpecification design =
                                     (row [ spacing 5 ]
                                         [ Style.conditionalButton
                                             { label = text "Ok"
-                                            , clickMsg = ClickedAcceptNameEdit
+                                            , clickMsg = Just ClickedAcceptNameEdit
                                             , isActive =
                                                 case mNewName of
                                                     Just newName ->

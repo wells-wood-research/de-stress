@@ -119,7 +119,7 @@ alwaysActiveButton { label, clickMsg } =
 
 conditionalButton :
     { label : Element msg
-    , clickMsg : msg
+    , clickMsg : Maybe msg
     , isActive : Bool
     }
     -> Element msg
@@ -129,7 +129,7 @@ conditionalButton { label, clickMsg, isActive } =
             (buttonStyle
                 ++ [ Background.color colorPalette.c3 ]
             )
-            { onPress = Just clickMsg
+            { onPress = clickMsg
             , label = label
             }
 

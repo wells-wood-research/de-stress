@@ -331,7 +331,7 @@ view { global } model =
                     [ h1 <| text "Designs"
                     , Style.conditionalButton
                         { label = text buttonLabel
-                        , clickMsg = StructuresRequested
+                        , clickMsg = Just StructuresRequested
                         , isActive = isActive
                         }
                     , Style.dangerousButton

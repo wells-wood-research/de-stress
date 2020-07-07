@@ -533,7 +533,7 @@ view model =
           in
           Style.conditionalButton
             { clickMsg =
-                ClickedCreateSpecification
+                Just ClickedCreateSpecification
             , label = text "Create Specification"
             , isActive = complete
             }
@@ -574,7 +574,7 @@ addRequirementView errors mNewRequirement =
         , row
             [ spacing 10 ]
             [ Style.conditionalButton
-                { clickMsg = ClickedAddRequirement
+                { clickMsg = Just ClickedAddRequirement
                 , label = text "Add"
                 , isActive = requirementComplete
                 }
@@ -1145,7 +1145,7 @@ valueRelationshipFloatInputView { msgConstructor, inputTextMsg, maybeString, lab
                     , el [ alignBottom ] <|
                         Style.conditionalButton
                             { label = text "Ok"
-                            , clickMsg = msgConstructor
+                            , clickMsg = Just msgConstructor
                             , isActive = completionStatus
                             }
                     ]

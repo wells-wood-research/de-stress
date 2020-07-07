@@ -123,21 +123,14 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
                     Just selectedSpecification ->
                         if selectedSpecification == uuidString then
                             [ Border.color Style.colorPalette.black
-                            , Events.onClick <| ClickedSelectSpecification <| Nothing
                             ]
 
                         else
                             [ Border.color Style.colorPalette.c5
-                            , Events.onClick <|
-                                ClickedSelectSpecification <|
-                                    Just uuidString
                             ]
 
                     Nothing ->
                         [ Border.color Style.colorPalette.c5
-                        , Events.onClick <|
-                            ClickedSelectSpecification <|
-                                Just uuidString
                         ]
                )
         )
@@ -150,7 +143,35 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
             , paragraph [] [ text description ]
             ]
         , row [ spacing 10, width fill ]
-            [ Style.linkButton
+            [ case mSelectedSpecification of
+                Just selectedSpecification ->
+                    if selectedSpecification == uuidString then
+                        Style.conditionalButton
+                            { label = text "Active"
+                            , clickMsg = Nothing
+                            , isActive = False
+                            }
+
+                    else
+                        Style.conditionalButton
+                            { label = text "Select"
+                            , clickMsg =
+                                Just <|
+                                    ClickedSelectSpecification <|
+                                        Just uuidString
+                            , isActive = True
+                            }
+
+                Nothing ->
+                    Style.conditionalButton
+                        { label = text "Select"
+                        , clickMsg =
+                            Just <|
+                                ClickedSelectSpecification <|
+                                    Just uuidString
+                        , isActive = True
+                        }
+            , Style.linkButton
                 { label = text "Details"
                 , url = Routes.toPath <| routes.specifications_dynamic uuidString
                 }
