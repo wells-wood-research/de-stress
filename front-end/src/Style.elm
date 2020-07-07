@@ -105,12 +105,21 @@ buttonStyle =
     ]
 
 
-alwaysActiveButton : { label : Element msg, clickMsg : msg } -> Element msg
-alwaysActiveButton { label, clickMsg } =
+alwaysActiveButton : { label : Element msg, clickMsg : msg, pressed : Bool } -> Element msg
+alwaysActiveButton { label, clickMsg, pressed } =
     Input.button
         (buttonStyle
-            ++ [ Background.color colorPalette.c3
-               ]
+            ++ (if pressed then
+                    [ Background.color colorPalette.c4
+                    , Border.color colorPalette.black
+                    , Border.width 2
+                    , Font.color colorPalette.white
+                    ]
+
+                else
+                    [ Background.color colorPalette.c3
+                    ]
+               )
         )
         { onPress = Just clickMsg
         , label = label

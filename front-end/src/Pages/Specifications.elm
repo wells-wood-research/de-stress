@@ -146,30 +146,30 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
             [ case mSelectedSpecification of
                 Just selectedSpecification ->
                     if selectedSpecification == uuidString then
-                        Style.conditionalButton
+                        Style.alwaysActiveButton
                             { label = text "Active"
-                            , clickMsg = Nothing
-                            , isActive = False
+                            , clickMsg =
+                                ClickedSelectSpecification <|
+                                    Nothing
+                            , pressed = True
                             }
 
                     else
-                        Style.conditionalButton
+                        Style.alwaysActiveButton
                             { label = text "Select"
                             , clickMsg =
-                                Just <|
-                                    ClickedSelectSpecification <|
-                                        Just uuidString
-                            , isActive = True
+                                ClickedSelectSpecification <|
+                                    Just uuidString
+                            , pressed = False
                             }
 
                 Nothing ->
-                    Style.conditionalButton
+                    Style.alwaysActiveButton
                         { label = text "Select"
                         , clickMsg =
-                            Just <|
-                                ClickedSelectSpecification <|
-                                    Just uuidString
-                        , isActive = True
+                            ClickedSelectSpecification <|
+                                Just uuidString
+                        , pressed = False
                         }
             , Style.linkButton
                 { label = text "Details"

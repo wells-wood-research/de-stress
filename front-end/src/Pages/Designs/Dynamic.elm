@@ -542,6 +542,7 @@ designDetailsView uuidString mSelectedSpecification design =
                                         , Style.alwaysActiveButton
                                             { label = text "Cancel"
                                             , clickMsg = ClickedCancelNameEdit
+                                            , pressed = False
                                             }
                                         ]
                                     )

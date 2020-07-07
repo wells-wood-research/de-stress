@@ -130,21 +130,14 @@ referenceSetStubView mSelectedReferenceSet ( uuidString, stub ) =
                     Just selectedReferenceSet ->
                         if selectedReferenceSet == uuidString then
                             [ Border.color Style.colorPalette.black
-                            , Events.onClick <| ClickedSelectReferenceSet <| Nothing
                             ]
 
                         else
                             [ Border.color Style.colorPalette.c5
-                            , Events.onClick <|
-                                ClickedSelectReferenceSet <|
-                                    Just uuidString
                             ]
 
                     Nothing ->
                         [ Border.color Style.colorPalette.c5
-                        , Events.onClick <|
-                            ClickedSelectReferenceSet <|
-                                Just uuidString
                         ]
                )
         )
@@ -157,7 +150,35 @@ referenceSetStubView mSelectedReferenceSet ( uuidString, stub ) =
             , paragraph [] [ text description ]
             ]
         , row [ spacing 10, width fill ]
-            [ Style.linkButton
+            [ case mSelectedReferenceSet of
+                Just selectedReferenceSet ->
+                    if selectedReferenceSet == uuidString then
+                        Style.alwaysActiveButton
+                            { label = text "Active"
+                            , clickMsg =
+                                ClickedSelectReferenceSet <|
+                                    Nothing
+                            , pressed = True
+                            }
+
+                    else
+                        Style.alwaysActiveButton
+                            { label = text "Set Active"
+                            , clickMsg =
+                                ClickedSelectReferenceSet <|
+                                    Just uuidString
+                            , pressed = False
+                            }
+
+                Nothing ->
+                    Style.alwaysActiveButton
+                        { label = text "Set Active"
+                        , clickMsg =
+                            ClickedSelectReferenceSet <|
+                                Just uuidString
+                        , pressed = False
+                        }
+            , Style.linkButton
                 { label = text "Details"
                 , url = Routes.toPath <| routes.referenceSets_dynamic uuidString
                 }

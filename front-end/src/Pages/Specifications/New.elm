@@ -492,6 +492,7 @@ view model =
                 Style.alwaysActiveButton
                     { clickMsg = ClickedNewRequirement
                     , label = text "New Requirement"
+                    , pressed = False
                     }
 
             Add mNewRequirement ->
@@ -581,6 +582,7 @@ addRequirementView errors mNewRequirement =
             , Style.alwaysActiveButton
                 { clickMsg = CancelledAdd
                 , label = text "Cancel"
+                , pressed = False
                 }
             ]
         ]

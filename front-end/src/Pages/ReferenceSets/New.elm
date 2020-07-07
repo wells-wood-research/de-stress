@@ -345,6 +345,7 @@ newHighResBiolUnitsView =
             { clickMsg =
                 ClickedDownloadDefaultHighRes
             , label = text "Download Reference Set"
+            , pressed = False
             }
         ]
 
@@ -430,7 +431,7 @@ newPdbCodeListView params =
           in
           Style.conditionalButton
             { clickMsg =
-                ClickedDownloadPreferredSubset
+                Just ClickedDownloadPreferredSubset
             , label = text "Create Reference Set"
             , isActive = complete
             }
