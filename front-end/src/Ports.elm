@@ -8,6 +8,7 @@ port module Ports exposing
     , deleteReferenceSet
     , deleteSpecification
     , getDesign
+    , getReferenceSet
     , getReferenceSetForDesign
     , getSpecification
     , getSpecificationForDesign
@@ -17,6 +18,7 @@ port module Ports exposing
     , newMetricsServerJob
     , referenceSetForDesign
     , setFocussedDesign
+    , setFocussedReferenceSet
     , setFocussedSpecification
     , setWebSocketConnectionStatus
     , specificationForDesign
@@ -113,6 +115,14 @@ storeReferenceSet referenceSetValue =
         }
 
 
+getReferenceSet : Value -> Cmd msg
+getReferenceSet uuidValue =
+    outgoing
+        { action = "GET_REFERENCE_SET"
+        , data = uuidValue
+        }
+
+
 getReferenceSetForDesign : Value -> Cmd msg
 getReferenceSetForDesign uuidValue =
     outgoing
@@ -186,6 +196,9 @@ port vegaPlot : { plotId : String, spec : VL.Spec } -> Cmd msg
 
 
 port setFocussedDesign : (Value -> msg) -> Sub msg
+
+
+port setFocussedReferenceSet : (Value -> msg) -> Sub msg
 
 
 port referenceSetForDesign : (Value -> msg) -> Sub msg

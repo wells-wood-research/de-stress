@@ -149,6 +149,16 @@ const storeReferenceSet = (_, referenceSetAndKey) => {
   }
 };
 
+// Get reference set
+const getReferenceSet = (app, storeKey) => {
+  idbKeyval.get(storeKey, referenceSetStore).then((referenceSet) => {
+    app.ports.setFocussedReferenceSet.send({
+      uuidString: storeKey,
+      referenceSet: referenceSet,
+    });
+  });
+};
+
 // Get referenceSet
 const getReferenceSetForDesign = (app, storeKey) => {
   idbKeyval.get(storeKey, referenceSetStore).then((referenceSet) => {
@@ -232,6 +242,7 @@ const actions = {
   VIEW_STRUCTURE: viewStructure,
   // Reference Sets
   STORE_REFERENCE_SET: storeReferenceSet,
+  GET_REFERENCE_SET: getReferenceSet,
   GET_REFERENCE_SET_FOR_DESIGN: getReferenceSetForDesign,
   DELETE_REFERENCE_SET: deleteReferenceSet,
   // Specifications

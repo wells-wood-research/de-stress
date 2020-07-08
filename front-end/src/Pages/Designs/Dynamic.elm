@@ -237,7 +237,8 @@ update { global } msg model =
                                             , spec =
                                                 Metrics.createCompositionSpec
                                                     (referenceSet
-                                                        |> ReferenceSet.getAggregateData
+                                                        |> ReferenceSet.getGenericData
+                                                        |> .aggregateData
                                                     )
                                                     metrics
                                             }
@@ -246,14 +247,20 @@ update { global } msg model =
                                             , spec =
                                                 Metrics.createTorsionAngleSpec
                                                     metrics
-                                                    (ReferenceSet.getMetrics referenceSet)
+                                                    (referenceSet
+                                                        |> ReferenceSet.getGenericData
+                                                        |> .metrics
+                                                    )
                                             }
                                         , Ports.vegaPlot <|
                                             { plotId = "metricsHistograms"
                                             , spec =
                                                 Metrics.createAllHistogramsSpec
                                                     metrics
-                                                    (ReferenceSet.getMetrics referenceSet)
+                                                    (referenceSet
+                                                        |> ReferenceSet.getGenericData
+                                                        |> .metrics
+                                                    )
                                             }
                                         ]
 

@@ -4,8 +4,7 @@ module ReferenceSet exposing
     , ReferenceSetStub(..)
     , codec
     , createReferenceSetStub
-    , getAggregateData
-    , getMetrics
+    , getGenericData
     , getParamsForStub
     , highResBiolUnits
     , queryToCmd
@@ -51,24 +50,33 @@ type alias PdbCodeListParams =
     }
 
 
-getMetrics : ReferenceSet -> List RefSetMetrics
-getMetrics referenceSet =
+type alias GenericData =
+    { name : String
+    , description : String
+    , metrics : List RefSetMetrics
+    , aggregateData : Metrics.AggregateData
+    , deleteStatus : Style.DangerStatus
+    }
+
+
+getGenericData : ReferenceSet -> GenericData
+getGenericData referenceSet =
     case referenceSet of
-        HighResBiolUnit { metrics } ->
-            metrics
+        HighResBiolUnit { metrics, aggregateData, deleteStatus } ->
+            { name = highResBiolUnits.name
+            , description = highResBiolUnits.description
+            , metrics = metrics
+            , aggregateData = aggregateData
+            , deleteStatus = deleteStatus
+            }
 
-        PdbCodeList { metrics } ->
-            metrics
-
-
-getAggregateData : ReferenceSet -> Metrics.AggregateData
-getAggregateData referenceSet =
-    case referenceSet of
-        HighResBiolUnit { aggregateData } ->
-            aggregateData
-
-        PdbCodeList { aggregateData } ->
-            aggregateData
+        PdbCodeList { name, description, metrics, aggregateData, deleteStatus } ->
+            { name = name
+            , description = description
+            , metrics = metrics
+            , aggregateData = aggregateData
+            , deleteStatus = deleteStatus
+            }
 
 
 codec : Codec ReferenceSet

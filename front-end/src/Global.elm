@@ -383,6 +383,7 @@ type Msg
     | AddReferenceSet ReferenceSet
     | AddNamedReferenceSet String ReferenceSet
     | DeleteReferenceSet String Style.DangerStatus
+    | GetReferenceSet String
     | DeleteFocussedReferenceSet String Style.DangerStatus
     | SetMSelectedReferenceSet (Maybe String)
     | AddSpecification Specification
@@ -690,6 +691,13 @@ updateRunState commands msg runState =
                     , Cmd.none
                     , Cmd.none
                     )
+
+        GetReferenceSet uuidString ->
+            ( runState
+            , Cmd.none
+            , Codec.encoder Codec.string uuidString
+                |> Ports.getReferenceSet
+            )
 
         DeleteFocussedReferenceSet uuidString dangerStatus ->
             case dangerStatus of

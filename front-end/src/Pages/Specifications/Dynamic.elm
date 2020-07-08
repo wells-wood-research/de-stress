@@ -67,7 +67,7 @@ init { param1 } =
 
 
 -- }}}
--- UPDATE
+-- {{{ Update
 
 
 type Msg
@@ -130,6 +130,7 @@ update msg model =
 
 
 
+-- }}}
 -- {{{ Subscriptions
 
 
@@ -141,7 +142,7 @@ subscriptions _ =
 
 
 -- }}}
--- VIEW
+-- {{{ View
 
 
 view : Model -> Element Msg
@@ -170,7 +171,6 @@ specificationDetailsView uuidString { name, description, requirements, deleteSta
         ]
         [ sectionColumn
             [ paragraph [] [ Style.h1 <| text "Specification Details" ]
-            , Style.h2 <| text <| "Name: " ++ name
             ]
         , row [ spacing 10 ]
             [ Style.linkButton
@@ -185,7 +185,9 @@ specificationDetailsView uuidString { name, description, requirements, deleteSta
                 }
             ]
         , sectionColumn
-            [ Style.h2 <|
+            [ Style.h2 <| text "Name"
+            , text name
+            , Style.h2 <|
                 text "Description"
             , paragraph
                 []
@@ -328,3 +330,7 @@ requirementView requirement =
                 , column [ padding 10, spacing 5 ] <|
                     List.map arrowRow requirements
                 ]
+
+
+
+-- }}}
