@@ -13,6 +13,7 @@ port module Ports exposing
     , getSpecification
     , getSpecificationForDesign
     , getSpecificationForDesignsPage
+    , metricsAvailable
     , metricsServerJobCodec
     , metricsServerJobStatusCodec
     , newMetricsServerJob
@@ -299,6 +300,16 @@ type ServerJobStatus input output
     | Cancelled
     | Failed String
     | Complete output
+
+
+metricsAvailable : ServerJobStatus a b -> Bool
+metricsAvailable serverJobStatus =
+    case serverJobStatus of
+        Complete _ ->
+            True
+
+        _ ->
+            False
 
 
 type alias MetricsServerJobStatus =

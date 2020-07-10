@@ -10,12 +10,15 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Keyed as Keyed
 import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
 import Generated.Params as Params
 import Generated.Routes as Routes
 import Global
+import Html
+import Html.Attributes as HAtt
 import Metrics exposing (DesignMetrics)
 import Metrics.Plots as MetricPlots
 import Ports
@@ -24,6 +27,7 @@ import Spa.Page exposing (send)
 import Specification exposing (Specification)
 import Style exposing (h1, h2)
 import Task
+import Time
 import Utils.Spa exposing (Page)
 
 
@@ -32,8 +36,8 @@ page =
     Spa.Page.component
         { title = always "Designs"
         , init = init
-        , update = always update
-        , subscriptions = always subscriptions
+        , update = update
+        , subscriptions = subscriptions
         , view = view
         }
 
@@ -47,6 +51,7 @@ type alias Model =
     , loadErrors : List String
     , mSelectedSpecification : Maybe Specification
     , overviewOptionDropDown : DropDown.Model String
+    , previousNumberOfMetrics : Int
     , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Style.DangerStatus
     }
@@ -63,6 +68,7 @@ init { global } _ =
       , loadErrors = []
       , mSelectedSpecification = Nothing
       , overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
+      , previousNumberOfMetrics = 0
       , mOverviewInfo = Nothing
       , deleteAllStatus = Style.Unclicked
       }
@@ -98,17 +104,22 @@ type Msg
     | ShowDesignDetails String
     | DeleteDesign String Style.DangerStatus
     | DeleteAllDesigns Style.DangerStatus
+      -- Subscription Msgs
+    | CheckForPlotUpdate Int Time.Posix
       -- DropDowns
     | OverviewOptionDropDownMsg (DropDown.Msg String)
 
 
-update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
-update msg model =
-    case msg of
-        StructuresRequested ->
+update : Utils.Spa.PageContext -> Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
+update { global } msg model =
+    case ( global, msg ) of
+        ( Global.FailedToLaunch _, _ ) ->
+            Debug.todo "Deal with this"
+
+        ( _, StructuresRequested ) ->
             ( model, structureRequested, Cmd.none )
 
-        StructureFilesSelected first rest ->
+        ( _, StructureFilesSelected first rest ) ->
             let
                 loadedDesigns =
                     List.length rest
@@ -125,7 +136,7 @@ update msg model =
             , Cmd.none
             )
 
-        StructureLoaded name contents ->
+        ( _, StructureLoaded name contents ) ->
             let
                 loadingState =
                     case model.loadingState of
@@ -198,7 +209,7 @@ update msg model =
                     , Cmd.none
                     )
 
-        GotSpecification specificationValue ->
+        ( _, GotSpecification specificationValue ) ->
             let
                 specWithUuidCodec =
                     Codec.object
@@ -223,7 +234,7 @@ update msg model =
             , Cmd.none
             )
 
-        ShowDesignDetails uuidString ->
+        ( _, ShowDesignDetails uuidString ) ->
             ( model
             , Cmd.none
             , Routes.routes.designs_dynamic uuidString
@@ -231,14 +242,14 @@ update msg model =
                 |> send
             )
 
-        DeleteDesign uuidString dangerStatus ->
+        ( _, DeleteDesign uuidString dangerStatus ) ->
             ( model
             , Cmd.none
             , Global.DeleteDesign uuidString dangerStatus
                 |> send
             )
 
-        DeleteAllDesigns dangerStatus ->
+        ( _, DeleteAllDesigns dangerStatus ) ->
             case dangerStatus of
                 Style.Confirmed ->
                     ( { model | deleteAllStatus = Style.Unclicked }
@@ -253,8 +264,56 @@ update msg model =
                     , Cmd.none
                     )
 
+        -- Subscription Msgs
+        ( Global.Running runState, CheckForPlotUpdate newNumberOfMetrics _ ) ->
+            ( { model | previousNumberOfMetrics = newNumberOfMetrics }
+            , if newNumberOfMetrics /= model.previousNumberOfMetrics then
+                Ports.vegaPlot <|
+                    { plotId = "overview"
+                    , spec =
+                        Metrics.overviewSpec
+                            "Hydrophobic Fitness"
+                            (runState.designs
+                                |> Dict.toList
+                                |> List.map
+                                    (\( k, v ) ->
+                                        ( k, Global.storedDesignToStub v )
+                                    )
+                                |> List.map
+                                    (createDesignCardData
+                                        (runState.mSelectedReferenceSet
+                                            |> Maybe.andThen
+                                                (\k -> Dict.get k runState.referenceSets)
+                                            |> Maybe.map
+                                                (Global.storedReferenceSetToStub
+                                                    >> ReferenceSet.getParamsForStub
+                                                    >> .aggregateData
+                                                )
+                                        )
+                                        model.mSelectedSpecification
+                                    )
+                                |> List.indexedMap Tuple.pair
+                                |> List.reverse
+                                |> List.filterMap
+                                    (makeColumnData <|
+                                        .hydrophobicFitness
+                                            >> Maybe.withDefault (0 / 0)
+                                            >> abs
+                                    )
+                                |> List.sortBy .value
+                                |> List.reverse
+                                |> List.map (\{ name, value } -> ( name, value ))
+                                |> Dict.fromList
+                            )
+                    }
+
+              else
+                Cmd.none
+            , Cmd.none
+            )
+
         -- Drop Downs
-        OverviewOptionDropDownMsg cMsg ->
+        ( _, OverviewOptionDropDownMsg cMsg ) ->
             let
                 cModel =
                     DropDown.update cMsg model.overviewOptionDropDown
@@ -275,10 +334,27 @@ structureRequested =
 -- {{{ Subscriptions
 
 
-subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions : Utils.Spa.PageContext -> Model -> Sub Msg
+subscriptions { global } _ =
     Sub.batch
-        [ Ports.specificationForDesignsPage GotSpecification ]
+        (Ports.specificationForDesignsPage GotSpecification
+            :: (case global of
+                    Global.Running runState ->
+                        [ runState.designs
+                            |> Dict.values
+                            |> List.map Global.storedDesignToStub
+                            |> List.map .metricsJobStatus
+                            |> List.map Ports.metricsAvailable
+                            |> List.filter identity
+                            |> List.length
+                            |> CheckForPlotUpdate
+                            |> Time.every 1000
+                        ]
+
+                    Global.FailedToLaunch _ ->
+                        []
+               )
+        )
 
 
 
@@ -349,8 +425,9 @@ view { global } model =
                         column
                             [ width fill ]
                             [ overviewPlots
-                                model.overviewOptionDropDown
-                                designCardData
+
+                            -- model.overviewOptionDropDown
+                            -- designCardData
                             , designCardsView
                                 model.mSelectedSpecification
                                 designCardData
@@ -557,32 +634,58 @@ plotableMetrics =
         |> Dict.fromList
 
 
-overviewPlots :
-    DropDown.Model String
-    -> List DesignCardData
-    -> Element Msg
-overviewPlots ({ selected } as dropDownModel) designCardData =
-    let
-        getDataFn =
-            Dict.get selected plotableMetrics
-                |> Maybe.withDefault (Tuple.second defaultPlotableOption)
-    in
-    column [ spacing 10, fill |> maximum 500 |> height, width fill ]
-        [ Style.h2 <| text "Overview"
-        , el [ width <| maximum 300 <| fill ]
-            (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
-                |> map OverviewOptionDropDownMsg
+overviewPlots : Element msg
+overviewPlots =
+    column
+        [ width fill ]
+        [ Style.h3 <| text "Overview"
+        , Keyed.el [ centerX, width fill ]
+            ( "overview"
+            , Html.div
+                [ HAtt.id "overview"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
             )
-        , List.indexedMap Tuple.pair designCardData
-            |> List.reverse
-            |> List.filterMap (makeColumnData getDataFn)
-            |> List.sortBy .value
-            |> List.reverse
-            |> MetricPlots.metricOverview
-                ShowDesignDetails
-                selected
-            |> html
         ]
+
+
+
+-- overviewPlots :
+--     DropDown.Model String
+--     -> List DesignCardData
+--     -> Element Msg
+-- overviewPlots ({ selected } as dropDownModel) designCardData =
+--     let
+--         getDataFn =
+--             Dict.get selected plotableMetrics
+--                 |> Maybe.withDefault (Tuple.second defaultPlotableOption)
+--     in
+--     column [ spacing 10, fill |> maximum 500 |> height, width fill ]
+--         [ Style.h2 <| text "Overview"
+--         , el [ width <| maximum 300 <| fill ]
+--             (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
+--                 |> map OverviewOptionDropDownMsg
+--             )
+--         , List.indexedMap Tuple.pair designCardData
+--             |> List.reverse
+--             |> List.filterMap (makeColumnData getDataFn)
+--             |> List.sortBy .value
+--             |> List.reverse
+--             |> MetricPlots.metricOverview
+--                 ShowDesignDetails
+--                 selected
+--             |> html
+--         ]
 
 
 makeColumnData :
