@@ -11,12 +11,17 @@ module Shared exposing
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
 import Element exposing (..)
+import Element.Background as Background
 import Element.Font as Font
+import Element.Region as Region
+import FeatherIcons
 import Random
+import Shared.Style as Style
 import Spa.Document exposing (Document)
-import Spa.Generated.Route as Route
+import Spa.Generated.Route as Route exposing (Route)
 import Url exposing (Url)
 import Uuid exposing (Uuid)
+import WebSockets as WS
 
 
 
@@ -38,8 +43,8 @@ type AppState
 type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
+    , webSocketConnectionStatus : WS.ConnectionStatus
 
-    -- , webSocketConnectionStatus : WebSocketConnectionStatus
     -- , designs : Dict String StoredDesign
     -- , referenceSets : Dict String StoredReferenceSet
     -- , mSelectedReferenceSet : Maybe String
@@ -108,10 +113,9 @@ init flags url key =
                             { randomSeed = randomSeed
                             , nextUuid =
                                 nextUuid
+                            , webSocketConnectionStatus = WS.unknownStatus
                             }
 
-                    -- , nextUuid = nextUuid
-                    -- , webSocketConnectionStatus = Unknown
                     -- , designs = Dict.empty
                     -- , referenceSets = Dict.empty
                     -- , mSelectedReferenceSet = Nothing
@@ -155,7 +159,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
@@ -168,20 +172,99 @@ view :
     { page : Document msg, toMsg : Msg -> msg }
     -> Model
     -> Document msg
-view { page, toMsg } model =
+view { page } model =
     { title = page.title
     , body =
-        [ column [ padding 20, spacing 20, height fill ]
-            [ row [ spacing 20 ]
-                [ link [ Font.color (rgb 0 0.25 0.5), Font.underline ]
-                    { url = Route.toString Route.Top, label = text "Homepage" }
-                , link [ Font.color (rgb 0 0.25 0.5), Font.underline ]
-                    { url = Route.toString Route.NotFound, label = text "Not found" }
+        [ column
+            [ height fill
+            , width fill
+            , Font.family
+                [ Font.typeface "Roboto"
+                , Font.sansSerif
                 ]
-            , column [ height fill ] page.body
+            ]
+            [ case model.appState of
+                FailedToLaunch _ ->
+                    Route.fromUrl model.url
+                        |> viewHeader WS.unknownStatus
+
+                Running { webSocketConnectionStatus } ->
+                    Route.fromUrl model.url
+                        |> viewHeader webSocketConnectionStatus
+            , column
+                [ centerX
+                , paddingXY 50 30
+                , spacing 30
+                , width fill
+                ]
+                page.body
             ]
         ]
     }
+
+
+viewHeader : WS.ConnectionStatus -> Maybe Route -> Element msg
+viewHeader connStat currentRoute =
+    column
+        [ padding 10
+        , spacing 5
+        , width fill
+        , Background.color Style.colorPalette.c1
+        , Font.color Style.colorPalette.c4
+        , Font.size 32
+        , Font.bold
+        , Region.navigation
+        ]
+        [ row [ centerX, spacing 10 ]
+            [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
+            , el [] <|
+                WS.statusIconView connStat
+            ]
+        , wrappedRow
+            [ centerX
+            , spacing 10
+            , Font.medium
+            , Font.size 24
+            ]
+            ([ viewLink currentRoute ( text "Designs", Route.Designs )
+             , viewLink currentRoute ( text "Reference Sets", Route.ReferenceSets )
+             , viewLink currentRoute ( text "Specifications", Route.Specifications )
+             , viewLink currentRoute
+                ( FeatherIcons.settings
+                    |> Style.featherIconToElmUi
+                , Route.NotFound
+                )
+             ]
+                |> List.intersperse (el [ Font.color Style.colorPalette.c4 ] <| text "|")
+            )
+        ]
+
+
+viewLink : Maybe Route -> ( Element msg, Route ) -> Element msg
+viewLink mRoute ( label, route ) =
+    let
+        notHighlightedView : Element msg
+        notHighlightedView =
+            link
+                [ alpha 0.5
+                , mouseOver [ alpha 1 ]
+                ]
+                { label = label
+                , url = Route.toString route
+                }
+    in
+    case mRoute of
+        Just currentRoute ->
+            if currentRoute == route then
+                el
+                    []
+                    label
+
+            else
+                notHighlightedView
+
+        Nothing ->
+            notHighlightedView
 
 
 
