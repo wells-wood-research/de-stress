@@ -1,5 +1,6 @@
 module Shared exposing
-    ( Flags
+    ( AppState(..)
+    , Flags
     , Model
     , Msg
     , init
@@ -10,6 +11,8 @@ module Shared exposing
 
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
+import Design
+import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
@@ -44,8 +47,8 @@ type alias RunState =
     { randomSeed : Random.Seed
     , nextUuid : Uuid
     , webSocketConnectionStatus : WS.ConnectionStatus
+    , designs : Dict String Design.StoredDesign
 
-    -- , designs : Dict String StoredDesign
     -- , referenceSets : Dict String StoredReferenceSet
     -- , mSelectedReferenceSet : Maybe String
     -- , specifications : Dict String StoredSpecification
@@ -114,6 +117,7 @@ init flags url key =
                             , nextUuid =
                                 nextUuid
                             , webSocketConnectionStatus = WS.unknownStatus
+                            , designs = Dict.empty
                             }
 
                     -- , designs = Dict.empty
