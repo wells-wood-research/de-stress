@@ -1,9 +1,10 @@
 module Shared exposing
-    ( AppState(..)
-    , Flags
+    ( Flags
     , Model
     , Msg
+    , getRunState
     , init
+    , mapRunState
     , subscriptions
     , update
     , view
@@ -19,6 +20,7 @@ import Element.Font as Font
 import Element.Region as Region
 import FeatherIcons
 import Random
+import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route exposing (Route)
@@ -44,8 +46,7 @@ type AppState
 
 
 type alias RunState =
-    { randomSeed : Random.Seed
-    , nextUuid : Uuid
+    { resourceUuid : ResourceUuid
     , webSocketConnectionStatus : WS.ConnectionStatus
     , designs : Dict String Design.StoredDesign
 
@@ -54,6 +55,28 @@ type alias RunState =
     -- , specifications : Dict String StoredSpecification
     -- , mSelectedSpecification : Maybe String
     }
+
+
+getRunState : Model -> Maybe RunState
+getRunState model =
+    case model.appState of
+        Running runState ->
+            Just runState
+
+        _ ->
+            Nothing
+
+
+mapRunState : (RunState -> RunState) -> Model -> Model
+mapRunState fn model =
+    case model.appState of
+        Running runState ->
+            { model
+                | appState = fn runState |> Running
+            }
+
+        _ ->
+            model
 
 
 type LaunchError
@@ -98,8 +121,8 @@ init flags url key =
     ( case Codec.decodeValue flagsCodec flags of
         Ok { initialSeed } ->
             let
-                ( nextUuid, randomSeed ) =
-                    createInitialUuid initialSeed
+                resourceUuid =
+                    ResourceUuid.createInitialUuid initialSeed
 
                 mInitialState =
                     Nothing
@@ -113,9 +136,7 @@ init flags url key =
                     , key = key
                     , appState =
                         Running
-                            { randomSeed = randomSeed
-                            , nextUuid =
-                                nextUuid
+                            { resourceUuid = resourceUuid
                             , webSocketConnectionStatus = WS.unknownStatus
                             , designs = Dict.empty
                             }
@@ -135,15 +156,6 @@ init flags url key =
             }
     , Cmd.none
     )
-
-
-createInitialUuid : Int -> ( Uuid, Random.Seed )
-createInitialUuid initialRandomNumber =
-    let
-        initialRandomSeed =
-            Random.initialSeed initialRandomNumber
-    in
-    Random.step Uuid.uuidGenerator initialRandomSeed
 
 
 

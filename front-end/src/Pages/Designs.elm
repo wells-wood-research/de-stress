@@ -1,14 +1,14 @@
 module Pages.Designs exposing (Model, Msg, Params, page)
 
 import Biomolecules
-import Codec exposing (Value)
-import Design
+import Design exposing (Design)
 import Dict exposing (Dict)
 import File exposing (File)
 import File.Select as FileSelect
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Editable as Editable
+import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Spa.Document exposing (Document)
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
@@ -32,7 +32,8 @@ page =
 
 
 type alias Model =
-    { loadingState : DesignLoadingState
+    { mResourceUuid : Maybe ResourceUuid
+    , loadingState : DesignLoadingState
     , loadErrors : List String
     , designs : Dict String Design.StoredDesign
 
@@ -59,15 +60,19 @@ type alias Params =
 
 init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
 init shared _ =
-    ( { loadingState = Free
-      , loadErrors = []
-      , designs =
-            case shared.appState of
-                Shared.Running { designs } ->
-                    designs
+    let
+        ( mResourceUuid, designDict ) =
+            case Shared.getRunState shared of
+                Just { resourceUuid, designs } ->
+                    ( Just resourceUuid, designs )
 
-                _ ->
-                    Dict.empty
+                Nothing ->
+                    ( Nothing, Dict.empty )
+    in
+    ( { mResourceUuid = mResourceUuid
+      , loadingState = Free
+      , loadErrors = []
+      , designs = designDict
 
       --, mSelectedSpecification = Nothing
       --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
@@ -153,29 +158,11 @@ update msg model =
                 rStructuralData =
                     Biomolecules.parsePdbString name contents
             in
-            case rStructuralData of
-                Ok _ ->
-                    -- Currently this is only checking to see if the file is valid PDB
-                    ( { model | loadingState = loadingState }
-                    , Cmd.none
-                      --, { name =
-                      --        String.split "." name
-                      --            |> List.head
-                      --            |> Maybe.withDefault name
-                      --            |> Editable.NotEditing
-                      --  , fileName = name
-                      --  , pdbString =
-                      --        contents
-                      --            |> String.lines
-                      --            |> List.filter (String.startsWith "ATOM")
-                      --            |> String.join "\n"
-                      --  , deleteStatus = Buttons.initDangerStatus
-                      --  --, metricsJobStatus = Ports.Ready
-                      --  --, mMeetsActiveSpecification = Nothing
-                      --  }
-                    )
+            case ( model.mResourceUuid, rStructuralData ) of
+                ( Nothing, _ ) ->
+                    Debug.todo "Add error panel"
 
-                Err (Biomolecules.PdbParseError errorString) ->
+                ( _, Err (Biomolecules.PdbParseError errorString) ) ->
                     ( { model
                         | loadErrors =
                             ("Failed to parse PDB file "
@@ -189,7 +176,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                Err (Biomolecules.HttpError _) ->
+                ( _, Err (Biomolecules.HttpError _) ) ->
                     ( { model
                         | loadErrors =
                             ("Something weird happened while loading "
@@ -197,6 +184,45 @@ update msg model =
                             )
                                 :: model.loadErrors
                         , loadingState = loadingState
+                      }
+                    , Cmd.none
+                    )
+
+                ( Just resourceUuid, Ok _ ) ->
+                    -- Currently this is only checking to see if the file is valid PDB
+                    let
+                        { uuidString, nextResourceUuid } =
+                            ResourceUuid.toString
+                                resourceUuid
+
+                        design : Design
+                        design =
+                            { name =
+                                String.split "." name
+                                    |> List.head
+                                    |> Maybe.withDefault name
+                                    |> Editable.NotEditing
+                            , fileName = name
+                            , pdbString =
+                                contents
+                                    |> String.lines
+                                    |> List.filter (String.startsWith "ATOM")
+                                    |> String.join "\n"
+                            , deleteStatus = Buttons.initDangerStatus
+
+                            --, metricsJobStatus = Ports.Ready
+                            , mMeetsActiveSpecification = Nothing
+                            }
+                    in
+                    ( { model
+                        | mResourceUuid = Just nextResourceUuid
+                        , loadingState = loadingState
+                        , designs =
+                            Dict.insert uuidString
+                                (Design.createDesignStub design
+                                    |> Design.storeDesignStubLocally
+                                )
+                                model.designs
                       }
                     , Cmd.none
                     )
@@ -308,12 +334,34 @@ structureRequested =
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
-    shared
+    case model.mResourceUuid of
+        Just resourceUuid ->
+            Shared.mapRunState
+                (\runState ->
+                    { runState
+                        | resourceUuid = resourceUuid
+                        , designs = model.designs
+                    }
+                )
+                shared
+
+        Nothing ->
+            shared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
 load shared model =
-    ( model, Cmd.none )
+    case Shared.getRunState shared of
+        Just { resourceUuid, designs } ->
+            ( { model
+                | mResourceUuid = Just resourceUuid
+                , designs = designs
+              }
+            , Cmd.none
+            )
+
+        Nothing ->
+            Debug.todo "Should I deal with this or leave to the shared view?"
 
 
 subscriptions : Model -> Sub Msg

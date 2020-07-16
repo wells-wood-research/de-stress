@@ -6,6 +6,7 @@ module Design exposing
     , createDesignStub
     , designStubCodec
     , mapStoredDesign
+    , storeDesignStubLocally
     , storedDesignCodec
     , storedDesignToStub
     )
@@ -98,6 +99,11 @@ createDesignStub design =
 
 type StoredDesign
     = LocalDesign DesignStub
+
+
+storeDesignStubLocally : DesignStub -> StoredDesign
+storeDesignStubLocally stub =
+    LocalDesign stub
 
 
 storedDesignCodec : Codec StoredDesign
