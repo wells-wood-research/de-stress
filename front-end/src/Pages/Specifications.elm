@@ -1,189 +1,76 @@
-module Pages.Specifications exposing (Model, Msg, page)
+module Pages.Specifications exposing (Params, Model, Msg, page)
 
-import Dict
-import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Events as Events
-import Generated.Params as Params
-import Generated.Routes as Routes exposing (routes)
-import Global
-import Spa.Page exposing (send)
-import Specification exposing (SpecificationStub)
-import Style exposing (h1)
-import Utils.Spa exposing (Page)
+import Shared
+import Spa.Document exposing (Document)
+import Spa.Page as Page exposing (Page)
+import Spa.Url as Url exposing (Url)
 
 
-page : Page Params.Specifications Model Msg model msg appMsg
+page : Page Params Model Msg
 page =
-    Spa.Page.component
-        { title = always "Specifications"
-        , init = always init
-        , update = always update
-        , subscriptions = always subscriptions
+    Page.application
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
         , view = view
+        , save = save
+        , load = load
         }
 
 
 
--- {{{ Init
+-- INIT
+
+
+type alias Params =
+    ()
 
 
 type alias Model =
     {}
 
 
-init : Params.Specifications -> ( Model, Cmd Msg, Cmd Global.Msg )
-init _ =
-    ( {}
-    , Cmd.none
-    , Cmd.none
-    )
+init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
+init shared { params } =
+    ( {}, Cmd.none )
 
 
 
--- }}}
--- {{{ Update
+-- UPDATE
 
 
 type Msg
-    = ClickedSelectSpecification (Maybe String)
-    | DeleteSpecification String Style.DangerStatus
+    = ReplaceMe
 
 
-update : Msg -> Model -> ( Model, Cmd Msg, Cmd Global.Msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ClickedSelectSpecification mSelectedSpecification ->
-            ( model
-            , Cmd.none
-            , Global.SetMSelectedSpecification mSelectedSpecification
-                |> send
-            )
-
-        DeleteSpecification uuidString dangerStatus ->
-            ( model
-            , Cmd.none
-            , Global.DeleteSpecification uuidString dangerStatus
-                |> send
-            )
+        ReplaceMe ->
+            ( model, Cmd.none )
 
 
+save : Model -> Shared.Model -> Shared.Model
+save model shared =
+    shared
 
--- }}}
--- {{{ Subscriptions
+
+load : Shared.Model -> Model -> ( Model, Cmd Msg )
+load shared model =
+    ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.none
 
 
 
--- }}}
--- {{{ View
+-- VIEW
 
 
-view : Utils.Spa.PageContext -> Model -> Element Msg
-view { global } _ =
-    case global of
-        Global.Running { mSelectedSpecification, specifications } ->
-            el [ centerX, width <| maximum 800 <| fill ] <|
-                column
-                    [ width fill, spacing 30 ]
-                    (row [ centerX, spacing 10 ]
-                        [ Style.h1 <|
-                            text "Requirement Specifications"
-                        , Style.linkButton { url = "/specifications/new", label = text "New" }
-                        ]
-                        :: (Dict.toList specifications
-                                |> List.map
-                                    (\( k, v ) ->
-                                        ( k, Global.storedSpecificationToStub v )
-                                    )
-                                |> List.map (specificationStubView mSelectedSpecification)
-                           )
-                    )
-
-        Global.FailedToLaunch _ ->
-            Debug.todo "Add common state page"
-
-
-specificationStubView : Maybe String -> ( String, SpecificationStub ) -> Element Msg
-specificationStubView mSelectedSpecification ( uuidString, { name, description, deleteStatus } ) =
-    column
-        ([ padding 15
-         , spacing 10
-         , width fill
-         , Background.color Style.colorPalette.c5
-         , Border.rounded 10
-         , Border.width 3
-         ]
-            ++ (case mSelectedSpecification of
-                    Just selectedSpecification ->
-                        if selectedSpecification == uuidString then
-                            [ Border.color Style.colorPalette.black
-                            ]
-
-                        else
-                            [ Border.color Style.colorPalette.c5
-                            ]
-
-                    Nothing ->
-                        [ Border.color Style.colorPalette.c5
-                        ]
-               )
-        )
-        [ column
-            [ pointer
-            , spacing 10
-            , width fill
-            ]
-            [ Style.h2 <| text name
-            , paragraph [] [ text description ]
-            ]
-        , row [ spacing 10, width fill ]
-            [ case mSelectedSpecification of
-                Just selectedSpecification ->
-                    if selectedSpecification == uuidString then
-                        Style.alwaysActiveButton
-                            { label = text "Active"
-                            , clickMsg =
-                                ClickedSelectSpecification <|
-                                    Nothing
-                            , pressed = True
-                            }
-
-                    else
-                        Style.alwaysActiveButton
-                            { label = text "Select"
-                            , clickMsg =
-                                ClickedSelectSpecification <|
-                                    Just uuidString
-                            , pressed = False
-                            }
-
-                Nothing ->
-                    Style.alwaysActiveButton
-                        { label = text "Select"
-                        , clickMsg =
-                            ClickedSelectSpecification <|
-                                Just uuidString
-                        , pressed = False
-                        }
-            , Style.linkButton
-                { label = text "Details"
-                , url = Routes.toPath <| routes.specifications_dynamic uuidString
-                }
-            , Style.dangerousButton
-                { label = text "Delete"
-                , confirmText = "Are you sure you want to delete this specification?"
-                , status = deleteStatus
-                , dangerousMsg = DeleteSpecification uuidString
-                }
-            ]
-        ]
-
-
-
--- }}}
+view : Model -> Document Msg
+view model =
+    { title = "Specifications"
+    , body = []
+    }

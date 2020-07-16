@@ -1,4 +1,4 @@
-module Pages.Designs exposing (Params, Model, Msg, page)
+module Pages.Specifications.Uuid_String exposing (Params, Model, Msg, page)
 
 import Shared
 import Spa.Document exposing (Document)
@@ -23,7 +23,7 @@ page =
 
 
 type alias Params =
-    ()
+    { uuid : String }
 
 
 type alias Model =
@@ -71,6 +71,6 @@ subscriptions model =
 
 view : Model -> Document Msg
 view model =
-    { title = "Designs"
+    { title = "Specifications.Uuid_String"
     , body = []
     }

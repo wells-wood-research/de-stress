@@ -1,24 +1,41 @@
-# your elm-spa
-> learn more at [https://elm-spa.dev](https://elm-spa.dev)
+# new elm-spa project
+> More documentation at https://elm-spa.dev
 
-### local development
+## local development
+
+You can get this site up and running with one command:
 
 ```
-npm run dev
+npm start
 ```
 
-## folder structure
+### other commands to know
 
-```elm
-README.md          -- this file you're reading 👀
-elm.json           -- has project dependencies
-src/
-  Main.elm         -- the entrypoint to the app
-  Global.elm       -- share state across pages
-  Transitions.elm  -- smoothly animate between pages
-  Ports.elm        -- communicate with JS
-  Pages/           -- where all your pages go
-  Layouts/         -- reusable views around pages
-  Components/      -- views shared across the site
-  Utils/           -- a place for helper functions
+There are a handful of commands in the [package.json](./package.json).
+
+Command | Description
+:-- | :--
+`npm run dev` | Run a dev server and automatically build changes.
+`npm run test:watch` | Run tests as you code.
+`npm run build` | Build the site for production.
+`npm run test` | Run the test suite once, great for CI
+
+
+## deploying
+
+After you run `npm run build`, the contents of the `public` folder can be hosted as a static site. If you haven't hosted a static site before, I'd recommend using [Netlify](https://netlify.com) (it's free!)
+
+### using netlify
+
+Add a `netlify.toml` file next to this README, for standard SPA routing:
+
+```toml
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 ```
+ 
+__Build command:__ `npm run build`
+
+__Publish directory:__ `public`

@@ -1,40 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>DESTRESS</title>
-    <link rel="stylesheet" href="/styles.css">
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono"
-          rel="stylesheet">
-    <!-- Simple IndexedDB KeyVal pair -->
-    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval-iife.min.js"></script>
-    <!-- Vega Runtime -->
-    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@4"></script>
-  </head>
-  <body>
-    <script src="/dist/elm.compiled.js"></script>
-    <script src="/ports.js"></script>
-    <!-- PV - Protein Viewer -->
-    <script src="/bio-pv.min.js"></script>
-    <script>
-      // `storageKey` is defined in ports.js
-      const storedState = localStorage.getItem(storageKey);
-      const mInitialState = storedState ? JSON.parse(storedState) : null;
-      window.addEventListener('load', _ =>
-        window.ports.init(
-          Elm.Main.init({
-            flags: {
-              randomSeed: Math.floor(Math.random() * 0x0fffffff),
-              mInitialState: mInitialState
-            }
-          })
-        )
-      )
-    </script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSS goes here -->
+</head>
+<body>
+  <!-- JavaScript goes here -->
+  <script src="/dist/elm.compiled.js"></script>
+  <script src="/main.js"></script>
+</body>
 </html>
