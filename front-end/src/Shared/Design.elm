@@ -4,6 +4,7 @@ port module Shared.Design exposing
     , StoredDesign
     , codec
     , createDesignStub
+    , deleteAllDesigns
     , deleteDesign
     , designStubCodec
     , getDesign

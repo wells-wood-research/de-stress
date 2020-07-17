@@ -1,7 +1,13 @@
-import * as idbKeyval from "https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval.mjs";
+import {
+  Store,
+  clear,
+  del,
+  set,
+} from "https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval.mjs";
 
 // {{{ local storage
-const designStore = new idbKeyval.Store("designs", "design-store");
+
+const designStore = new Store("designs", "design-store");
 
 // {{{ utilities
 
@@ -64,7 +70,7 @@ var app = Elm.Main.init({ flags: flags });
 app.ports.storeDesign.subscribe((uuidStringAndDesign) => {
   const { uuidString, design } = uuidStringAndDesign;
   if (idbAvailable) {
-    idbKeyval.set(uuidString, design, designStore);
+    set(uuidString, design, designStore);
   } else {
     console.log(
       "Storage is not available. IndexedDB must be enabled to store state."
@@ -73,7 +79,11 @@ app.ports.storeDesign.subscribe((uuidStringAndDesign) => {
 });
 
 app.ports.deleteDesign.subscribe(({ uuidString }) => {
-  idbKeyval.del(uuidString, designStore);
+  del(uuidString, designStore);
+});
+
+app.ports.deleteAllDesigns.subscribe(() => {
+  clear(designStore);
 });
 // }}}
 
