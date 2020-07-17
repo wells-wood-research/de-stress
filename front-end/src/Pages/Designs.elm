@@ -1,6 +1,7 @@
 module Pages.Designs exposing (Model, Msg, Params, page)
 
 import Biomolecules
+import Codec exposing (Value)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
@@ -118,7 +119,7 @@ type Msg
     = StructuresRequested
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
-      --| GotSpecification Value
+    | GotSpecification Value
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
 
@@ -237,37 +238,63 @@ update msg model =
                                 )
                                 model.designs
                       }
-                    , Cmd.none
+                    , Design.storeDesign
+                        { uuidString = uuidString
+                        , design = design |> Codec.encoder Design.codec
+                        }
                     )
 
-        -- GotSpecification specificationValue ->
-        --     let
-        --         specWithUuidCodec =
-        --             Codec.object
-        --                 (\uuidString specification ->
-        --                     { uuidString = uuidString
-        --                     , specification = specification
-        --                     }
-        --                 )
-        --                 |> Codec.field "uuidString" .uuidString Codec.string
-        --                 |> Codec.field "specification"
-        --                     .specification
-        --                     Specification.codec
-        --                 |> Codec.buildObject
-        --     in
-        --     ( { model
-        --         | mSelectedSpecification =
-        --             Codec.decodeValue specWithUuidCodec specificationValue
-        --                 |> Result.toMaybe
-        --                 |> Maybe.map .specification
-        --       }
-        --     , Cmd.none
-        --     , Cmd.none
-        --     )
-        DeleteDesign uuidString dangerStatus ->
+        GotSpecification specificationValue ->
+            let
+                specWithUuidCodec =
+                    Codec.object
+                        (\uuidString specification ->
+                            { uuidString = uuidString
+                            , specification = specification
+                            }
+                        )
+                        |> Codec.field "uuidString" .uuidString Codec.string
+                        |> Codec.field "specification"
+                            .specification
+                            Specification.codec
+                        |> Codec.buildObject
+            in
             ( model
+              -- { model
+              --     | mSelectedSpecification =
+              --         Codec.decodeValue specWithUuidCodec specificationValue
+              --             |> Result.toMaybe
+              --             |> Maybe.map .specification
+              --   }
             , Cmd.none
             )
+
+        DeleteDesign uuidString dangerStatus ->
+            if Buttons.isConfirmed dangerStatus then
+                let
+                    updatedDesigns =
+                        Dict.remove uuidString model.designs
+                in
+                ( { model | designs = updatedDesigns }
+                , Design.deleteDesign { uuidString = uuidString }
+                )
+
+            else
+                let
+                    updatedDesigns =
+                        Dict.update
+                            uuidString
+                            ((\des ->
+                                { des | deleteStatus = dangerStatus }
+                             )
+                                |> Design.mapStoredDesign
+                                |> Maybe.map
+                            )
+                            model.designs
+                in
+                ( { model | designs = updatedDesigns }
+                , Cmd.none
+                )
 
         DeleteAllDesigns dangerStatus ->
             if Buttons.isConfirmed dangerStatus then

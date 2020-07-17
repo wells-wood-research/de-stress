@@ -1,41 +1,20 @@
-# new elm-spa project
-> More documentation at https://elm-spa.dev
+# DESTRESS
 
-## local development
+## Style Guide
 
-You can get this site up and running with one command:
+## Types
 
-```
-npm start
-```
+Type code should be organised in the following way:
 
-### other commands to know
+1. Type definition or alias.
+2. Constructors where the type is [opaque](https://medium.com/@ckoster22).
+3. Type specific helper functions _e.g._
+  * `(a -> b) -> a -> b`
+  * `a -> b`
+5. View functions _e.g._
+  * a -> Element msg
+  * a -> Html msg
+6. Encoders, decoders or codecs.
+7. Aliases (and follow organisation from step 1) _e.g._ 
+    * `type alias c = a b`
 
-There are a handful of commands in the [package.json](./package.json).
-
-Command | Description
-:-- | :--
-`npm run dev` | Run a dev server and automatically build changes.
-`npm run test:watch` | Run tests as you code.
-`npm run build` | Build the site for production.
-`npm run test` | Run the test suite once, great for CI
-
-
-## deploying
-
-After you run `npm run build`, the contents of the `public` folder can be hosted as a static site. If you haven't hosted a static site before, I'd recommend using [Netlify](https://netlify.com) (it's free!)
-
-### using netlify
-
-Add a `netlify.toml` file next to this README, for standard SPA routing:
-
-```toml
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
- 
-__Build command:__ `npm run build`
-
-__Publish directory:__ `public`

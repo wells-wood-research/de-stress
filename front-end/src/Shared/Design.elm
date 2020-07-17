@@ -1,24 +1,48 @@
-module Shared.Design exposing
+port module Shared.Design exposing
     ( Design
     , DesignStub
     , StoredDesign
     , codec
     , createDesignStub
+    , deleteDesign
     , designStubCodec
+    , getDesign
     , mapStoredDesign
+    , storeDesign
     , storeDesignStubLocally
     , storedDesignCodec
     , storedDesignToStub
+    , updateDesignMetricsStatus
     )
 
--- import Ports
-
-import Codec exposing (Codec)
+import Codec exposing (Codec, Value)
 import Shared.Buttons as Buttons
 import Shared.Editable as Editable exposing (Editable)
 
 
 
+-- {{{ PORTS
+
+
+port storeDesign : { uuidString : String, design : Value } -> Cmd msg
+
+
+port updateDesignMetricsStatus :
+    { uuidString : String, updatedMetricsStatus : Value }
+    -> Cmd msg
+
+
+port getDesign : { uuidString : String } -> Cmd msg
+
+
+port deleteDesign : { uuidString : String } -> Cmd msg
+
+
+port deleteAllDesigns : () -> Cmd msg
+
+
+
+-- }}}
 -- {{{ DESIGN
 
 
