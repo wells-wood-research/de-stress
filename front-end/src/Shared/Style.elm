@@ -105,5 +105,11 @@ buttonStyle =
     ]
 
 
+linkStyle : List (Attribute msg)
+linkStyle =
+    [ Font.underline
+    ]
+
+
 
 -- }}

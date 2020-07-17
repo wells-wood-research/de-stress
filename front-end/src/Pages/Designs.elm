@@ -24,6 +24,7 @@ import Shared.Specification as Specification exposing (Specification)
 import Shared.Style as Style
 import Shared.WebSockets as WebSockets
 import Spa.Document exposing (Document)
+import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
 import Task
@@ -594,11 +595,13 @@ designCard { uuidString, designStub, mMeetsSpecification } =
         [ column
             [ padding 10
             , width fill
-
-            -- , Events.onMouseUp <|
-            --     ShowDesignDetails uuidString
             ]
-            [ Style.h2 <| text designStub.name
+            [ link Style.linkStyle
+                { url =
+                    Route.Designs__Uuid_String { uuid = uuidString }
+                        |> Route.toString
+                , label = Style.h2 <| text designStub.name
+                }
 
             -- , case designStub.metricsJobStatus of
             --     Ports.Ready ->
