@@ -12,7 +12,6 @@ module Shared exposing
 
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
-import Design
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
@@ -20,13 +19,14 @@ import Element.Font as Font
 import Element.Region as Region
 import FeatherIcons
 import Random
+import Shared.Design as Design
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Style as Style
+import Shared.WebSockets as WebSockets exposing (ConnectionStatus)
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route exposing (Route)
 import Url exposing (Url)
 import Uuid exposing (Uuid)
-import WebSockets as WS
 
 
 
@@ -47,7 +47,7 @@ type AppState
 
 type alias RunState =
     { resourceUuid : ResourceUuid
-    , webSocketConnectionStatus : WS.ConnectionStatus
+    , webSocketConnectionStatus : ConnectionStatus
     , designs : Dict String Design.StoredDesign
 
     -- , referenceSets : Dict String StoredReferenceSet
@@ -137,7 +137,7 @@ init flags url key =
                     , appState =
                         Running
                             { resourceUuid = resourceUuid
-                            , webSocketConnectionStatus = WS.unknownStatus
+                            , webSocketConnectionStatus = WebSockets.unknownStatus
                             , designs = Dict.empty
                             }
 
@@ -202,7 +202,7 @@ view { page } model =
             [ case model.appState of
                 FailedToLaunch _ ->
                     Route.fromUrl model.url
-                        |> viewHeader WS.unknownStatus
+                        |> viewHeader WebSockets.unknownStatus
 
                 Running { webSocketConnectionStatus } ->
                     Route.fromUrl model.url
@@ -219,7 +219,7 @@ view { page } model =
     }
 
 
-viewHeader : WS.ConnectionStatus -> Maybe Route -> Element msg
+viewHeader : ConnectionStatus -> Maybe Route -> Element msg
 viewHeader connStat currentRoute =
     column
         [ padding 10
@@ -234,7 +234,7 @@ viewHeader connStat currentRoute =
         [ row [ centerX, spacing 10 ]
             [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
             , el [] <|
-                WS.statusIconView connStat
+                WebSockets.statusIconView connStat
             ]
         , wrappedRow
             [ centerX

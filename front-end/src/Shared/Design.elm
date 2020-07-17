@@ -1,4 +1,4 @@
-module Design exposing
+module Shared.Design exposing
     ( Design
     , DesignStub
     , StoredDesign

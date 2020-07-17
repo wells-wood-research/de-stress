@@ -1,4 +1,4 @@
-module WebSockets exposing (ConnectionStatus, statusIconView, unknownStatus)
+module Shared.WebSockets exposing (ConnectionStatus, statusIconView, unknownStatus)
 
 import Element exposing (Element)
 import FeatherIcons

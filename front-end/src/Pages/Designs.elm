@@ -1,14 +1,27 @@
 module Pages.Designs exposing (Model, Msg, Params, page)
 
 import Biomolecules
-import Design exposing (Design)
 import Dict exposing (Dict)
+import Element exposing (..)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Events as Events
+import Element.Keyed as Keyed
+import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
+import Html
+import Html.Attributes as HAtt
 import Shared
 import Shared.Buttons as Buttons
+import Shared.Design as Design exposing (Design)
 import Shared.Editable as Editable
+import Shared.Metrics as Metrics exposing (DesignMetrics)
+import Shared.Plots as Plots exposing (ColumnData)
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
+import Shared.Specification as Specification exposing (Specification)
+import Shared.Style as Style
+import Shared.WebSockets as WebSockets
 import Spa.Document exposing (Document)
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
@@ -377,9 +390,350 @@ subscriptions model =
 view : Model -> Document Msg
 view model =
     { title = "Designs"
-    , body = []
+    , body = [ bodyView model ]
     }
 
 
+bodyView : Model -> Element Msg
+bodyView { designs, loadingState, deleteAllStatus } =
+    let
+        designCardData =
+            designs
+                |> Dict.toList
+                |> List.map
+                    (\( k, v ) ->
+                        ( k, Design.storedDesignToStub v )
+                    )
+                |> List.map
+                    (createDesignCardData
+                        Nothing
+                        Nothing
+                     -- (mSelectedReferenceSet
+                     --     |> Maybe.andThen
+                     --         (\k -> Dict.get k referenceSets)
+                     --     |> Maybe.map
+                     --         (Global.storedReferenceSetToStub
+                     --             >> ReferenceSet.getParamsForStub
+                     --             >> .aggregateData
+                     --         )
+                     -- )
+                     -- model.mSelectedSpecification
+                    )
+    in
+    column [ spacing 15, width fill ]
+        [ let
+            ( buttonLabel, isActive ) =
+                case loadingState of
+                    LoadingFiles total remaining ->
+                        ( "Loaded "
+                            ++ String.fromInt remaining
+                            ++ "/"
+                            ++ String.fromInt total
+                        , False
+                        )
 
+                    Free ->
+                        ( "Load", True )
+          in
+          row [ centerX, spacing 10 ]
+            [ Style.h1 <| text "Designs"
+            , Buttons.conditionalButton
+                { label = text buttonLabel
+                , clickMsg = Just StructuresRequested
+                , isActive = isActive
+                }
+            , Buttons.dangerousButton
+                { label = text "Delete All"
+                , confirmText = "Are you sure you want to delete ALL design?"
+                , status = deleteAllStatus
+                , dangerousMsg = DeleteAllDesigns
+                }
+            ]
+        , el [ width fill ] <|
+            if List.isEmpty designCardData then
+                el [ centerX ] (text "Click \"Load\" to add models.")
+
+            else
+                column
+                    [ width fill ]
+                    [ overviewPlots
+
+                    -- model.overviewOptionDropDown
+                    -- designCardData
+                    , designCardsView
+                        -- model.mSelectedSpecification
+                        Nothing
+                        designCardData
+                    ]
+        ]
+
+
+type alias DesignCardData =
+    { uuidString : String
+    , designStub : Design.DesignStub
+    , mMeetsSpecification :
+        Maybe Bool
+    }
+
+
+createDesignCardData :
+    Maybe Metrics.AggregateData
+    -> Maybe Specification
+    -> ( String, Design.DesignStub )
+    -> DesignCardData
+createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
+    { uuidString = uuidString
+    , designStub = designStub
+    , mMeetsSpecification =
+        Nothing
+
+    -- case ( mSpecification, designStub.metricsJobStatus ) of
+    --     ( Just specification, Ports.Complete designMetrics ) ->
+    --         Specification.applySpecification mAggregateData
+    --             designMetrics
+    --             specification
+    --             |> Just
+    --     _ ->
+    --         Nothing
+    }
+
+
+partitionDesignCardData :
+    List DesignCardData
+    ->
+        { meetsSpecification : List DesignCardData
+        , failedSpecification : List DesignCardData
+        , noMetrics : List DesignCardData
+        }
+    ->
+        { meetsSpecification : List DesignCardData
+        , failedSpecification : List DesignCardData
+        , noMetrics : List DesignCardData
+        }
+partitionDesignCardData remainingData partitionedData =
+    case remainingData of
+        [] ->
+            partitionedData
+
+        data :: rest ->
+            let
+                newPartitioned =
+                    case data.mMeetsSpecification of
+                        Just True ->
+                            { partitionedData
+                                | meetsSpecification =
+                                    data :: partitionedData.meetsSpecification
+                            }
+
+                        Just False ->
+                            { partitionedData
+                                | failedSpecification =
+                                    data :: partitionedData.failedSpecification
+                            }
+
+                        Nothing ->
+                            { partitionedData
+                                | noMetrics =
+                                    data :: partitionedData.noMetrics
+                            }
+            in
+            partitionDesignCardData rest newPartitioned
+
+
+designCard :
+    { uuidString : String
+    , designStub : Design.DesignStub
+    , mMeetsSpecification :
+        Maybe Bool
+    }
+    -> Element Msg
+designCard { uuidString, designStub, mMeetsSpecification } =
+    row
+        [ mouseOver [ Background.color Style.colorPalette.c4 ]
+        , fillPortion 1 |> width
+        , Background.color Style.colorPalette.c5
+        , case mMeetsSpecification of
+            Nothing ->
+                Border.color Style.colorPalette.c5
+
+            Just False ->
+                Border.color Style.colorPalette.red
+
+            Just True ->
+                Border.color Style.colorPalette.c3
+        , Border.width 4
+        , Border.rounded 10
+        ]
+        [ column
+            [ padding 10
+            , width fill
+
+            -- , Events.onMouseUp <|
+            --     ShowDesignDetails uuidString
+            ]
+            [ Style.h2 <| text designStub.name
+
+            -- , case designStub.metricsJobStatus of
+            --     Ports.Ready ->
+            --         text "Ready for server submission."
+            --     Ports.Submitted _ ->
+            --         text "Job submitted to server."
+            --     Ports.Queued ->
+            --         text "Job queued on server."
+            --     Ports.InProgress ->
+            --         text "Job is running on server."
+            --     Ports.Cancelled ->
+            --         text "Job was cancelled by user."
+            --     Ports.Failed errorString ->
+            --         "Server error while creating metrics: "
+            --             ++ errorString
+            --             |> text
+            --     Ports.Complete _ ->
+            --         text "Metrics Available"
+            ]
+        , el [ alignRight, padding 10 ] <|
+            Buttons.dangerousButton
+                { label = Style.featherIconToElmUi FeatherIcons.trash2
+                , confirmText = "Are you sure you want to delete this design?"
+                , status = designStub.deleteStatus
+                , dangerousMsg = DeleteDesign uuidString
+                }
+        ]
+
+
+designCardsView : Maybe Specification -> List DesignCardData -> Element Msg
+designCardsView mSelectedSpecification designCardData =
+    let
+        cardContainer =
+            wrappedRow [ spacing 10, width fill ]
+    in
+    case mSelectedSpecification of
+        Just _ ->
+            let
+                { meetsSpecification, failedSpecification, noMetrics } =
+                    partitionDesignCardData designCardData
+                        { meetsSpecification = []
+                        , failedSpecification = []
+                        , noMetrics = []
+                        }
+            in
+            column [ spacing 15, width fill ]
+                [ Style.h2 <| text "Meets Specification"
+                , meetsSpecification
+                    |> List.map designCard
+                    |> cardContainer
+                , Style.h2 <| text "Failed to Meet Specification"
+                , failedSpecification
+                    |> List.map designCard
+                    |> cardContainer
+                , Style.h2 <| text "No Metrics Available"
+                , noMetrics
+                    |> List.map designCard
+                    |> cardContainer
+                ]
+
+        Nothing ->
+            designCardData
+                |> List.map designCard
+                |> cardContainer
+
+
+
+-- {{{ Overview Plots
+
+
+defaultPlotableOption : ( String, DesignMetrics -> Float )
+defaultPlotableOption =
+    ( "Packing Density", .packingDensity )
+
+
+plotableMetrics : Dict String (DesignMetrics -> Float)
+plotableMetrics =
+    [ defaultPlotableOption
+    , ( "Hydrophobic Fitness"
+      , .hydrophobicFitness
+            >> Maybe.withDefault (0 / 0)
+            >> abs
+      )
+    , ( "Isoelectric Point", .isoelectricPoint )
+    , ( "Mass", .mass )
+    ]
+        |> Dict.fromList
+
+
+overviewPlots : Element msg
+overviewPlots =
+    column
+        [ width fill ]
+        [ Style.h3 <| text "Overview"
+        , Keyed.el [ centerX, width fill ]
+            ( "overview"
+            , Html.div
+                [ HAtt.id "overview"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+
+-- overviewPlots :
+--     DropDown.Model String
+--     -> List DesignCardData
+--     -> Element Msg
+-- overviewPlots ({ selected } as dropDownModel) designCardData =
+--     let
+--         getDataFn =
+--             Dict.get selected plotableMetrics
+--                 |> Maybe.withDefault (Tuple.second defaultPlotableOption)
+--     in
+--     column [ spacing 10, fill |> maximum 500 |> height, width fill ]
+--         [ Style.h2 <| text "Overview"
+--         , el [ width <| maximum 300 <| fill ]
+--             (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
+--                 |> map OverviewOptionDropDownMsg
+--             )
+--         , List.indexedMap Tuple.pair designCardData
+--             |> List.reverse
+--             |> List.filterMap (makeColumnData getDataFn)
+--             |> List.sortBy .value
+--             |> List.reverse
+--             |> MetricPlots.metricOverview
+--                 ShowDesignDetails
+--                 selected
+--             |> html
+--         ]
+
+
+makeColumnData :
+    (DesignMetrics -> Float)
+    -> ( Int, DesignCardData )
+    -> Maybe ColumnData
+makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification } ) =
+    Nothing
+
+
+
+-- case designStub.metricsJobStatus of
+--     WebSockets.Complete metrics ->
+--         Just
+--             { index = toFloat index
+--             , name = designStub.name
+--             , uuidString = uuidString
+--             , value = getDataFn metrics
+--             , mMeetsSpecification = mMeetsSpecification
+--             }
+--     _ ->
+--         Nothing
+-- }}}
 -- }}}

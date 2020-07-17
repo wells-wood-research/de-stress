@@ -1,4 +1,4 @@
-module Metrics exposing
+module Shared.Metrics exposing
     ( AggregateData
     , DesignMetrics
     , MeanAndStdDev
