@@ -1,4 +1,4 @@
-module Shared exposing
+port module Shared exposing
     ( Flags
     , Model
     , Msg
@@ -25,11 +25,20 @@ import Shared.Style as Style
 import Shared.WebSockets as WebSockets exposing (ConnectionStatus)
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route exposing (Route)
+import Time
 import Url exposing (Url)
 import Uuid exposing (Uuid)
 
 
 
+-- {{{ PORTS
+
+
+port storeRunState : Value -> Cmd msg
+
+
+
+-- }}}
 -- {{{ SHARED MODEL
 
 
@@ -54,6 +63,7 @@ type alias RunState =
     -- , mSelectedReferenceSet : Maybe String
     -- , specifications : Dict String StoredSpecification
     -- , mSelectedSpecification : Maybe String
+    , saveStateRequested : Bool
     }
 
 
@@ -83,6 +93,44 @@ type LaunchError
     = FailedToDecodeFlags Codec.Error
 
 
+type alias StoredRunState =
+    { designs : Dict String Design.StoredDesign
+
+    --, referenceSets : Dict String StoredReferenceSet
+    --, mSelectedReferenceSet : Maybe String
+    --, specifications : Dict String StoredSpecification
+    --, mSelectedSpecification : Maybe String
+    }
+
+
+storedRunStateCodec : Codec StoredRunState
+storedRunStateCodec =
+    Codec.object StoredRunState
+        |> Codec.field "designs" .designs (Codec.dict Design.storedDesignCodec)
+        -- |> Codec.field "referenceSets"
+        --     .referenceSets
+        --     (Codec.dict storedReferenceSetCodec)
+        -- |> Codec.field "mSelectedReferenceSet"
+        --     .mSelectedReferenceSet
+        --     (Codec.string
+        --         |> Codec.maybe
+        --     )
+        -- |> Codec.field "specifications"
+        --     .specifications
+        --     (Codec.dict storedSpecificationCodec)
+        -- |> Codec.field "mSelectedSpecification"
+        --     .mSelectedSpecification
+        --     (Codec.string
+        --         |> Codec.maybe
+        --     )
+        |> Codec.buildObject
+
+
+encodeStoredRunState : StoredRunState -> Value
+encodeStoredRunState storedRunState =
+    Codec.encoder storedRunStateCodec storedRunState
+
+
 
 -- }}}
 -- {{{ INIT
@@ -94,15 +142,15 @@ type alias Flags =
 
 type alias InitialData =
     { initialSeed : Int
+    , mInitialState :
+        Maybe
+            { designs : Dict String Design.StoredDesign
 
-    -- , mInitialState :
-    --     Maybe
-    --         { designs : Dict String StoredDesign
-    --         , referenceSets : Dict String StoredReferenceSet
-    --         , mSelectedReferenceSet : Maybe String
-    --         , specifications : Dict String StoredSpecification
-    --         , mSelectedSpecification : Maybe String
-    --         }
+            -- , referenceSets : Dict String StoredReferenceSet
+            -- , mSelectedReferenceSet : Maybe String
+            -- , specifications : Dict String StoredSpecification
+            -- , mSelectedSpecification : Maybe String
+            }
     }
 
 
@@ -110,26 +158,39 @@ flagsCodec : Codec InitialData
 flagsCodec =
     Codec.object InitialData
         |> Codec.field "initialSeed" .initialSeed Codec.int
-        -- |> Codec.field "mInitialState"
-        --     .mInitialState
-        --     (storedStateCodec |> Codec.maybe)
+        |> Codec.field "mInitialState"
+            .mInitialState
+            (storedRunStateCodec |> Codec.maybe)
         |> Codec.buildObject
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     ( case Codec.decodeValue flagsCodec flags of
-        Ok { initialSeed } ->
+        Ok { initialSeed, mInitialState } ->
             let
                 resourceUuid =
                     ResourceUuid.createInitialUuid initialSeed
-
-                mInitialState =
-                    Nothing
             in
             case mInitialState of
                 Just initialState ->
-                    Debug.todo "Handle initial state."
+                    { url = url
+                    , key = key
+                    , appState =
+                        Running
+                            { resourceUuid = resourceUuid
+                            , webSocketConnectionStatus = WebSockets.unknownStatus
+                            , designs = initialState.designs
+
+                            -- , referenceSets = initialState.referenceSets
+                            -- , mSelectedReferenceSet =
+                            --     initialState.mSelectedReferenceSet
+                            -- , specifications = initialState.specifications
+                            -- , mSelectedSpecification =
+                            --     initialState.mSelectedSpecification
+                            , saveStateRequested = False
+                            }
+                    }
 
                 Nothing ->
                     { url = url
@@ -139,6 +200,7 @@ init flags url key =
                             { resourceUuid = resourceUuid
                             , webSocketConnectionStatus = WebSockets.unknownStatus
                             , designs = Dict.empty
+                            , saveStateRequested = False
                             }
 
                     -- , designs = Dict.empty
@@ -164,19 +226,45 @@ init flags url key =
 
 
 type Msg
-    = ReplaceMe
+    = SaveIfRequested Bool Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        ReplaceMe ->
-            ( model, Cmd.none )
+    case ( msg, model.appState ) of
+        ( SaveIfRequested saveStateRequested _, Running runState ) ->
+            if saveStateRequested then
+                ( mapRunState
+                    (\rs -> { rs | saveStateRequested = False })
+                    model
+                , encodeStoredRunState
+                    { designs = runState.designs
+
+                    -- , referenceSets = runState.referenceSets
+                    -- , mSelectedReferenceSet = runState.mSelectedReferenceSet
+                    -- , specifications = runState.specifications
+                    -- , mSelectedSpecification = runState.mSelectedSpecification
+                    }
+                    |> storeRunState
+                )
+
+            else
+                ( model
+                , Cmd.none
+                )
+
+        ( _, FailedToLaunch _ ) ->
+            Debug.todo "Need some general handling of this state."
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model.appState of
+        Running runState ->
+            Time.every 5000 (SaveIfRequested runState.saveStateRequested)
+
+        FailedToLaunch _ ->
+            Sub.none
 
 
 

@@ -5,8 +5,9 @@ import {
   set,
 } from "https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval.mjs";
 
-// {{{ local storage
+// {{{ storage
 
+const localStorageKey = "globalState";
 const designStore = new Store("designs", "design-store");
 
 // {{{ utilities
@@ -46,24 +47,39 @@ function storageAvailable(type) {
 // }}}
 
 // }}}
-
 // {{{ flags
 // Initial data passed to Elm (should match `Flags` defined in `Shared.elm`)
 // https://guide.elm-lang.org/interop/flags.html
 
-var flags = { initialSeed: Math.floor(Math.random() * 0x0fffffff) };
+const storedState = localStorage.getItem(localStorageKey);
+const mInitialState = storedState ? JSON.parse(storedState) : null;
+const flags = {
+  initialSeed: Math.floor(Math.random() * 0x0fffffff),
+  mInitialState,
+};
 
 // }}}
-
 // {{{ app
 
 // Start our Elm application
 var app = Elm.Main.init({ flags: flags });
 
 // }}}
-
 // {{{ ports
 // https://guide.elm-lang.org/interop/ports.html
+
+// {{{ RunState
+
+app.ports.storeRunState.subscribe((runState) => {
+  if (storageAvailable("localStorage")) {
+    localStorage.setItem(localStorageKey, JSON.stringify(runState));
+  } else {
+    console.log(
+      "Storage is not available. Local storage must be enabled to save the application."
+    );
+  }
+});
+// }}}
 
 // {{{ Designs
 

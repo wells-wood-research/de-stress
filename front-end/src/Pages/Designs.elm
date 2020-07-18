@@ -382,6 +382,7 @@ save model shared =
                     { runState
                         | resourceUuid = resourceUuid
                         , designs = model.designs
+                        , saveStateRequested = True
                     }
                 )
                 shared
@@ -483,7 +484,7 @@ bodyView { designs, loadingState, deleteAllStatus } =
 
             else
                 column
-                    [ width fill ]
+                    [ spacing 10, width fill ]
                     [ overviewPlots
 
                     -- model.overviewOptionDropDown
