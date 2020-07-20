@@ -27,17 +27,22 @@ page =
 
 
 
--- INIT
-
-
-type alias Params =
-    ()
+-- {{{ MODEL
 
 
 type alias Model =
     { specifications : Dict String Specification.StoredSpecification
     , mSelectedSpecification : Maybe String
     }
+
+
+
+-- }}}
+-- {{{ INIT
+
+
+type alias Params =
+    ()
 
 
 init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
@@ -59,7 +64,8 @@ init shared _ =
 
 
 
--- UPDATE
+-- }}}
+-- {{{ UPDATE
 
 
 type Msg
@@ -138,7 +144,8 @@ subscriptions _ =
 
 
 
--- VIEW
+-- }}}
+-- {{{ VIEW
 
 
 view : Model -> Document Msg
@@ -157,7 +164,7 @@ bodyView model =
                 text "Requirement Specifications"
             , Buttons.linkButton
                 { route =
-                    Route.Specification__New
+                    Route.Specifications__New
                 , label = text "New"
                 }
             ]
@@ -249,3 +256,7 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
                 }
             ]
         ]
+
+
+
+-- }}}
