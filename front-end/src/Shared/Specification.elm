@@ -5,13 +5,17 @@ module Shared.Specification exposing
     , RequirementData(..)
     , Specification
     , SpecificationStub
+    , StoredSpecification
     , UnitType(..)
     , ValueType(..)
     , applySpecification
     , codec
     , createSpecificationStub
+    , mapStoredSpecification
     , resolveRequirement
     , specificationStubCodec
+    , storedSpecificationCodec
+    , storedSpecificationToStub
     , stringFromOrder
     , stringFromUnitType
     )
@@ -22,12 +26,23 @@ import Shared.Buttons as Buttons exposing (DangerStatus)
 import Shared.Metrics as Metrics exposing (DesignMetrics)
 
 
+
+-- {{{ PORTS
+-- }}}
+-- {{{ SPECIFICATION
+
+
 type alias Specification =
     { name : String
     , description : String
     , requirements : Requirement RequirementData
     , deleteStatus : DangerStatus
     }
+
+
+applySpecification : Maybe Metrics.AggregateData -> DesignMetrics -> Specification -> Bool
+applySpecification mAggregateData designMetrics specification =
+    resolveRequirement mAggregateData designMetrics specification.requirements
 
 
 codec : Codec Specification
@@ -44,6 +59,79 @@ codec =
                 Buttons.initDangerStatus
             )
         |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ SPECIFICATION STUB
+
+
+type alias SpecificationStub =
+    { name : String
+    , description : String
+    , deleteStatus : DangerStatus
+    }
+
+
+specificationStubCodec : Codec SpecificationStub
+specificationStubCodec =
+    Codec.object SpecificationStub
+        |> Codec.field "name" .name Codec.string
+        |> Codec.field "description" .description Codec.string
+        |> Codec.field "deleteStatus"
+            .deleteStatus
+            (Codec.constant
+                Buttons.initDangerStatus
+            )
+        |> Codec.buildObject
+
+
+createSpecificationStub : Specification -> SpecificationStub
+createSpecificationStub specification =
+    { name = specification.name
+    , description = specification.description
+    , deleteStatus = specification.deleteStatus
+    }
+
+
+
+-- }}}
+-- {{{ STORED SPECIFICATION
+
+
+type StoredSpecification
+    = LocalSpecification SpecificationStub
+
+
+mapStoredSpecification : (SpecificationStub -> SpecificationStub) -> StoredSpecification -> StoredSpecification
+mapStoredSpecification stubFn storedSpecification =
+    case storedSpecification of
+        LocalSpecification stub ->
+            stubFn stub |> LocalSpecification
+
+
+storedSpecificationToStub : StoredSpecification -> SpecificationStub
+storedSpecificationToStub storedSpecification =
+    case storedSpecification of
+        LocalSpecification stub ->
+            stub
+
+
+storedSpecificationCodec : Codec StoredSpecification
+storedSpecificationCodec =
+    Codec.custom
+        (\flocal value ->
+            case value of
+                LocalSpecification stub ->
+                    flocal stub
+        )
+        |> Codec.variant1 "LocalSpecification" LocalSpecification specificationStubCodec
+        |> Codec.buildCustom
+
+
+
+-- }}}
+-- {{{ REQUIREMENT
 
 
 type Requirement a
@@ -248,39 +336,6 @@ unitTypeCodec =
         |> Codec.buildCustom
 
 
-type alias SpecificationStub =
-    { name : String
-    , description : String
-    , deleteStatus : DangerStatus
-    }
-
-
-specificationStubCodec : Codec SpecificationStub
-specificationStubCodec =
-    Codec.object SpecificationStub
-        |> Codec.field "name" .name Codec.string
-        |> Codec.field "description" .description Codec.string
-        |> Codec.field "deleteStatus"
-            .deleteStatus
-            (Codec.constant
-                Buttons.initDangerStatus
-            )
-        |> Codec.buildObject
-
-
-createSpecificationStub : Specification -> SpecificationStub
-createSpecificationStub specification =
-    { name = specification.name
-    , description = specification.description
-    , deleteStatus = specification.deleteStatus
-    }
-
-
-applySpecification : Maybe Metrics.AggregateData -> DesignMetrics -> Specification -> Bool
-applySpecification mAggregateData designMetrics specification =
-    resolveRequirement mAggregateData designMetrics specification.requirements
-
-
 resolveRequirement :
     Maybe Metrics.AggregateData
     -> DesignMetrics
@@ -415,3 +470,7 @@ resolveCompositionDeviation unitType threshold meanComposition designComposition
                 Dict.empty
                 |> Dict.values
                 |> List.all identity
+
+
+
+-- }}}

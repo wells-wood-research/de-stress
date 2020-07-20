@@ -21,6 +21,7 @@ import FeatherIcons
 import Random
 import Shared.Design as Design
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
+import Shared.Specification as Specification
 import Shared.Style as Style
 import Shared.WebSockets as WebSockets exposing (ConnectionStatus)
 import Spa.Document exposing (Document)
@@ -61,8 +62,8 @@ type alias RunState =
 
     -- , referenceSets : Dict String StoredReferenceSet
     -- , mSelectedReferenceSet : Maybe String
-    -- , specifications : Dict String StoredSpecification
-    -- , mSelectedSpecification : Maybe String
+    , specifications : Dict String Specification.StoredSpecification
+    , mSelectedSpecification : Maybe String
     , saveStateRequested : Bool
     }
 
@@ -95,11 +96,11 @@ type LaunchError
 
 type alias StoredRunState =
     { designs : Dict String Design.StoredDesign
+    , specifications : Dict String Specification.StoredSpecification
+    , mSelectedSpecification : Maybe String
 
     --, referenceSets : Dict String StoredReferenceSet
     --, mSelectedReferenceSet : Maybe String
-    --, specifications : Dict String StoredSpecification
-    --, mSelectedSpecification : Maybe String
     }
 
 
@@ -115,14 +116,14 @@ storedRunStateCodec =
         --     (Codec.string
         --         |> Codec.maybe
         --     )
-        -- |> Codec.field "specifications"
-        --     .specifications
-        --     (Codec.dict storedSpecificationCodec)
-        -- |> Codec.field "mSelectedSpecification"
-        --     .mSelectedSpecification
-        --     (Codec.string
-        --         |> Codec.maybe
-        --     )
+        |> Codec.field "specifications"
+            .specifications
+            (Codec.dict Specification.storedSpecificationCodec)
+        |> Codec.field "mSelectedSpecification"
+            .mSelectedSpecification
+            (Codec.string
+                |> Codec.maybe
+            )
         |> Codec.buildObject
 
 
@@ -145,11 +146,11 @@ type alias InitialData =
     , mInitialState :
         Maybe
             { designs : Dict String Design.StoredDesign
+            , specifications : Dict String Specification.StoredSpecification
+            , mSelectedSpecification : Maybe String
 
             -- , referenceSets : Dict String StoredReferenceSet
             -- , mSelectedReferenceSet : Maybe String
-            -- , specifications : Dict String StoredSpecification
-            -- , mSelectedSpecification : Maybe String
             }
     }
 
@@ -185,9 +186,9 @@ init flags url key =
                             -- , referenceSets = initialState.referenceSets
                             -- , mSelectedReferenceSet =
                             --     initialState.mSelectedReferenceSet
-                            -- , specifications = initialState.specifications
-                            -- , mSelectedSpecification =
-                            --     initialState.mSelectedSpecification
+                            , specifications = initialState.specifications
+                            , mSelectedSpecification =
+                                initialState.mSelectedSpecification
                             , saveStateRequested = False
                             }
                     }
@@ -200,14 +201,14 @@ init flags url key =
                             { resourceUuid = resourceUuid
                             , webSocketConnectionStatus = WebSockets.unknownStatus
                             , designs = Dict.empty
+                            , specifications = Dict.empty
+                            , mSelectedSpecification = Nothing
                             , saveStateRequested = False
                             }
 
                     -- , designs = Dict.empty
                     -- , referenceSets = Dict.empty
                     -- , mSelectedReferenceSet = Nothing
-                    -- , specifications = Dict.empty
-                    -- , mSelectedSpecification = Nothing
                     }
 
         Err codecError ->
@@ -239,11 +240,11 @@ update msg model =
                     model
                 , encodeStoredRunState
                     { designs = runState.designs
+                    , specifications = runState.specifications
+                    , mSelectedSpecification = runState.mSelectedSpecification
 
                     -- , referenceSets = runState.referenceSets
                     -- , mSelectedReferenceSet = runState.mSelectedReferenceSet
-                    -- , specifications = runState.specifications
-                    -- , mSelectedSpecification = runState.mSelectedSpecification
                     }
                     |> storeRunState
                 )
