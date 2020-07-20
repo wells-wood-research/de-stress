@@ -1,5 +1,6 @@
 module Pages.Specifications.New exposing (Model, Msg, Params, page)
 
+import Browser.Navigation as Nav
 import Codec
 import Dict exposing (Dict)
 import Element exposing (..)
@@ -20,8 +21,10 @@ import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification
 import Shared.Style as Style
 import Spa.Document exposing (Document)
+import Spa.Generated.Route as Route exposing (Route)
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
+import Utils.Route exposing (navigate)
 
 
 page : Page Params Model Msg
@@ -48,11 +51,12 @@ type alias Model =
     , description : Maybe String
     , mode : Mode
     , errors : List String
+    , navKey : Nav.Key
     }
 
 
-defaultModel : Model
-defaultModel =
+defaultModel : Nav.Key -> Model
+defaultModel navKey =
     { mResourceUuid = Nothing
     , specifications = Dict.empty
     , requirements = []
@@ -60,6 +64,7 @@ defaultModel =
     , description = Nothing
     , mode = View
     , errors = []
+    , navKey = navKey
     }
 
 
@@ -319,10 +324,14 @@ type alias Params =
 
 
 init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
-init shared _ =
+init shared { key } =
+    let
+        newModel =
+            defaultModel key
+    in
     case Shared.getRunState shared of
         Just runState ->
-            ( { defaultModel
+            ( { newModel
                 | mResourceUuid = Just runState.resourceUuid
                 , specifications = runState.specifications
               }
@@ -330,7 +339,7 @@ init shared _ =
             )
 
         Nothing ->
-            ( defaultModel, Cmd.none )
+            ( newModel, Cmd.none )
 
 
 
@@ -454,8 +463,11 @@ update msg model =
                             , requirements = Requirement.All model.requirements
                             , deleteStatus = Buttons.initDangerStatus
                             }
+
+                        newModel =
+                            defaultModel model.navKey
                     in
-                    ( { defaultModel
+                    ( { newModel
                         | mResourceUuid = Just nextResourceUuid
                         , specifications =
                             Dict.insert uuidString
@@ -464,13 +476,16 @@ update msg model =
                                 )
                                 model.specifications
                       }
-                    , Specification.storeSpecification
-                        { uuidString = uuidString
-                        , specification =
-                            specification
-                                |> Codec.encoder
-                                    Specification.codec
-                        }
+                    , Cmd.batch
+                        [ Specification.storeSpecification
+                            { uuidString = uuidString
+                            , specification =
+                                specification
+                                    |> Codec.encoder
+                                        Specification.codec
+                            }
+                        , navigate newModel.navKey Route.Specifications
+                        ]
                     )
 
                 Nothing ->
@@ -1291,4 +1306,3 @@ valueSequenceInputView { valueLabel, valueTypeLabel, msgConstructor, mValue } =
 
 
 -- }}}
-

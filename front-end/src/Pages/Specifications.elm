@@ -173,7 +173,7 @@ bodyView model =
                         (\( k, v ) ->
                             ( k, Specification.storedSpecificationToStub v )
                         )
-                    |> List.map (specificationStubView Nothing)
+                    |> List.map (specificationStubView model.mSelectedSpecification)
                )
         )
 
