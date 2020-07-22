@@ -312,7 +312,6 @@ viewHeader : ConnectionStatus -> Maybe Route -> Element msg
 viewHeader connStat currentRoute =
     column
         [ padding 10
-        , spacing 5
         , width fill
         , Background.color Style.colorPalette.c1
         , Font.color Style.colorPalette.c4
@@ -327,7 +326,7 @@ viewHeader connStat currentRoute =
             ]
         , row
             [ centerX
-            , height <| px 32
+            , paddingEach { top = 0, right = 0, bottom = 12, left = 0 }
             , scrollbarX
             , spacing 10
             , width <|
@@ -345,7 +344,7 @@ viewHeader connStat currentRoute =
                 , Route.NotFound
                 )
              ]
-                |> List.intersperse (el [ Font.color Style.colorPalette.c4 ] <| text "|")
+                |> List.intersperse (el [ centerY, Font.color Style.colorPalette.c4 ] <| text "|")
             )
         ]
 
@@ -357,6 +356,7 @@ viewLink mRoute ( label, route ) =
         notHighlightedView =
             link
                 [ alpha 0.5
+                , centerY
                 , mouseOver [ alpha 1 ]
                 ]
                 { label = label
