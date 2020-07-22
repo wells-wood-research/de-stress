@@ -2,13 +2,17 @@ module Shared.ReferenceSet exposing
     ( ReferenceSet(..)
     , ReferenceSetRemoteData
     , ReferenceSetStub(..)
+    , StoredReferenceSet
     , codec
     , createReferenceSetStub
     , getGenericData
     , getParamsForStub
     , highResBiolUnits
+    , mapStoredReferenceSet
     , queryToCmd
     , referenceSetStubCodec
+    , storedReferenceSetCodec
+    , storedReferenceSetToStub
     )
 
 import BigStructure.Object.State as State
@@ -20,8 +24,8 @@ import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import RemoteData as RD exposing (RemoteData)
 import Set exposing (Set)
+import Shared.Buttons as Buttons
 import Shared.Metrics as Metrics exposing (RefSetMetrics)
-import Shared.Style as Style
 
 
 
@@ -36,7 +40,7 @@ type ReferenceSet
 type alias HighResBiolUnitParams =
     { metrics : List RefSetMetrics
     , aggregateData : Metrics.AggregateData
-    , deleteStatus : Style.DangerStatus
+    , deleteStatus : Buttons.DangerStatus
     }
 
 
@@ -46,7 +50,7 @@ type alias PdbCodeListParams =
     , pdbCodeList : Set String
     , metrics : List RefSetMetrics
     , aggregateData : Metrics.AggregateData
-    , deleteStatus : Style.DangerStatus
+    , deleteStatus : Buttons.DangerStatus
     }
 
 
@@ -55,7 +59,7 @@ type alias GenericData =
     , description : String
     , metrics : List RefSetMetrics
     , aggregateData : Metrics.AggregateData
-    , deleteStatus : Style.DangerStatus
+    , deleteStatus : Buttons.DangerStatus
     }
 
 
@@ -100,7 +104,9 @@ highResBiolUnitsParamsCodec =
     Codec.object HighResBiolUnitParams
         |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
         |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
-        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.field "deleteStatus"
+            .deleteStatus
+            (Codec.constant Buttons.initDangerStatus)
         |> Codec.buildObject
 
 
@@ -112,7 +118,9 @@ pdbCodeListParamsCodec =
         |> Codec.field "pdbCodeList" .pdbCodeList (Codec.set Codec.string)
         |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
         |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
-        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.field "deleteStatus"
+            .deleteStatus
+            (Codec.constant Buttons.initDangerStatus)
         |> Codec.buildObject
 
 
@@ -188,7 +196,7 @@ type alias StubParams =
     { name : String
     , description : String
     , aggregateData : Metrics.AggregateData
-    , deleteStatus : Style.DangerStatus
+    , deleteStatus : Buttons.DangerStatus
     }
 
 
@@ -216,7 +224,9 @@ stubParamsCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
         |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
-        |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Style.Unclicked)
+        |> Codec.field "deleteStatus"
+            .deleteStatus
+            (Codec.constant Buttons.initDangerStatus)
         |> Codec.buildObject
 
 
@@ -253,6 +263,46 @@ getParamsForStub referenceSet =
 
         PdbCodeListStub params ->
             params
+
+
+
+-- }}}
+-- {{{ StoredReferenceSet
+
+
+type StoredReferenceSet
+    = LocalReferenceSet ReferenceSetStub
+
+
+mapStoredReferenceSet :
+    (ReferenceSetStub -> ReferenceSetStub)
+    -> StoredReferenceSet
+    -> StoredReferenceSet
+mapStoredReferenceSet stubFn storedReferenceSet =
+    case storedReferenceSet of
+        LocalReferenceSet stub ->
+            stubFn stub |> LocalReferenceSet
+
+
+storedReferenceSetToStub : StoredReferenceSet -> ReferenceSetStub
+storedReferenceSetToStub storedReferenceSet =
+    case storedReferenceSet of
+        LocalReferenceSet stub ->
+            stub
+
+
+storedReferenceSetCodec : Codec StoredReferenceSet
+storedReferenceSetCodec =
+    Codec.custom
+        (\flocal value ->
+            case value of
+                LocalReferenceSet stub ->
+                    flocal stub
+        )
+        |> Codec.variant1 "LocalReferenceSet"
+            LocalReferenceSet
+            referenceSetStubCodec
+        |> Codec.buildCustom
 
 
 

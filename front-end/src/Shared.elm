@@ -18,8 +18,8 @@ import Element.Background as Background
 import Element.Font as Font
 import Element.Region as Region
 import FeatherIcons
-import Random
 import Shared.Design as Design
+import Shared.ReferenceSet as ReferenceSet
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification
 import Shared.Style as Style
@@ -28,7 +28,6 @@ import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route exposing (Route)
 import Time
 import Url exposing (Url)
-import Uuid exposing (Uuid)
 
 
 
@@ -59,9 +58,8 @@ type alias RunState =
     { resourceUuid : ResourceUuid
     , webSocketConnectionStatus : ConnectionStatus
     , designs : Dict String Design.StoredDesign
-
-    -- , referenceSets : Dict String StoredReferenceSet
-    -- , mSelectedReferenceSet : Maybe String
+    , referenceSets : Dict String ReferenceSet.StoredReferenceSet
+    , mSelectedReferenceSet : Maybe String
     , specifications : Dict String Specification.StoredSpecification
     , mSelectedSpecification : Maybe String
     , saveStateRequested : Bool
@@ -96,11 +94,10 @@ type LaunchError
 
 type alias StoredRunState =
     { designs : Dict String Design.StoredDesign
+    , referenceSets : Dict String ReferenceSet.StoredReferenceSet
+    , mSelectedReferenceSet : Maybe String
     , specifications : Dict String Specification.StoredSpecification
     , mSelectedSpecification : Maybe String
-
-    --, referenceSets : Dict String StoredReferenceSet
-    --, mSelectedReferenceSet : Maybe String
     }
 
 
@@ -108,14 +105,14 @@ storedRunStateCodec : Codec StoredRunState
 storedRunStateCodec =
     Codec.object StoredRunState
         |> Codec.field "designs" .designs (Codec.dict Design.storedDesignCodec)
-        -- |> Codec.field "referenceSets"
-        --     .referenceSets
-        --     (Codec.dict storedReferenceSetCodec)
-        -- |> Codec.field "mSelectedReferenceSet"
-        --     .mSelectedReferenceSet
-        --     (Codec.string
-        --         |> Codec.maybe
-        --     )
+        |> Codec.field "referenceSets"
+            .referenceSets
+            (Codec.dict ReferenceSet.storedReferenceSetCodec)
+        |> Codec.field "mSelectedReferenceSet"
+            .mSelectedReferenceSet
+            (Codec.string
+                |> Codec.maybe
+            )
         |> Codec.field "specifications"
             .specifications
             (Codec.dict Specification.storedSpecificationCodec)
@@ -148,9 +145,8 @@ type alias InitialData =
             { designs : Dict String Design.StoredDesign
             , specifications : Dict String Specification.StoredSpecification
             , mSelectedSpecification : Maybe String
-
-            -- , referenceSets : Dict String StoredReferenceSet
-            -- , mSelectedReferenceSet : Maybe String
+            , referenceSets : Dict String ReferenceSet.StoredReferenceSet
+            , mSelectedReferenceSet : Maybe String
             }
     }
 
@@ -182,10 +178,9 @@ init flags url key =
                             { resourceUuid = resourceUuid
                             , webSocketConnectionStatus = WebSockets.unknownStatus
                             , designs = initialState.designs
-
-                            -- , referenceSets = initialState.referenceSets
-                            -- , mSelectedReferenceSet =
-                            --     initialState.mSelectedReferenceSet
+                            , referenceSets = initialState.referenceSets
+                            , mSelectedReferenceSet =
+                                initialState.mSelectedReferenceSet
                             , specifications = initialState.specifications
                             , mSelectedSpecification =
                                 initialState.mSelectedSpecification
@@ -201,6 +196,8 @@ init flags url key =
                             { resourceUuid = resourceUuid
                             , webSocketConnectionStatus = WebSockets.unknownStatus
                             , designs = Dict.empty
+                            , referenceSets = Dict.empty
+                            , mSelectedReferenceSet = Nothing
                             , specifications = Dict.empty
                             , mSelectedSpecification = Nothing
                             , saveStateRequested = False
@@ -240,11 +237,10 @@ update msg model =
                     model
                 , encodeStoredRunState
                     { designs = runState.designs
+                    , referenceSets = runState.referenceSets
+                    , mSelectedReferenceSet = runState.mSelectedReferenceSet
                     , specifications = runState.specifications
                     , mSelectedSpecification = runState.mSelectedSpecification
-
-                    -- , referenceSets = runState.referenceSets
-                    -- , mSelectedReferenceSet = runState.mSelectedReferenceSet
                     }
                     |> storeRunState
                 )
