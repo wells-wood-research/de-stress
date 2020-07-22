@@ -5,6 +5,7 @@ module Shared.Requirement exposing
     , RequirementData(..)
     , UnitType(..)
     , ValueType(..)
+    , dataToString
     , requirementView
     , requirementWithDataCodec
     , resolveRequirement
@@ -186,72 +187,7 @@ requirementView requirement =
     in
     case requirement of
         Data data ->
-            case data of
-                Constant constantType ->
-                    let
-                        typeString =
-                            "Constant:"
-
-                        requirementString =
-                            case constantType of
-                                Method methodType ->
-                                    let
-                                        constantTypeString =
-                                            typeString ++ "Method:"
-                                    in
-                                    case methodType of
-                                        SPPS ->
-                                            constantTypeString ++ "SPPS"
-
-                                        MolecularBiology ->
-                                            constantTypeString ++ "MolBio"
-                    in
-                    el [] (text <| requirementString)
-
-                Value valueType ->
-                    let
-                        typeString =
-                            "Value:"
-
-                        requirementString =
-                            case valueType of
-                                IsoelectricPoint order value ->
-                                    typeString
-                                        ++ "IsoelectricPoint:"
-                                        ++ stringFromOrder
-                                            order
-                                        ++ ":"
-                                        ++ String.fromFloat value
-
-                                HydrophobicFitness order value ->
-                                    typeString
-                                        ++ "HydrophobicFitness:"
-                                        ++ stringFromOrder
-                                            order
-                                        ++ ":"
-                                        ++ String.fromFloat value
-
-                                MeanPackingDensity order value ->
-                                    typeString
-                                        ++ "MeanPackingDensity:"
-                                        ++ stringFromOrder
-                                            order
-                                        ++ ":"
-                                        ++ String.fromFloat value
-
-                                SequenceContains string ->
-                                    typeString
-                                        ++ "SequenceContains:"
-                                        ++ string
-
-                                CompositionDeviation unitType value ->
-                                    typeString
-                                        ++ "CompositionDeviation:"
-                                        ++ stringFromUnitType unitType
-                                        ++ ":"
-                                        ++ String.fromFloat value
-                    in
-                    el [] (text <| requirementString)
+            paragraph [] [ text <| dataToString data ]
 
         Not subRequirement ->
             row [ spacing 10 ]
@@ -351,6 +287,70 @@ requirementCodec meta =
 type RequirementData
     = Constant ConstantType
     | Value ValueType
+
+
+dataToString : RequirementData -> String
+dataToString requirementData =
+    case requirementData of
+        Constant constantType ->
+            let
+                typeString =
+                    "Constant: "
+            in
+            case constantType of
+                Method methodType ->
+                    let
+                        constantTypeString =
+                            typeString ++ "Method: "
+                    in
+                    case methodType of
+                        SPPS ->
+                            constantTypeString ++ "SPPS"
+
+                        MolecularBiology ->
+                            constantTypeString ++ "MolBio"
+
+        Value valueType ->
+            let
+                typeString =
+                    "Value: "
+            in
+            case valueType of
+                IsoelectricPoint order value ->
+                    typeString
+                        ++ "IsoelectricPoint: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                HydrophobicFitness order value ->
+                    typeString
+                        ++ "HydrophobicFitness: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                MeanPackingDensity order value ->
+                    typeString
+                        ++ "MeanPackingDensity: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                SequenceContains string ->
+                    typeString
+                        ++ "SequenceContains: "
+                        ++ string
+
+                CompositionDeviation unitType value ->
+                    typeString
+                        ++ "CompositionDeviation: "
+                        ++ stringFromUnitType unitType
+                        ++ ": "
+                        ++ String.fromFloat value
 
 
 requirementDataTypeCodec : Codec RequirementData
