@@ -464,19 +464,21 @@ bodyView { designs, loadingState, deleteAllStatus } =
                     Free ->
                         ( "Load", True )
           in
-          row [ centerX, spacing 10 ]
-            [ Style.h1 <| text "Designs"
-            , Buttons.conditionalButton
-                { label = text buttonLabel
-                , clickMsg = Just StructuresRequested
-                , isActive = isActive
-                }
-            , Buttons.dangerousButton
-                { label = text "Delete All"
-                , confirmText = "Are you sure you want to delete ALL design?"
-                , status = deleteAllStatus
-                , dangerousMsg = DeleteAllDesigns
-                }
+          wrappedRow [ centerX, spacing 10 ]
+            [ paragraph [] [ Style.h1 <| text "Designs" ]
+            , row [ spacing 10 ]
+                [ Buttons.conditionalButton
+                    { label = text buttonLabel
+                    , clickMsg = Just StructuresRequested
+                    , isActive = isActive
+                    }
+                , Buttons.dangerousButton
+                    { label = text "Delete All"
+                    , confirmText = "Are you sure you want to delete ALL design?"
+                    , status = deleteAllStatus
+                    , dangerousMsg = DeleteAllDesigns
+                    }
+                ]
             ]
         , el [ width fill ] <|
             if List.isEmpty designCardData then

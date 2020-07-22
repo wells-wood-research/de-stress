@@ -1,4 +1,4 @@
-module Pages.ReferenceSets exposing (Params, Model, Msg, page)
+module Pages.ReferenceSets exposing (Model, Msg, Params, page)
 
 import Shared
 import Spa.Document exposing (Document)
@@ -19,7 +19,7 @@ page =
 
 
 
--- INIT
+-- {{{ INIT
 
 
 type alias Params =
@@ -36,7 +36,8 @@ init shared { params } =
 
 
 
--- UPDATE
+-- }}}
+-- {{{ UPDATE
 
 
 type Msg
@@ -66,7 +67,8 @@ subscriptions model =
 
 
 
--- VIEW
+-- }}}
+-- {{{ VIEW
 
 
 view : Model -> Document Msg
@@ -74,3 +76,8 @@ view model =
     { title = "ReferenceSets"
     , body = []
     }
+
+
+
+-- }}}
+

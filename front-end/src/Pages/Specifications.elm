@@ -87,7 +87,7 @@ update msg model =
                     | specifications =
                         Dict.remove uuidString model.specifications
                   }
-                , Cmd.none
+                , Specification.deleteSpecification { uuidString = uuidString }
                 )
 
             else
@@ -159,9 +159,11 @@ bodyView : Model -> Element Msg
 bodyView model =
     column
         [ width fill, spacing 30 ]
-        (row [ centerX, spacing 10 ]
-            [ Style.h1 <|
-                text "Requirement Specifications"
+        (wrappedRow [ centerX, spacing 10 ]
+            [ paragraph []
+                [ Style.h1 <|
+                    text "Requirement Specifications"
+                ]
             , Buttons.linkButton
                 { route =
                     Route.Specifications__New
