@@ -325,9 +325,14 @@ viewHeader connStat currentRoute =
             , el [] <|
                 WebSockets.statusIconView connStat
             ]
-        , wrappedRow
+        , row
             [ centerX
+            , height <| px 32
+            , scrollbarX
             , spacing 10
+            , width <|
+                maximum 500 <|
+                    fill
             , Font.medium
             , Font.size 24
             ]

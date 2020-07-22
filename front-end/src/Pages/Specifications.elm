@@ -216,7 +216,7 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
             [ Style.h2 <| text name
             , paragraph [] [ text description ]
             ]
-        , row [ spacing 10, width fill ]
+        , wrappedRow [ spacing 10, width fill ]
             [ case mSelectedSpecification of
                 Just selectedSpecification ->
                     if selectedSpecification == uuidString then
