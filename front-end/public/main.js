@@ -2,6 +2,7 @@ import {
   Store,
   clear,
   del,
+  get,
   set,
 } from "https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval.mjs";
 
@@ -9,6 +10,7 @@ import {
 
 const localStorageKey = "globalState";
 const designStore = new Store("designs", "design-store");
+const specificationStore = new Store("specifications", "specification-store");
 
 // {{{ utilities
 
@@ -80,7 +82,6 @@ app.ports.storeRunState.subscribe((runState) => {
   }
 });
 // }}}
-
 // {{{ Designs
 
 app.ports.storeDesign.subscribe((uuidStringAndDesign) => {
@@ -101,6 +102,35 @@ app.ports.deleteDesign.subscribe(({ uuidString }) => {
 app.ports.deleteAllDesigns.subscribe(() => {
   clear(designStore);
 });
+// }}}
+// {{{ Specifications
+app.ports.storeSpecification.subscribe((uuidStringAndSpecification) => {
+  const { uuidString, specification } = uuidStringAndSpecification;
+  if (idbAvailable) {
+    set(uuidString, specification, specificationStore);
+  } else {
+    console.log(
+      "Storage is not available. IndexedDB must be enabled to store state."
+    );
+  }
+});
+
+app.ports.getStoredSpecification.subscribe(({ uuidString }) => {
+  get(uuidString, specificationStore).then((specification) => {
+    app.ports.setFocussedSpecification.send({
+      uuidString,
+      specification,
+    });
+  });
+});
+
+app.ports.deleteSpecification.subscribe(({ uuidString }) => {
+  del(uuidString, specificationStore);
+});
+
+// app.ports.deleteAllSpecifications.subscribe(() => {
+//   clear(specificationStore);
+// });
 // }}}
 
 // }}}
