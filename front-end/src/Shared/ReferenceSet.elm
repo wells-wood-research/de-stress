@@ -1,23 +1,27 @@
-module Shared.ReferenceSet exposing
+port module Shared.ReferenceSet exposing
     ( ReferenceSet(..)
     , ReferenceSetRemoteData
     , ReferenceSetStub(..)
     , StoredReferenceSet
     , codec
     , createReferenceSetStub
+    , deleteReferenceSet
     , getGenericData
     , getParamsForStub
+    , getStoredReferenceSet
     , highResBiolUnits
     , mapStoredReferenceSet
+    , mapStubParams
     , queryToCmd
     , referenceSetStubCodec
+    , storeReferenceSet
     , storedReferenceSetCodec
     , storedReferenceSetToStub
     )
 
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
-import Codec exposing (Codec)
+import Codec exposing (Codec, Value)
 import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
@@ -29,6 +33,20 @@ import Shared.Metrics as Metrics exposing (RefSetMetrics)
 
 
 
+-- {{{ PORTS
+
+
+port storeReferenceSet : { uuidString : String, specification : Value } -> Cmd msg
+
+
+port getStoredReferenceSet : { uuidString : String } -> Cmd msg
+
+
+port deleteReferenceSet : { uuidString : String } -> Cmd msg
+
+
+
+-- }}}
 -- {{{ ReferenceSet
 
 
@@ -198,6 +216,18 @@ type alias StubParams =
     , aggregateData : Metrics.AggregateData
     , deleteStatus : Buttons.DangerStatus
     }
+
+
+mapStubParams : (StubParams -> StubParams) -> ReferenceSetStub -> ReferenceSetStub
+mapStubParams fn stub =
+    case stub of
+        HighResBiolUnitStub params ->
+            fn params
+                |> HighResBiolUnitStub
+
+        PdbCodeListStub params ->
+            fn params
+                |> PdbCodeListStub
 
 
 referenceSetStubCodec : Codec ReferenceSetStub
