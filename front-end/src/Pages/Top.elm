@@ -1,7 +1,7 @@
 module Pages.Top exposing (Model, Msg, Params, page)
 
 import Element exposing (..)
-import Shared.Style exposing (h1, h2)
+import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Page as Page exposing (Page)
 import Spa.Url exposing (Url)
@@ -37,10 +37,10 @@ view _ =
         [ column
             [ centerX
             , spacing 20
-            , width <| maximum 800 <| fill
+            , Style.pageWidths.singleColumn
             ]
             [ text "Homepage"
-                |> h1
+                |> Style.h1
             , paragraph []
                 [ text
                     """Welcome to the DEsigned STRucture Evaluation ServiceS, or DE-STRESS
@@ -48,19 +48,19 @@ view _ =
                 designs."""
                 ]
             , text "Tutorials"
-                |> h2
+                |> Style.h2
             , paragraph []
                 [ text
                     """Tutorials are here..."""
                 ]
             , text "Source Code"
-                |> h2
+                |> Style.h2
             , paragraph []
                 [ text
                     """Link to source..."""
                 ]
             , text "References"
-                |> h2
+                |> Style.h2
             , paragraph []
                 [ text
                     """Wood CW (2019) ..."""
