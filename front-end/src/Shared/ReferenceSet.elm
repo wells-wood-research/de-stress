@@ -18,6 +18,7 @@ port module Shared.ReferenceSet exposing
     , storeReferenceSetStubLocally
     , storedReferenceSetCodec
     , storedReferenceSetToStub
+    , updateDeleteStatus
     )
 
 import BigStructure.Object.State as State
@@ -100,6 +101,16 @@ getGenericData referenceSet =
             , aggregateData = aggregateData
             , deleteStatus = deleteStatus
             }
+
+
+updateDeleteStatus : Buttons.DangerStatus -> ReferenceSet -> ReferenceSet
+updateDeleteStatus dangerStatus referenceSet =
+    case referenceSet of
+        HighResBiolUnit params ->
+            HighResBiolUnit { params | deleteStatus = dangerStatus }
+
+        PdbCodeList params ->
+            PdbCodeList { params | deleteStatus = dangerStatus }
 
 
 codec : Codec ReferenceSet

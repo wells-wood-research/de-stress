@@ -118,14 +118,14 @@ app.ports.storeReferenceSet.subscribe((uuidStringAndReferenceSet) => {
   }
 });
 
-// app.ports.getStoredReferenceSet.subscribe(({ uuidString }) => {
-//   get(uuidString, referenceSetStore).then((referenceSet) => {
-//     app.ports.setFocussedReferenceSet.send({
-//       uuidString,
-//       referenceSet,
-//     });
-//   });
-// });
+app.ports.getStoredReferenceSet.subscribe(({ uuidString }) => {
+  get(uuidString, referenceSetStore).then((referenceSet) => {
+    app.ports.setFocussedReferenceSet.send({
+      uuidString,
+      referenceSet,
+    });
+  });
+});
 
 app.ports.deleteReferenceSet.subscribe(({ uuidString }) => {
   console.log("deleting: " + uuidString);
