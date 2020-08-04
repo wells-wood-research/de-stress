@@ -1,14 +1,12 @@
 port module Pages.Specifications.Uuid_String exposing (Model, Msg, Params, page)
 
+import Browser.Navigation as Nav
 import Codec exposing (Value)
 import Dict
 import Element exposing (..)
-import Element.Background as Background
-import Element.Font as Font
-import FeatherIcons
 import Shared
 import Shared.Buttons as Buttons
-import Shared.Requirement as Requirement exposing (Requirement, RequirementData)
+import Shared.Requirement as Requirement
 import Shared.Specification as Specification
     exposing
         ( Specification
@@ -18,7 +16,8 @@ import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
-import Spa.Url as Url exposing (Url)
+import Spa.Url exposing (Url)
+import Utils.Route exposing (navigate)
 
 
 page : Page Params Model Msg
@@ -47,7 +46,13 @@ port setFocussedSpecification :
 -- {{{ MODEL
 
 
-type Model
+type alias Model =
+    { key : Nav.Key
+    , pageState : PageState
+    }
+
+
+type PageState
     = LoadingNoStub String
     | LoadingWithStub String SpecificationStub
     | SpecNotFound String
@@ -55,13 +60,13 @@ type Model
     | Deleted String
 
 
-mapModel :
+mapPageState :
     ({ uuidString : String, specification : Specification }
      -> { uuidString : String, specification : Specification }
     )
-    -> Model
-    -> Model
-mapModel specFn focus =
+    -> PageState
+    -> PageState
+mapPageState specFn focus =
     case focus of
         LoadingNoStub _ ->
             focus
@@ -99,10 +104,10 @@ init shared { params } =
                     |> Maybe.map Specification.storedSpecificationToStub
               of
                 Just stub ->
-                    LoadingWithStub params.uuid stub
+                    { key = shared.key, pageState = LoadingWithStub params.uuid stub }
 
                 Nothing ->
-                    LoadingNoStub params.uuid
+                    { key = shared.key, pageState = LoadingNoStub params.uuid }
             , Specification.getStoredSpecification { uuidString = params.uuid }
             )
 
@@ -126,42 +131,49 @@ update msg model =
         SetFocus { uuidString, specification } ->
             case Codec.decodeValue Specification.codec specification of
                 Ok spec ->
-                    ( Spec uuidString spec, Cmd.none )
+                    ( { model | pageState = Spec uuidString spec }, Cmd.none )
 
                 Err _ ->
-                    ( SpecNotFound uuidString, Cmd.none )
+                    ( { model | pageState = SpecNotFound uuidString }, Cmd.none )
 
         DeleteFocussedSpecification uuid dangerStatus ->
             if Buttons.isConfirmed dangerStatus then
-                ( Deleted uuid
-                , Specification.deleteSpecification { uuidString = uuid }
+                ( { model | pageState = Deleted uuid }
+                , Cmd.batch
+                    [ Specification.deleteSpecification { uuidString = uuid }
+                    , navigate model.key Route.Specifications
+                    ]
                 )
 
             else
-                ( mapModel
-                    (\{ uuidString, specification } ->
-                        { uuidString = uuidString
-                        , specification =
-                            { specification
-                                | deleteStatus =
-                                    dangerStatus
-                            }
-                        }
-                    )
-                    model
+                ( { model
+                    | pageState =
+                        mapPageState
+                            (\{ uuidString, specification } ->
+                                { uuidString = uuidString
+                                , specification =
+                                    { specification
+                                        | deleteStatus =
+                                            dangerStatus
+                                    }
+                                }
+                            )
+                            model.pageState
+                  }
                 , Cmd.none
                 )
 
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
-    case model of
+    case model.pageState of
         Deleted uuidString ->
             Shared.mapRunState
                 (\runState ->
                     { runState
                         | specifications =
                             Dict.remove uuidString runState.specifications
+                        , saveStateRequested = True
                     }
                 )
                 shared
@@ -187,7 +199,7 @@ subscriptions _ =
 
 view : Model -> Document Msg
 view model =
-    { title = "Specifications.Uuid_String"
+    { title = "Specification Details"
     , body = [ bodyView model ]
     }
 
@@ -195,7 +207,7 @@ view model =
 bodyView : Model -> Element Msg
 bodyView model =
     el [ centerX, width (fill |> maximum 900) ] <|
-        case model of
+        case model.pageState of
             LoadingNoStub uuidString ->
                 el [] ("Loading specification (id: " ++ uuidString ++ ")..." |> text)
 
