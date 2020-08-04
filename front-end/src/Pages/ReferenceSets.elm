@@ -116,6 +116,7 @@ save model shared =
             { runState
                 | referenceSets = model.referenceSets
                 , mSelectedReferenceSet = model.mSelectedReferenceSet
+                , saveStateRequested = True
             }
         )
         shared

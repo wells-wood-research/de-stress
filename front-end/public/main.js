@@ -9,7 +9,9 @@ import {
 // {{{ storage
 
 const localStorageKey = "globalState";
+
 const designStore = new Store("designs", "design-store");
+const referenceSetStore = new Store("referenceSets", "reference-set-store");
 const specificationStore = new Store("specifications", "specification-store");
 
 // {{{ utilities
@@ -103,7 +105,40 @@ app.ports.deleteAllDesigns.subscribe(() => {
   clear(designStore);
 });
 // }}}
+// {{{ ReferenceSets
+
+app.ports.storeReferenceSet.subscribe((uuidStringAndReferenceSet) => {
+  const { uuidString, referenceSet } = uuidStringAndReferenceSet;
+  if (idbAvailable) {
+    set(uuidString, referenceSet, referenceSetStore);
+  } else {
+    console.log(
+      "Storage is not available. IndexedDB must be enabled to store state."
+    );
+  }
+});
+
+// app.ports.getStoredReferenceSet.subscribe(({ uuidString }) => {
+//   get(uuidString, referenceSetStore).then((referenceSet) => {
+//     app.ports.setFocussedReferenceSet.send({
+//       uuidString,
+//       referenceSet,
+//     });
+//   });
+// });
+
+app.ports.deleteReferenceSet.subscribe(({ uuidString }) => {
+  console.log("deleting: " + uuidString);
+  del(uuidString, referenceSetStore);
+});
+
+// app.ports.deleteAllReferenceSets.subscribe(() => {
+//   clear(referenceSetStore);
+// });
+
+// }}}
 // {{{ Specifications
+
 app.ports.storeSpecification.subscribe((uuidStringAndSpecification) => {
   const { uuidString, specification } = uuidStringAndSpecification;
   if (idbAvailable) {
@@ -131,6 +166,6 @@ app.ports.deleteSpecification.subscribe(({ uuidString }) => {
 // app.ports.deleteAllSpecifications.subscribe(() => {
 //   clear(specificationStore);
 // });
-// }}}
 
+// }}}
 // }}}

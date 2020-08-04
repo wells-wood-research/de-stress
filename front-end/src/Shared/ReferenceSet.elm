@@ -15,6 +15,7 @@ port module Shared.ReferenceSet exposing
     , queryToCmd
     , referenceSetStubCodec
     , storeReferenceSet
+    , storeReferenceSetStubLocally
     , storedReferenceSetCodec
     , storedReferenceSetToStub
     )
@@ -36,7 +37,7 @@ import Shared.Metrics as Metrics exposing (RefSetMetrics)
 -- {{{ PORTS
 
 
-port storeReferenceSet : { uuidString : String, specification : Value } -> Cmd msg
+port storeReferenceSet : { uuidString : String, referenceSet : Value } -> Cmd msg
 
 
 port getStoredReferenceSet : { uuidString : String } -> Cmd msg
@@ -302,6 +303,11 @@ getParamsForStub referenceSet =
 
 type StoredReferenceSet
     = LocalReferenceSet ReferenceSetStub
+
+
+storeReferenceSetStubLocally : ReferenceSetStub -> StoredReferenceSet
+storeReferenceSetStubLocally stub =
+    LocalReferenceSet stub
 
 
 mapStoredReferenceSet :
