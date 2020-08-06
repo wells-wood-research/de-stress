@@ -22,7 +22,7 @@ main =
 
 
 
--- INIT
+-- {{{ INIT
 
 
 type alias Model =
@@ -49,7 +49,8 @@ init flags url key =
 
 
 
--- UPDATE
+-- }}}
+-- {{{ UPDATE
 
 
 type Msg
@@ -99,6 +100,7 @@ update msg model =
             , Cmd.batch
                 [ Cmd.map Shared sharedCmd
                 , Cmd.map Pages pageCmd
+                , saveRunState shared
                 ]
             )
 
@@ -111,8 +113,28 @@ update msg model =
                     Pages.save page model.shared
             in
             ( { model | page = page, shared = shared }
-            , Cmd.map Pages pageCmd
+            , Cmd.batch
+                [ Cmd.map Pages pageCmd
+                , saveRunState shared
+                ]
             )
+
+
+saveRunState : Shared.Model -> Cmd msg
+saveRunState shared =
+    case Shared.getRunState shared of
+        Just runState ->
+            Shared.encodeStoredRunState
+                { designs = runState.designs
+                , referenceSets = runState.referenceSets
+                , mSelectedReferenceSet = runState.mSelectedReferenceSet
+                , specifications = runState.specifications
+                , mSelectedSpecification = runState.mSelectedSpecification
+                }
+                |> Shared.storeRunState
+
+        Nothing ->
+            Cmd.none
 
 
 view : Model -> Document Msg
@@ -137,9 +159,14 @@ subscriptions model =
 
 
 
--- URL
+-- }}}
+-- {{{ URL
 
 
 fromUrl : Url -> Route
 fromUrl =
     Route.fromUrl >> Maybe.withDefault Route.NotFound
+
+
+
+-- }}}

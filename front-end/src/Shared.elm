@@ -2,9 +2,11 @@ port module Shared exposing
     ( Flags
     , Model
     , Msg
+    , encodeStoredRunState
     , getRunState
     , init
     , mapRunState
+    , storeRunState
     , subscriptions
     , update
     , view
@@ -26,7 +28,6 @@ import Shared.Style as Style
 import Shared.WebSockets as WebSockets exposing (ConnectionStatus)
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route exposing (Route)
-import Time
 import Url exposing (Url)
 
 
@@ -224,44 +225,21 @@ init flags url key =
 
 
 type Msg
-    = SaveIfRequested Bool Time.Posix
+    = Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model.appState ) of
-        ( SaveIfRequested saveStateRequested _, Running runState ) ->
-            if saveStateRequested then
-                ( mapRunState
-                    (\rs -> { rs | saveStateRequested = False })
-                    model
-                , encodeStoredRunState
-                    { designs = runState.designs
-                    , referenceSets = runState.referenceSets
-                    , mSelectedReferenceSet = runState.mSelectedReferenceSet
-                    , specifications = runState.specifications
-                    , mSelectedSpecification = runState.mSelectedSpecification
-                    }
-                    |> storeRunState
-                )
-
-            else
-                ( model
-                , Cmd.none
-                )
-
-        ( _, FailedToLaunch _ ) ->
-            Debug.todo "Need some general handling of this state."
+    case msg of
+        Msg ->
+            ( model
+            , Cmd.none
+            )
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model.appState of
-        Running runState ->
-            Time.every 5000 (SaveIfRequested runState.saveStateRequested)
-
-        FailedToLaunch _ ->
-            Sub.none
+subscriptions _ =
+    Sub.none
 
 
 
