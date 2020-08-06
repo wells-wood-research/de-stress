@@ -299,7 +299,10 @@ update msg model =
 
         DeleteAllDesigns dangerStatus ->
             if Buttons.isConfirmed dangerStatus then
-                ( { model | deleteAllStatus = Buttons.initDangerStatus }
+                ( { model
+                    | deleteAllStatus = Buttons.initDangerStatus
+                    , designs = Dict.empty
+                  }
                 , Design.deleteAllDesigns ()
                 )
 
