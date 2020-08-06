@@ -6,7 +6,6 @@ import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
 import Element.Keyed as Keyed
 import FeatherIcons
 import File exposing (File)
@@ -756,20 +755,19 @@ makeColumnData :
     -> ( Int, DesignCardData )
     -> Maybe ColumnData
 makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification } ) =
+    -- case designStub.metricsJobStatus of
+    --     WebSockets.Complete metrics ->
+    --         Just
+    --             { index = toFloat index
+    --             , name = designStub.name
+    --             , uuidString = uuidString
+    --             , value = getDataFn metrics
+    --             , mMeetsSpecification = mMeetsSpecification
+    --             }
+    --     _ ->
     Nothing
 
 
 
--- case designStub.metricsJobStatus of
---     WebSockets.Complete metrics ->
---         Just
---             { index = toFloat index
---             , name = designStub.name
---             , uuidString = uuidString
---             , value = getDataFn metrics
---             , mMeetsSpecification = mMeetsSpecification
---             }
---     _ ->
---         Nothing
 -- }}}
 -- }}}

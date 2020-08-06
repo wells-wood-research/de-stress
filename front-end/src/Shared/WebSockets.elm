@@ -1,5 +1,5 @@
 port module Shared.WebSockets exposing
-    ( ConnectionStatus
+    ( ConnectionStatus(..)
     , MetricsServerJob
     , MetricsServerJobStatus
     , ServerJobStatus
@@ -18,7 +18,8 @@ port module Shared.WebSockets exposing
     )
 
 import Codec exposing (Codec, Value)
-import Element exposing (Element)
+import Element exposing (..)
+import Element.Font as Font
 import FeatherIcons
 import Shared.Metrics as Metrics
 import Shared.Style as Style
@@ -52,13 +53,19 @@ statusIconView : ConnectionStatus -> Element msg
 statusIconView status =
     case status of
         Unknown ->
-            FeatherIcons.cloudLightning |> Style.featherIconToElmUi
+            FeatherIcons.cloudLightning
+                |> Style.featherIconToElmUi
+                |> el [ Font.color Style.colorPalette.red ]
 
         Disconnected ->
-            FeatherIcons.cloudOff |> Style.featherIconToElmUi
+            FeatherIcons.cloudOff
+                |> Style.featherIconToElmUi
+                |> el [ Font.color Style.colorPalette.red ]
 
         Connected ->
-            FeatherIcons.cloud |> Style.featherIconToElmUi
+            FeatherIcons.cloud
+                |> Style.featherIconToElmUi
+                |> el [ Font.color Style.colorPalette.c3 ]
 
 
 

@@ -25,7 +25,7 @@ import Shared.ReferenceSet as ReferenceSet
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification
 import Shared.Style as Style
-import Shared.WebSockets as WebSockets exposing (ConnectionStatus)
+import Shared.WebSockets as WebSockets exposing (ConnectionStatus(..))
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route exposing (Route)
 import Url exposing (Url)
@@ -36,6 +36,9 @@ import Url exposing (Url)
 
 
 port storeRunState : Value -> Cmd msg
+
+
+port setWebSocketConnectionStatus : (Value -> msg) -> Sub msg
 
 
 
@@ -225,21 +228,45 @@ init flags url key =
 
 
 type Msg
-    = Msg
+    = SetWebSocketConnectionStatus Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Msg ->
-            ( model
+        SetWebSocketConnectionStatus value ->
+            let
+                updatedConnectionStatus =
+                    case Codec.decodeValue Codec.bool value of
+                        Ok bool ->
+                            if bool then
+                                Connected
+
+                            else
+                                Disconnected
+
+                        Err errString ->
+                            let
+                                _ =
+                                    Debug.log "Err" errString
+                            in
+                            Unknown
+            in
+            ( mapRunState
+                (\runState ->
+                    { runState
+                        | webSocketConnectionStatus =
+                            updatedConnectionStatus
+                    }
+                )
+                model
             , Cmd.none
             )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    setWebSocketConnectionStatus SetWebSocketConnectionStatus
 
 
 

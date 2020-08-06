@@ -63,10 +63,43 @@ const flags = {
 };
 
 // }}}
-// {{{ app
+// {{{ websockets
+function connect_to_server(app) {
+  sessionCommsSocket = new WebSocket("ws://localhost:8181/app-comms");
 
+  sessionCommsSocket.onopen = function () {
+    // subscribe to some channels
+    app.ports.setWebSocketConnectionStatus.send(true);
+    console.log("Established connection to server.");
+  };
+
+  sessionCommsSocket.onmessage = function (event) {
+    app.ports.webSocketIncoming.send(JSON.parse(event.data));
+  };
+
+  sessionCommsSocket.onclose = function (event) {
+    console.log(
+      "Socket is closed. Reconnect will be attempted in 1 second.",
+      event.reason
+    );
+    app.ports.setWebSocketConnectionStatus.send(false);
+    setTimeout(function () {
+      connect_to_server(app);
+    }, 1000);
+  };
+
+  sessionCommsSocket.onerror = function (err) {
+    console.error("Socket encountered error: ", err.message, "Closing socket");
+    sessionCommsSocket.close();
+  };
+  return sessionCommsSocket;
+}
+
+// }}}
+// {{{ app
 // Start our Elm application
 var app = Elm.Main.init({ flags: flags });
+var sessionCommsSocket = connect_to_server(app);
 
 // }}}
 // {{{ ports
