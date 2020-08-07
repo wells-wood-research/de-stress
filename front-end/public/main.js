@@ -183,7 +183,15 @@ app.ports.storeSpecification.subscribe((uuidStringAndSpecification) => {
   }
 });
 
-app.ports.getStoredSpecification.subscribe(({ uuidString }) => {
+app.ports.getSpecificationForDesignsPage.subscribe(({ uuidString }) => {
+  get(uuidString, specificationStore).then((specification) => {
+    app.ports.setSpecificationForDesign.send({
+      uuidString,
+      specification,
+    });
+  });
+});
+app.ports.getSpecificationForSpecDetails.subscribe(({ uuidString }) => {
   get(uuidString, specificationStore).then((specification) => {
     app.ports.setFocussedSpecification.send({
       uuidString,

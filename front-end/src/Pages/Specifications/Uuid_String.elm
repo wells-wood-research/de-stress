@@ -108,7 +108,7 @@ init shared { params } =
 
                 Nothing ->
                     { key = shared.key, pageState = LoadingNoStub params.uuid }
-            , Specification.getStoredSpecification { uuidString = params.uuid }
+            , Specification.getSpecificationForSpecDetails { uuidString = params.uuid }
             )
 
         Nothing ->

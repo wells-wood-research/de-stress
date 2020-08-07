@@ -1,4 +1,4 @@
-module Pages.Designs exposing (Model, Msg, Params, page)
+port module Pages.Designs exposing (Model, Msg, Params, page)
 
 import Biomolecules
 import Codec exposing (Value)
@@ -42,6 +42,14 @@ page =
 
 
 
+-- {{{ PORTS
+
+
+port setSpecificationForDesign : (Value -> msg) -> Sub msg
+
+
+
+-- }}}
 -- {{{ MODEL
 
 
@@ -50,8 +58,8 @@ type alias Model =
     , loadingState : DesignLoadingState
     , loadErrors : List String
     , designs : Dict String Design.StoredDesign
+    , mSelectedSpecification : Maybe Specification
 
-    -- , mSelectedSpecification : Maybe Specification
     -- , overviewOptionDropDown : DropDown.Model String
     -- , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Buttons.DangerStatus
@@ -87,26 +95,24 @@ init shared _ =
       , loadingState = Free
       , loadErrors = []
       , designs = designDict
+      , mSelectedSpecification = Nothing
 
-      --, mSelectedSpecification = Nothing
       --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
       --, mOverviewInfo = Nothing
       , deleteAllStatus = Buttons.initDangerStatus
       }
-    , Cmd.none
-      -- , Cmd.batch
-      --     (case shared.appState of
-      --         Shared.Running runState ->
-      --             case runState.mSelectedSpecification of
-      --                 Just uuidString ->
-      --                     [ Codec.encoder Codec.string uuidString
-      --                         |> Ports.getSpecificationForDesignsPage
-      --                     ]
-      --                 Nothing ->
-      --                     []
-      --         _ ->
-      --             []
-      --     )
+    , case Shared.getRunState shared of
+        Just runState ->
+            case runState.mSelectedSpecification of
+                Just uuidString ->
+                    Specification.getSpecificationForDesignsPage
+                        { uuidString = uuidString }
+
+                Nothing ->
+                    Cmd.none
+
+        _ ->
+            Cmd.none
     )
 
 
@@ -267,13 +273,12 @@ update msg model =
                             Specification.codec
                         |> Codec.buildObject
             in
-            ( model
-              -- { model
-              --     | mSelectedSpecification =
-              --         Codec.decodeValue specWithUuidCodec specificationValue
-              --             |> Result.toMaybe
-              --             |> Maybe.map .specification
-              --   }
+            ( { model
+                | mSelectedSpecification =
+                    Codec.decodeValue specWithUuidCodec specificationValue
+                        |> Result.toMaybe
+                        |> Maybe.map .specification
+              }
             , Cmd.none
             )
 
@@ -417,8 +422,8 @@ load shared model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
+subscriptions _ =
+    setSpecificationForDesign GotSpecification
 
 
 
@@ -434,7 +439,7 @@ view model =
 
 
 bodyView : Model -> Element Msg
-bodyView { designs, loadingState, deleteAllStatus } =
+bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
     let
         designCardData =
             designs
@@ -446,17 +451,16 @@ bodyView { designs, loadingState, deleteAllStatus } =
                 |> List.map
                     (createDesignCardData
                         Nothing
-                        Nothing
-                     -- (mSelectedReferenceSet
-                     --     |> Maybe.andThen
-                     --         (\k -> Dict.get k referenceSets)
-                     --     |> Maybe.map
-                     --         (Global.storedReferenceSetToStub
-                     --             >> ReferenceSet.getParamsForStub
-                     --             >> .aggregateData
-                     --         )
-                     -- )
-                     -- model.mSelectedSpecification
+                        -- (mSelectedReferenceSet
+                        --     |> Maybe.andThen
+                        --         (\k -> Dict.get k referenceSets)
+                        --     |> Maybe.map
+                        --         (Global.storedReferenceSetToStub
+                        --             >> ReferenceSet.getParamsForStub
+                        --             >> .aggregateData
+                        --         )
+                        -- )
+                        mSelectedSpecification
                     )
     in
     column [ spacing 15, width fill ]
@@ -502,8 +506,7 @@ bodyView { designs, loadingState, deleteAllStatus } =
                     -- model.overviewOptionDropDown
                     -- designCardData
                     , designCardsView
-                        -- model.mSelectedSpecification
-                        Nothing
+                        mSelectedSpecification
                         designCardData
                     ]
         ]
@@ -526,16 +529,15 @@ createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
     { uuidString = uuidString
     , designStub = designStub
     , mMeetsSpecification =
-        Nothing
+        case ( mSpecification, WebSockets.getDesignMetrics designStub.metricsJobStatus ) of
+            ( Just specification, Just designMetrics ) ->
+                Specification.applySpecification mAggregateData
+                    designMetrics
+                    specification
+                    |> Just
 
-    -- case ( mSpecification, designStub.metricsJobStatus ) of
-    --     ( Just specification, Ports.Complete designMetrics ) ->
-    --         Specification.applySpecification mAggregateData
-    --             designMetrics
-    --             specification
-    --             |> Just
-    --     _ ->
-    --         Nothing
+            _ ->
+                Nothing
     }
 
 
@@ -615,24 +617,10 @@ designCard { uuidString, designStub, mMeetsSpecification } =
                         |> Route.toString
                 , label = Style.h2 <| text designStub.name
                 }
-
-            -- , case designStub.metricsJobStatus of
-            --     Ports.Ready ->
-            --         text "Ready for server submission."
-            --     Ports.Submitted _ ->
-            --         text "Job submitted to server."
-            --     Ports.Queued ->
-            --         text "Job queued on server."
-            --     Ports.InProgress ->
-            --         text "Job is running on server."
-            --     Ports.Cancelled ->
-            --         text "Job was cancelled by user."
-            --     Ports.Failed errorString ->
-            --         "Server error while creating metrics: "
-            --             ++ errorString
-            --             |> text
-            --     Ports.Complete _ ->
-            --         text "Metrics Available"
+            , paragraph []
+                [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
+                    |> text
+                ]
             ]
         , el [ alignRight, padding 10 ] <|
             Buttons.dangerousButton

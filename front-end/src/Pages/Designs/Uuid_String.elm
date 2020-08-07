@@ -8,7 +8,7 @@ import Shared.Design as Design
 import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Page as Page exposing (Page)
-import Spa.Url as Url exposing (Url)
+import Spa.Url exposing (Url)
 
 
 page : Page Params Model Msg
@@ -177,4 +177,3 @@ basicInformation { name, fileName } =
 
 
 -- }}}
-

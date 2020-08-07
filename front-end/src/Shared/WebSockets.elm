@@ -5,10 +5,12 @@ port module Shared.WebSockets exposing
     , MetricsServerJobStatus
     , Outgoing
     , ServerJobStatus
+    , getDesignMetrics
     , incoming
     , incomingCodec
     , initServerJobStatus
     , metricsAvailable
+    , metricsJobStatusString
     , metricsServerJobCodec
     , metricsServerJobStatusCodec
     , newMetricsServerJob
@@ -146,6 +148,42 @@ metricsAvailable serverJobStatus =
 
         _ ->
             False
+
+
+getDesignMetrics : ServerJobStatus a b -> Maybe b
+getDesignMetrics serverJobStatus =
+    case serverJobStatus of
+        Complete metrics ->
+            Just metrics
+
+        _ ->
+            Nothing
+
+
+metricsJobStatusString : ServerJobStatus a b -> String
+metricsJobStatusString serverJobStatus =
+    case serverJobStatus of
+        Ready ->
+            "Ready for server submission."
+
+        Submitted _ ->
+            "Job submitted to server."
+
+        Queued ->
+            "Job queued on server."
+
+        InProgress ->
+            "Job is running on server."
+
+        Cancelled ->
+            "Job was cancelled by user."
+
+        Failed errorString ->
+            "Server error while creating metrics: "
+                ++ errorString
+
+        Complete _ ->
+            "Metrics Available"
 
 
 serverJobStatusCodec : Codec a -> Codec b -> Codec (ServerJobStatus a b)

@@ -6,7 +6,8 @@ port module Shared.Specification exposing
     , codec
     , createSpecificationStub
     , deleteSpecification
-    , getStoredSpecification
+    , getSpecificationForDesignsPage
+    , getSpecificationForSpecDetails
     , mapStoredSpecification
     , specificationStubCodec
     , storeSpecification
@@ -29,7 +30,10 @@ import Shared.Requirement as Requirement exposing (Requirement, RequirementData)
 port storeSpecification : { uuidString : String, specification : Value } -> Cmd msg
 
 
-port getStoredSpecification : { uuidString : String } -> Cmd msg
+port getSpecificationForDesignsPage : { uuidString : String } -> Cmd msg
+
+
+port getSpecificationForSpecDetails : { uuidString : String } -> Cmd msg
 
 
 port deleteSpecification : { uuidString : String } -> Cmd msg
