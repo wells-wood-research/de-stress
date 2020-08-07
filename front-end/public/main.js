@@ -74,7 +74,7 @@ function connect_to_server(app) {
   };
 
   sessionCommsSocket.onmessage = function (event) {
-    app.ports.webSocketIncoming.send(JSON.parse(event.data));
+    app.ports.incoming.send(JSON.parse(event.data));
   };
 
   sessionCommsSocket.onclose = function (event) {
@@ -199,6 +199,13 @@ app.ports.deleteSpecification.subscribe(({ uuidString }) => {
 // app.ports.deleteAllSpecifications.subscribe(() => {
 //   clear(specificationStore);
 // });
+
+// }}}
+// {{{ Session Comms
+
+app.ports.outgoing.subscribe((action) => {
+  sessionCommsSocket.send(JSON.stringify(action));
+});
 
 // }}}
 // }}}

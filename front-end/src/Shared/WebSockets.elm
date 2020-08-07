@@ -1,20 +1,21 @@
 port module Shared.WebSockets exposing
     ( ConnectionStatus(..)
+    , Incoming(..)
     , MetricsServerJob
     , MetricsServerJobStatus
+    , Outgoing
     , ServerJobStatus
-    , WebSocketIncoming
-    , WebsocketOutgoing
+    , incoming
+    , incomingCodec
+    , initServerJobStatus
     , metricsAvailable
     , metricsServerJobCodec
     , metricsServerJobStatusCodec
     , newMetricsServerJob
+    , prepareMetricsJob
     , setWebSocketConnectionStatus
     , statusIconView
     , unknownStatus
-    , webSocketIncoming
-    , websocketIncomingCodec
-    , websocketOutgoingToCmd
     )
 
 import Codec exposing (Codec, Value)
@@ -28,10 +29,10 @@ import Shared.Style as Style
 port setWebSocketConnectionStatus : (Value -> msg) -> Sub msg
 
 
-port webSocketOutgoing : Value -> Cmd msg
+port outgoing : Value -> Cmd msg
 
 
-port webSocketIncoming : (Value -> msg) -> Sub msg
+port incoming : (Value -> msg) -> Sub msg
 
 
 
@@ -132,6 +133,11 @@ type ServerJobStatus input output
     | Complete output
 
 
+initServerJobStatus : ServerJobStatus a b
+initServerJobStatus =
+    Ready
+
+
 metricsAvailable : ServerJobStatus a b -> Bool
 metricsAvailable serverJobStatus =
     case serverJobStatus of
@@ -189,15 +195,15 @@ metricsServerJobStatusCodec =
 
 
 -- }}}
--- {{{ WebsocketOutgoing
+-- {{{ Outgoing
 
 
-type WebsocketOutgoing
+type Outgoing
     = RequestMetrics MetricsServerJob
 
 
-websocketOutgoingCodec : Codec WebsocketOutgoing
-websocketOutgoingCodec =
+outgoingRequestMetricsCodec : Codec Outgoing
+outgoingRequestMetricsCodec =
     Codec.custom
         (\fRequestMetrics value ->
             case value of
@@ -210,24 +216,37 @@ websocketOutgoingCodec =
         |> Codec.buildCustom
 
 
-websocketOutgoingToCmd : WebsocketOutgoing -> Cmd msg
-websocketOutgoingToCmd action =
-    Codec.encoder websocketOutgoingCodec action
-        |> webSocketOutgoing
+outgoingToCmd : Outgoing -> Cmd msg
+outgoingToCmd action =
+    Codec.encoder outgoingRequestMetricsCodec action
+        |> outgoing
+
+
+prepareMetricsJob : { uuidString : String, pdbString : String } -> ( MetricsServerJobStatus, Cmd msg )
+prepareMetricsJob { uuidString, pdbString } =
+    let
+        metricsJob =
+            { uuid = uuidString
+            , status = Submitted { pdbString = pdbString }
+            }
+    in
+    ( metricsJob.status
+    , outgoingToCmd <| RequestMetrics metricsJob
+    )
 
 
 
 -- }}}
--- {{{ WebSocketIncoming
+-- {{{ Incoming
 
 
-type WebSocketIncoming
+type Incoming
     = ReceivedMetricsJob MetricsServerJob
     | CommunicationError
 
 
-websocketIncomingCodec : Codec WebSocketIncoming
-websocketIncomingCodec =
+incomingCodec : Codec Incoming
+incomingCodec =
     Codec.custom
         (\fReceivedMetricsJob fCommunicationError value ->
             case value of

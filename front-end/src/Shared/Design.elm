@@ -19,6 +19,7 @@ port module Shared.Design exposing
 import Codec exposing (Codec, Value)
 import Shared.Buttons as Buttons
 import Shared.Editable as Editable exposing (Editable)
+import Shared.WebSockets as WebSockets
 
 
 
@@ -52,8 +53,7 @@ type alias Design =
     , fileName : String
     , pdbString : String
     , deleteStatus : Buttons.DangerStatus
-
-    -- , metricsJobStatus : Ports.MetricsServerJobStatus
+    , metricsJobStatus : WebSockets.MetricsServerJobStatus
     , mMeetsActiveSpecification : Maybe Bool
     }
 
@@ -71,7 +71,9 @@ codec =
             (Codec.constant
                 Buttons.initDangerStatus
             )
-        -- |> Codec.field "metricsJobStatus" .metricsJobStatus Ports.metricsServerJobStatusCodec
+        |> Codec.field "metricsJobStatus"
+            .metricsJobStatus
+            WebSockets.metricsServerJobStatusCodec
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
@@ -87,8 +89,7 @@ type alias DesignStub =
     { name : String
     , fileName : String
     , deleteStatus : Buttons.DangerStatus
-
-    --, metricsJobStatus : Ports.MetricsServerJobStatus
+    , metricsJobStatus : WebSockets.MetricsServerJobStatus
     , mMeetsActiveSpecification : Maybe Bool
     }
 
@@ -99,7 +100,9 @@ designStubCodec =
         |> Codec.field "name" .name Codec.string
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "deleteStatus" .deleteStatus (Codec.constant Buttons.initDangerStatus)
-        -- |> Codec.field "metricsJobStatus" .metricsJobStatus Ports.metricsServerJobStatusCodec
+        |> Codec.field "metricsJobStatus"
+            .metricsJobStatus
+            WebSockets.metricsServerJobStatusCodec
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
@@ -111,8 +114,7 @@ createDesignStub design =
     { name = Editable.editableValue design.name
     , fileName = design.fileName
     , deleteStatus = design.deleteStatus
-
-    -- , metricsJobStatus = design.metricsJobStatus
+    , metricsJobStatus = design.metricsJobStatus
     , mMeetsActiveSpecification = design.mMeetsActiveSpecification
     }
 

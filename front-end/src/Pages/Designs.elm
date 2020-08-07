@@ -209,6 +209,16 @@ update msg model =
                             ResourceUuid.toString
                                 resourceUuid
 
+                        pdbString =
+                            contents
+                                |> String.lines
+                                |> List.filter (String.startsWith "ATOM")
+                                |> String.join "\n"
+
+                        ( jobStatus, requestMetricsCmd ) =
+                            WebSockets.prepareMetricsJob
+                                { uuidString = uuidString, pdbString = pdbString }
+
                         design : Design
                         design =
                             { name =
@@ -217,14 +227,9 @@ update msg model =
                                     |> Maybe.withDefault name
                                     |> Editable.NotEditing
                             , fileName = name
-                            , pdbString =
-                                contents
-                                    |> String.lines
-                                    |> List.filter (String.startsWith "ATOM")
-                                    |> String.join "\n"
+                            , pdbString = pdbString
                             , deleteStatus = Buttons.initDangerStatus
-
-                            --, metricsJobStatus = Ports.Ready
+                            , metricsJobStatus = jobStatus
                             , mMeetsActiveSpecification = Nothing
                             }
                     in
@@ -238,10 +243,13 @@ update msg model =
                                 )
                                 model.designs
                       }
-                    , Design.storeDesign
-                        { uuidString = uuidString
-                        , design = design |> Codec.encoder Design.codec
-                        }
+                    , Cmd.batch
+                        [ Design.storeDesign
+                            { uuidString = uuidString
+                            , design = design |> Codec.encoder Design.codec
+                            }
+                        , requestMetricsCmd
+                        ]
                     )
 
         GotSpecification specificationValue ->

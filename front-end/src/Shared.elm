@@ -229,6 +229,7 @@ init flags url key =
 
 type Msg
     = SetWebSocketConnectionStatus Value
+    | WebSocketIncoming Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -263,10 +264,57 @@ update msg model =
             , Cmd.none
             )
 
+        WebSocketIncoming value ->
+            let
+                updateStoredDesignStatus :
+                    WebSockets.MetricsServerJobStatus
+                    -> Design.StoredDesign
+                    -> Design.StoredDesign
+                updateStoredDesignStatus status storedDesign =
+                    Design.mapStoredDesign
+                        (\stub ->
+                            { stub
+                                | metricsJobStatus =
+                                    status
+                            }
+                        )
+                        storedDesign
+            in
+            case Codec.decodeValue WebSockets.incomingCodec value of
+                Ok (WebSockets.ReceivedMetricsJob { uuid, status }) ->
+                    ( mapRunState
+                        (\runState ->
+                            { runState
+                                | designs =
+                                    Dict.update
+                                        uuid
+                                        (updateStoredDesignStatus status
+                                            |> Maybe.map
+                                        )
+                                        runState.designs
+                            }
+                        )
+                        model
+                    , Cmd.none
+                    )
+
+                Ok WebSockets.CommunicationError ->
+                    Debug.todo "Deal with this!"
+
+                Err errString ->
+                    let
+                        _ =
+                            Debug.log "WebSocket Incoming Error (Shared.elm:278):" errString
+                    in
+                    ( model, Cmd.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    setWebSocketConnectionStatus SetWebSocketConnectionStatus
+    Sub.batch
+        [ setWebSocketConnectionStatus SetWebSocketConnectionStatus
+        , WebSockets.incoming WebSocketIncoming
+        ]
 
 
 
