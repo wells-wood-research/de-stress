@@ -1,4 +1,4 @@
-module Shared.Plots exposing (ColumnData, metricOverview)
+port module Shared.Plots exposing (ColumnData, metricOverview, vegaPlot)
 
 import Axis
 import Color
@@ -28,6 +28,18 @@ import TypedSvg.Types
         , Paint(..)
         , Transform(..)
         )
+import VegaLite
+
+
+
+-- {{{ PORTS
+
+
+port vegaPlot : { plotId : String, spec : VegaLite.Spec } -> Cmd msg
+
+
+
+-- }}}
 
 
 w : Float

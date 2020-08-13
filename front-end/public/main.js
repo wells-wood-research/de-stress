@@ -216,4 +216,13 @@ app.ports.outgoing.subscribe((action) => {
 });
 
 // }}}
+// {{{ VegaLite
+app.ports.vegaPlot.subscribe((plotDetails) => {
+  window.requestAnimationFrame(() => {
+    vegaEmbed("#" + plotDetails.plotId, plotDetails.spec, {
+      actions: false,
+    }).catch(console.warn);
+  });
+});
+// }}}
 // }}}

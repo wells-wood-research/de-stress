@@ -329,42 +329,6 @@ update msg model =
 -- ( Global.Running runState, CheckForPlotUpdate newNumberOfMetrics _ ) ->
 --     ( { model | previousNumberOfMetrics = newNumberOfMetrics }
 --     , if newNumberOfMetrics /= model.previousNumberOfMetrics then
---         Ports.vegaPlot <|
---             { plotId = "overview"
---             , spec =
---                 Metrics.overviewSpec
---                     "Hydrophobic Fitness"
---                     (runState.designs
---                         |> Dict.toList
---                         |> List.map
---                             (\( k, v ) ->
---                                 ( k, Global.storedDesignToStub v )
---                             )
---                         |> List.map
---                             (createDesignCardData
---                                 (runState.mSelectedReferenceSet
---                                     |> Maybe.andThen
---                                         (\k -> Dict.get k runState.referenceSets)
---                                     |> Maybe.map
---                                         (Global.storedReferenceSetToStub
---                                             >> ReferenceSet.getParamsForStub
---                                             >> .aggregateData
---                                         )
---                                 )
---                                 model.mSelectedSpecification
---                             )
---                         |> List.indexedMap Tuple.pair
---                         |> List.reverse
---                         |> List.filterMap
---                             (makeColumnData <|
---                                 .hydrophobicFitness
---                                     >> Maybe.withDefault (0 / 0)
---                                     >> abs
---                             )
---                         |> List.sortBy .value
---                         |> List.reverse
---                         |> List.map (\{ name, value } -> ( name, value ))
---                         |> Dict.fromList
 --                     )
 --             }
 --       else
@@ -409,12 +373,50 @@ save model shared =
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
 load shared model =
     case Shared.getRunState shared of
-        Just { resourceUuid, designs } ->
+        Just runState ->
             ( { model
-                | mResourceUuid = Just resourceUuid
-                , designs = designs
+                | mResourceUuid = Just runState.resourceUuid
+                , designs = runState.designs
               }
-            , Cmd.none
+            , Plots.vegaPlot <|
+                { plotId = "overview"
+                , spec =
+                    Metrics.overviewSpec
+                        "Hydrophobic Fitness"
+                        (runState.designs
+                            |> Dict.toList
+                            |> List.map
+                                (\( k, v ) ->
+                                    ( k, Design.storedDesignToStub v )
+                                )
+                            |> List.map
+                                (createDesignCardData
+                                    Nothing
+                                    -- (runState.mSelectedReferenceSet
+                                    --     |> Maybe.andThen
+                                    --         (\k -> Dict.get k runState.referenceSets)
+                                    --     |> Maybe.map
+                                    --         (ReferenceSet.storedReferenceSetToStub
+                                    --             >> ReferenceSet.getParamsForStub
+                                    --             >> .aggregateData
+                                    --         )
+                                    -- )
+                                    model.mSelectedSpecification
+                                )
+                            |> List.indexedMap Tuple.pair
+                            |> List.reverse
+                            |> List.filterMap
+                                (makeColumnData <|
+                                    .hydrophobicFitness
+                                        >> Maybe.withDefault (0 / 0)
+                                        >> abs
+                                )
+                            |> List.sortBy .value
+                            |> List.reverse
+                            |> List.map (\{ name, value } -> ( name, value ))
+                            |> Dict.fromList
+                        )
+                }
             )
 
         Nothing ->
@@ -751,17 +753,16 @@ makeColumnData :
     -> ( Int, DesignCardData )
     -> Maybe ColumnData
 makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification } ) =
-    -- case designStub.metricsJobStatus of
-    --     WebSockets.Complete metrics ->
-    --         Just
-    --             { index = toFloat index
-    --             , name = designStub.name
-    --             , uuidString = uuidString
-    --             , value = getDataFn metrics
-    --             , mMeetsSpecification = mMeetsSpecification
-    --             }
-    --     _ ->
-    Nothing
+    WebSockets.getDesignMetrics designStub.metricsJobStatus
+        |> Maybe.map
+            (\metrics ->
+                { index = toFloat index
+                , name = designStub.name
+                , uuidString = uuidString
+                , value = getDataFn metrics
+                , mMeetsSpecification = mMeetsSpecification
+                }
+            )
 
 
 
