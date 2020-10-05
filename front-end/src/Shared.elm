@@ -2,6 +2,7 @@ port module Shared exposing
     ( Flags
     , Model
     , Msg
+    , RunState
     , encodeStoredRunState
     , getRunState
     , init

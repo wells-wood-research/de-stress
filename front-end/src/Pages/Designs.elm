@@ -27,6 +27,7 @@ import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
 import Task
+import VegaLite
 
 
 page : Page Params Model Msg
@@ -90,29 +91,35 @@ init shared _ =
 
                 Nothing ->
                     ( Nothing, Dict.empty )
+
+        model =
+            { mResourceUuid = mResourceUuid
+            , loadingState = Free
+            , loadErrors = []
+            , designs = designDict
+            , mSelectedSpecification = Nothing
+
+            --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
+            --, mOverviewInfo = Nothing
+            , deleteAllStatus = Buttons.initDangerStatus
+            }
     in
-    ( { mResourceUuid = mResourceUuid
-      , loadingState = Free
-      , loadErrors = []
-      , designs = designDict
-      , mSelectedSpecification = Nothing
+    ( model
+    , Cmd.batch
+        [ case Shared.getRunState shared of
+            Just runState ->
+                case runState.mSelectedSpecification of
+                    Just uuidString ->
+                        Specification.getSpecificationForDesignsPage
+                            { uuidString = uuidString }
 
-      --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
-      --, mOverviewInfo = Nothing
-      , deleteAllStatus = Buttons.initDangerStatus
-      }
-    , case Shared.getRunState shared of
-        Just runState ->
-            case runState.mSelectedSpecification of
-                Just uuidString ->
-                    Specification.getSpecificationForDesignsPage
-                        { uuidString = uuidString }
+                    Nothing ->
+                        Cmd.none
 
-                Nothing ->
-                    Cmd.none
-
-        _ ->
-            Cmd.none
+            Nothing ->
+                Cmd.none
+        , makeOverViewSpecCmd model
+        ]
     )
 
 
@@ -285,11 +292,14 @@ update msg model =
         DeleteDesign uuidString dangerStatus ->
             if Buttons.isConfirmed dangerStatus then
                 let
-                    updatedDesigns =
-                        Dict.remove uuidString model.designs
+                    updatedModel =
+                        { model | designs = Dict.remove uuidString model.designs }
                 in
-                ( { model | designs = updatedDesigns }
-                , Design.deleteDesign { uuidString = uuidString }
+                ( updatedModel
+                , Cmd.batch
+                    [ Design.deleteDesign { uuidString = uuidString }
+                    , makeOverViewSpecCmd model
+                    ]
                 )
 
             else
@@ -311,11 +321,18 @@ update msg model =
 
         DeleteAllDesigns dangerStatus ->
             if Buttons.isConfirmed dangerStatus then
-                ( { model
-                    | deleteAllStatus = Buttons.initDangerStatus
-                    , designs = Dict.empty
-                  }
-                , Design.deleteAllDesigns ()
+                let
+                    updatedModel =
+                        { model
+                            | deleteAllStatus = Buttons.initDangerStatus
+                            , designs = Dict.empty
+                        }
+                in
+                ( updatedModel
+                , Cmd.batch
+                    [ Design.deleteAllDesigns ()
+                    , makeOverViewSpecCmd updatedModel
+                    ]
                 )
 
             else
@@ -374,53 +391,66 @@ load : Shared.Model -> Model -> ( Model, Cmd Msg )
 load shared model =
     case Shared.getRunState shared of
         Just runState ->
-            ( { model
-                | mResourceUuid = Just runState.resourceUuid
-                , designs = runState.designs
-              }
-            , Plots.vegaPlot <|
-                { plotId = "overview"
-                , spec =
-                    Metrics.overviewSpec
-                        "Hydrophobic Fitness"
-                        (runState.designs
-                            |> Dict.toList
-                            |> List.map
-                                (\( k, v ) ->
-                                    ( k, Design.storedDesignToStub v )
-                                )
-                            |> List.map
-                                (createDesignCardData
-                                    Nothing
-                                    -- (runState.mSelectedReferenceSet
-                                    --     |> Maybe.andThen
-                                    --         (\k -> Dict.get k runState.referenceSets)
-                                    --     |> Maybe.map
-                                    --         (ReferenceSet.storedReferenceSetToStub
-                                    --             >> ReferenceSet.getParamsForStub
-                                    --             >> .aggregateData
-                                    --         )
-                                    -- )
-                                    model.mSelectedSpecification
-                                )
-                            |> List.indexedMap Tuple.pair
-                            |> List.reverse
-                            |> List.filterMap
-                                (makeColumnData <|
-                                    .hydrophobicFitness
-                                        >> Maybe.withDefault (0 / 0)
-                                        >> abs
-                                )
-                            |> List.sortBy .value
-                            |> List.reverse
-                            |> List.map (\{ name, value } -> ( name, value ))
-                            |> Dict.fromList
-                        )
-                }
+            let
+                updatedModel =
+                    { model
+                        | mResourceUuid = Just runState.resourceUuid
+                        , designs = runState.designs
+                    }
+            in
+            ( updatedModel
+            , makeOverViewSpecCmd updatedModel
             )
 
         Nothing ->
             Debug.todo "Should I deal with this or leave to the shared view?"
+
+
+makeOverViewSpecCmd : Model -> Cmd Msg
+makeOverViewSpecCmd model =
+    if Dict.isEmpty model.designs then
+        Cmd.none
+
+    else
+        { plotId = "overview"
+        , spec =
+            Metrics.overviewSpec
+                "Hydrophobic Fitness"
+                (model.designs
+                    |> Dict.toList
+                    |> List.map
+                        (\( k, v ) ->
+                            ( k, Design.storedDesignToStub v )
+                        )
+                    |> List.map
+                        (createDesignCardData
+                            Nothing
+                            -- (runState.mSelectedReferenceSet
+                            --     |> Maybe.andThen
+                            --         (\k -> Dict.get k runState.referenceSets)
+                            --     |> Maybe.map
+                            --         (ReferenceSet.storedReferenceSetToStub
+                            --             >> ReferenceSet.getParamsForStub
+                            --             >> .aggregateData
+                            --         )
+                            -- )
+                            model.mSelectedSpecification
+                        )
+                    |> List.indexedMap Tuple.pair
+                    |> List.reverse
+                    |> List.filterMap
+                        (makeColumnData <|
+                            .hydrophobicFitness
+                                >> Maybe.withDefault (0 / 0)
+                                >> abs
+                        )
+                    |> List.sortBy .value
+                    |> List.reverse
+                    |> List.map (\{ name, value } -> ( name, value ))
+                    |> Dict.fromList
+                )
+        }
+            |> Plots.vegaPlot
 
 
 subscriptions : Model -> Sub Msg
@@ -465,53 +495,54 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                         mSelectedSpecification
                     )
     in
-    column [ spacing 15, width fill ]
-        [ let
-            ( buttonLabel, isActive ) =
-                case loadingState of
-                    LoadingFiles total remaining ->
-                        ( "Loaded "
-                            ++ String.fromInt remaining
-                            ++ "/"
-                            ++ String.fromInt total
-                        , False
-                        )
+    el [ centerX, width <| maximum 800 <| fill ] <|
+        column [ spacing 15, width fill ]
+            [ let
+                ( buttonLabel, isActive ) =
+                    case loadingState of
+                        LoadingFiles total remaining ->
+                            ( "Loaded "
+                                ++ String.fromInt remaining
+                                ++ "/"
+                                ++ String.fromInt total
+                            , False
+                            )
 
-                    Free ->
-                        ( "Load", True )
-          in
-          wrappedRow [ centerX, spacing 10 ]
-            [ paragraph [] [ Style.h1 <| text "Designs" ]
-            , row [ spacing 10 ]
-                [ Buttons.conditionalButton
-                    { label = text buttonLabel
-                    , clickMsg = Just StructuresRequested
-                    , isActive = isActive
-                    }
-                , Buttons.dangerousButton
-                    { label = text "Delete All"
-                    , confirmText = "Are you sure you want to delete ALL design?"
-                    , status = deleteAllStatus
-                    , dangerousMsg = DeleteAllDesigns
-                    }
-                ]
-            ]
-        , el [ width fill ] <|
-            if List.isEmpty designCardData then
-                el [ centerX ] (text "Click \"Load\" to add models.")
-
-            else
-                column
-                    [ spacing 10, width fill ]
-                    [ overviewPlots
-
-                    -- model.overviewOptionDropDown
-                    -- designCardData
-                    , designCardsView
-                        mSelectedSpecification
-                        designCardData
+                        Free ->
+                            ( "Load", True )
+              in
+              wrappedRow [ centerX, spacing 10 ]
+                [ paragraph [] [ Style.h1 <| text "Designs" ]
+                , row [ spacing 10 ]
+                    [ Buttons.conditionalButton
+                        { label = text buttonLabel
+                        , clickMsg = Just StructuresRequested
+                        , isActive = isActive
+                        }
+                    , Buttons.dangerousButton
+                        { label = text "Delete All"
+                        , confirmText = "Are you sure you want to delete ALL design?"
+                        , status = deleteAllStatus
+                        , dangerousMsg = DeleteAllDesigns
+                        }
                     ]
-        ]
+                ]
+            , el [ width fill ] <|
+                if List.isEmpty designCardData then
+                    el [ centerX ] (text "Click \"Load\" to add models.")
+
+                else
+                    column
+                        [ spacing 10, width fill ]
+                        [ overviewPlots
+
+                        -- model.overviewOptionDropDown
+                        -- designCardData
+                        , designCardsView
+                            mSelectedSpecification
+                            designCardData
+                        ]
+            ]
 
 
 type alias DesignCardData =
@@ -595,7 +626,7 @@ designCard :
 designCard { uuidString, designStub, mMeetsSpecification } =
     row
         [ mouseOver [ Background.color Style.colorPalette.c4 ]
-        , fillPortion 1 |> width
+        , width fill
         , Background.color Style.colorPalette.c5
         , case mMeetsSpecification of
             Nothing ->
@@ -638,7 +669,7 @@ designCardsView : Maybe Specification -> List DesignCardData -> Element Msg
 designCardsView mSelectedSpecification designCardData =
     let
         cardContainer =
-            wrappedRow [ spacing 10, width fill ]
+            column [ spacing 10, width fill ]
     in
     case mSelectedSpecification of
         Just _ ->
@@ -699,7 +730,7 @@ overviewPlots =
     column
         [ width fill ]
         [ Style.h3 <| text "Overview"
-        , Keyed.el [ centerX, width fill ]
+        , Keyed.el [ centerX ]
             ( "overview"
             , Html.div
                 [ HAtt.id "overview"
