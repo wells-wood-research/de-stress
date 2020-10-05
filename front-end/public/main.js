@@ -130,6 +130,15 @@ app.ports.storeDesign.subscribe((uuidStringAndDesign) => {
   }
 });
 
+app.ports.getStoredDesign.subscribe(({ uuidString }) => {
+  get(uuidString, designStore).then((design) => {
+    app.ports.setFocussedDesign.send({
+      uuidString,
+      design,
+    });
+  });
+});
+
 app.ports.deleteDesign.subscribe(({ uuidString }) => {
   del(uuidString, designStore);
 });

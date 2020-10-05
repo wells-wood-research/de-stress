@@ -7,7 +7,7 @@ port module Shared.Design exposing
     , deleteAllDesigns
     , deleteDesign
     , designStubCodec
-    , getDesign
+    , getStoredDesign
     , mapStoredDesign
     , storeDesign
     , storeDesignStubLocally
@@ -34,7 +34,7 @@ port updateDesignMetricsStatus :
     -> Cmd msg
 
 
-port getDesign : { uuidString : String } -> Cmd msg
+port getStoredDesign : { uuidString : String } -> Cmd msg
 
 
 port deleteDesign : { uuidString : String } -> Cmd msg
