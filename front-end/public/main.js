@@ -139,6 +139,16 @@ app.ports.getStoredDesign.subscribe(({ uuidString }) => {
   });
 });
 
+// Update design metrics for stored design
+app.ports.updateDesignMetricsStatus.subscribe(
+  ({ uuidString, updatedMetricsStatus }) => {
+    get(uuidString, designStore).then((design) => {
+      design.metricsJobStatus = updatedMetricsStatus;
+      set(uuidString, design, designStore);
+    });
+  }
+);
+
 app.ports.deleteDesign.subscribe(({ uuidString }) => {
   del(uuidString, designStore);
 });

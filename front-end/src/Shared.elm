@@ -296,7 +296,13 @@ update msg model =
                             }
                         )
                         model
-                    , Cmd.none
+                    , Design.updateDesignMetricsStatus
+                        { uuidString = uuid
+                        , updatedMetricsStatus =
+                            Codec.encodeToValue
+                                WebSockets.metricsServerJobStatusCodec
+                                status
+                        }
                     )
 
                 Ok WebSockets.CommunicationError ->

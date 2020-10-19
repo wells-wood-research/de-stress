@@ -29,12 +29,12 @@ import Shared.WebSockets as WebSockets
 port storeDesign : { uuidString : String, design : Value } -> Cmd msg
 
 
+port getStoredDesign : { uuidString : String } -> Cmd msg
+
+
 port updateDesignMetricsStatus :
     { uuidString : String, updatedMetricsStatus : Value }
     -> Cmd msg
-
-
-port getStoredDesign : { uuidString : String } -> Cmd msg
 
 
 port deleteDesign : { uuidString : String } -> Cmd msg
