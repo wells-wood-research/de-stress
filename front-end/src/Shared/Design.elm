@@ -14,6 +14,7 @@ port module Shared.Design exposing
     , storedDesignCodec
     , storedDesignToStub
     , updateDesignMetricsStatus
+    , viewStructure
     )
 
 import Codec exposing (Codec, Value)
@@ -41,6 +42,9 @@ port deleteDesign : { uuidString : String } -> Cmd msg
 
 
 port deleteAllDesigns : () -> Cmd msg
+
+
+port viewStructure : String -> Cmd msg
 
 
 

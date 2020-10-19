@@ -235,6 +235,23 @@ app.ports.outgoing.subscribe((action) => {
 });
 
 // }}}
+// {{{ PV
+app.ports.viewStructure.subscribe((pdbString) => {
+  window.requestAnimationFrame(() => {
+    const options = {
+      width: "auto",
+      height: "auto",
+      antialias: true,
+      quality: "medium",
+    };
+    var viewer = pv.Viewer(document.getElementById("viewer"), options);
+    viewer.fitParent();
+    var structure = pv.io.pdb(pdbString);
+    viewer.fitTo(structure);
+    viewer.trace("trace", structure, { color: pv.color.byChain() });
+  });
+});
+// }}}
 // {{{ VegaLite
 app.ports.vegaPlot.subscribe((plotDetails) => {
   window.requestAnimationFrame(() => {

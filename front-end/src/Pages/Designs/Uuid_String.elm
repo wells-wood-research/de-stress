@@ -108,7 +108,9 @@ update msg model =
         SetFocus { uuidString, design } ->
             case Codec.decodeValue Design.codec design of
                 Ok des ->
-                    ( Design uuidString des, Cmd.none )
+                    ( Design uuidString des
+                    , Design.viewStructure des.pdbString
+                    )
 
                 Err _ ->
                     ( UnknownDesignUuid uuidString, Cmd.none )
