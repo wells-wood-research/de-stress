@@ -49,17 +49,31 @@ port setFocussedDesign :
     -> Sub msg
 
 
+port setSelectedSpecDesignDetails :
+    ({ uuidString : String, specValue : Value } -> msg)
+    -> Sub msg
+
+
 
 -- }}}
 -- {{{ MODEL
 
 
-type Model
+type alias Model =
+    { designUuid : String
+    , mSelectedSpecUuid : Maybe String
+    , pageState : PageState
+    }
+
+
+type PageState
     = AppNotRunning
-    | LoadingNoStub String
-    | LoadingWithStub String Design.DesignStub
-    | UnknownDesignUuid String
-    | Design String Design.Design
+    | LoadingNoStub
+    | LoadingWithStub Design.DesignStub
+    | UnknownDesignUuid
+    | Design Design.Design
+    | DesignFailedSpec Design.Design
+    | DesignWithSpec Design.Design Specification
 
 
 
@@ -75,20 +89,27 @@ init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
 init shared { params } =
     case Shared.getRunState shared of
         Just runState ->
-            ( case
-                Dict.get params.uuid runState.designs
-                    |> Maybe.map Design.storedDesignToStub
-              of
-                Just stub ->
-                    LoadingWithStub params.uuid stub
+            ( { designUuid = params.uuid
+              , mSelectedSpecUuid = runState.mSelectedSpecification
+              , pageState =
+                    case
+                        Dict.get params.uuid runState.designs
+                            |> Maybe.map Design.storedDesignToStub
+                    of
+                        Just stub ->
+                            LoadingWithStub stub
 
-                Nothing ->
-                    LoadingNoStub params.uuid
+                        Nothing ->
+                            LoadingNoStub
+              }
             , Design.getStoredDesign { uuidString = params.uuid }
             )
 
         Nothing ->
-            ( AppNotRunning
+            ( { designUuid = params.uuid
+              , mSelectedSpecUuid = Nothing
+              , pageState = AppNotRunning
+              }
             , Cmd.none
             )
 
@@ -100,20 +121,51 @@ init shared { params } =
 
 type Msg
     = SetFocus { uuidString : String, design : Value }
+    | SetSpecification { uuidString : String, specValue : Value }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetFocus { uuidString, design } ->
+        SetFocus { design } ->
             case Codec.decodeValue Design.codec design of
                 Ok des ->
-                    ( Design uuidString des
-                    , Design.viewStructure des.pdbString
+                    ( { model | pageState = Design des }
+                    , Cmd.batch
+                        [ Design.viewStructure des.pdbString
+                        , case model.mSelectedSpecUuid of
+                            Just uuidString ->
+                                Specification.getSpecificationForSpecDetails
+                                    { uuidString = uuidString }
+
+                            Nothing ->
+                                Cmd.none
+                        ]
                     )
 
                 Err _ ->
-                    ( UnknownDesignUuid uuidString, Cmd.none )
+                    ( { model | pageState = UnknownDesignUuid }
+                    , Cmd.none
+                    )
+
+        SetSpecification { specValue } ->
+            ( { model
+                | pageState =
+                    case model.pageState of
+                        Design design ->
+                            case Codec.decodeValue Specification.codec specValue of
+                                Ok specification ->
+                                    DesignWithSpec design specification
+
+                                Err _ ->
+                                    DesignFailedSpec design
+
+                        _ ->
+                            Debug.log "Unexpected page state"
+                                model.pageState
+              }
+            , Cmd.none
+            )
 
 
 save : Model -> Shared.Model -> Shared.Model
@@ -128,7 +180,10 @@ load shared model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    setFocussedDesign SetFocus
+    Sub.batch
+        [ setFocussedDesign SetFocus
+        , setSelectedSpecDesignDetails SetSpecification
+        ]
 
 
 
@@ -149,10 +204,10 @@ sectionColumn =
 
 
 bodyView : Model -> Element Msg
-bodyView model =
+bodyView { designUuid, pageState } =
     column [ width fill ]
         [ el [ centerX ] (Style.h1 <| text "Design Details")
-        , case model of
+        , case pageState of
             AppNotRunning ->
                 sectionColumn
                     [ paragraph []
@@ -166,18 +221,18 @@ bodyView model =
                         ]
                     ]
 
-            LoadingNoStub uuidString ->
+            LoadingNoStub ->
                 sectionColumn [ text "Loading..." ]
 
-            LoadingWithStub uuidString stub ->
+            LoadingWithStub stub ->
                 basicInformation stub
 
-            UnknownDesignUuid uuidString ->
+            UnknownDesignUuid ->
                 sectionColumn
                     [ paragraph []
                         [ "Failed to load a design with UUID: "
                             |> text
-                        , el [ Font.bold ] (text uuidString)
+                        , el [ Font.bold ] (text designUuid)
                         ]
                     , paragraph []
                         [ """This design no longer exists, you might have deleted
@@ -190,9 +245,25 @@ bodyView model =
                         ]
                     ]
 
-            Design uuidString design ->
+            Design design ->
                 sectionColumn
-                    [ designDetailsView uuidString Nothing design ]
+                    [ designDetailsView designUuid Nothing design ]
+
+            DesignFailedSpec design ->
+                sectionColumn
+                    [ "FAILED TO LOAD SPECIFICATION"
+                        |> Debug.log "Design page"
+                            text
+                    , designDetailsView designUuid Nothing design
+                    ]
+
+            DesignWithSpec design specification ->
+                sectionColumn
+                    [ designDetailsView
+                        designUuid
+                        (Just specification)
+                        design
+                    ]
         ]
 
 

@@ -210,11 +210,12 @@ app.ports.getSpecificationForDesignsPage.subscribe(({ uuidString }) => {
     });
   });
 });
+
 app.ports.getSpecificationForSpecDetails.subscribe(({ uuidString }) => {
   get(uuidString, specificationStore).then((specification) => {
-    app.ports.setFocussedSpecification.send({
+    app.ports.setSelectedSpecDesignDetails.send({
       uuidString,
-      specification,
+      specValue: specification,
     });
   });
 });
