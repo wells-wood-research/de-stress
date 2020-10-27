@@ -18,8 +18,10 @@ import Shared.Buttons as Buttons
 import Shared.Design as Design
 import Shared.Editable exposing (Editable(..))
 import Shared.Metrics as Metrics
+import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet)
 import Shared.Requirement as Requirement exposing (Requirement, RequirementData)
 import Shared.Specification as Specification exposing (Specification)
+import Shared.Stored as Stored exposing (Stored(..))
 import Shared.Style as Style
 import Shared.WebSockets as WebSockets
 import Spa.Document exposing (Document)
@@ -54,6 +56,11 @@ port setSelectedSpecDesignDetails :
     -> Sub msg
 
 
+port setSelectedRefSetDesignDetails :
+    ({ uuidString : String, refSetValue : Value } -> msg)
+    -> Sub msg
+
+
 
 -- }}}
 -- {{{ MODEL
@@ -61,7 +68,8 @@ port setSelectedSpecDesignDetails :
 
 type alias Model =
     { designUuid : String
-    , mSelectedSpecUuid : Maybe String
+    , mSelectedSpecification : Maybe (Stored Specification)
+    , mSelectedReferenceSet : Maybe (Stored ReferenceSet)
     , pageState : PageState
     }
 
@@ -72,8 +80,6 @@ type PageState
     | LoadingWithStub Design.DesignStub
     | UnknownDesignUuid
     | Design Design.Design
-    | DesignFailedSpec Design.Design
-    | DesignWithSpec Design.Design Specification
 
 
 
@@ -90,7 +96,11 @@ init shared { params } =
     case Shared.getRunState shared of
         Just runState ->
             ( { designUuid = params.uuid
-              , mSelectedSpecUuid = runState.mSelectedSpecification
+              , mSelectedSpecification =
+                    Maybe.map
+                        (\uuid -> Stored.OnDisk { uuidString = uuid })
+                        runState.mSelectedSpecification
+              , mSelectedReferenceSet = Nothing
               , pageState =
                     case
                         Dict.get params.uuid runState.designs
@@ -107,7 +117,8 @@ init shared { params } =
 
         Nothing ->
             ( { designUuid = params.uuid
-              , mSelectedSpecUuid = Nothing
+              , mSelectedSpecification = Nothing
+              , mSelectedReferenceSet = Nothing
               , pageState = AppNotRunning
               }
             , Cmd.none
@@ -122,6 +133,7 @@ init shared { params } =
 type Msg
     = SetFocus { uuidString : String, design : Value }
     | SetSpecification { uuidString : String, specValue : Value }
+    | SetReferenceSet { uuidString : String, refSetValue : Value }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -133,10 +145,10 @@ update msg model =
                     ( { model | pageState = Design des }
                     , Cmd.batch
                         [ Design.viewStructure des.pdbString
-                        , case model.mSelectedSpecUuid of
-                            Just uuidString ->
+                        , case model.mSelectedSpecification of
+                            Just stored ->
                                 Specification.getSpecificationForSpecDetails
-                                    { uuidString = uuidString }
+                                    { uuidString = Stored.getUuid stored }
 
                             Nothing ->
                                 Cmd.none
@@ -150,19 +162,59 @@ update msg model =
 
         SetSpecification { specValue } ->
             ( { model
-                | pageState =
-                    case model.pageState of
-                        Design design ->
+                | mSelectedSpecification =
+                    case model.mSelectedSpecification of
+                        Just selectedSpec ->
                             case Codec.decodeValue Specification.codec specValue of
                                 Ok specification ->
-                                    DesignWithSpec design specification
+                                    InMemory
+                                        { uuidString =
+                                            Stored.getUuid selectedSpec
+                                        , data = specification
+                                        }
+                                        |> Just
 
                                 Err _ ->
-                                    DesignFailedSpec design
+                                    FailedToLoad
+                                        { uuidString =
+                                            Stored.getUuid selectedSpec
+                                        }
+                                        |> Just
 
-                        _ ->
-                            Debug.log "Unexpected page state"
-                                model.pageState
+                        Nothing ->
+                            Debug.log
+                                "A specification was set, but I was not expecting one."
+                                model.mSelectedSpecification
+              }
+            , Cmd.none
+            )
+
+        SetReferenceSet { refSetValue } ->
+            ( { model
+                | mSelectedReferenceSet =
+                    case model.mSelectedReferenceSet of
+                        Just selectedRefSet ->
+                            case Codec.decodeValue ReferenceSet.codec refSetValue of
+                                Ok referenceSet ->
+                                    InMemory
+                                        { uuidString =
+                                            Stored.getUuid selectedRefSet
+                                        , data = referenceSet
+                                        }
+                                        |> Just
+
+                                Err _ ->
+                                    FailedToLoad
+                                        { uuidString =
+                                            Stored.getUuid
+                                                selectedRefSet
+                                        }
+                                        |> Just
+
+                        Nothing ->
+                            Debug.log
+                                "A reference set was set, but I was not expecting one."
+                                model.mSelectedReferenceSet
               }
             , Cmd.none
             )
@@ -183,6 +235,7 @@ subscriptions model =
     Sub.batch
         [ setFocussedDesign SetFocus
         , setSelectedSpecDesignDetails SetSpecification
+        , setSelectedRefSetDesignDetails SetReferenceSet
         ]
 
 
@@ -204,7 +257,7 @@ sectionColumn =
 
 
 bodyView : Model -> Element Msg
-bodyView { designUuid, pageState } =
+bodyView { designUuid, pageState, mSelectedSpecification } =
     column [ width fill ]
         [ el [ centerX ] (Style.h1 <| text "Design Details")
         , case pageState of
@@ -247,21 +300,9 @@ bodyView { designUuid, pageState } =
 
             Design design ->
                 sectionColumn
-                    [ designDetailsView designUuid Nothing design ]
-
-            DesignFailedSpec design ->
-                sectionColumn
-                    [ "FAILED TO LOAD SPECIFICATION"
-                        |> Debug.log "Design page"
-                            text
-                    , designDetailsView designUuid Nothing design
-                    ]
-
-            DesignWithSpec design specification ->
-                sectionColumn
                     [ designDetailsView
                         designUuid
-                        (Just specification)
+                        (Maybe.andThen Stored.getData mSelectedSpecification)
                         design
                     ]
         ]
