@@ -170,11 +170,20 @@ app.ports.storeReferenceSet.subscribe((uuidStringAndReferenceSet) => {
   }
 });
 
-app.ports.getStoredReferenceSet.subscribe(({ uuidString }) => {
+app.ports.getReferenceSetForRefSetDetails.subscribe(({ uuidString }) => {
   get(uuidString, referenceSetStore).then((referenceSet) => {
     app.ports.setFocussedReferenceSet.send({
       uuidString,
-      referenceSet,
+      refSetValue: referenceSet,
+    });
+  });
+});
+
+app.ports.getReferenceSetForDesignDetails.subscribe(({ uuidString }) => {
+  get(uuidString, referenceSetStore).then((referenceSet) => {
+    app.ports.setSelectedRefSetDesignDetails.send({
+      uuidString,
+      refSetValue: referenceSet,
     });
   });
 });
@@ -202,6 +211,15 @@ app.ports.storeSpecification.subscribe((uuidStringAndSpecification) => {
   }
 });
 
+app.ports.getSpecificationForSpecDetails.subscribe(({ uuidString }) => {
+  get(uuidString, specificationStore).then((specification) => {
+    app.ports.setFocussedSpecification.send({
+      uuidString,
+      specValue: specification,
+    });
+  });
+});
+
 app.ports.getSpecificationForDesignsPage.subscribe(({ uuidString }) => {
   get(uuidString, specificationStore).then((specification) => {
     app.ports.setSpecificationForDesign.send({
@@ -211,7 +229,7 @@ app.ports.getSpecificationForDesignsPage.subscribe(({ uuidString }) => {
   });
 });
 
-app.ports.getSpecificationForSpecDetails.subscribe(({ uuidString }) => {
+app.ports.getSpecificationForDesignDetails.subscribe(({ uuidString }) => {
   get(uuidString, specificationStore).then((specification) => {
     app.ports.setSelectedSpecDesignDetails.send({
       uuidString,

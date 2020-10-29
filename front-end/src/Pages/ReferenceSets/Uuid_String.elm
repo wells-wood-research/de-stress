@@ -32,7 +32,7 @@ page =
 
 
 port setFocussedReferenceSet :
-    ({ uuidString : String, referenceSet : Value } -> msg)
+    ({ uuidString : String, refSetValue : Value } -> msg)
     -> Sub msg
 
 
@@ -103,7 +103,7 @@ init shared { params } =
 
                 Nothing ->
                     { key = shared.key, pageState = LoadingNoStub params.uuid }
-            , ReferenceSet.getStoredReferenceSet { uuidString = params.uuid }
+            , ReferenceSet.getReferenceSetForRefSetDetails { uuidString = params.uuid }
             )
 
         Nothing ->
@@ -116,15 +116,15 @@ init shared { params } =
 
 
 type Msg
-    = SetFocus { uuidString : String, referenceSet : Value }
+    = SetFocus { uuidString : String, refSetValue : Value }
     | DeleteFocussedReferenceSet String Buttons.DangerStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetFocus { uuidString, referenceSet } ->
-            case Codec.decodeValue ReferenceSet.codec referenceSet of
+        SetFocus { uuidString, refSetValue } ->
+            case Codec.decodeValue ReferenceSet.codec refSetValue of
                 Ok refSet ->
                     ( { model | pageState = RefSet uuidString refSet }, Cmd.none )
 

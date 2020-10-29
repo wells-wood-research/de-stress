@@ -207,10 +207,6 @@ init flags url key =
                             , mSelectedSpecification = Nothing
                             , saveStateRequested = False
                             }
-
-                    -- , designs = Dict.empty
-                    -- , referenceSets = Dict.empty
-                    -- , mSelectedReferenceSet = Nothing
                     }
 
         Err codecError ->

@@ -37,7 +37,7 @@ page =
 
 
 port setFocussedSpecification :
-    ({ uuidString : String, specification : Value } -> msg)
+    ({ uuidString : String, specValue : Value } -> msg)
     -> Sub msg
 
 
@@ -121,15 +121,15 @@ init shared { params } =
 
 
 type Msg
-    = SetFocus { uuidString : String, specification : Value }
+    = SetFocus { uuidString : String, specValue : Value }
     | DeleteFocussedSpecification String Buttons.DangerStatus
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetFocus { uuidString, specification } ->
-            case Codec.decodeValue Specification.codec specification of
+        SetFocus { uuidString, specValue } ->
+            case Codec.decodeValue Specification.codec specValue of
                 Ok spec ->
                     ( { model | pageState = Spec uuidString spec }, Cmd.none )
 

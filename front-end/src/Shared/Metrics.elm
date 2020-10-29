@@ -612,13 +612,13 @@ torsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                         , (VL.encoding
                             << VL.position VL.X
                                 [ VL.pName "Phi"
-                                , VL.pBin [ VL.biStep 2 ]
+                                , VL.pBin [ VL.biStep 4 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Phi" ]
                                 ]
                             << VL.position VL.Y
                                 [ VL.pName "Psi"
-                                , VL.pBin [ VL.biStep 2 ]
+                                , VL.pBin [ VL.biStep 4 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Psi" ]
                                 ]

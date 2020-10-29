@@ -18,6 +18,7 @@ import Shared.Buttons as Buttons
 import Shared.Design as Design
 import Shared.Editable exposing (Editable(..))
 import Shared.Metrics as Metrics
+import Shared.Plots as Plots
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet)
 import Shared.Requirement as Requirement exposing (Requirement, RequirementData)
 import Shared.Specification as Specification exposing (Specification)
@@ -95,24 +96,47 @@ init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
 init shared { params } =
     case Shared.getRunState shared of
         Just runState ->
-            ( { designUuid = params.uuid
-              , mSelectedSpecification =
-                    Maybe.map
-                        (\uuid -> Stored.OnDisk { uuidString = uuid })
-                        runState.mSelectedSpecification
-              , mSelectedReferenceSet = Nothing
-              , pageState =
-                    case
-                        Dict.get params.uuid runState.designs
-                            |> Maybe.map Design.storedDesignToStub
-                    of
-                        Just stub ->
-                            LoadingWithStub stub
+            let
+                model =
+                    { designUuid = params.uuid
+                    , mSelectedSpecification =
+                        Maybe.map
+                            (\uuid -> Stored.OnDisk { uuidString = uuid })
+                            runState.mSelectedSpecification
+                    , mSelectedReferenceSet =
+                        Maybe.map
+                            (\uuid -> Stored.OnDisk { uuidString = uuid })
+                            runState.mSelectedReferenceSet
+                    , pageState =
+                        case
+                            Dict.get params.uuid runState.designs
+                                |> Maybe.map Design.storedDesignToStub
+                        of
+                            Just stub ->
+                                LoadingWithStub stub
 
-                        Nothing ->
-                            LoadingNoStub
-              }
-            , Design.getStoredDesign { uuidString = params.uuid }
+                            Nothing ->
+                                LoadingNoStub
+                    }
+            in
+            ( model
+            , Cmd.batch
+                [ Design.getStoredDesign { uuidString = params.uuid }
+                , case model.mSelectedSpecification of
+                    Just stored ->
+                        Specification.getSpecificationForDesignDetails
+                            { uuidString = Stored.getUuid stored }
+
+                    Nothing ->
+                        Cmd.none
+                , case model.mSelectedReferenceSet of
+                    Just stored ->
+                        ReferenceSet.getReferenceSetForDesignDetails
+                            { uuidString = Stored.getUuid stored }
+
+                    Nothing ->
+                        Cmd.none
+                ]
             )
 
         Nothing ->
@@ -145,13 +169,6 @@ update msg model =
                     ( { model | pageState = Design des }
                     , Cmd.batch
                         [ Design.viewStructure des.pdbString
-                        , case model.mSelectedSpecification of
-                            Just stored ->
-                                Specification.getSpecificationForSpecDetails
-                                    { uuidString = Stored.getUuid stored }
-
-                            Nothing ->
-                                Cmd.none
                         ]
                     )
 
@@ -190,34 +207,87 @@ update msg model =
             )
 
         SetReferenceSet { refSetValue } ->
-            ( { model
-                | mSelectedReferenceSet =
-                    case model.mSelectedReferenceSet of
-                        Just selectedRefSet ->
-                            case Codec.decodeValue ReferenceSet.codec refSetValue of
-                                Ok referenceSet ->
-                                    InMemory
-                                        { uuidString =
-                                            Stored.getUuid selectedRefSet
-                                        , data = referenceSet
-                                        }
-                                        |> Just
+            case
+                ( model.mSelectedReferenceSet
+                , Codec.decodeValue ReferenceSet.codec refSetValue
+                )
+            of
+                ( Just selectedRefSet, Ok referenceSet ) ->
+                    ( { model
+                        | mSelectedReferenceSet =
+                            InMemory
+                                { uuidString =
+                                    Stored.getUuid selectedRefSet
+                                , data = referenceSet
+                                }
+                                |> Just
+                      }
+                    , case model.pageState of
+                        Design design ->
+                            case WebSockets.getDesignMetrics design.metricsJobStatus of
+                                Just metrics ->
+                                    plotCommands metrics referenceSet
 
-                                Err _ ->
-                                    FailedToLoad
-                                        { uuidString =
-                                            Stored.getUuid
-                                                selectedRefSet
-                                        }
-                                        |> Just
+                                Nothing ->
+                                    Cmd.none
 
-                        Nothing ->
-                            Debug.log
-                                "A reference set was set, but I was not expecting one."
-                                model.mSelectedReferenceSet
-              }
-            , Cmd.none
-            )
+                        _ ->
+                            Cmd.none
+                    )
+
+                ( Just selectedRefSet, Err _ ) ->
+                    ( { model
+                        | mSelectedReferenceSet =
+                            FailedToLoad
+                                { uuidString =
+                                    Stored.getUuid
+                                        selectedRefSet
+                                }
+                                |> Just
+                      }
+                    , Cmd.none
+                    )
+
+                ( Nothing, _ ) ->
+                    Debug.log
+                        "A reference set was set, but I was not expecting one."
+                        ( model, Cmd.none )
+
+
+plotCommands : Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
+plotCommands metrics referenceSet =
+    Cmd.batch
+        [ Plots.vegaPlot <|
+            { plotId = "composition"
+            , spec =
+                Metrics.createCompositionSpec
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .aggregateData
+                    )
+                    metrics
+            }
+        , Plots.vegaPlot <|
+            { plotId = "torsionAngles"
+            , spec =
+                Metrics.createTorsionAngleSpec
+                    metrics
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .metrics
+                    )
+            }
+        , Plots.vegaPlot <|
+            { plotId = "metricsHistograms"
+            , spec =
+                Metrics.createAllHistogramsSpec
+                    metrics
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .metrics
+                    )
+            }
+        ]
 
 
 save : Model -> Shared.Model -> Shared.Model
@@ -257,7 +327,7 @@ sectionColumn =
 
 
 bodyView : Model -> Element Msg
-bodyView { designUuid, pageState, mSelectedSpecification } =
+bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet } =
     column [ width fill ]
         [ el [ centerX ] (Style.h1 <| text "Design Details")
         , case pageState of
@@ -303,6 +373,7 @@ bodyView { designUuid, pageState, mSelectedSpecification } =
                     [ designDetailsView
                         designUuid
                         (Maybe.andThen Stored.getData mSelectedSpecification)
+                        (Maybe.andThen Stored.getData mSelectedReferenceSet)
                         design
                     ]
         ]
@@ -321,15 +392,17 @@ basicInformation { name, fileName } =
 designDetailsView :
     String
     -> Maybe Specification
+    -> Maybe ReferenceSet
     -> Design.Design
     -> Element Msg
-designDetailsView uuidString mSelectedSpecification design =
+designDetailsView uuidString mSpecification mReferenceSet design =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
     in
     column
         [ spacing 15, width fill ]
+    <|
         [ sectionColumn
             [ paragraph []
                 [ Style.h1 <| text "Design Details" ]
@@ -403,18 +476,33 @@ designDetailsView uuidString mSelectedSpecification design =
                     |> html
                 )
             ]
-        , case WebSockets.getDesignMetrics metricsJobStatus of
-            Just designMetrics ->
-                basicMetrics mSelectedSpecification designMetrics
-
-            Nothing ->
-                WebSockets.metricsJobStatusString metricsJobStatus
-                    |> text
         ]
+            ++ (case WebSockets.getDesignMetrics metricsJobStatus of
+                    Just designMetrics ->
+                        [ basicMetrics designMetrics
+                        , case mReferenceSet of
+                            Just refSet ->
+                                referenceSetComparisonView
+
+                            Nothing ->
+                                text "No reference set selected."
+                        , case mSpecification of
+                            Just specification ->
+                                specificationView designMetrics specification
+
+                            Nothing ->
+                                text "No specification selected."
+                        ]
+
+                    Nothing ->
+                        [ WebSockets.metricsJobStatusString metricsJobStatus
+                            |> text
+                        ]
+               )
 
 
-basicMetrics : Maybe Specification -> Metrics.DesignMetrics -> Element msg
-basicMetrics mSelectedSpecification metrics =
+basicMetrics : Metrics.DesignMetrics -> Element msg
+basicMetrics metrics =
     let
         { sequenceInfo } =
             metrics
@@ -424,12 +512,6 @@ basicMetrics mSelectedSpecification metrics =
         , Style.h3 <| text "Sequences and DSSP Assignment"
         , sequenceInfoDictView sequenceInfo
         , metricsOverview metrics
-        , case mSelectedSpecification of
-            Just specification ->
-                specificationView metrics specification
-
-            Nothing ->
-                text "No specification selected."
         ]
 
 
@@ -465,7 +547,7 @@ metricsOverview metrics =
     column [ spacing 10, width fill ]
         [ Style.h2 <| text "Metrics"
         , wrappedRow
-            []
+            [ centerX ]
             [ tableColumn
                 [ headerParagraph [ text "Hydrophobic Fitness" ]
                 , case metrics.hydrophobicFitness of
@@ -559,7 +641,7 @@ compositionView =
     column
         [ width fill ]
         [ Style.h3 <| text "Composition"
-        , Keyed.el [ centerX, width fill ]
+        , Keyed.el [ centerX ]
             ( "composition"
             , Html.div
                 [ HAtt.id "composition"
@@ -582,9 +664,9 @@ compositionView =
 torsionAnglesView : Element msg
 torsionAnglesView =
     column
-        [ centerX ]
+        [ width fill ]
         [ Style.h3 <| text "Backbone Torsion Angles"
-        , Keyed.el []
+        , Keyed.el [ centerX ]
             ( "torsionAngles"
             , Html.div
                 [ HAtt.id "torsionAngles"

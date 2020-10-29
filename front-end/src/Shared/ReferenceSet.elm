@@ -8,7 +8,8 @@ port module Shared.ReferenceSet exposing
     , deleteReferenceSet
     , getGenericData
     , getParamsForStub
-    , getStoredReferenceSet
+    , getReferenceSetForDesignDetails
+    , getReferenceSetForRefSetDetails
     , highResBiolUnits
     , mapStoredReferenceSet
     , mapStubParams
@@ -41,7 +42,10 @@ import Shared.Metrics as Metrics exposing (RefSetMetrics)
 port storeReferenceSet : { uuidString : String, referenceSet : Value } -> Cmd msg
 
 
-port getStoredReferenceSet : { uuidString : String } -> Cmd msg
+port getReferenceSetForRefSetDetails : { uuidString : String } -> Cmd msg
+
+
+port getReferenceSetForDesignDetails : { uuidString : String } -> Cmd msg
 
 
 port deleteReferenceSet : { uuidString : String } -> Cmd msg
