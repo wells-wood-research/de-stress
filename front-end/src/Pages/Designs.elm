@@ -1,11 +1,13 @@
 port module Pages.Designs exposing (Model, Msg, Params, page)
 
 import Biomolecules
+import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Keyed as Keyed
 import FeatherIcons
 import File exposing (File)
@@ -27,6 +29,7 @@ import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
 import Task
+import Utils.Route exposing (navigate)
 import VegaLite
 
 
@@ -64,6 +67,7 @@ type alias Model =
     -- , overviewOptionDropDown : DropDown.Model String
     -- , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Buttons.DangerStatus
+    , navKey : Key
     }
 
 
@@ -102,6 +106,7 @@ init shared _ =
             --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
             --, mOverviewInfo = Nothing
             , deleteAllStatus = Buttons.initDangerStatus
+            , navKey = shared.key
             }
     in
     ( model
@@ -135,6 +140,7 @@ type Msg
     | GotSpecification Value
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
+    | DesignDetails String
 
 
 
@@ -340,28 +346,12 @@ update msg model =
                 , Cmd.none
                 )
 
-
-
--- Subscription Msgs
--- ( Global.Running runState, CheckForPlotUpdate newNumberOfMetrics _ ) ->
---     ( { model | previousNumberOfMetrics = newNumberOfMetrics }
---     , if newNumberOfMetrics /= model.previousNumberOfMetrics then
---                     )
---             }
---       else
---         Cmd.none
---     , Cmd.none
---     )
--- Drop Downs
--- OverviewOptionDropDownMsg cMsg ->
---     let
---         cModel =
---             DropDown.update cMsg model.overviewOptionDropDown
---     in
---     ( { model | overviewOptionDropDown = cModel }
---     , Cmd.none
---     , Cmd.none
---     )
+        DesignDetails uuid ->
+            ( model
+            , navigate
+                model.navKey
+                (Route.Designs__Uuid_String { uuid = uuid })
+            )
 
 
 structureRequested : Cmd Msg
@@ -642,14 +632,12 @@ designCard { uuidString, designStub, mMeetsSpecification } =
         ]
         [ column
             [ padding 10
+            , pointer
             , width fill
+            , DesignDetails uuidString
+                |> Events.onClick
             ]
-            [ link Style.linkStyle
-                { url =
-                    Route.Designs__Uuid_String { uuid = uuidString }
-                        |> Route.toString
-                , label = Style.h2 <| text designStub.name
-                }
+            [ Style.h2 <| text designStub.name
             , paragraph []
                 [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
                     |> text
