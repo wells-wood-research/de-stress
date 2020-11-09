@@ -1,7 +1,7 @@
 """Contains function for running the analytics sweet."""
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 import re
 
 from bs4 import BeautifulSoup
@@ -13,6 +13,65 @@ import numpy as np
 import requests
 
 from .elm_types import DesignMetrics, SequenceInfo
+
+# {{{ Input Validation
+
+
+def find_disallowed_monomers(assembly: ampal.Assembly) -> Optional[Set[str]]:
+    """Tests for valid monomers in assembly.
+
+    Defining a function to test that the assembly object only contains
+    the 20 canonical amino acids and H20 monomer codes. This is because
+    some of the design metrics in DE-STRESS will only work for these
+    monomers.
+
+    Parameters
+    ----------
+    assembly: ampal.Assembly
+        An assembly object which is created from an input PDB file. The Ample
+        python package is used to create this object.
+
+    Returns
+    -------
+    molset: Set[str]
+        A set containing the monomer codes that are not included in the
+        accepted monomers set.
+    """
+
+    # Creating a set of the 20 canonical amino acid and H2O codes
+    # These are the monomers that are accepted for the PDB descriptive statistics
+    allowed_monomers = {
+        "ALA",
+        "ARG",
+        "ASN",
+        "ASP",
+        "CYS",
+        "GLN",
+        "GLU",
+        "GLY",
+        "HIS",
+        "ILE",
+        "LEU",
+        "LYS",
+        "MET",
+        "PHE",
+        "PRO",
+        "SER",
+        "THR",
+        "TRP",
+        "TYR",
+        "VAL",
+        "HOH",
+    }
+
+    # Creating a set so that we only have the unique mol codes
+    mol_set = {x.mol_code for x in assembly.get_monomers()}
+    disallowed_monomers = mol_set.difference(allowed_monomers)
+
+    return disallowed_monomers
+
+
+# }}}
 
 
 class JpredSubmissionError(Exception):
