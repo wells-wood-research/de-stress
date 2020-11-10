@@ -42,7 +42,7 @@ class DesignMetrics:
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
 class EvoEF2Output:
-    evoef2_log_info: str
+    log_info: str
     reference_ALA: float
     reference_CYS: float
     reference_ASP: float
@@ -106,6 +106,9 @@ class EvoEF2Output:
     interD_hbscsc_phi: float
     total: float
     time_spent: float
+
+    def __repr__(self):
+        return f"<EvoEF2Output: Total Energy = {self.total}>"
 
 
 # }}}

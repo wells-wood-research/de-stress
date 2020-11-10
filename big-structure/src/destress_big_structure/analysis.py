@@ -1,18 +1,17 @@
 """Contains function for running the analytics sweet."""
 from collections import Counter
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Set
+import subprocess
+import tempfile
 import re
 
 from bs4 import BeautifulSoup
-from dataclasses_json import dataclass_json, LetterCase
 import ampal
-import isambard
 import isambard.evaluation as ev
 import numpy as np
 import requests
 
-from .elm_types import DesignMetrics, SequenceInfo
+from .elm_types import DesignMetrics, EvoEF2Output, SequenceInfo
 
 # {{{ Input Validation
 
@@ -72,6 +71,7 @@ def find_disallowed_monomers(assembly: ampal.Assembly) -> Optional[Set[str]]:
 
 
 # }}}
+# {{{ Jpred Submission
 
 
 class JpredSubmissionError(Exception):
@@ -175,6 +175,10 @@ class JpredSubmission:
             return None
 
 
+# }}}
+# {{{ DesignMetrics
+
+
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
     ampal_assembly = ampal.load_pdb(pdb_string, path=False)
     if isinstance(ampal_assembly, ampal.AmpalContainer):
@@ -260,3 +264,77 @@ def analyse_chain(chain: ampal.Polymer) -> Dict:
 def chain_sequence(chain: ampal.Polypeptide) -> str:
     return chain.sequence
 
+
+# }}}
+# {{{ EvoEF2Output
+
+
+def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
+    """Defining a function to run EvoEF2 on an input PDB file.
+
+    EvoEF2 is an energy function that was optimised by sequence recapitulation
+    and can be used to estimate protein stability. First this function runs
+    EvoEF2 on the input PDB file and then the output is parsed into a
+    dictionary and then converted into and EvoEF2Output object.
+
+    Notes
+    -----
+    Reference: Xiaoqiang Huang, Robin Pearce, Yang Zhang. EvoEF2: accurate and
+    fast energy function for computational protein design. Bioinformatics
+    (2020) 36:1135-1142
+
+    Parameters
+    ----------
+    pdb_file_path: str
+        File path for the PDB file.
+    evoef2_path: str
+        File path for the EvoEF2.
+
+    Returns
+    -------
+    evoef2_output: EvoEF2Output
+        EvoEF2Output object which contains the log information from the
+        EvoEF2 run, the energy function output and the time it took for
+        EvoEF2 to run.
+    """
+
+    with tempfile.NamedTemporaryFile(mode="w") as tmp:
+        tmp.write(pdb_string)
+        # Creating bash command
+        cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
+
+        # Using subprocess to run this command and capturing the output
+        evoef2_stdout = subprocess.run(cmd, capture_output=True)
+        evoef2_stdout.check_returncode()
+
+    # Splitting the result string at a substring with 92 #'s
+    # then splitting the string at "Structure energy details:\n"
+    # which can separate the EvoEF2 log information from the actual structure
+    # energy details
+    log_info, _, result_string = (
+        evoef2_stdout.stdout.decode()
+        .partition("#" * 92)[2]
+        .partition("Structure energy details:\n")
+    )
+
+    # Finding lines with key-value pairs seperated by either ":" or "=" then creating
+    # a dictionary from the pairs.
+    energy_values = {
+        k.strip(): float(v.strip())
+        for k, v in re.findall(r"(.+)[=:](.+)", result_string)
+    }
+
+    # There should be 63 energy components
+    assert len(energy_values) == 63
+
+    # Renaming some of the keys in the output dictionary
+    energy_values["total"] = energy_values.pop("Total")
+    energy_values["time_spent"] = energy_values.pop("Time spent")
+
+    # Creating an EvoEF2 object by unpacking the output dictionary
+    evoef2_output = EvoEF2Output(log_info=log_info, **energy_values)
+
+    return evoef2_output
+
+
+# }}}
