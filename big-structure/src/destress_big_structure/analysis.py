@@ -1,6 +1,8 @@
 """Contains function for running the analytics sweet."""
 from collections import Counter
 from typing import Dict, List, Optional, Tuple, Set
+import os
+import pathlib
 import subprocess
 import tempfile
 import re
@@ -298,13 +300,23 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
         EvoEF2 to run.
     """
 
+    starting_directory = pathlib.Path.cwd()
     with tempfile.NamedTemporaryFile(mode="w") as tmp:
+        # changing working dir so that EvoEF doesn't create files in the users cwd
+        temp_folder = pathlib.Path(tmp.name).parent
+        os.chdir(temp_folder)
+
+        # writing the pdb string to a temp file as input for EvoEF
         tmp.write(pdb_string)
+
         # Creating bash command
         cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
 
         # Using subprocess to run this command and capturing the output
         evoef2_stdout = subprocess.run(cmd, capture_output=True)
+
+        # Change back to starting directory before checking return code
+        os.chdir(starting_directory)
         evoef2_stdout.check_returncode()
 
     # Splitting the result string at a substring with 92 #'s
