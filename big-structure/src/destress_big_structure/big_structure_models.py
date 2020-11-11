@@ -76,6 +76,7 @@ class StateModel(BigStructureBase):  # type: ignore
     biol_unit = relationship("BiolUnitModel", back_populates="states")
 
     # Children
+    evoef2_results = relationship("EvoEF2ResultsModel", uselist=False)
     chains = relationship("ChainModel")
 
     def __repr__(self):
@@ -102,3 +103,16 @@ class ChainModel(BigStructureBase):  # type: ignore
             f"biol_unit={self.state.biol_unit.biol_unit_number} "
             f"state={self.state.state_number}, chain={self.chain_label}>"
         )
+
+
+class EvoEF2ResultsModel(BigStructureBase):  # type: ignore
+    __tablename__ = "evoef2_results"
+    id = Column(Integer, primary_key=True)
+    # Insert fields here!
+
+    # Parent
+    state_id = Column(Integer, ForeignKey("state.id"))
+    state = relationship("StateModel", back_populates="evoef2_results")
+
+    def __repr__(self):
+        return "<>"
