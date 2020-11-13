@@ -131,20 +131,3 @@ def test_check_run_evoef_executes():
         evoef_results.interD_energy_total, evoef_interD_total_calc, decimal=1
     )
     np.testing.assert_almost_equal(evoef_results.total, evoef_total_calc, decimal=1)
-
-    # print(evoef_results.ref_energy_total)
-    # print(evoef_ref_total_calc)
-
-    # print(evoef_results.intraR_energy_total)
-    # print(evoef_intraR_total_calc)
-
-    # print(evoef_results.interS_energy_total)
-    # print(evoef_interS_total_calc)
-
-    # print(evoef_results.interD_energy_total)
-    # print(evoef_interD_total_calc)
-
-    # print(evoef_results.total)
-    # print(evoef_total_calc)
-
-    # assert False
