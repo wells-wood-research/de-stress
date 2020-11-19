@@ -48,9 +48,27 @@ def create_biounit_entry(
 def create_state_entry(
     ampal_assembly: ampal.Assembly, state_number: int, biounit_entry: BiolUnitModel
 ) -> StateModel:
-    state_analytics = analysis.analyse_state(ampal_assembly)
+    # Generate raw metrics
+    state_analytics = analysis.analyse_design(ampal_assembly)
+    # Convert the DesignMetrics into a StateModel
     state_model = StateModel(
-        state_number=state_number, biol_unit=biounit_entry, **state_analytics
+        state_number=state_number,
+        biol_unit=biounit_entry,
+        composition=";".join(
+            f"{k}:{v:.2f}" for (k, v) in state_analytics.composition.items()
+        ),
+        torsion_angles="".join(
+            f"{id_string}({tas[0]:.0f},{tas[1]:.0f},{tas[2]:.0f})"
+            for id_string, tas in state_analytics.torsion_angles.items()
+        ),
+        hydrophobic_fitness=state_analytics.hydrophobic_fitness,
+        is_protein_only=all(
+            [isinstance(chain, ampal.Polypeptide) for chain in ampal_assembly]
+        ),
+        isoelectric_point=state_analytics.isoelectric_point,
+        num_of_residues=state_analytics.num_of_residues,
+        mass=state_analytics.mass,
+        mean_packing_density=state_analytics.packing_density,
     )
     for chain in ampal_assembly:
         if isinstance(chain, ampal.Polypeptide):
@@ -61,23 +79,4 @@ def create_state_entry(
 def create_chain_entry(chain: ampal.Polypeptide, state_model: StateModel) -> ChainModel:
     chain_analytics = analysis.analyse_chain(chain)
     chain_model = ChainModel(chain_label=chain.id, state=state_model, **chain_analytics)
-    return chain_model
-
-
-def create_design_entry(ampal_assembly: ampal.Assembly) -> DesignModel:
-    design_analytics = analysis.analyse_state(ampal_assembly)
-    design_model = DesignModel(**design_analytics)
-    for chain in ampal_assembly:
-        if isinstance(chain, ampal.Polypeptide):
-            create_design_chain_entry(chain, design_model)
-    return design_model
-
-
-def create_design_chain_entry(
-    chain: ampal.Polypeptide, design_model: DesignModel
-) -> ChainModel:
-    chain_analytics = analysis.analyse_chain(chain)
-    chain_model = DesignChainModel(
-        chain_label=chain.id, design=design_model, **chain_analytics
-    )
     return chain_model
