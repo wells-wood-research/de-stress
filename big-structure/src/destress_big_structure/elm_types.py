@@ -107,8 +107,27 @@ class EvoEF2Output:
     total: float
     time_spent: float
 
+    # Redefining the __repr__ method to return the total energy value from EvoEF2
     def __repr__(self):
         return f"<EvoEF2Output: Total Energy = {self.total}>"
+
+    # Returning the total reference, intraR, interS and interD energy values
+    # as properties of the object
+    @property
+    def ref_energy_total(self):
+        return sum([v for k, v in self.__dict__.items() if k.startswith("reference")])
+
+    @property
+    def intraR_energy_total(self):
+        return sum([v for k, v in self.__dict__.items() if k.startswith("intraR")])
+
+    @property
+    def interS_energy_total(self):
+        return sum([v for k, v in self.__dict__.items() if k.startswith("interS")])
+
+    @property
+    def interD_energy_total(self):
+        return sum([v for k, v in self.__dict__.items() if k.startswith("interD")])
 
 
 # }}}
@@ -230,7 +249,10 @@ class ClientWebsocketIncoming:
                 "tag": "ReceivedMetricsJob",
                 "args": [server_job.to_dict()],
             },
-            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
+            communicationerror=lambda: {
+                "tag": "CommunicationError",
+                "args": [],
+            },
         )
 
     def to_json(self) -> str:
