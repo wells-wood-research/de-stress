@@ -9,12 +9,15 @@ from destress_big_structure.big_structure_models import (
     BiolUnitModel,
     StateModel,
     ChainModel,
+    EvoEF2ResultsModel,
 )
 from destress_big_structure.design_models import (
     DesignModel,
     DesignChainModel,
 )
 from destress_big_structure import analysis
+
+from .settings import EVOEF2_BINARY_PATH
 
 
 def create_biounit_entry(
@@ -73,6 +76,9 @@ def create_state_entry(
     for chain in ampal_assembly:
         if isinstance(chain, ampal.Polypeptide):
             create_chain_entry(chain, state_model)
+
+    create_evoef2_results_entry(ampal_assembly, state_model, EVOEF2_BINARY_PATH)
+
     return state_model
 
 
@@ -80,3 +86,14 @@ def create_chain_entry(chain: ampal.Polypeptide, state_model: StateModel) -> Cha
     chain_analytics = analysis.analyse_chain(chain)
     chain_model = ChainModel(chain_label=chain.id, state=state_model, **chain_analytics)
     return chain_model
+
+
+def create_evoef2_results_entry(
+    ampal_assembly: ampal.Assembly, state_model: StateModel, evoef2_binary_path: str
+) -> EvoEF2ResultsModel:
+    evoef2_results = analysis.run_evoef2(ampal_assembly.pdb, evoef2_binary_path)
+    evoef2_results_model = EvoEF2ResultsModel(
+        state=state_model, **evoef2_results.__dict__
+    )
+
+    return evoef2_results_model
