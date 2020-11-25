@@ -18,6 +18,7 @@ port module Shared.Design exposing
     )
 
 import Codec exposing (Codec, Value)
+import Set exposing (Set)
 import Shared.Buttons as Buttons
 import Shared.Editable as Editable exposing (Editable)
 import Shared.WebSockets as WebSockets
@@ -59,6 +60,7 @@ type alias Design =
     , deleteStatus : Buttons.DangerStatus
     , metricsJobStatus : WebSockets.MetricsServerJobStatus
     , mMeetsActiveSpecification : Maybe Bool
+    , tags : Set String
     }
 
 
@@ -81,6 +83,9 @@ codec =
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
+        |> Codec.field "tags"
+            .tags
+            (Codec.set Codec.string)
         |> Codec.buildObject
 
 

@@ -14,6 +14,7 @@ import File exposing (File)
 import File.Select as FileSelect
 import Html
 import Html.Attributes as HAtt
+import Set
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design exposing (Design)
@@ -250,6 +251,7 @@ update msg model =
                             , deleteStatus = Buttons.initDangerStatus
                             , metricsJobStatus = jobStatus
                             , mMeetsActiveSpecification = Nothing
+                            , tags = Set.empty
                             }
                     in
                     ( { model
