@@ -15,7 +15,6 @@ module Shared.Metrics exposing
     , desMetricsCodec
     , overviewSpec
     , refSetMetricsCodec
-    , testEvoEF2Results
     , torsionAngleStringToDict
     )
 
@@ -41,6 +40,7 @@ type alias DesignMetrics =
     , mass : Float
     , numOfResidues : Int
     , packingDensity : Float
+    , evoEF2Results : EvoEF2Results
     }
 
 
@@ -65,6 +65,7 @@ desMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
         |> Codec.buildObject
 
 
@@ -151,83 +152,87 @@ type alias EvoEF2Results =
     , interD_hbscsc_the : Float
     , interD_hbscsc_phi : Float
     , total : Float
-    , ref_total : Float
-    , intraR_total : Float
-    , interS_total : Float
-    , interD_total : Float
+
+    -- , ref_total : Float
+    -- , intraR_total : Float
+    -- , interS_total : Float
+    -- , interD_total : Float
     }
 
 
-testEvoEF2Results : EvoEF2Results
-testEvoEF2Results =
-    { log_info = "\n                                    EvoEF2                                                  \n  A framework for macromolecular modeling, e.g.,protein design, protein side-chain packing, \nprotein structure energy minimization, add and optimize hydrogen bonds, build mutant model, \ncalculate protein folding stability, calculate protein-protein binding free energy, etc     \n\n\n  Copyright (c) Xiaoqiang Huang (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)\n  Dept. of Computational Medicine & Bioinformatics\n  Medical School\n  University of Michigan\n############################################################################################\ncommand ComputeStability works\n\n"
-    , reference_ALA = -5.3
-    , reference_CYS = -0.11
-    , reference_ASP = -4.01
-    , reference_GLU = -11.03
-    , reference_PHE = 2.72
-    , reference_GLY = -14.65
-    , reference_HIS = -1.47
-    , reference_ILE = 9.32
-    , reference_LYS = -10.0
-    , reference_LEU = 6.45
-    , reference_MET = 3.79
-    , reference_ASN = -4.31
-    , reference_PRO = -4.53
-    , reference_GLN = -1.94
-    , reference_ARG = -2.64
-    , reference_SER = -5.93
-    , reference_THR = -3.33
-    , reference_VAL = 20.4
-    , reference_TRP = 2.0
-    , reference_TYR = 2.8
-    , intraR_vdwatt = -19.25
-    , intraR_vdwrep = 3.66
-    , intraR_electr = -0.26
-    , intraR_deslvP = 0.0
-    , intraR_deslvH = -1.92
-    , intraR_hbscbb_dis = -0.27
-    , intraR_hbscbb_the = -0.0
-    , intraR_hbscbb_phi = -0.0
-    , aapropensity = -16.89
-    , ramachandran = 224.95
-    , dunbrack = 37.88
-    , interS_vdwatt = -610.82
-    , interS_vdwrep = 40.41
-    , interS_electr = -30.09
-    , interS_deslvP = 351.86
-    , interS_deslvH = -255.43
-    , interS_ssbond = 0.0
-    , interS_hbbbbb_dis = -48.9
-    , interS_hbbbbb_the = -34.68
-    , interS_hbbbbb_phi = -51.45
-    , interS_hbscbb_dis = -9.61
-    , interS_hbscbb_the = -7.4
-    , interS_hbscbb_phi = -1.51
-    , interS_hbscsc_dis = -8.93
-    , interS_hbscsc_the = -3.47
-    , interS_hbscsc_phi = -0.0
-    , interD_vdwatt = 0.0
-    , interD_vdwrep = 0.0
-    , interD_electr = 0.0
-    , interD_deslvP = 0.0
-    , interD_deslvH = 0.0
-    , interD_ssbond = 0.0
-    , interD_hbbbbb_dis = 0.0
-    , interD_hbbbbb_the = 0.0
-    , interD_hbbbbb_phi = 0.0
-    , interD_hbscbb_dis = 0.0
-    , interD_hbscbb_the = 0.0
-    , interD_hbscbb_phi = 0.0
-    , interD_hbscsc_dis = 0.0
-    , interD_hbscsc_the = 0.0
-    , interD_hbscsc_phi = 0.0
-    , total = -463.9
-    , ref_total = -21.77
-    , intraR_total = -18.04
-    , interS_total = -670.02
-    , interD_total = 0.0
-    }
+evoEF2ResultsCodec : Codec EvoEF2Results
+evoEF2ResultsCodec =
+    Codec.object EvoEF2Results
+        |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "reference_ALA" .reference_ALA Codec.float
+        |> Codec.field "reference_CYS" .reference_CYS Codec.float
+        |> Codec.field "reference_ASP" .reference_ASP Codec.float
+        |> Codec.field "reference_GLU" .reference_GLU Codec.float
+        |> Codec.field "reference_PHE" .reference_PHE Codec.float
+        |> Codec.field "reference_GLY" .reference_GLY Codec.float
+        |> Codec.field "reference_HIS" .reference_HIS Codec.float
+        |> Codec.field "reference_ILE" .reference_ILE Codec.float
+        |> Codec.field "reference_LYS" .reference_LYS Codec.float
+        |> Codec.field "reference_LEU" .reference_LEU Codec.float
+        |> Codec.field "reference_MET" .reference_MET Codec.float
+        |> Codec.field "reference_ASN" .reference_ASN Codec.float
+        |> Codec.field "reference_PRO" .reference_PRO Codec.float
+        |> Codec.field "reference_GLN" .reference_GLN Codec.float
+        |> Codec.field "reference_ARG" .reference_ARG Codec.float
+        |> Codec.field "reference_SER" .reference_SER Codec.float
+        |> Codec.field "reference_THR" .reference_THR Codec.float
+        |> Codec.field "reference_VAL" .reference_VAL Codec.float
+        |> Codec.field "reference_TRP" .reference_TRP Codec.float
+        |> Codec.field "reference_TYR" .reference_TYR Codec.float
+        |> Codec.field "intraR_vdwatt" .intraR_vdwatt Codec.float
+        |> Codec.field "intraR_vdwrep" .intraR_vdwrep Codec.float
+        |> Codec.field "intraR_electr" .intraR_electr Codec.float
+        |> Codec.field "intraR_deslvP" .intraR_deslvP Codec.float
+        |> Codec.field "intraR_deslvH" .intraR_deslvH Codec.float
+        |> Codec.field "intraR_hbscbb_dis" .intraR_hbscbb_dis Codec.float
+        |> Codec.field "intraR_hbscbb_the" .intraR_hbscbb_the Codec.float
+        |> Codec.field "intraR_hbscbb_phi" .intraR_hbscbb_phi Codec.float
+        |> Codec.field "aapropensity" .aapropensity Codec.float
+        |> Codec.field "ramachandran" .ramachandran Codec.float
+        |> Codec.field "dunbrack" .dunbrack Codec.float
+        |> Codec.field "interS_vdwatt" .interS_vdwatt Codec.float
+        |> Codec.field "interS_vdwrep" .interS_vdwrep Codec.float
+        |> Codec.field "interS_electr" .interS_electr Codec.float
+        |> Codec.field "interS_deslvP" .interS_deslvP Codec.float
+        |> Codec.field "interS_deslvH" .interS_deslvH Codec.float
+        |> Codec.field "interS_ssbond" .interS_ssbond Codec.float
+        |> Codec.field "interS_hbbbbb_dis" .interS_hbbbbb_dis Codec.float
+        |> Codec.field "interS_hbbbbb_the" .interS_hbbbbb_the Codec.float
+        |> Codec.field "interS_hbbbbb_phi" .interS_hbbbbb_phi Codec.float
+        |> Codec.field "interS_hbscbb_dis" .interS_hbscbb_dis Codec.float
+        |> Codec.field "interS_hbscbb_the" .interS_hbscbb_the Codec.float
+        |> Codec.field "interS_hbscbb_phi" .interS_hbscbb_phi Codec.float
+        |> Codec.field "interS_hbscsc_dis" .interS_hbscsc_dis Codec.float
+        |> Codec.field "interS_hbscsc_the" .interS_hbscsc_the Codec.float
+        |> Codec.field "interS_hbscsc_phi" .interS_hbscsc_phi Codec.float
+        |> Codec.field "interD_vdwatt" .interD_vdwatt Codec.float
+        |> Codec.field "interD_vdwrep" .interD_vdwrep Codec.float
+        |> Codec.field "interD_electr" .interD_electr Codec.float
+        |> Codec.field "interD_deslvP" .interD_deslvP Codec.float
+        |> Codec.field "interD_deslvH" .interD_deslvH Codec.float
+        |> Codec.field "interD_ssbond" .interD_ssbond Codec.float
+        |> Codec.field "interD_hbbbbb_dis" .interD_hbbbbb_dis Codec.float
+        |> Codec.field "interD_hbbbbb_the" .interD_hbbbbb_the Codec.float
+        |> Codec.field "interD_hbbbbb_phi" .interD_hbbbbb_phi Codec.float
+        |> Codec.field "interD_hbscbb_dis" .interD_hbscbb_dis Codec.float
+        |> Codec.field "interD_hbscbb_the" .interD_hbscbb_the Codec.float
+        |> Codec.field "interD_hbscbb_phi" .interD_hbscbb_phi Codec.float
+        |> Codec.field "interD_hbscsc_dis" .interD_hbscsc_dis Codec.float
+        |> Codec.field "interD_hbscsc_the" .interD_hbscsc_the Codec.float
+        |> Codec.field "interD_hbscsc_phi" .interD_hbscsc_phi Codec.float
+        |> Codec.field "total" .total Codec.float
+        -- TODO: Add these fields back into the object once server is automatically
+        -- calculating these.
+        -- |> Codec.field "ref_total" .ref_total Codec.float
+        -- |> Codec.field "intraR_total" .intraR_total Codec.float
+        -- |> Codec.field "interS_total" .interS_total Codec.float
+        -- |> Codec.field "interD_total" .interD_total Codec.float
+        |> Codec.buildObject
 
 
 
