@@ -1,6 +1,7 @@
 module Shared.Metrics exposing
     ( AggregateData
     , DesignMetrics
+    , EvoEF2Results
     , MeanAndStdDev
     , RefSetMetrics
     , SequenceInfo
@@ -14,6 +15,7 @@ module Shared.Metrics exposing
     , desMetricsCodec
     , overviewSpec
     , refSetMetricsCodec
+    , testEvoEF2Results
     , torsionAngleStringToDict
     )
 
@@ -24,6 +26,10 @@ import Parser exposing ((|.), (|=))
 import Utils.ListExtra as ListExtra
 import Utils.Stats as Stats
 import VegaLite as VL
+
+
+
+-- {{{ DesignMetrics
 
 
 type alias DesignMetrics =
@@ -74,6 +80,159 @@ sequenceInfoCodec =
         |> Codec.field "sequence" .sequence Codec.string
         |> Codec.field "dsspAssignment" .dsspAssignment Codec.string
         |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ EvoEF2Results
+
+
+type alias EvoEF2Results =
+    { log_info : String
+    , reference_ALA : Float
+    , reference_CYS : Float
+    , reference_ASP : Float
+    , reference_GLU : Float
+    , reference_PHE : Float
+    , reference_GLY : Float
+    , reference_HIS : Float
+    , reference_ILE : Float
+    , reference_LYS : Float
+    , reference_LEU : Float
+    , reference_MET : Float
+    , reference_ASN : Float
+    , reference_PRO : Float
+    , reference_GLN : Float
+    , reference_ARG : Float
+    , reference_SER : Float
+    , reference_THR : Float
+    , reference_VAL : Float
+    , reference_TRP : Float
+    , reference_TYR : Float
+    , intraR_vdwatt : Float
+    , intraR_vdwrep : Float
+    , intraR_electr : Float
+    , intraR_deslvP : Float
+    , intraR_deslvH : Float
+    , intraR_hbscbb_dis : Float
+    , intraR_hbscbb_the : Float
+    , intraR_hbscbb_phi : Float
+    , aapropensity : Float
+    , ramachandran : Float
+    , dunbrack : Float
+    , interS_vdwatt : Float
+    , interS_vdwrep : Float
+    , interS_electr : Float
+    , interS_deslvP : Float
+    , interS_deslvH : Float
+    , interS_ssbond : Float
+    , interS_hbbbbb_dis : Float
+    , interS_hbbbbb_the : Float
+    , interS_hbbbbb_phi : Float
+    , interS_hbscbb_dis : Float
+    , interS_hbscbb_the : Float
+    , interS_hbscbb_phi : Float
+    , interS_hbscsc_dis : Float
+    , interS_hbscsc_the : Float
+    , interS_hbscsc_phi : Float
+    , interD_vdwatt : Float
+    , interD_vdwrep : Float
+    , interD_electr : Float
+    , interD_deslvP : Float
+    , interD_deslvH : Float
+    , interD_ssbond : Float
+    , interD_hbbbbb_dis : Float
+    , interD_hbbbbb_the : Float
+    , interD_hbbbbb_phi : Float
+    , interD_hbscbb_dis : Float
+    , interD_hbscbb_the : Float
+    , interD_hbscbb_phi : Float
+    , interD_hbscsc_dis : Float
+    , interD_hbscsc_the : Float
+    , interD_hbscsc_phi : Float
+    , total : Float
+    , ref_total : Float
+    , intraR_total : Float
+    , interS_total : Float
+    , interD_total : Float
+    }
+
+
+testEvoEF2Results : EvoEF2Results
+testEvoEF2Results =
+    { log_info = "\n                                    EvoEF2                                                  \n  A framework for macromolecular modeling, e.g.,protein design, protein side-chain packing, \nprotein structure energy minimization, add and optimize hydrogen bonds, build mutant model, \ncalculate protein folding stability, calculate protein-protein binding free energy, etc     \n\n\n  Copyright (c) Xiaoqiang Huang (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)\n  Dept. of Computational Medicine & Bioinformatics\n  Medical School\n  University of Michigan\n############################################################################################\ncommand ComputeStability works\n\n"
+    , reference_ALA = -5.3
+    , reference_CYS = -0.11
+    , reference_ASP = -4.01
+    , reference_GLU = -11.03
+    , reference_PHE = 2.72
+    , reference_GLY = -14.65
+    , reference_HIS = -1.47
+    , reference_ILE = 9.32
+    , reference_LYS = -10.0
+    , reference_LEU = 6.45
+    , reference_MET = 3.79
+    , reference_ASN = -4.31
+    , reference_PRO = -4.53
+    , reference_GLN = -1.94
+    , reference_ARG = -2.64
+    , reference_SER = -5.93
+    , reference_THR = -3.33
+    , reference_VAL = 20.4
+    , reference_TRP = 2.0
+    , reference_TYR = 2.8
+    , intraR_vdwatt = -19.25
+    , intraR_vdwrep = 3.66
+    , intraR_electr = -0.26
+    , intraR_deslvP = 0.0
+    , intraR_deslvH = -1.92
+    , intraR_hbscbb_dis = -0.27
+    , intraR_hbscbb_the = -0.0
+    , intraR_hbscbb_phi = -0.0
+    , aapropensity = -16.89
+    , ramachandran = 224.95
+    , dunbrack = 37.88
+    , interS_vdwatt = -610.82
+    , interS_vdwrep = 40.41
+    , interS_electr = -30.09
+    , interS_deslvP = 351.86
+    , interS_deslvH = -255.43
+    , interS_ssbond = 0.0
+    , interS_hbbbbb_dis = -48.9
+    , interS_hbbbbb_the = -34.68
+    , interS_hbbbbb_phi = -51.45
+    , interS_hbscbb_dis = -9.61
+    , interS_hbscbb_the = -7.4
+    , interS_hbscbb_phi = -1.51
+    , interS_hbscsc_dis = -8.93
+    , interS_hbscsc_the = -3.47
+    , interS_hbscsc_phi = -0.0
+    , interD_vdwatt = 0.0
+    , interD_vdwrep = 0.0
+    , interD_electr = 0.0
+    , interD_deslvP = 0.0
+    , interD_deslvH = 0.0
+    , interD_ssbond = 0.0
+    , interD_hbbbbb_dis = 0.0
+    , interD_hbbbbb_the = 0.0
+    , interD_hbbbbb_phi = 0.0
+    , interD_hbscbb_dis = 0.0
+    , interD_hbscbb_the = 0.0
+    , interD_hbscbb_phi = 0.0
+    , interD_hbscsc_dis = 0.0
+    , interD_hbscsc_the = 0.0
+    , interD_hbscsc_phi = 0.0
+    , total = -463.9
+    , ref_total = -21.77
+    , intraR_total = -18.04
+    , interS_total = -670.02
+    , interD_total = 0.0
+    }
+
+
+
+-- }}}
+-- {{{ RefSetMetrics
 
 
 type alias RefSetMetrics =
@@ -149,6 +308,7 @@ meanAndStdDevCodec =
 
 
 
+-- }}}
 -- {{{ Helper Functions
 
 
