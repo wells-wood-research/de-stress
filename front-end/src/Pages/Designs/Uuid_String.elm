@@ -480,6 +480,9 @@ designDetailsView uuidString mSpecification mReferenceSet design =
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
+
+                        -- TODO: Michael, add section for EvoEF table here
+                        , evoEF2ResultsTable designMetrics.evoEF2Results
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -624,6 +627,13 @@ sequenceInfoView ( chainId, sequenceInfo ) =
             ]
             (List.map aaView zippedSequenceInfo)
         ]
+
+
+evoEF2ResultsTableView : Metrics.EvoEF2Results -> Element msg
+
+
+
+-- TODO
 
 
 referenceSetComparisonView : Element msg
