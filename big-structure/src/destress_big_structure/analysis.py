@@ -222,8 +222,90 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         num_of_residues=num_of_residues,
         mass=mass,
         packing_density=design_mean_packing_density(design),
+        # TODO: Change this so that it uses server side calculate values
+        evoEF2_results=test_evoEF2_results,
     )
     return design_metrics
+
+
+test_evoEF2_results = EvoEF2Output(
+    log_info="""\n                                    EvoEF2
+        \n  A framework for macromolecular modeling, e.g.,protein design, protein
+        side-chain packing, \nprotein structure energy minimization, add and optimize
+        hydrogen bonds, build mutant model, \ncalculate protein folding stability,
+        calculate protein-protein binding free energy, etc     \n\n\n  Copyright (c)
+        Xiaoqiang Huang (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)\n  Dept. of
+        Computational Medicine & Bioinformatics\n  Medical School\n  University of
+        Michigan\n############################################################################################\ncommand
+        ComputeStability works\n\n""",
+    reference_ALA=-5.3,
+    reference_CYS=-0.11,
+    reference_ASP=-4.01,
+    reference_GLU=-11.03,
+    reference_PHE=2.72,
+    reference_GLY=-14.65,
+    reference_HIS=-1.47,
+    reference_ILE=9.32,
+    reference_LYS=-10.0,
+    reference_LEU=6.45,
+    reference_MET=3.79,
+    reference_ASN=-4.31,
+    reference_PRO=-4.53,
+    reference_GLN=-1.94,
+    reference_ARG=-2.64,
+    reference_SER=-5.93,
+    reference_THR=-3.33,
+    reference_VAL=20.4,
+    reference_TRP=2.0,
+    reference_TYR=2.8,
+    intraR_vdwatt=-19.25,
+    intraR_vdwrep=3.66,
+    intraR_electr=-0.26,
+    intraR_deslvP=0.0,
+    intraR_deslvH=-1.92,
+    intraR_hbscbb_dis=-0.27,
+    intraR_hbscbb_the=-0.0,
+    intraR_hbscbb_phi=-0.0,
+    aapropensity=-16.89,
+    ramachandran=224.95,
+    dunbrack=37.88,
+    interS_vdwatt=-610.82,
+    interS_vdwrep=40.41,
+    interS_electr=-30.09,
+    interS_deslvP=351.86,
+    interS_deslvH=-255.43,
+    interS_ssbond=0.0,
+    interS_hbbbbb_dis=-48.9,
+    interS_hbbbbb_the=-34.68,
+    interS_hbbbbb_phi=-51.45,
+    interS_hbscbb_dis=-9.61,
+    interS_hbscbb_the=-7.4,
+    interS_hbscbb_phi=-1.51,
+    interS_hbscsc_dis=-8.93,
+    interS_hbscsc_the=-3.47,
+    interS_hbscsc_phi=-0.0,
+    interD_vdwatt=0.0,
+    interD_vdwrep=0.0,
+    interD_electr=0.0,
+    interD_deslvP=0.0,
+    interD_deslvH=0.0,
+    interD_ssbond=0.0,
+    interD_hbbbbb_dis=0.0,
+    interD_hbbbbb_the=0.0,
+    interD_hbbbbb_phi=0.0,
+    interD_hbscbb_dis=0.0,
+    interD_hbscbb_the=0.0,
+    interD_hbscbb_phi=0.0,
+    interD_hbscsc_dis=0.0,
+    interD_hbscsc_the=0.0,
+    interD_hbscsc_phi=0.0,
+    total=-463.9,
+    time_spent=2.9
+    # ref_total=-21.77,
+    # intraR_total=-18.04,
+    # interS_total=-670.02,
+    # interD_total=0.0,
+)
 
 
 def design_hydrophobic_fitness(design: ampal.Assembly) -> Optional[float]:

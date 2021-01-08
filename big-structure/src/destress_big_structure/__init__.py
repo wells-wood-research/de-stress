@@ -80,6 +80,7 @@ class ServerJobManager:
             print(f"Cancelling job {self.server_job.uuid}...")
             self.rq_job_handle.cancel()
         outgoing_message = self.out_msg_constructor(self.server_job)
+        print(outgoing_message.to_json())
         self.websocket.send(outgoing_message.to_json())
 
     @property

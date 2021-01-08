@@ -26,20 +26,7 @@ class SequenceInfo:
     dssp_assignment: str
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
-@dataclass
-class DesignMetrics:
-    sequence_info: Dict[str, SequenceInfo]
-    composition: Dict[str, float]
-    torsion_angles: Dict[str, Tuple[float, float, float]]
-    hydrophobic_fitness: Optional[float]
-    isoelectric_point: float
-    mass: float
-    num_of_residues: int
-    packing_density: float
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass
 class EvoEF2Output:
     log_info: str
@@ -128,6 +115,20 @@ class EvoEF2Output:
     @property
     def interD_energy_total(self):
         return sum([v for k, v in self.__dict__.items() if k.startswith("interD")])
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class DesignMetrics:
+    sequence_info: Dict[str, SequenceInfo]
+    composition: Dict[str, float]
+    torsion_angles: Dict[str, Tuple[float, float, float]]
+    hydrophobic_fitness: Optional[float]
+    isoelectric_point: float
+    mass: float
+    num_of_residues: int
+    packing_density: float
+    evoEF2_results: EvoEF2Output
 
 
 # }}}
@@ -249,10 +250,7 @@ class ClientWebsocketIncoming:
                 "tag": "ReceivedMetricsJob",
                 "args": [server_job.to_dict()],
             },
-            communicationerror=lambda: {
-                "tag": "CommunicationError",
-                "args": [],
-            },
+            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
         )
 
     def to_json(self) -> str:
