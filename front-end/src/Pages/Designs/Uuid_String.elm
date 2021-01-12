@@ -72,6 +72,7 @@ type alias Model =
     , mSelectedSpecification : Maybe (Stored Specification)
     , mSelectedReferenceSet : Maybe (Stored ReferenceSet)
     , pageState : PageState
+    , evoEF2Parameters : EvoEF2Params
     }
 
 
@@ -81,6 +82,97 @@ type PageState
     | LoadingWithStub Design.DesignStub
     | UnknownDesignUuid
     | Design Design.Design
+
+
+type EvoEF2Option
+    = Summary
+    | Reference
+    | IntraR
+    | InterS
+    | InterD
+
+
+type alias EvoEF2Columns =
+    Metrics.DesignMetrics -> Element Msg
+
+
+type alias EvoEF2Params =
+    { evoEF2SelectedOption : EvoEF2Option
+    , evoEF2SelectedColumns : EvoEF2Columns
+    , evoEF2SelectedSubtitle : String
+    }
+
+
+type alias EvoEF2Data =
+    { log_info : String
+    , reference_ALA : Float
+    , reference_CYS : Float
+    , reference_ASP : Float
+    , reference_GLU : Float
+    , reference_PHE : Float
+    , reference_GLY : Float
+    , reference_HIS : Float
+    , reference_ILE : Float
+    , reference_LYS : Float
+    , reference_LEU : Float
+    , reference_MET : Float
+    , reference_ASN : Float
+    , reference_PRO : Float
+    , reference_GLN : Float
+    , reference_ARG : Float
+    , reference_SER : Float
+    , reference_THR : Float
+    , reference_VAL : Float
+    , reference_TRP : Float
+    , reference_TYR : Float
+    , intraR_vdwatt : Float
+    , intraR_vdwrep : Float
+    , intraR_electr : Float
+    , intraR_deslvP : Float
+    , intraR_deslvH : Float
+    , intraR_hbscbb_dis : Float
+    , intraR_hbscbb_the : Float
+    , intraR_hbscbb_phi : Float
+    , aapropensity : Float
+    , ramachandran : Float
+    , dunbrack : Float
+    , interS_vdwatt : Float
+    , interS_vdwrep : Float
+    , interS_electr : Float
+    , interS_deslvP : Float
+    , interS_deslvH : Float
+    , interS_ssbond : Float
+    , interS_hbbbbb_dis : Float
+    , interS_hbbbbb_the : Float
+    , interS_hbbbbb_phi : Float
+    , interS_hbscbb_dis : Float
+    , interS_hbscbb_the : Float
+    , interS_hbscbb_phi : Float
+    , interS_hbscsc_dis : Float
+    , interS_hbscsc_the : Float
+    , interS_hbscsc_phi : Float
+    , interD_vdwatt : Float
+    , interD_vdwrep : Float
+    , interD_electr : Float
+    , interD_deslvP : Float
+    , interD_deslvH : Float
+    , interD_ssbond : Float
+    , interD_hbbbbb_dis : Float
+    , interD_hbbbbb_the : Float
+    , interD_hbbbbb_phi : Float
+    , interD_hbscbb_dis : Float
+    , interD_hbscbb_the : Float
+    , interD_hbscbb_phi : Float
+    , interD_hbscsc_dis : Float
+    , interD_hbscsc_the : Float
+    , interD_hbscsc_phi : Float
+    , total : Float
+
+    -- , ref_total : Float
+    -- , intraR_total : Float
+    -- , interS_total : Float
+    -- , interD_total : Float
+    }
 
 
 
@@ -117,6 +209,11 @@ init shared { params } =
 
                             Nothing ->
                                 LoadingNoStub
+                    , evoEF2Parameters =
+                        { evoEF2SelectedOption = Summary
+                        , evoEF2SelectedColumns = evoef2SummaryColumns
+                        , evoEF2SelectedSubtitle = "Summary"
+                        }
                     }
             in
             ( model
@@ -144,6 +241,11 @@ init shared { params } =
               , mSelectedSpecification = Nothing
               , mSelectedReferenceSet = Nothing
               , pageState = AppNotRunning
+              , evoEF2Parameters =
+                    { evoEF2SelectedOption = Summary
+                    , evoEF2SelectedColumns = evoef2SummaryColumns
+                    , evoEF2SelectedSubtitle = "Summary"
+                    }
               }
             , Cmd.none
             )
@@ -158,6 +260,7 @@ type Msg
     = SetFocus { uuidString : String, design : Value }
     | SetSpecification { uuidString : String, specValue : Value }
     | SetReferenceSet { uuidString : String, refSetValue : Value }
+    | SetEvoEF2Option { option : EvoEF2Option }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -253,6 +356,47 @@ update msg model =
                         "A reference set was set, but I was not expecting one."
                         ( model, Cmd.none )
 
+        SetEvoEF2Option option ->
+            ( { model
+                | evoEF2Parameters =
+                    { evoEF2SelectedOption = option.option
+                    , evoEF2SelectedColumns =
+                        case option.option of
+                            Summary ->
+                                evoef2SummaryColumns
+
+                            Reference ->
+                                evoef2RefColumns
+
+                            IntraR ->
+                                evoef2IntraRColumns
+
+                            InterS ->
+                                evoef2InterSColumns
+
+                            InterD ->
+                                evoef2InterDColumns
+                    , evoEF2SelectedSubtitle =
+                        case option.option of
+                            Summary ->
+                                "Summary"
+
+                            Reference ->
+                                "Reference Energy Values"
+
+                            IntraR ->
+                                "IntraR Energy Values"
+
+                            InterS ->
+                                "InterS Energy Values"
+
+                            InterD ->
+                                "InterD Energy Values"
+                    }
+              }
+            , Cmd.none
+            )
+
 
 plotCommands : Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
 plotCommands metrics referenceSet =
@@ -326,8 +470,142 @@ sectionColumn =
     column [ spacing 12, width fill ]
 
 
+createTableColumn metric metric_name =
+    let
+        onePlaceFloatText =
+            Round.round 0
+                >> text
+                >> (\a -> cell a)
+
+        tableColumn =
+            column
+                [ alignTop
+
+                -- , width <| px 100
+                ]
+
+        cell =
+            el [ centerX, padding 10 ]
+
+        headerParagraph =
+            paragraph
+                [ padding 10
+                , centerX
+                , centerY
+                , height <| px 90
+                , Background.color Style.colorPalette.c1
+                , Font.center
+                , Font.color Style.colorPalette.white
+                ]
+    in
+    tableColumn
+        [ headerParagraph [ text metric_name ]
+        , onePlaceFloatText metric
+        ]
+
+
+evoef2SummaryColumns : Metrics.DesignMetrics -> Element msg
+evoef2SummaryColumns metrics =
+    wrappedRow
+        [ width fill, centerY, centerX ]
+        [ createTableColumn metrics.evoEF2Results.total "Total EvoEF2 Energy"
+        , createTableColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
+        , createTableColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
+        , createTableColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
+
+        -- , createTableColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
+        -- , createTableColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
+        -- , createTableColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
+        -- , createTableColumn metrics.evoEF2Results.interD_total "InterD \nEnergy"
+        ]
+
+
+evoef2RefColumns : Metrics.DesignMetrics -> Element msg
+evoef2RefColumns metrics =
+    wrappedRow
+        [ width fill, centerY, centerX ]
+        [ createTableColumn metrics.evoEF2Results.reference_ALA "ALA"
+        , createTableColumn metrics.evoEF2Results.reference_CYS "CYS"
+        , createTableColumn metrics.evoEF2Results.reference_ASP "ASP"
+        , createTableColumn metrics.evoEF2Results.reference_GLU "GLU"
+        , createTableColumn metrics.evoEF2Results.reference_PHE "PHE"
+        , createTableColumn metrics.evoEF2Results.reference_GLY "GLY"
+        , createTableColumn metrics.evoEF2Results.reference_HIS "HIS"
+        , createTableColumn metrics.evoEF2Results.reference_ILE "ILE"
+        , createTableColumn metrics.evoEF2Results.reference_LYS "LYS"
+        , createTableColumn metrics.evoEF2Results.reference_LEU "LEU"
+        , createTableColumn metrics.evoEF2Results.reference_MET "MET"
+        , createTableColumn metrics.evoEF2Results.reference_ASN "ASN"
+        , createTableColumn metrics.evoEF2Results.reference_PRO "PRO"
+        , createTableColumn metrics.evoEF2Results.reference_GLN "GLN"
+        , createTableColumn metrics.evoEF2Results.reference_ARG "ARG"
+        , createTableColumn metrics.evoEF2Results.reference_SER "SER"
+        , createTableColumn metrics.evoEF2Results.reference_THR "THR"
+        , createTableColumn metrics.evoEF2Results.reference_VAL "VAL"
+        , createTableColumn metrics.evoEF2Results.reference_TRP "TRP"
+        , createTableColumn metrics.evoEF2Results.reference_TYR "TYR"
+        ]
+
+
+evoef2IntraRColumns : Metrics.DesignMetrics -> Element msg
+evoef2IntraRColumns metrics =
+    wrappedRow
+        [ width fill, centerY, centerX ]
+        [ createTableColumn metrics.evoEF2Results.intraR_vdwatt "VDWATT"
+        , createTableColumn metrics.evoEF2Results.intraR_vdwrep "VDWREP"
+        , createTableColumn metrics.evoEF2Results.intraR_electr "ELECTR"
+        , createTableColumn metrics.evoEF2Results.intraR_deslvP "DESLVP"
+        , createTableColumn metrics.evoEF2Results.intraR_deslvH "DESLVH"
+        , createTableColumn metrics.evoEF2Results.intraR_hbscbb_dis "HBSCBB DIS"
+        , createTableColumn metrics.evoEF2Results.intraR_hbscbb_the "HBSCBB THE"
+        , createTableColumn metrics.evoEF2Results.intraR_hbscbb_phi "HBSCBB PHI"
+        ]
+
+
+evoef2InterSColumns : Metrics.DesignMetrics -> Element msg
+evoef2InterSColumns metrics =
+    wrappedRow
+        [ width fill, centerY, centerX ]
+        [ createTableColumn metrics.evoEF2Results.interS_vdwatt "VDWATT"
+        , createTableColumn metrics.evoEF2Results.interS_vdwrep "VDWREP"
+        , createTableColumn metrics.evoEF2Results.interS_electr "ELECTR"
+        , createTableColumn metrics.evoEF2Results.interS_deslvP "DESLVP"
+        , createTableColumn metrics.evoEF2Results.interS_deslvH "DESLVH"
+        , createTableColumn metrics.evoEF2Results.interS_hbbbbb_dis "HBBBBB DIS"
+        , createTableColumn metrics.evoEF2Results.interS_hbbbbb_the "HBBBBB THE"
+        , createTableColumn metrics.evoEF2Results.interS_hbbbbb_phi "HBBBBB PHI"
+        , createTableColumn metrics.evoEF2Results.interS_hbscbb_dis "HBSCBB DIS"
+        , createTableColumn metrics.evoEF2Results.interS_hbscbb_the "HBSCBB THE"
+        , createTableColumn metrics.evoEF2Results.interS_hbscbb_phi "HBSCBB PHI"
+        , createTableColumn metrics.evoEF2Results.interS_hbscsc_dis "HBSCSC DIS"
+        , createTableColumn metrics.evoEF2Results.interS_hbscsc_the "HBSCSC THE"
+        , createTableColumn metrics.evoEF2Results.interS_hbscsc_phi "HBSCSC PHI"
+        ]
+
+
+evoef2InterDColumns : Metrics.DesignMetrics -> Element msg
+evoef2InterDColumns metrics =
+    wrappedRow
+        [ width fill, centerY, centerX ]
+        [ createTableColumn metrics.evoEF2Results.interD_vdwatt "VDWATT"
+        , createTableColumn metrics.evoEF2Results.interD_vdwrep "VDWREP"
+        , createTableColumn metrics.evoEF2Results.interD_electr "ELECTR"
+        , createTableColumn metrics.evoEF2Results.interD_deslvP "DESLVP"
+        , createTableColumn metrics.evoEF2Results.interD_deslvH "DESLVH"
+        , createTableColumn metrics.evoEF2Results.interD_hbbbbb_dis "HBBBBB DIS"
+        , createTableColumn metrics.evoEF2Results.interD_hbbbbb_the "HBBBBB THE"
+        , createTableColumn metrics.evoEF2Results.interD_hbbbbb_phi "HBBBBB PHI"
+        , createTableColumn metrics.evoEF2Results.interD_hbscbb_dis "HBSCBB DIS"
+        , createTableColumn metrics.evoEF2Results.interD_hbscbb_the "HBSCBB THE"
+        , createTableColumn metrics.evoEF2Results.interD_hbscbb_phi "HBSCBB PHI"
+        , createTableColumn metrics.evoEF2Results.interD_hbscsc_dis "HBSCSC DIS"
+        , createTableColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
+        , createTableColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
+        ]
+
+
 bodyView : Model -> Element Msg
-bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet } =
+bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet, evoEF2Parameters } =
     column [ width fill ]
         [ el [ centerX ] (Style.h1 <| text "Design Details")
         , case pageState of
@@ -375,6 +653,7 @@ bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet 
                         (Maybe.andThen Stored.getData mSelectedSpecification)
                         (Maybe.andThen Stored.getData mSelectedReferenceSet)
                         design
+                        evoEF2Parameters
                     ]
         ]
 
@@ -394,8 +673,9 @@ designDetailsView :
     -> Maybe Specification
     -> Maybe ReferenceSet
     -> Design.Design
+    -> EvoEF2Params
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design =
+designDetailsView uuidString mSpecification mReferenceSet design evoEF2Parameters =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
@@ -480,9 +760,7 @@ designDetailsView uuidString mSpecification mReferenceSet design =
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
-
-                        -- TODO: Michael, add section for EvoEF table here
-                        , evoEF2ResultsTable designMetrics.evoEF2Results
+                        , evoEF2ResultsTableView evoEF2Parameters designMetrics
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -629,11 +907,64 @@ sequenceInfoView ( chainId, sequenceInfo ) =
         ]
 
 
-evoEF2ResultsTableView : Metrics.EvoEF2Results -> Element msg
+changedSelected : EvoEF2Option -> Msg
+changedSelected option =
+    SetEvoEF2Option { option = option }
 
 
+evoEF2ResultsTableView : EvoEF2Params -> Metrics.DesignMetrics -> Element Msg
+evoEF2ResultsTableView evoEF2Params metrics =
+    let
+        radioInputSelection =
+            el
+                [ alignLeft
+                , spacing 20
+                , padding 20
+                ]
+            <|
+                Input.radio
+                    [ padding 20
+                    , spacing 20
+                    ]
+                    { onChange = changedSelected
+                    , selected = Just evoEF2Params.evoEF2SelectedOption
+                    , label = Input.labelAbove [] (text "Select Table View")
+                    , options =
+                        [ Input.option Summary (text "Summary")
+                        , Input.option Reference (text "Reference")
+                        , Input.option IntraR (text "IntraR")
+                        , Input.option InterS (text "InterS")
+                        , Input.option InterD (text "InterD")
+                        ]
+                    }
 
--- TODO
+        cell =
+            el [ centerX, padding 10 ]
+
+        logInfoBox =
+            el
+                [ centerX
+                , spacing 20
+                , padding 20
+                , Border.rounded 1
+                , Border.color (rgba 0 0 0 1)
+                , Border.widthXY 2 2
+                ]
+            <|
+                text metrics.evoEF2Results.log_info
+    in
+    sectionColumn
+        [ Style.h3 <| text ("EvoEF2 Energy Function Results - " ++ evoEF2Params.evoEF2SelectedSubtitle)
+        , row [ width fill, centerY, centerX, spacing 100 ]
+            [ radioInputSelection
+            , wrappedRow
+                [ centerX, centerY ]
+                [ evoEF2Params.evoEF2SelectedColumns metrics
+                ]
+            ]
+        , cell (text "EvoEF2 Log Information")
+        , logInfoBox
+        ]
 
 
 referenceSetComparisonView : Element msg
