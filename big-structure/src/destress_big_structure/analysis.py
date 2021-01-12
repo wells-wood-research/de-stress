@@ -182,7 +182,6 @@ class JpredSubmission:
 # {{{ DesignMetrics
 
 
-
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
     ampal_assembly = ampal.load_pdb(pdb_string, path=False)
     if isinstance(ampal_assembly, ampal.AmpalContainer):
@@ -191,6 +190,7 @@ def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
         raise ValueError("No PDB format data found in file.")
     design_metrics = analyse_design(ampal_assembly)
     return design_metrics
+
 
 # test_evoEF2_results = EvoEF2Output(
 #     log_info="""\n                                    EvoEF2
@@ -308,10 +308,6 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     return design_metrics
 
 
-
-
-
-
 def design_hydrophobic_fitness(design: ampal.Assembly) -> Optional[float]:
     try:
         hydrophobic_fitness = ev.calculate_hydrophobic_fitness(design)
@@ -394,14 +390,14 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 
         # writing the pdb string to a temp file as input for EvoEF
         tmp.write(pdb_string)
-        #print(tmp.name)
+        # print(tmp.name)
 
         # Creating bash command
         cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
 
         # Using subprocess to run this command and capturing the output
         evoef2_stdout = subprocess.run(cmd, capture_output=True)
-        #print(evoef2_stdout)
+        # print(evoef2_stdout)
 
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
@@ -438,7 +434,3 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 
 
 # }}}
-
-
-
-
