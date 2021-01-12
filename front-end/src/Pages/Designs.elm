@@ -8,6 +8,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Input as Input
 import Element.Keyed as Keyed
 import FeatherIcons
 import File exposing (File)
@@ -69,6 +70,7 @@ type alias Model =
     -- , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
+    , selectedUuids : Set.Set String
     }
 
 
@@ -108,6 +110,7 @@ init shared _ =
             --, mOverviewInfo = Nothing
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
+            , selectedUuids = Set.empty
             }
     in
     ( model
@@ -142,6 +145,7 @@ type Msg
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
+    | SelectedDesign String Bool
 
 
 
@@ -355,6 +359,15 @@ update msg model =
                 (Route.Designs__Uuid_String { uuid = uuid })
             )
 
+        SelectedDesign uuid selected ->
+            ( if selected then
+                { model | selectedUuids = Set.insert uuid model.selectedUuids }
+
+              else
+                { model | selectedUuids = Set.remove uuid model.selectedUuids }
+            , Cmd.none
+            )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -427,6 +440,7 @@ makeOverViewSpecCmd model =
                             --         )
                             -- )
                             model.mSelectedSpecification
+                            model.selectedUuids
                         )
                     |> List.indexedMap Tuple.pair
                     |> List.reverse
@@ -463,10 +477,10 @@ view model =
 
 
 bodyView : Model -> Element Msg
-bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
+bodyView model =
     let
         designCardData =
-            designs
+            model.designs
                 |> Dict.toList
                 |> List.map
                     (\( k, v ) ->
@@ -484,14 +498,15 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                         --             >> .aggregateData
                         --         )
                         -- )
-                        mSelectedSpecification
+                        model.mSelectedSpecification
+                        model.selectedUuids
                     )
     in
     el [ centerX, width <| maximum 800 <| fill ] <|
         column [ spacing 15, width fill ]
             [ let
                 ( buttonLabel, isActive ) =
-                    case loadingState of
+                    case model.loadingState of
                         LoadingFiles total remaining ->
                             ( "Loaded "
                                 ++ String.fromInt remaining
@@ -514,7 +529,7 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                     , Buttons.dangerousButton
                         { label = text "Delete All"
                         , confirmText = "Are you sure you want to delete ALL design?"
-                        , status = deleteAllStatus
+                        , status = model.deleteAllStatus
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
@@ -531,7 +546,7 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                         -- model.overviewOptionDropDown
                         -- designCardData
                         , designCardsView
-                            mSelectedSpecification
+                            model.mSelectedSpecification
                             designCardData
                         ]
             ]
@@ -542,15 +557,17 @@ type alias DesignCardData =
     , designStub : Design.DesignStub
     , mMeetsSpecification :
         Maybe Bool
+    , selected : Bool
     }
 
 
 createDesignCardData :
     Maybe Metrics.AggregateData
     -> Maybe Specification
+    -> Set.Set String
     -> ( String, Design.DesignStub )
     -> DesignCardData
-createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
+createDesignCardData mAggregateData mSpecification selectedUuids ( uuidString, designStub ) =
     { uuidString = uuidString
     , designStub = designStub
     , mMeetsSpecification =
@@ -563,6 +580,7 @@ createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
 
             _ ->
                 Nothing
+    , selected = Set.member uuidString selectedUuids
     }
 
 
@@ -608,16 +626,18 @@ partitionDesignCardData remainingData partitionedData =
             partitionDesignCardData rest newPartitioned
 
 
-designCard :
+designCardView :
     { uuidString : String
     , designStub : Design.DesignStub
     , mMeetsSpecification :
         Maybe Bool
+    , selected : Bool
     }
     -> Element Msg
-designCard { uuidString, designStub, mMeetsSpecification } =
+designCardView { uuidString, designStub, mMeetsSpecification, selected } =
     row
         [ mouseOver [ Background.color Style.colorPalette.c4 ]
+        , spacing 10
         , width fill
         , Background.color Style.colorPalette.c5
         , case mMeetsSpecification of
@@ -632,12 +652,21 @@ designCard { uuidString, designStub, mMeetsSpecification } =
         , Border.width 4
         , Border.rounded 10
         ]
-        [ column
+        [ Input.checkbox [ padding 5, width <| px 10 ]
+            { onChange = SelectedDesign uuidString
+
+            -- TODO Change this
+            , icon = Input.defaultCheckbox
+            , checked = selected
+            , label = Input.labelAbove [] <| none
+            }
+        , column
             [ padding 10
             , pointer
             , width fill
             , DesignDetails uuidString
                 |> Events.onClick
+            , alignLeft
             ]
             [ Style.h2 <| text designStub.name
             , paragraph []
@@ -674,21 +703,21 @@ designCardsView mSelectedSpecification designCardData =
             column [ spacing 15, width fill ]
                 [ Style.h2 <| text "Meets Specification"
                 , meetsSpecification
-                    |> List.map designCard
+                    |> List.map designCardView
                     |> cardContainer
                 , Style.h2 <| text "Failed to Meet Specification"
                 , failedSpecification
-                    |> List.map designCard
+                    |> List.map designCardView
                     |> cardContainer
                 , Style.h2 <| text "No Metrics Available"
                 , noMetrics
-                    |> List.map designCard
+                    |> List.map designCardView
                     |> cardContainer
                 ]
 
         Nothing ->
             designCardData
-                |> List.map designCard
+                |> List.map designCardView
                 |> cardContainer
 
 
