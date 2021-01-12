@@ -100,6 +100,7 @@ type alias DesignStub =
     , deleteStatus : Buttons.DangerStatus
     , metricsJobStatus : WebSockets.MetricsServerJobStatus
     , mMeetsActiveSpecification : Maybe Bool
+    , tags : Set String
     }
 
 
@@ -115,6 +116,9 @@ designStubCodec =
         |> Codec.field "mMeetsActiveSpecification"
             .mMeetsActiveSpecification
             (Codec.constant Nothing)
+        |> Codec.field "tags"
+            .tags
+            (Codec.set Codec.string)
         |> Codec.buildObject
 
 
@@ -125,6 +129,7 @@ createDesignStub design =
     , deleteStatus = design.deleteStatus
     , metricsJobStatus = design.metricsJobStatus
     , mMeetsActiveSpecification = design.mMeetsActiveSpecification
+    , tags = design.tags
     }
 
 
