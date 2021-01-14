@@ -71,6 +71,7 @@ type alias Model =
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
     , selectedUuids : Set.Set String
+    , tagString : String
     }
 
 
@@ -111,6 +112,7 @@ init shared _ =
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
             , selectedUuids = Set.empty
+            , tagString = ""
             }
     in
     ( model
@@ -146,6 +148,9 @@ type Msg
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
     | SelectedDesign String Bool
+    | UpdateTagString String
+    | AddTags (Set.Set String) String
+    | CancelSelection
 
 
 
@@ -368,6 +373,43 @@ update msg model =
             , Cmd.none
             )
 
+        UpdateTagString tagString ->
+            ( { model | tagString = tagString }
+            , Cmd.none
+            )
+
+        AddTags selectedUuids tagString ->
+            let
+                newTags =
+                    stringToTags tagString
+            in
+            ( { model
+                | designs =
+                    Dict.map
+                        (\k storedDesign ->
+                            if Set.member k selectedUuids then
+                                Design.mapStoredDesign
+                                    (\d -> { d | tags = Set.union d.tags newTags })
+                                    storedDesign
+
+                            else
+                                storedDesign
+                        )
+                        model.designs
+                , selectedUuids = Set.empty
+                , tagString = ""
+              }
+            , Cmd.none
+            )
+
+        CancelSelection ->
+            ( { model
+                | selectedUuids = Set.empty
+                , tagString = ""
+              }
+            , Cmd.none
+            )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -542,6 +584,11 @@ bodyView model =
                     column
                         [ spacing 10, width fill ]
                         [ overviewPlots
+                        , if Set.isEmpty model.selectedUuids then
+                            none
+
+                          else
+                            selectedCommandsView model.selectedUuids model.tagString
 
                         -- model.overviewOptionDropDown
                         -- designCardData
@@ -626,64 +673,6 @@ partitionDesignCardData remainingData partitionedData =
             partitionDesignCardData rest newPartitioned
 
 
-designCardView :
-    { uuidString : String
-    , designStub : Design.DesignStub
-    , mMeetsSpecification :
-        Maybe Bool
-    , selected : Bool
-    }
-    -> Element Msg
-designCardView { uuidString, designStub, mMeetsSpecification, selected } =
-    row
-        [ mouseOver [ Background.color Style.colorPalette.c4 ]
-        , spacing 10
-        , width fill
-        , Background.color Style.colorPalette.c5
-        , case mMeetsSpecification of
-            Nothing ->
-                Border.color Style.colorPalette.c5
-
-            Just False ->
-                Border.color Style.colorPalette.red
-
-            Just True ->
-                Border.color Style.colorPalette.c3
-        , Border.width 4
-        , Border.rounded 10
-        ]
-        [ Input.checkbox [ padding 5, width <| px 10 ]
-            { onChange = SelectedDesign uuidString
-
-            -- TODO Change this
-            , icon = Input.defaultCheckbox
-            , checked = selected
-            , label = Input.labelAbove [] <| none
-            }
-        , column
-            [ padding 10
-            , pointer
-            , width fill
-            , DesignDetails uuidString
-                |> Events.onClick
-            , alignLeft
-            ]
-            [ Style.h2 <| text designStub.name
-            , paragraph []
-                [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
-                    |> text
-                ]
-            ]
-        , el [ alignRight, padding 10 ] <|
-            Buttons.dangerousButton
-                { label = Style.featherIconToElmUi FeatherIcons.trash2
-                , confirmText = "Are you sure you want to delete this design?"
-                , status = designStub.deleteStatus
-                , dangerousMsg = DeleteDesign uuidString
-                }
-        ]
-
-
 designCardsView : Maybe Specification -> List DesignCardData -> Element Msg
 designCardsView mSelectedSpecification designCardData =
     let
@@ -719,6 +708,120 @@ designCardsView mSelectedSpecification designCardData =
             designCardData
                 |> List.map designCardView
                 |> cardContainer
+
+
+designCardView :
+    { uuidString : String
+    , designStub : Design.DesignStub
+    , mMeetsSpecification :
+        Maybe Bool
+    , selected : Bool
+    }
+    -> Element Msg
+designCardView { uuidString, designStub, mMeetsSpecification, selected } =
+    row
+        [ mouseOver [ Background.color Style.colorPalette.c4 ]
+        , spacing 10
+        , width fill
+        , Background.color Style.colorPalette.c5
+        , case mMeetsSpecification of
+            Nothing ->
+                Border.color Style.colorPalette.c5
+
+            Just False ->
+                Border.color Style.colorPalette.red
+
+            Just True ->
+                Border.color Style.colorPalette.c3
+        , Border.width 4
+        , Border.rounded 10
+        ]
+        [ Input.checkbox
+            [ alignLeft
+            , padding 5
+            , width <| px 10
+            ]
+            { onChange = SelectedDesign uuidString
+
+            -- TODO Change this
+            , icon = Input.defaultCheckbox
+            , checked = selected
+            , label = Input.labelHidden "Select Design"
+            }
+        , column
+            [ padding 10
+            , spacing 5
+            , width fill
+            ]
+            [ column
+                [ pointer
+                , width fill
+                , DesignDetails uuidString
+                    |> Events.onClick
+                ]
+                [ Style.h2 <| text designStub.name
+                , paragraph []
+                    [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
+                        |> text
+                    ]
+                ]
+            , wrappedRow [ spacing 5 ]
+                (text "Tags:"
+                    :: (Set.toList designStub.tags
+                            |> List.map tagView
+                       )
+                )
+            ]
+        , el [ alignRight, padding 10 ] <|
+            Buttons.dangerousButton
+                { label = Style.featherIconToElmUi FeatherIcons.trash2
+                , confirmText = "Are you sure you want to delete this design?"
+                , status = designStub.deleteStatus
+                , dangerousMsg = DeleteDesign uuidString
+                }
+        ]
+
+
+tagView : String -> Element msg
+tagView tag =
+    el
+        [ padding 5
+        , pointer
+        , Background.color Style.colorPalette.c3
+        , Border.rounded 8
+        ]
+    <|
+        text tag
+
+
+selectedCommandsView : Set.Set String -> String -> Element Msg
+selectedCommandsView selectedUuids tagString =
+    wrappedRow [ spacing 10, width fill ]
+        [ Input.text []
+            { onChange = UpdateTagString
+            , text = tagString
+            , placeholder =
+                Just
+                    (Input.placeholder [] <|
+                        text "Enter new tags (comma separated)..."
+                    )
+            , label = Input.labelLeft [] <| text "Tags"
+            }
+        , Buttons.conditionalButton
+            { label = text "Ok"
+            , clickMsg = Just <| AddTags selectedUuids tagString
+            , isActive =
+                stringToTags tagString
+                    |> Debug.log "Tags:"
+                    |> Set.isEmpty
+                    |> not
+            }
+        , Buttons.alwaysActiveButton
+            { label = text "Cancel"
+            , clickMsg = CancelSelection
+            , pressed = False
+            }
+        ]
 
 
 
@@ -817,4 +920,18 @@ makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification 
 
 
 -- }}}
+-- }}}
+-- {{{ Utils
+
+
+stringToTags : String -> Set.Set String
+stringToTags tagString =
+    tagString
+        |> String.split ","
+        |> List.map String.trim
+        |> List.filter (String.isEmpty >> not)
+        |> Set.fromList
+
+
+
 -- }}}
