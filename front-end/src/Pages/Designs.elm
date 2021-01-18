@@ -72,6 +72,7 @@ type alias Model =
     , navKey : Key
     , selectedUuids : Set.Set String
     , tagString : String
+    , filterTags : Set.Set String
     }
 
 
@@ -113,6 +114,7 @@ init shared _ =
             , navKey = shared.key
             , selectedUuids = Set.empty
             , tagString = ""
+            , filterTags = Set.empty
             }
     in
     ( model
@@ -151,6 +153,13 @@ type Msg
     | UpdateTagString String
     | AddTags (Set.Set String) String
     | CancelSelection
+    | UpdateFilterTags FilterTagsOption
+
+
+type FilterTagsOption
+    = AddOrRemove String
+    | RemoveAll
+    | AddAll
 
 
 
@@ -410,6 +419,26 @@ update msg model =
             , Cmd.none
             )
 
+        UpdateFilterTags option ->
+            ( { model
+                | filterTags =
+                    case option of
+                        AddOrRemove tag ->
+                            if Set.member tag model.filterTags then
+                                Set.remove tag model.filterTags
+
+                            else
+                                Set.insert tag model.filterTags
+
+                        RemoveAll ->
+                            Set.empty
+
+                        AddAll ->
+                            getAllTags model.designs
+              }
+            , Cmd.none
+            )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -589,14 +618,33 @@ bodyView model =
 
                           else
                             selectedCommandsView model.selectedUuids model.tagString
+                        , allTagsView
+                            { tags = getAllTags model.designs
+                            , filterTags = model.filterTags
+                            }
 
                         -- model.overviewOptionDropDown
                         -- designCardData
                         , designCardsView
+                            model.filterTags
                             model.mSelectedSpecification
                             designCardData
                         ]
             ]
+
+
+allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
+allTagsView { tags, filterTags } =
+    tags
+        |> Set.toList
+        |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
+        |> (++)
+            [ text "Filter by Tag"
+            , filterNoneTag { filterTags = filterTags, allTags = tags }
+            , filterAllTag { filterTags = filterTags, allTags = tags }
+            , text "|"
+            ]
+        |> wrappedRow [ spacing 10 ]
 
 
 type alias DesignCardData =
@@ -673,11 +721,19 @@ partitionDesignCardData remainingData partitionedData =
             partitionDesignCardData rest newPartitioned
 
 
-designCardsView : Maybe Specification -> List DesignCardData -> Element Msg
-designCardsView mSelectedSpecification designCardData =
+designCardsView : Set.Set String -> Maybe Specification -> List DesignCardData -> Element Msg
+designCardsView filterTags mSelectedSpecification allDesignCardData =
     let
         cardContainer =
             column [ spacing 10, width fill ]
+
+        designCardData =
+            List.filter
+                (\{ designStub } ->
+                    Set.intersect filterTags designStub.tags
+                        |> Set.isEmpty
+                )
+                allDesignCardData
     in
     case mSelectedSpecification of
         Just _ ->
@@ -765,12 +821,16 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
                         |> text
                     ]
                 ]
-            , wrappedRow [ spacing 5 ]
-                (text "Tags:"
-                    :: (Set.toList designStub.tags
-                            |> List.map tagView
-                       )
-                )
+            , if Set.isEmpty designStub.tags then
+                none
+
+              else
+                wrappedRow [ spacing 5 ]
+                    (text "Tags:"
+                        :: (Set.toList designStub.tags
+                                |> List.map (tagView Nothing Set.empty)
+                           )
+                    )
             ]
         , el [ alignRight, padding 10 ] <|
             Buttons.dangerousButton
@@ -782,14 +842,60 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
         ]
 
 
-tagView : String -> Element msg
-tagView tag =
+filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
+filterNoneTag { filterTags, allTags } =
     el
         [ padding 5
         , pointer
-        , Background.color Style.colorPalette.c3
+        , if Set.isEmpty filterTags then
+            Background.color Style.colorPalette.c3
+
+          else
+            Background.color Style.colorPalette.c4
         , Border.rounded 8
+        , Events.onClick (RemoveAll |> UpdateFilterTags)
         ]
+    <|
+        text "None"
+
+
+filterAllTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
+filterAllTag { filterTags, allTags } =
+    el
+        [ padding 5
+        , pointer
+        , if filterTags == allTags then
+            Background.color Style.colorPalette.c3
+
+          else
+            Background.color Style.colorPalette.c4
+        , Border.rounded 8
+        , Events.onClick (AddAll |> UpdateFilterTags)
+        ]
+    <|
+        text "All"
+
+
+tagView : Maybe (String -> Msg) -> Set.Set String -> String -> Element Msg
+tagView mMsg filterTags tag =
+    el
+        ([ padding 5
+         , pointer
+         , if Set.member tag filterTags then
+            Background.color Style.colorPalette.c4
+
+           else
+            Background.color Style.colorPalette.c3
+         , Border.rounded 8
+         ]
+            ++ (case mMsg of
+                    Just msg ->
+                        [ Events.onClick (msg tag) ]
+
+                    Nothing ->
+                        []
+               )
+        )
     <|
         text tag
 
@@ -812,7 +918,6 @@ selectedCommandsView selectedUuids tagString =
             , clickMsg = Just <| AddTags selectedUuids tagString
             , isActive =
                 stringToTags tagString
-                    |> Debug.log "Tags:"
                     |> Set.isEmpty
                     |> not
             }
@@ -930,6 +1035,15 @@ stringToTags tagString =
         |> String.split ","
         |> List.map String.trim
         |> List.filter (String.isEmpty >> not)
+        |> Set.fromList
+
+
+getAllTags : Dict String Design.StoredDesign -> Set.Set String
+getAllTags designDict =
+    designDict
+        |> Dict.values
+        |> List.map (Design.storedDesignToStub >> .tags >> Set.toList)
+        |> List.concat
         |> Set.fromList
 
 
