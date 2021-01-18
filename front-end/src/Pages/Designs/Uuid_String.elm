@@ -72,7 +72,7 @@ type alias Model =
     , mSelectedSpecification : Maybe (Stored Specification)
     , mSelectedReferenceSet : Maybe (Stored ReferenceSet)
     , pageState : PageState
-    , evoEF2Parameters : EvoEF2Params
+    , evoEF2TableOption : EvoEF2TableOption
     }
 
 
@@ -84,7 +84,7 @@ type PageState
     | Design Design.Design
 
 
-type EvoEF2Option
+type EvoEF2TableOption
     = Summary
     | Reference
     | IntraR
@@ -92,87 +92,23 @@ type EvoEF2Option
     | InterD
 
 
-type alias EvoEF2Columns =
-    Metrics.DesignMetrics -> Element Msg
+evoEF2TableOptionToString : EvoEF2TableOption -> String
+evoEF2TableOptionToString evoEF2TableOption =
+    case evoEF2TableOption of
+        Summary ->
+            "Summary"
 
+        Reference ->
+            "Reference"
 
-type alias EvoEF2Params =
-    { evoEF2SelectedOption : EvoEF2Option
-    , evoEF2SelectedColumns : EvoEF2Columns
-    , evoEF2SelectedSubtitle : String
-    }
+        IntraR ->
+            "IntraR"
 
+        InterS ->
+            "InterS"
 
-type alias EvoEF2Data =
-    { log_info : String
-    , reference_ALA : Float
-    , reference_CYS : Float
-    , reference_ASP : Float
-    , reference_GLU : Float
-    , reference_PHE : Float
-    , reference_GLY : Float
-    , reference_HIS : Float
-    , reference_ILE : Float
-    , reference_LYS : Float
-    , reference_LEU : Float
-    , reference_MET : Float
-    , reference_ASN : Float
-    , reference_PRO : Float
-    , reference_GLN : Float
-    , reference_ARG : Float
-    , reference_SER : Float
-    , reference_THR : Float
-    , reference_VAL : Float
-    , reference_TRP : Float
-    , reference_TYR : Float
-    , intraR_vdwatt : Float
-    , intraR_vdwrep : Float
-    , intraR_electr : Float
-    , intraR_deslvP : Float
-    , intraR_deslvH : Float
-    , intraR_hbscbb_dis : Float
-    , intraR_hbscbb_the : Float
-    , intraR_hbscbb_phi : Float
-    , aapropensity : Float
-    , ramachandran : Float
-    , dunbrack : Float
-    , interS_vdwatt : Float
-    , interS_vdwrep : Float
-    , interS_electr : Float
-    , interS_deslvP : Float
-    , interS_deslvH : Float
-    , interS_ssbond : Float
-    , interS_hbbbbb_dis : Float
-    , interS_hbbbbb_the : Float
-    , interS_hbbbbb_phi : Float
-    , interS_hbscbb_dis : Float
-    , interS_hbscbb_the : Float
-    , interS_hbscbb_phi : Float
-    , interS_hbscsc_dis : Float
-    , interS_hbscsc_the : Float
-    , interS_hbscsc_phi : Float
-    , interD_vdwatt : Float
-    , interD_vdwrep : Float
-    , interD_electr : Float
-    , interD_deslvP : Float
-    , interD_deslvH : Float
-    , interD_ssbond : Float
-    , interD_hbbbbb_dis : Float
-    , interD_hbbbbb_the : Float
-    , interD_hbbbbb_phi : Float
-    , interD_hbscbb_dis : Float
-    , interD_hbscbb_the : Float
-    , interD_hbscbb_phi : Float
-    , interD_hbscsc_dis : Float
-    , interD_hbscsc_the : Float
-    , interD_hbscsc_phi : Float
-    , total : Float
-
-    -- , ref_total : Float
-    -- , intraR_total : Float
-    -- , interS_total : Float
-    -- , interD_total : Float
-    }
+        InterD ->
+            "InterD"
 
 
 
@@ -209,11 +145,7 @@ init shared { params } =
 
                             Nothing ->
                                 LoadingNoStub
-                    , evoEF2Parameters =
-                        { evoEF2SelectedOption = Summary
-                        , evoEF2SelectedColumns = evoef2SummaryColumns
-                        , evoEF2SelectedSubtitle = "Summary"
-                        }
+                    , evoEF2TableOption = Summary
                     }
             in
             ( model
@@ -241,11 +173,7 @@ init shared { params } =
               , mSelectedSpecification = Nothing
               , mSelectedReferenceSet = Nothing
               , pageState = AppNotRunning
-              , evoEF2Parameters =
-                    { evoEF2SelectedOption = Summary
-                    , evoEF2SelectedColumns = evoef2SummaryColumns
-                    , evoEF2SelectedSubtitle = "Summary"
-                    }
+              , evoEF2TableOption = Summary
               }
             , Cmd.none
             )
@@ -260,7 +188,7 @@ type Msg
     = SetFocus { uuidString : String, design : Value }
     | SetSpecification { uuidString : String, specValue : Value }
     | SetReferenceSet { uuidString : String, refSetValue : Value }
-    | SetEvoEF2Option { option : EvoEF2Option }
+    | SetEvoEF2TableOption EvoEF2TableOption
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -356,44 +284,8 @@ update msg model =
                         "A reference set was set, but I was not expecting one."
                         ( model, Cmd.none )
 
-        SetEvoEF2Option option ->
-            ( { model
-                | evoEF2Parameters =
-                    { evoEF2SelectedOption = option.option
-                    , evoEF2SelectedColumns =
-                        case option.option of
-                            Summary ->
-                                evoef2SummaryColumns
-
-                            Reference ->
-                                evoef2RefColumns
-
-                            IntraR ->
-                                evoef2IntraRColumns
-
-                            InterS ->
-                                evoef2InterSColumns
-
-                            InterD ->
-                                evoef2InterDColumns
-                    , evoEF2SelectedSubtitle =
-                        case option.option of
-                            Summary ->
-                                "Summary"
-
-                            Reference ->
-                                "Reference Energy Values"
-
-                            IntraR ->
-                                "IntraR Energy Values"
-
-                            InterS ->
-                                "InterS Energy Values"
-
-                            InterD ->
-                                "InterD Energy Values"
-                    }
-              }
+        SetEvoEF2TableOption option ->
+            ( { model | evoEF2TableOption = option }
             , Cmd.none
             )
 
@@ -605,10 +497,10 @@ evoef2InterDColumns metrics =
 
 
 bodyView : Model -> Element Msg
-bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet, evoEF2Parameters } =
+bodyView model =
     column [ width fill ]
         [ el [ centerX ] (Style.h1 <| text "Design Details")
-        , case pageState of
+        , case model.pageState of
             AppNotRunning ->
                 sectionColumn
                     [ paragraph []
@@ -633,7 +525,7 @@ bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet,
                     [ paragraph []
                         [ "Failed to load a design with UUID: "
                             |> text
-                        , el [ Font.bold ] (text designUuid)
+                        , el [ Font.bold ] (text model.designUuid)
                         ]
                     , paragraph []
                         [ """This design no longer exists, you might have deleted
@@ -649,11 +541,11 @@ bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet,
             Design design ->
                 sectionColumn
                     [ designDetailsView
-                        designUuid
-                        (Maybe.andThen Stored.getData mSelectedSpecification)
-                        (Maybe.andThen Stored.getData mSelectedReferenceSet)
+                        model.designUuid
+                        (Maybe.andThen Stored.getData model.mSelectedSpecification)
+                        (Maybe.andThen Stored.getData model.mSelectedReferenceSet)
                         design
-                        evoEF2Parameters
+                        model.evoEF2TableOption
                     ]
         ]
 
@@ -673,9 +565,9 @@ designDetailsView :
     -> Maybe Specification
     -> Maybe ReferenceSet
     -> Design.Design
-    -> EvoEF2Params
+    -> EvoEF2TableOption
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design evoEF2Parameters =
+designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
@@ -760,7 +652,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2Parameter
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
-                        , evoEF2ResultsTableView evoEF2Parameters designMetrics
+                        , evoEF2ResultsTableView evoEF2TableOption designMetrics
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -907,13 +799,8 @@ sequenceInfoView ( chainId, sequenceInfo ) =
         ]
 
 
-changedSelected : EvoEF2Option -> Msg
-changedSelected option =
-    SetEvoEF2Option { option = option }
-
-
-evoEF2ResultsTableView : EvoEF2Params -> Metrics.DesignMetrics -> Element Msg
-evoEF2ResultsTableView evoEF2Params metrics =
+evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> Element Msg
+evoEF2ResultsTableView evoEF2TableOption metrics =
     let
         radioInputSelection =
             el
@@ -926,8 +813,8 @@ evoEF2ResultsTableView evoEF2Params metrics =
                     [ padding 20
                     , spacing 20
                     ]
-                    { onChange = changedSelected
-                    , selected = Just evoEF2Params.evoEF2SelectedOption
+                    { onChange = SetEvoEF2TableOption
+                    , selected = Just evoEF2TableOption
                     , label = Input.labelAbove [] (text "Select Table View")
                     , options =
                         [ Input.option Summary (text "Summary")
@@ -954,12 +841,32 @@ evoEF2ResultsTableView evoEF2Params metrics =
                 text metrics.evoEF2Results.log_info
     in
     sectionColumn
-        [ Style.h3 <| text ("EvoEF2 Energy Function Results - " ++ evoEF2Params.evoEF2SelectedSubtitle)
+        [ Style.h3 <|
+            text
+                ("EvoEF2 Energy Function Results - "
+                    ++ evoEF2TableOptionToString evoEF2TableOption
+                )
         , row [ width fill, centerY, centerX, spacing 100 ]
             [ radioInputSelection
             , wrappedRow
                 [ centerX, centerY ]
-                [ evoEF2Params.evoEF2SelectedColumns metrics
+                [ metrics
+                    |> (case evoEF2TableOption of
+                            Summary ->
+                                evoef2SummaryColumns
+
+                            Reference ->
+                                evoef2RefColumns
+
+                            IntraR ->
+                                evoef2IntraRColumns
+
+                            InterS ->
+                                evoef2InterSColumns
+
+                            InterD ->
+                                evoef2InterDColumns
+                       )
                 ]
             ]
         , cell (text "EvoEF2 Log Information")
