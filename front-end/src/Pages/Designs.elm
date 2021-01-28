@@ -73,6 +73,7 @@ type alias Model =
     , selectedUuids : Set.Set String
     , tagString : String
     , filterTags : Set.Set String
+    , displaySettings : { controlPanel : Bool, overviewPlots : Bool }
     }
 
 
@@ -115,6 +116,7 @@ init shared _ =
             , selectedUuids = Set.empty
             , tagString = ""
             , filterTags = Set.empty
+            , displaySettings = { controlPanel = False, overviewPlots = False }
             }
     in
     ( model
@@ -149,11 +151,27 @@ type Msg
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
+    | ToggleSectionVisibility HideableSection
     | SelectedDesign String Bool
     | UpdateTagString String
     | AddTags (Set.Set String) String
     | CancelSelection
     | UpdateFilterTags FilterTagsOption
+
+
+type HideableSection
+    = OverviewPlots
+    | ControlPanel
+
+
+hideableSectionToString : HideableSection -> String
+hideableSectionToString hideableSection =
+    case hideableSection of
+        OverviewPlots ->
+            "Overview Plots"
+
+        ControlPanel ->
+            "Control Panel"
 
 
 type FilterTagsOption
@@ -371,6 +389,29 @@ update msg model =
             , navigate
                 model.navKey
                 (Route.Designs__Uuid_String { uuid = uuid })
+            )
+
+        ToggleSectionVisibility section ->
+            let
+                displaySettings =
+                    model.displaySettings
+            in
+            ( { model
+                | displaySettings =
+                    case section of
+                        OverviewPlots ->
+                            { displaySettings
+                                | overviewPlots =
+                                    not displaySettings.overviewPlots
+                            }
+
+                        ControlPanel ->
+                            { displaySettings
+                                | controlPanel =
+                                    not displaySettings.controlPanel
+                            }
+              }
+            , Cmd.none
             )
 
         SelectedDesign uuid selected ->
@@ -613,15 +654,16 @@ bodyView model =
                     column
                         [ spacing 10, width fill ]
                         [ overviewPlots
+                            |> hideableSectionView model.displaySettings.overviewPlots
+                                OverviewPlots
+                        , controlPanel model
+                            |> hideableSectionView model.displaySettings.controlPanel
+                                ControlPanel
                         , if Set.isEmpty model.selectedUuids then
                             none
 
                           else
                             selectedCommandsView model.selectedUuids model.tagString
-                        , allTagsView
-                            { tags = getAllTags model.designs
-                            , filterTags = model.filterTags
-                            }
 
                         -- model.overviewOptionDropDown
                         -- designCardData
@@ -631,6 +673,28 @@ bodyView model =
                             designCardData
                         ]
             ]
+
+
+hideableSectionView : Bool -> HideableSection -> Element Msg -> Element Msg
+hideableSectionView isVisible sectionType sectionView =
+    if isVisible then
+        column []
+            [ el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+                (text <| hideableSectionToString sectionType ++ " vv")
+            , el [ padding 10 ] sectionView
+            ]
+
+    else
+        el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+            (text <| hideableSectionToString sectionType ++ " >>")
+
+
+controlPanel : Model -> Element Msg
+controlPanel model =
+    allTagsView
+        { tags = getAllTags model.designs
+        , filterTags = model.filterTags
+        }
 
 
 allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
@@ -956,8 +1020,7 @@ overviewPlots : Element msg
 overviewPlots =
     column
         [ width fill ]
-        [ Style.h3 <| text "Overview"
-        , Keyed.el [ centerX ]
+        [ Keyed.el [ centerX ]
             ( "overview"
             , Html.div
                 [ HAtt.id "overview"
