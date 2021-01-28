@@ -794,8 +794,16 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
         designCardData =
             List.filter
                 (\{ designStub } ->
-                    Set.intersect filterTags designStub.tags
-                        |> Set.isEmpty
+                    if Set.isEmpty filterTags then
+                        True
+
+                    else if Set.isEmpty designStub.tags then
+                        True
+
+                    else
+                        Set.diff designStub.tags filterTags
+                            |> Set.isEmpty
+                            |> not
                 )
                 allDesignCardData
     in
