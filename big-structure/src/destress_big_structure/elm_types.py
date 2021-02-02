@@ -1,6 +1,6 @@
 """Algebraic datatypes that mirror Elm types."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from typing import Any, Dict, Generic, Optional, Tuple, TypeVar
 
@@ -27,7 +27,7 @@ class SequenceInfo:
 
 
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
-@dataclass
+@dataclass(eq=False)
 class EvoEF2Output:
     log_info: str
     reference_ALA: float
@@ -93,28 +93,44 @@ class EvoEF2Output:
     interD_hbscsc_phi: float
     total: float
     time_spent: float
+    ref_total: float = field(init=False)
+    intraR_total: float = field(init=False)
+    interS_total: float = field(init=False)
+    interD_total: float = field(init=False)
 
     # Redefining the __repr__ method to return the total energy value from EvoEF2
     def __repr__(self):
         return f"<EvoEF2Output: Total Energy = {self.total}>"
 
-    # Returning the total reference, intraR, interS and interD energy values
-    # as properties of the object
-    @property
-    def ref_energy_total(self):
-        return sum([v for k, v in self.__dict__.items() if k.startswith("reference")])
+    # Defining the __eq__method to compare all the fields except the time_spent field
+    def __eq__(self, other):
+        self_dict = self.__dict__
+        other_dict = other.__dict__
 
-    @property
-    def intraR_energy_total(self):
-        return sum([v for k, v in self.__dict__.items() if k.startswith("intraR")])
+        self_dict_new = {k: v for k, v in self_dict.items() if k not in ["time_spent"]}
+        other_dict_new = {
+            k: v for k, v in other_dict.items() if k not in ["time_spent"]
+        }
 
-    @property
-    def interS_energy_total(self):
-        return sum([v for k, v in self.__dict__.items() if k.startswith("interS")])
+        # self_dict_new = {k: v for k, v in self_dict.items() if k not in ['time_spent', 'log_info']}
+        # other_dict_new = {k: v for k, v in other_dict.items() if k not in ['time_spent', 'log_info']}
 
-    @property
-    def interD_energy_total(self):
-        return sum([v for k, v in self.__dict__.items() if k.startswith("interD")])
+        return self_dict_new == other_dict_new
+
+    # Calculating sub totals
+    def __post_init__(self):
+        self.ref_total = sum(
+            [v for k, v in self.__dict__.items() if k.startswith("reference")]
+        )
+        self.intraR_total = sum(
+            [v for k, v in self.__dict__.items() if k.startswith("intraR")]
+        )
+        self.interS_total = sum(
+            [v for k, v in self.__dict__.items() if k.startswith("interS")]
+        )
+        self.interD_total = sum(
+            [v for k, v in self.__dict__.items() if k.startswith("interD")]
+        )
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL)
@@ -250,7 +266,10 @@ class ClientWebsocketIncoming:
                 "tag": "ReceivedMetricsJob",
                 "args": [server_job.to_dict()],
             },
-            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
+            communicationerror=lambda: {
+                "tag": "CommunicationError",
+                "args": [],
+            },
         )
 
     def to_json(self) -> str:
