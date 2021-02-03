@@ -73,6 +73,7 @@ type alias Model =
     , mSelectedReferenceSet : Maybe (Stored ReferenceSet)
     , pageState : PageState
     , evoEF2TableOption : EvoEF2TableOption
+    , displaySettings : { evoEF2LogInfo : Bool }
     }
 
 
@@ -90,6 +91,17 @@ type EvoEF2TableOption
     | IntraR
     | InterS
     | InterD
+
+type HideableSection
+    = EvoEF2LogInfo
+
+
+hideableSectionToString : HideableSection -> String
+hideableSectionToString hideableSection =
+    case hideableSection of
+        EvoEF2LogInfo ->
+            "EvoEF2 Log Information"
+
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -146,6 +158,7 @@ init shared { params } =
                             Nothing ->
                                 LoadingNoStub
                     , evoEF2TableOption = Summary
+                    , displaySettings = { evoEF2LogInfo = False }
                     }
             in
             ( model
@@ -174,6 +187,7 @@ init shared { params } =
               , mSelectedReferenceSet = Nothing
               , pageState = AppNotRunning
               , evoEF2TableOption = Summary
+              , displaySettings = { evoEF2LogInfo = False }
               }
             , Cmd.none
             )
@@ -189,6 +203,7 @@ type Msg
     | SetSpecification { uuidString : String, specValue : Value }
     | SetReferenceSet { uuidString : String, refSetValue : Value }
     | SetEvoEF2TableOption EvoEF2TableOption
+    | ToggleSectionVisibility HideableSection
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -286,6 +301,23 @@ update msg model =
 
         SetEvoEF2TableOption option ->
             ( { model | evoEF2TableOption = option }
+            , Cmd.none
+            )
+
+        ToggleSectionVisibility section ->
+            let
+                displaySettings =
+                    model.displaySettings
+            in
+            ( { model
+                | displaySettings =
+                    case section of
+                        EvoEF2LogInfo ->
+                            { displaySettings
+                                | evoEF2LogInfo =
+                                    not displaySettings.evoEF2LogInfo
+                            }
+              }
             , Cmd.none
             )
 
@@ -412,6 +444,7 @@ bodyView model =
                         (Maybe.andThen Stored.getData model.mSelectedReferenceSet)
                         design
                         model.evoEF2TableOption
+                        model.displaySettings
                     ]
         ]
 
@@ -432,8 +465,9 @@ designDetailsView :
     -> Maybe ReferenceSet
     -> Design.Design
     -> EvoEF2TableOption
+    -> { evoEF2LogInfo : Bool }
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption =
+designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
@@ -518,7 +552,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
-                        , evoEF2ResultsTableView evoEF2TableOption designMetrics
+                        , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -640,8 +674,8 @@ sequenceInfoView ( chainId, sequenceInfo ) =
         ]
 
 
-evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> Element Msg
-evoEF2ResultsTableView evoEF2TableOption metrics =
+evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> { evoEF2LogInfo : Bool } -> Element Msg
+evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
     let
         radioInputSelection =
             el
@@ -665,7 +699,7 @@ evoEF2ResultsTableView evoEF2TableOption metrics =
                         , Input.option InterD (text "InterD")
                         ]
                     }
-
+        
         logInfoBox =
             paragraph
                 [ spacing 20
@@ -710,8 +744,8 @@ evoEF2ResultsTableView evoEF2TableOption metrics =
                             evoef2InterDColumns
                    )
             )
-        , cell (text "EvoEF2 Log Information")
-        , logInfoBox
+        , hideableSectionView displaySettings.evoEF2LogInfo EvoEF2LogInfo logInfoBox
+                                
         ]
 
 
@@ -802,6 +836,20 @@ evoef2InterDColumns metrics =
     , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
     , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
     ]
+
+
+hideableSectionView : Bool -> HideableSection -> Element Msg -> Element Msg
+hideableSectionView isVisible sectionType sectionView =
+    if isVisible then
+        column []
+            [ el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+                (text <| hideableSectionToString sectionType ++ " vv")
+            , el [ padding 10 ] sectionView
+            ]
+
+    else
+        el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+            (text <| hideableSectionToString sectionType ++ " >>")
 
 
 referenceSetComparisonView : Element msg
