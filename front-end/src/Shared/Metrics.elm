@@ -152,11 +152,10 @@ type alias EvoEF2Results =
     , interD_hbscsc_the : Float
     , interD_hbscsc_phi : Float
     , total : Float
-
-    -- , ref_total : Float
-    -- , intraR_total : Float
-    -- , interS_total : Float
-    -- , interD_total : Float
+    , ref_total : Float
+    , intraR_total : Float
+    , interS_total : Float
+    , interD_total : Float
     }
 
 
@@ -226,12 +225,10 @@ evoEF2ResultsCodec =
         |> Codec.field "interD_hbscsc_the" .interD_hbscsc_the Codec.float
         |> Codec.field "interD_hbscsc_phi" .interD_hbscsc_phi Codec.float
         |> Codec.field "total" .total Codec.float
-        -- TODO: Add these fields back into the object once server is automatically
-        -- calculating these.
-        -- |> Codec.field "ref_total" .ref_total Codec.float
-        -- |> Codec.field "intraR_total" .intraR_total Codec.float
-        -- |> Codec.field "interS_total" .interS_total Codec.float
-        -- |> Codec.field "interD_total" .interD_total Codec.float
+        |> Codec.field "ref_total" .ref_total Codec.float
+        |> Codec.field "intraR_total" .intraR_total Codec.float
+        |> Codec.field "interS_total" .interS_total Codec.float
+        |> Codec.field "interD_total" .interD_total Codec.float
         |> Codec.buildObject
 
 

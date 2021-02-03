@@ -721,11 +721,10 @@ evoef2SummaryColumns metrics =
     , createTableFloatColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
     , createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
     , createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
-
-    -- , createTableFloatColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
-    -- , createTableFloatColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
-    -- , createTableFloatColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
-    -- , createTableFloatColumn metrics.evoEF2Results.interD_total "InterD \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.interD_total "InterD \nEnergy"
     ]
 
 
