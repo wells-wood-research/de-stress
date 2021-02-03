@@ -174,6 +174,10 @@ class EvoEF2ResultsModel(BigStructureBase):  # type: ignore
     interD_hbscsc_phi = Column(Float, nullable=False)
     total = Column(Float, nullable=False)
     time_spent = Column(Float, nullable=False)
+    ref_total = Column(Float, nullable=False)
+    intraR_total = Column(Float, nullable=False)
+    interS_total = Column(Float, nullable=False)
+    interD_total = Column(Float, nullable=False)
 
     # Parent
     state_id = Column(Integer, ForeignKey("state.id"))
