@@ -153,6 +153,7 @@ class DesignMetrics:
     num_of_residues: int
     packing_density: float
     evoEF2_results: EvoEF2Output
+    dfire2_results: DFIRE2Output
 
 
 # }}}
