@@ -48,7 +48,7 @@ class ServerJobManager:
         to sync any changes to `server_job`
 
     websocket
-        Websocket used to communicate with the client.        
+        Websocket used to communicate with the client.
 
     out_msg_constructor: Callable[[ServerJob], ClientWebsocketIncoming]
         A function that can create an outgoing message to the client from a
@@ -186,7 +186,9 @@ def process_client_message(
         # This should always succeed as the job is always the submitted type
         input_pdb_string = server_job_manager.status.submitted().pdb_string
         rq_job = Job.create(
-            create_metrics_from_pdb, [input_pdb_string], connection=REDIS_CONNECTION,
+            create_metrics_from_pdb,
+            [input_pdb_string],
+            connection=REDIS_CONNECTION,
         )
         rq_job_handle = JOB_QUEUE.enqueue_job(rq_job)
         server_job_manager.rq_job_handle = rq_job_handle

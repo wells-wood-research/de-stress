@@ -25,6 +25,10 @@ RUN ln -s /app/dependencies_for_isambard/dssp/dssp-2.0.4 /usr/local/bin/mkdssp
 
 RUN poetry install --no-interaction --no-ansi
 
+# Set up EvoEF2
+RUN cd /home && git clone https://github.com/tommyhuangthu/EvoEF2.git && cd EvoEF2/ && g++ -O3 --fast-math -o EvoEF2 src/*.cpp && cd /app
+
+
 # Run webserver
 CMD gunicorn \
     -w ${GUNICORN_WORKERS} \
@@ -32,3 +36,4 @@ CMD gunicorn \
     -k flask_sockets.worker \
     --reload \
     destress_big_structure:app
+

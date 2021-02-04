@@ -23,6 +23,7 @@ dataclasses_json = "^0.4.2"
 rq = "^1.4.0"
 gevent = "^20.5.0"
 requests = "^2.23.0"
+python-dotenv = "^0.15.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"
@@ -34,8 +35,8 @@ hypothesis = "^5.15.1"
 
 [tool.poetry.scripts]
 run_server = 'destres_big_structure.console:run_server'
-create_designs_tables = 'destres_big_structure.console:create_designs_tables'
-dbs_db_from_scratch = 'destres_big_structure.console:dbs_db_from_scratch'
+create_designs_tables = 'destress_big_structure.console:create_designs_tables'
+dbs_db_from_scratch = 'destress_big_structure.console:dbs_db_from_scratch'
 
 [build-system]
 requires = ["poetry>=0.12"]
