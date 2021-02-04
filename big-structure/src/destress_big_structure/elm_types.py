@@ -112,24 +112,21 @@ class EvoEF2Output:
             k: v for k, v in other_dict.items() if k not in ["time_spent"]
         }
 
-        # self_dict_new = {k: v for k, v in self_dict.items() if k not in ['time_spent', 'log_info']}
-        # other_dict_new = {k: v for k, v in other_dict.items() if k not in ['time_spent', 'log_info']}
-
         return self_dict_new == other_dict_new
 
     # Calculating sub totals
     def __post_init__(self):
         self.ref_total = sum(
-            [v for k, v in self.__dict__.items() if k.startswith("reference")]
+            (v for k, v in self.__dict__.items() if k.startswith("reference"))
         )
         self.intraR_total = sum(
-            [v for k, v in self.__dict__.items() if k.startswith("intraR")]
+            (v for k, v in self.__dict__.items() if k.startswith("intraR"))
         )
         self.interS_total = sum(
-            [v for k, v in self.__dict__.items() if k.startswith("interS")]
+            (v for k, v in self.__dict__.items() if k.startswith("interS"))
         )
         self.interD_total = sum(
-            [v for k, v in self.__dict__.items() if k.startswith("interD")]
+            (v for k, v in self.__dict__.items() if k.startswith("interD"))
         )
 
 
