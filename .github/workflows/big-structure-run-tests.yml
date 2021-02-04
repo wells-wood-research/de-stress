@@ -23,4 +23,4 @@ jobs:
       run: |
         cd big-structure/
         docker build -t big-structure .
-        docker run --rm big-structure /root/.poetry/bin/poetry run pytest
+        docker run --rm big-structure poetry run pytest
