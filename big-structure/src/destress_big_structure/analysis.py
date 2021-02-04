@@ -13,7 +13,7 @@ import isambard.evaluation as ev
 import numpy as np
 import requests
 
-from .elm_types import DesignMetrics, EvoEF2Output, SequenceInfo
+from .elm_types import DesignMetrics, EvoEF2Output, DFIRE2Output, SequenceInfo
 from destress_big_structure.settings import EVOEF2_BINARY_PATH
 
 # {{{ Input Validation
@@ -349,6 +349,77 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
     evoef2_output = EvoEF2Output(log_info=log_info, **energy_values)
 
     return evoef2_output
+
+
+# }}}
+
+# {{{ DFIRE2Output
+
+
+def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
+    """Defining a function to run DFIRE2 on an input PDB file.
+
+    --------
+
+    Notes
+    -----
+    References:
+    1. Specific interactions for ab initio folding of protein terminal regions with secondary structures.
+    Proteins 72, 793-803 (2008)
+    2. Ab initio folding of terminal segments with secondary structures reveals the fine difference between
+    two closely-related all-atom statistical energy functions. Protein Science 17 1212-1219, (2008)
+
+    Parameters
+    ----------
+    pdb_file_path: str
+        File path for the PDB file.
+    dfire2_path: str
+        File path for the dfire2 binary.
+
+    Returns
+    -------
+    dfire2_output: DFIRE2Output
+        DFIRE2Output object
+    """
+
+    starting_directory = pathlib.Path.cwd()
+    with tempfile.NamedTemporaryFile(mode="w") as tmp:
+        # Changing working dir so that dfire2 doesn't create files in the users cwd
+        temp_folder = pathlib.Path(tmp.name).parent
+        os.chdir(temp_folder)
+
+        # Writing the pdb string to a temp file as input for dfire2
+        tmp.write(pdb_string)
+
+        # Creating bash command
+        cmd = [
+            dfire2_binary_path + "calene",
+            dfire2_binary_path + "dfire_pair.lib",
+            tmp.name,
+        ]
+
+        # Using subprocess to run this command and capturing the output
+        dfire2_stdout = subprocess.run(cmd, capture_output=True)
+
+        # Change back to starting directory before checking return code
+        os.chdir(starting_directory)
+        dfire2_stdout.check_returncode()
+
+        # Decoding the stdout
+        stdout_decoded = dfire2_stdout.stdout.decode()
+
+        # Setting the stdout as the log info
+        dfire2_log_info = stdout_decoded
+
+        # Extracting the energy value from the output
+        dfire2_total_energy = float(stdout_decoded.partition(" ")[2].strip())
+
+        # Creating the DFIRE2Output object
+        dfire2_output = DFIRE2Output(
+            log_info=dfire2_log_info, total=dfire2_total_energy
+        )
+
+    return dfire2_output
 
 
 # }}}

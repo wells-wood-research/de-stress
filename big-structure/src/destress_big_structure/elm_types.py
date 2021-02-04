@@ -130,6 +130,17 @@ class EvoEF2Output:
         )
 
 
+@dataclass_json()  # letter_case=LetterCase.CAMEL)
+@dataclass()
+class DFIRE2Output:
+    log_info: str
+    total: float
+
+    # Redefining the __repr__ method to return the total energy value from DFIRE2
+    def __repr__(self):
+        return f"<DFIRE2Output: Total Energy = {self.total}>"
+
+
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
 class DesignMetrics:
