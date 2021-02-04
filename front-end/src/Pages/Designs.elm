@@ -691,10 +691,25 @@ hideableSectionView isVisible sectionType sectionView =
 
 controlPanel : Model -> Element Msg
 controlPanel model =
-    allTagsView
-        { tags = getAllTags model.designs
-        , filterTags = model.filterTags
-        }
+    let
+        allTags =
+            getAllTags model.designs
+    in
+    column []
+        [ if Set.isEmpty allTags then
+            paragraph []
+                [ text <|
+                    ("No designs are tagged, select designs in order to tag them. "
+                        ++ "This will help you keep your designs organised."
+                    )
+                ]
+
+          else
+            allTagsView
+                { tags = getAllTags model.designs
+                , filterTags = model.filterTags
+                }
+        ]
 
 
 allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
