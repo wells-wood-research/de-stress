@@ -14,7 +14,7 @@ import numpy as np
 import requests
 
 from .elm_types import DesignMetrics, EvoEF2Output, DFIRE2Output, SequenceInfo
-from destress_big_structure.settings import EVOEF2_BINARY_PATH
+from destress_big_structure.settings import EVOEF2_BINARY_PATH, DFIRE2_BINARY_PATH
 
 # {{{ Input Validation
 
@@ -224,6 +224,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         mass=mass,
         packing_density=design_mean_packing_density(design),
         evoEF2_results=run_evoef2(design.pdb, EVOEF2_BINARY_PATH),
+        dfire2_results=run_dfire2(design.pdb, DFIRE2_BINARY_PATH),
     )
     return design_metrics
 
@@ -359,7 +360,10 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
     """Defining a function to run DFIRE2 on an input PDB file.
 
-    --------
+    DFIRE2 is an energy function that was optimised by sequence recapitulation
+    and can be used to estimate protein stability. First this function runs
+    DFIRE2 on the input PDB file and then the output is parsed into a
+    dictionary and then converted into and DFIRE2Output object.
 
     Notes
     -----
