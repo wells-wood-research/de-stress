@@ -2,10 +2,15 @@ import ampal
 import graphene
 from graphene_sqlalchemy import SQLAlchemyObjectType
 
-from .big_structure_models import PdbModel, BiolUnitModel, StateModel, ChainModel
+from .big_structure_models import (
+    PdbModel,
+    BiolUnitModel,
+    StateModel,
+    ChainModel,
+    EvoEF2ResultsModel,
+)
 from .design_models import DesignModel, DesignChainModel
 from destress_big_structure.design_models import designs_db_session
-from destress_big_structure.create_entry import create_design_entry
 
 
 class Pdb(SQLAlchemyObjectType):
@@ -28,8 +33,12 @@ class Chain(SQLAlchemyObjectType):
         model = ChainModel
 
 
-class Query(graphene.ObjectType):
+class EvoEF2Results(SQLAlchemyObjectType):
+    class Meta:
+        model = EvoEF2ResultsModel
 
+
+class Query(graphene.ObjectType):
     all_pdbs = graphene.NonNull(
         graphene.List(graphene.NonNull(Pdb), required=True),
         description=(
@@ -190,38 +199,21 @@ class Query(graphene.ObjectType):
         query = Chain.get_query(info)
         return query.count()
 
-
-class Design(SQLAlchemyObjectType):
-    class Meta:
-        model = DesignModel
-
-
-class DesignChain(SQLAlchemyObjectType):
-    class Meta:
-        model = DesignChainModel
-
-
-class CreateDesign(graphene.Mutation):
-    class Arguments:
-        uuid = graphene.String(required=True)
-        pdb_string = graphene.String(required=True)
-
-    design = graphene.Field(
-        lambda: Design, description="Design created by this mutation.", required=True
+    all_evoef2_results = graphene.NonNull(
+        graphene.List(graphene.NonNull(EvoEF2Results), required=True),
+        description=(
+            "Gets all evoef2 results records. Accepts the argument `first`, which "
+            "allows you to limit the number of results."
+        ),
+        first=graphene.Int(),
     )
 
-    def mutate(root, info, uuid, pdb_string):
-        ampal_assembly = ampal.load_pdb(pdb_string, path=False)
-        if not ampal_assembly._molecules:
-            raise ValueError("No PDB format data found in file.")
-        design = create_design_entry(ampal_assembly)
-        designs_db_session.add_all([design])
-        designs_db_session.commit()
-        return CreateDesign(design=design)
+    def resolve_all_evoef2_results(self, info, **args):
+        query = EvoEF2Results.get_query(info)
+        first = args.get("first")
+        if first:
+            return query.limit(first).all()
+        return query.all()
 
 
-class Mutations(graphene.ObjectType):
-    create_design = CreateDesign.Field(required=True)
-
-
-schema = graphene.Schema(query=Query, mutation=Mutations)
+schema = graphene.Schema(query=Query)

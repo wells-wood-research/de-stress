@@ -17,16 +17,11 @@ from destress_big_structure.big_structure_models import (
     PdbModel,
     BiolUnitModel,
 )
-from destress_big_structure.design_models import designs_engine, DesignsBase
 import destress_big_structure.create_entry as create_entry
 
 
 def dev_run():
     app.run()
-
-
-def create_designs_tables():
-    DesignsBase.metadata.create_all(bind=designs_engine)
 
 
 @click.command()

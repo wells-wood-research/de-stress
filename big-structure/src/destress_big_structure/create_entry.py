@@ -9,12 +9,15 @@ from destress_big_structure.big_structure_models import (
     BiolUnitModel,
     StateModel,
     ChainModel,
+    EvoEF2ResultsModel,
 )
 from destress_big_structure.design_models import (
     DesignModel,
     DesignChainModel,
 )
 from destress_big_structure import analysis
+
+from .settings import EVOEF2_BINARY_PATH
 
 
 def create_biounit_entry(
@@ -48,13 +51,34 @@ def create_biounit_entry(
 def create_state_entry(
     ampal_assembly: ampal.Assembly, state_number: int, biounit_entry: BiolUnitModel
 ) -> StateModel:
-    state_analytics = analysis.analyse_state(ampal_assembly)
+    # Generate raw metrics
+    state_analytics = analysis.analyse_design(ampal_assembly)
+    # Convert the DesignMetrics into a StateModel
     state_model = StateModel(
-        state_number=state_number, biol_unit=biounit_entry, **state_analytics
+        state_number=state_number,
+        biol_unit=biounit_entry,
+        composition=";".join(
+            f"{k}:{v:.2f}" for (k, v) in state_analytics.composition.items()
+        ),
+        torsion_angles="".join(
+            f"{id_string}({tas[0]:.0f},{tas[1]:.0f},{tas[2]:.0f})"
+            for id_string, tas in state_analytics.torsion_angles.items()
+        ),
+        hydrophobic_fitness=state_analytics.hydrophobic_fitness,
+        is_protein_only=all(
+            [isinstance(chain, ampal.Polypeptide) for chain in ampal_assembly]
+        ),
+        isoelectric_point=state_analytics.isoelectric_point,
+        num_of_residues=state_analytics.num_of_residues,
+        mass=state_analytics.mass,
+        mean_packing_density=state_analytics.packing_density,
     )
     for chain in ampal_assembly:
         if isinstance(chain, ampal.Polypeptide):
             create_chain_entry(chain, state_model)
+
+    create_evoef2_results_entry(ampal_assembly, state_model, EVOEF2_BINARY_PATH)
+
     return state_model
 
 
@@ -64,20 +88,12 @@ def create_chain_entry(chain: ampal.Polypeptide, state_model: StateModel) -> Cha
     return chain_model
 
 
-def create_design_entry(ampal_assembly: ampal.Assembly) -> DesignModel:
-    design_analytics = analysis.analyse_state(ampal_assembly)
-    design_model = DesignModel(**design_analytics)
-    for chain in ampal_assembly:
-        if isinstance(chain, ampal.Polypeptide):
-            create_design_chain_entry(chain, design_model)
-    return design_model
-
-
-def create_design_chain_entry(
-    chain: ampal.Polypeptide, design_model: DesignModel
-) -> ChainModel:
-    chain_analytics = analysis.analyse_chain(chain)
-    chain_model = DesignChainModel(
-        chain_label=chain.id, design=design_model, **chain_analytics
+def create_evoef2_results_entry(
+    ampal_assembly: ampal.Assembly, state_model: StateModel, evoef2_binary_path: str
+) -> EvoEF2ResultsModel:
+    evoef2_results = analysis.run_evoef2(ampal_assembly.pdb, evoef2_binary_path)
+    evoef2_results_model = EvoEF2ResultsModel(
+        state=state_model, **evoef2_results.__dict__
     )
-    return chain_model
+
+    return evoef2_results_model

@@ -72,6 +72,8 @@ type alias Model =
     , mSelectedSpecification : Maybe (Stored Specification)
     , mSelectedReferenceSet : Maybe (Stored ReferenceSet)
     , pageState : PageState
+    , evoEF2TableOption : EvoEF2TableOption
+    , displaySettings : { evoEF2LogInfo : Bool }
     }
 
 
@@ -81,6 +83,44 @@ type PageState
     | LoadingWithStub Design.DesignStub
     | UnknownDesignUuid
     | Design Design.Design
+
+
+type EvoEF2TableOption
+    = Summary
+    | Reference
+    | IntraR
+    | InterS
+    | InterD
+
+type HideableSection
+    = EvoEF2LogInfo
+
+
+hideableSectionToString : HideableSection -> String
+hideableSectionToString hideableSection =
+    case hideableSection of
+        EvoEF2LogInfo ->
+            "EvoEF2 Log Information"
+
+
+
+evoEF2TableOptionToString : EvoEF2TableOption -> String
+evoEF2TableOptionToString evoEF2TableOption =
+    case evoEF2TableOption of
+        Summary ->
+            "Summary"
+
+        Reference ->
+            "Reference"
+
+        IntraR ->
+            "IntraR"
+
+        InterS ->
+            "InterS"
+
+        InterD ->
+            "InterD"
 
 
 
@@ -117,6 +157,8 @@ init shared { params } =
 
                             Nothing ->
                                 LoadingNoStub
+                    , evoEF2TableOption = Summary
+                    , displaySettings = { evoEF2LogInfo = False }
                     }
             in
             ( model
@@ -144,6 +186,8 @@ init shared { params } =
               , mSelectedSpecification = Nothing
               , mSelectedReferenceSet = Nothing
               , pageState = AppNotRunning
+              , evoEF2TableOption = Summary
+              , displaySettings = { evoEF2LogInfo = False }
               }
             , Cmd.none
             )
@@ -158,6 +202,8 @@ type Msg
     = SetFocus { uuidString : String, design : Value }
     | SetSpecification { uuidString : String, specValue : Value }
     | SetReferenceSet { uuidString : String, refSetValue : Value }
+    | SetEvoEF2TableOption EvoEF2TableOption
+    | ToggleSectionVisibility HideableSection
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -253,6 +299,28 @@ update msg model =
                         "A reference set was set, but I was not expecting one."
                         ( model, Cmd.none )
 
+        SetEvoEF2TableOption option ->
+            ( { model | evoEF2TableOption = option }
+            , Cmd.none
+            )
+
+        ToggleSectionVisibility section ->
+            let
+                displaySettings =
+                    model.displaySettings
+            in
+            ( { model
+                | displaySettings =
+                    case section of
+                        EvoEF2LogInfo ->
+                            { displaySettings
+                                | evoEF2LogInfo =
+                                    not displaySettings.evoEF2LogInfo
+                            }
+              }
+            , Cmd.none
+            )
+
 
 plotCommands : Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
 plotCommands metrics referenceSet =
@@ -327,10 +395,10 @@ sectionColumn =
 
 
 bodyView : Model -> Element Msg
-bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet } =
-    column [ width fill ]
+bodyView model =
+    column [ centerX, width (fill |> maximum 800) ]
         [ el [ centerX ] (Style.h1 <| text "Design Details")
-        , case pageState of
+        , case model.pageState of
             AppNotRunning ->
                 sectionColumn
                     [ paragraph []
@@ -355,7 +423,7 @@ bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet 
                     [ paragraph []
                         [ "Failed to load a design with UUID: "
                             |> text
-                        , el [ Font.bold ] (text designUuid)
+                        , el [ Font.bold ] (text model.designUuid)
                         ]
                     , paragraph []
                         [ """This design no longer exists, you might have deleted
@@ -371,10 +439,12 @@ bodyView { designUuid, pageState, mSelectedSpecification, mSelectedReferenceSet 
             Design design ->
                 sectionColumn
                     [ designDetailsView
-                        designUuid
-                        (Maybe.andThen Stored.getData mSelectedSpecification)
-                        (Maybe.andThen Stored.getData mSelectedReferenceSet)
+                        model.designUuid
+                        (Maybe.andThen Stored.getData model.mSelectedSpecification)
+                        (Maybe.andThen Stored.getData model.mSelectedReferenceSet)
                         design
+                        model.evoEF2TableOption
+                        model.displaySettings
                     ]
         ]
 
@@ -394,8 +464,10 @@ designDetailsView :
     -> Maybe Specification
     -> Maybe ReferenceSet
     -> Design.Design
+    -> EvoEF2TableOption
+    -> { evoEF2LogInfo : Bool }
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design =
+designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
@@ -480,6 +552,7 @@ designDetailsView uuidString mSpecification mReferenceSet design =
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
+                        , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -517,62 +590,37 @@ basicMetrics metrics =
 
 metricsOverview : Metrics.DesignMetrics -> Element msg
 metricsOverview metrics =
-    let
-        onePlaceFloatText =
-            Round.round 1
-                >> text
-                >> (\a -> cell a)
-
-        intText =
-            String.fromInt >> text >> (\a -> cell a)
-
-        cell =
-            el [ centerX, padding 10 ]
-
-        tableColumn =
-            column
-                [ alignTop
-                , width <| px 150
-                ]
-
-        headerParagraph =
-            paragraph
-                [ padding 10
-                , height <| px 70
-                , Background.color Style.colorPalette.c1
-                , Font.center
-                , Font.color Style.colorPalette.white
-                ]
-    in
     column [ spacing 10, width fill ]
         [ Style.h2 <| text "Metrics"
         , wrappedRow
-            [ centerX ]
-            [ tableColumn
-                [ headerParagraph [ text "Hydrophobic Fitness" ]
-                , case metrics.hydrophobicFitness of
-                    Just hf ->
-                        onePlaceFloatText hf
+            []
+            [ createTableColumn
+                (\mHF ->
+                    case mHF of
+                        Just hf ->
+                            onePlaceFloatText hf
 
-                    Nothing ->
-                        text "--"
-                ]
-            , tableColumn
-                [ headerParagraph [ text "pI" ]
-                , onePlaceFloatText metrics.isoelectricPoint
-                ]
-            , tableColumn
-                [ headerParagraph [ text "# of Residues" ]
-                , intText metrics.numOfResidues
-                ]
-            , tableColumn
-                [ headerParagraph [ text "Mass (Da)" ]
-                , onePlaceFloatText metrics.mass
-                ]
-            , tableColumn
-                [ headerParagraph [ text "Mean Packing Density" ]
-                , onePlaceFloatText metrics.packingDensity
-                ]
+                        Nothing ->
+                            text "--"
+                )
+                metrics.hydrophobicFitness
+                "Hydrophobic Fitness"
+            , createTableColumn
+                onePlaceFloatText
+                metrics.isoelectricPoint
+                "pI"
+            , createTableColumn
+                intText
+                metrics.numOfResidues
+                "# of Residues"
+            , createTableColumn
+                onePlaceFloatText
+                metrics.mass
+                "Mass (Da)"
+            , createTableColumn
+                onePlaceFloatText
+                metrics.packingDensity
+                "Mean Packing Density"
             ]
         ]
 
@@ -624,6 +672,184 @@ sequenceInfoView ( chainId, sequenceInfo ) =
             ]
             (List.map aaView zippedSequenceInfo)
         ]
+
+
+evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> { evoEF2LogInfo : Bool } -> Element Msg
+evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
+    let
+        radioInputSelection =
+            el
+                [ centerX
+                , spacing 20
+                , padding 20
+                ]
+            <|
+                Input.radioRow
+                    [ padding 20
+                    , spacing 20
+                    ]
+                    { onChange = SetEvoEF2TableOption
+                    , selected = Just evoEF2TableOption
+                    , label = Input.labelAbove [] (text "Select Table View")
+                    , options =
+                        [ Input.option Summary (text "Summary")
+                        , Input.option Reference (text "Reference")
+                        , Input.option IntraR (text "IntraR")
+                        , Input.option InterS (text "InterS")
+                        , Input.option InterD (text "InterD")
+                        ]
+                    }
+        
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , width fill
+                , Border.rounded 1
+                , Border.color (rgba 0 0 0 1)
+                , Border.widthXY 2 2
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text metrics.evoEF2Results.log_info
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <|
+            text
+                ("EvoEF2 Energy Function Results - "
+                    ++ evoEF2TableOptionToString evoEF2TableOption
+                )
+        , radioInputSelection
+        , wrappedRow
+            []
+            (metrics
+                |> (case evoEF2TableOption of
+                        Summary ->
+                            evoef2SummaryColumns
+
+                        Reference ->
+                            evoef2RefColumns
+
+                        IntraR ->
+                            evoef2IntraRColumns
+
+                        InterS ->
+                            evoef2InterSColumns
+
+                        InterD ->
+                            evoef2InterDColumns
+                   )
+            )
+        , hideableSectionView displaySettings.evoEF2LogInfo EvoEF2LogInfo logInfoBox
+                                
+        ]
+
+
+evoef2SummaryColumns : Metrics.DesignMetrics -> List (Element msg)
+evoef2SummaryColumns metrics =
+    [ createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2 Energy"
+    , createTableFloatColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
+    , createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
+    , createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
+    , createTableFloatColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
+    , createTableFloatColumn metrics.evoEF2Results.interD_total "InterD \nEnergy"
+    ]
+
+
+evoef2RefColumns : Metrics.DesignMetrics -> List (Element msg)
+evoef2RefColumns metrics =
+    [ createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
+    , createTableFloatColumn metrics.evoEF2Results.reference_CYS "CYS"
+    , createTableFloatColumn metrics.evoEF2Results.reference_ASP "ASP"
+    , createTableFloatColumn metrics.evoEF2Results.reference_GLU "GLU"
+    , createTableFloatColumn metrics.evoEF2Results.reference_PHE "PHE"
+    , createTableFloatColumn metrics.evoEF2Results.reference_GLY "GLY"
+    , createTableFloatColumn metrics.evoEF2Results.reference_HIS "HIS"
+    , createTableFloatColumn metrics.evoEF2Results.reference_ILE "ILE"
+    , createTableFloatColumn metrics.evoEF2Results.reference_LYS "LYS"
+    , createTableFloatColumn metrics.evoEF2Results.reference_LEU "LEU"
+    , createTableFloatColumn metrics.evoEF2Results.reference_MET "MET"
+    , createTableFloatColumn metrics.evoEF2Results.reference_ASN "ASN"
+    , createTableFloatColumn metrics.evoEF2Results.reference_PRO "PRO"
+    , createTableFloatColumn metrics.evoEF2Results.reference_GLN "GLN"
+    , createTableFloatColumn metrics.evoEF2Results.reference_ARG "ARG"
+    , createTableFloatColumn metrics.evoEF2Results.reference_SER "SER"
+    , createTableFloatColumn metrics.evoEF2Results.reference_THR "THR"
+    , createTableFloatColumn metrics.evoEF2Results.reference_VAL "VAL"
+    , createTableFloatColumn metrics.evoEF2Results.reference_TRP "TRP"
+    , createTableFloatColumn metrics.evoEF2Results.reference_TYR "TYR"
+    ]
+
+
+evoef2IntraRColumns : Metrics.DesignMetrics -> List (Element msg)
+evoef2IntraRColumns metrics =
+    [ createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt "VDWATT"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep "VDWREP"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_electr "ELECTR"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "DESLVP"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "DESLVH"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HBSCBB DIS"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HBSCBB THE"
+    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HBSCBB PHI"
+    ]
+
+
+evoef2InterSColumns : Metrics.DesignMetrics -> List (Element msg)
+evoef2InterSColumns metrics =
+    [ createTableFloatColumn metrics.evoEF2Results.interS_vdwatt "VDWATT"
+    , createTableFloatColumn metrics.evoEF2Results.interS_vdwrep "VDWREP"
+    , createTableFloatColumn metrics.evoEF2Results.interS_electr "ELECTR"
+    , createTableFloatColumn metrics.evoEF2Results.interS_deslvP "DESLVP"
+    , createTableFloatColumn metrics.evoEF2Results.interS_deslvH "DESLVH"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis "HBBBBB DIS"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the "HBBBBB THE"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi "HBBBBB PHI"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis "HBSCBB DIS"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the "HBSCBB THE"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi "HBSCBB PHI"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis "HBSCSC DIS"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the "HBSCSC THE"
+    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi "HBSCSC PHI"
+    ]
+
+
+evoef2InterDColumns : Metrics.DesignMetrics -> List (Element msg)
+evoef2InterDColumns metrics =
+    [ createTableFloatColumn metrics.evoEF2Results.interD_vdwatt "VDWATT"
+    , createTableFloatColumn metrics.evoEF2Results.interD_vdwrep "VDWREP"
+    , createTableFloatColumn metrics.evoEF2Results.interD_electr "ELECTR"
+    , createTableFloatColumn metrics.evoEF2Results.interD_deslvP "DESLVP"
+    , createTableFloatColumn metrics.evoEF2Results.interD_deslvH "DESLVH"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis "HBBBBB DIS"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the "HBBBBB THE"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi "HBBBBB PHI"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis "HBSCBB DIS"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the "HBSCBB THE"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi "HBSCBB PHI"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis "HBSCSC DIS"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
+    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
+    ]
+
+
+hideableSectionView : Bool -> HideableSection -> Element Msg -> Element Msg
+hideableSectionView isVisible sectionType sectionView =
+    if isVisible then
+        column []
+            [ el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+                (text <| hideableSectionToString sectionType ++ " vv")
+            , el [ padding 10 ] sectionView
+            ]
+
+    else
+        el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+            (text <| hideableSectionToString sectionType ++ " >>")
 
 
 referenceSetComparisonView : Element msg
@@ -710,6 +936,64 @@ metricsHistogramsView =
 
 
 
+-- {{{ Table View Functions
+
+
+createTableColumn :
+    (metric -> Element msg)
+    -> metric
+    -> String
+    -> Element msg
+createTableColumn metricView metric metricName =
+    let
+        tableColumn =
+            column
+                [ alignTop
+
+                -- , width <| px 100
+                ]
+
+        headerParagraph =
+            paragraph
+                [ padding 10
+                , centerX
+                , centerY
+                , height <| px 90
+                , Background.color Style.colorPalette.c1
+                , Font.center
+                , Font.color Style.colorPalette.white
+                ]
+    in
+    tableColumn
+        [ headerParagraph [ text metricName ]
+        , metricView metric
+        ]
+
+
+cell : Element msg -> Element msg
+cell =
+    el [ centerX, padding 10 ]
+
+
+intText : Int -> Element msg
+intText =
+    String.fromInt >> text >> (\a -> cell a)
+
+
+onePlaceFloatText : Float -> Element msg
+onePlaceFloatText =
+    Round.round 0
+        >> text
+        >> (\a -> cell a)
+
+
+createTableFloatColumn : Float -> String -> Element msg
+createTableFloatColumn =
+    createTableColumn onePlaceFloatText
+
+
+
+-- }}}
 -- {{{ specificationView
 
 

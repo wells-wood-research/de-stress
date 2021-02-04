@@ -1,5 +1,6 @@
 """Algebraic datatypes that mirror Elm types."""
-from dataclasses import dataclass
+
+from dataclasses import dataclass, field
 import json
 from typing import Any, Dict, Generic, Optional, Tuple, TypeVar
 
@@ -8,6 +9,8 @@ from dataclasses_json import dataclass_json, LetterCase
 
 A = TypeVar("A")
 B = TypeVar("B")
+
+# {{{ Response Data
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL)
@@ -23,6 +26,110 @@ class SequenceInfo:
     dssp_assignment: str
 
 
+@dataclass_json()  # letter_case=LetterCase.CAMEL)
+@dataclass(eq=False)
+class EvoEF2Output:
+    log_info: str
+    reference_ALA: float
+    reference_CYS: float
+    reference_ASP: float
+    reference_GLU: float
+    reference_PHE: float
+    reference_GLY: float
+    reference_HIS: float
+    reference_ILE: float
+    reference_LYS: float
+    reference_LEU: float
+    reference_MET: float
+    reference_ASN: float
+    reference_PRO: float
+    reference_GLN: float
+    reference_ARG: float
+    reference_SER: float
+    reference_THR: float
+    reference_VAL: float
+    reference_TRP: float
+    reference_TYR: float
+    intraR_vdwatt: float
+    intraR_vdwrep: float
+    intraR_electr: float
+    intraR_deslvP: float
+    intraR_deslvH: float
+    intraR_hbscbb_dis: float
+    intraR_hbscbb_the: float
+    intraR_hbscbb_phi: float
+    aapropensity: float
+    ramachandran: float
+    dunbrack: float
+    interS_vdwatt: float
+    interS_vdwrep: float
+    interS_electr: float
+    interS_deslvP: float
+    interS_deslvH: float
+    interS_ssbond: float
+    interS_hbbbbb_dis: float
+    interS_hbbbbb_the: float
+    interS_hbbbbb_phi: float
+    interS_hbscbb_dis: float
+    interS_hbscbb_the: float
+    interS_hbscbb_phi: float
+    interS_hbscsc_dis: float
+    interS_hbscsc_the: float
+    interS_hbscsc_phi: float
+    interD_vdwatt: float
+    interD_vdwrep: float
+    interD_electr: float
+    interD_deslvP: float
+    interD_deslvH: float
+    interD_ssbond: float
+    interD_hbbbbb_dis: float
+    interD_hbbbbb_the: float
+    interD_hbbbbb_phi: float
+    interD_hbscbb_dis: float
+    interD_hbscbb_the: float
+    interD_hbscbb_phi: float
+    interD_hbscsc_dis: float
+    interD_hbscsc_the: float
+    interD_hbscsc_phi: float
+    total: float
+    time_spent: float
+    ref_total: float = field(init=False)
+    intraR_total: float = field(init=False)
+    interS_total: float = field(init=False)
+    interD_total: float = field(init=False)
+
+    # Redefining the __repr__ method to return the total energy value from EvoEF2
+    def __repr__(self):
+        return f"<EvoEF2Output: Total Energy = {self.total}>"
+
+    # Defining the __eq__method to compare all the fields except the time_spent field
+    def __eq__(self, other):
+        self_dict = self.__dict__
+        other_dict = other.__dict__
+
+        self_dict_new = {k: v for k, v in self_dict.items() if k not in ["time_spent"]}
+        other_dict_new = {
+            k: v for k, v in other_dict.items() if k not in ["time_spent"]
+        }
+
+        return self_dict_new == other_dict_new
+
+    # Calculating sub totals
+    def __post_init__(self):
+        self.ref_total = sum(
+            (v for k, v in self.__dict__.items() if k.startswith("reference"))
+        )
+        self.intraR_total = sum(
+            (v for k, v in self.__dict__.items() if k.startswith("intraR"))
+        )
+        self.interS_total = sum(
+            (v for k, v in self.__dict__.items() if k.startswith("interS"))
+        )
+        self.interD_total = sum(
+            (v for k, v in self.__dict__.items() if k.startswith("interD"))
+        )
+
+
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
 class DesignMetrics:
@@ -34,8 +141,11 @@ class DesignMetrics:
     mass: float
     num_of_residues: int
     packing_density: float
+    evoEF2_results: EvoEF2Output
 
 
+# }}}
+# {{{ Server Job Wrappers
 @adt
 class ServerJobStatus(Generic[A, B]):
     READY: Case
@@ -116,6 +226,8 @@ class ServerJob(Generic[A, B]):
         )
 
 
+# }}}
+# {{{ Websocket Wrappers
 @adt
 class ClientWebsocketOutgoing:
     REQUESTMETRICS: Case[ServerJob[RequestMetricsInput, DesignMetrics]]
@@ -151,9 +263,14 @@ class ClientWebsocketIncoming:
                 "tag": "ReceivedMetricsJob",
                 "args": [server_job.to_dict()],
             },
-            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
+            communicationerror=lambda: {
+                "tag": "CommunicationError",
+                "args": [],
+            },
         )
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
 
+
+# }}}

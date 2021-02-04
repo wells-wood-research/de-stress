@@ -1,6 +1,7 @@
 module Shared.Metrics exposing
     ( AggregateData
     , DesignMetrics
+    , EvoEF2Results
     , MeanAndStdDev
     , RefSetMetrics
     , SequenceInfo
@@ -26,6 +27,10 @@ import Utils.Stats as Stats
 import VegaLite as VL
 
 
+
+-- {{{ DesignMetrics
+
+
 type alias DesignMetrics =
     { sequenceInfo : Dict String SequenceInfo
     , composition : Dict String Float
@@ -35,6 +40,7 @@ type alias DesignMetrics =
     , mass : Float
     , numOfResidues : Int
     , packingDensity : Float
+    , evoEF2Results : EvoEF2Results
     }
 
 
@@ -59,6 +65,7 @@ desMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
         |> Codec.buildObject
 
 
@@ -74,6 +81,160 @@ sequenceInfoCodec =
         |> Codec.field "sequence" .sequence Codec.string
         |> Codec.field "dsspAssignment" .dsspAssignment Codec.string
         |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ EvoEF2Results
+
+
+type alias EvoEF2Results =
+    { log_info : String
+    , reference_ALA : Float
+    , reference_CYS : Float
+    , reference_ASP : Float
+    , reference_GLU : Float
+    , reference_PHE : Float
+    , reference_GLY : Float
+    , reference_HIS : Float
+    , reference_ILE : Float
+    , reference_LYS : Float
+    , reference_LEU : Float
+    , reference_MET : Float
+    , reference_ASN : Float
+    , reference_PRO : Float
+    , reference_GLN : Float
+    , reference_ARG : Float
+    , reference_SER : Float
+    , reference_THR : Float
+    , reference_VAL : Float
+    , reference_TRP : Float
+    , reference_TYR : Float
+    , intraR_vdwatt : Float
+    , intraR_vdwrep : Float
+    , intraR_electr : Float
+    , intraR_deslvP : Float
+    , intraR_deslvH : Float
+    , intraR_hbscbb_dis : Float
+    , intraR_hbscbb_the : Float
+    , intraR_hbscbb_phi : Float
+    , aapropensity : Float
+    , ramachandran : Float
+    , dunbrack : Float
+    , interS_vdwatt : Float
+    , interS_vdwrep : Float
+    , interS_electr : Float
+    , interS_deslvP : Float
+    , interS_deslvH : Float
+    , interS_ssbond : Float
+    , interS_hbbbbb_dis : Float
+    , interS_hbbbbb_the : Float
+    , interS_hbbbbb_phi : Float
+    , interS_hbscbb_dis : Float
+    , interS_hbscbb_the : Float
+    , interS_hbscbb_phi : Float
+    , interS_hbscsc_dis : Float
+    , interS_hbscsc_the : Float
+    , interS_hbscsc_phi : Float
+    , interD_vdwatt : Float
+    , interD_vdwrep : Float
+    , interD_electr : Float
+    , interD_deslvP : Float
+    , interD_deslvH : Float
+    , interD_ssbond : Float
+    , interD_hbbbbb_dis : Float
+    , interD_hbbbbb_the : Float
+    , interD_hbbbbb_phi : Float
+    , interD_hbscbb_dis : Float
+    , interD_hbscbb_the : Float
+    , interD_hbscbb_phi : Float
+    , interD_hbscsc_dis : Float
+    , interD_hbscsc_the : Float
+    , interD_hbscsc_phi : Float
+    , total : Float
+    , ref_total : Float
+    , intraR_total : Float
+    , interS_total : Float
+    , interD_total : Float
+    }
+
+
+evoEF2ResultsCodec : Codec EvoEF2Results
+evoEF2ResultsCodec =
+    Codec.object EvoEF2Results
+        |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "reference_ALA" .reference_ALA Codec.float
+        |> Codec.field "reference_CYS" .reference_CYS Codec.float
+        |> Codec.field "reference_ASP" .reference_ASP Codec.float
+        |> Codec.field "reference_GLU" .reference_GLU Codec.float
+        |> Codec.field "reference_PHE" .reference_PHE Codec.float
+        |> Codec.field "reference_GLY" .reference_GLY Codec.float
+        |> Codec.field "reference_HIS" .reference_HIS Codec.float
+        |> Codec.field "reference_ILE" .reference_ILE Codec.float
+        |> Codec.field "reference_LYS" .reference_LYS Codec.float
+        |> Codec.field "reference_LEU" .reference_LEU Codec.float
+        |> Codec.field "reference_MET" .reference_MET Codec.float
+        |> Codec.field "reference_ASN" .reference_ASN Codec.float
+        |> Codec.field "reference_PRO" .reference_PRO Codec.float
+        |> Codec.field "reference_GLN" .reference_GLN Codec.float
+        |> Codec.field "reference_ARG" .reference_ARG Codec.float
+        |> Codec.field "reference_SER" .reference_SER Codec.float
+        |> Codec.field "reference_THR" .reference_THR Codec.float
+        |> Codec.field "reference_VAL" .reference_VAL Codec.float
+        |> Codec.field "reference_TRP" .reference_TRP Codec.float
+        |> Codec.field "reference_TYR" .reference_TYR Codec.float
+        |> Codec.field "intraR_vdwatt" .intraR_vdwatt Codec.float
+        |> Codec.field "intraR_vdwrep" .intraR_vdwrep Codec.float
+        |> Codec.field "intraR_electr" .intraR_electr Codec.float
+        |> Codec.field "intraR_deslvP" .intraR_deslvP Codec.float
+        |> Codec.field "intraR_deslvH" .intraR_deslvH Codec.float
+        |> Codec.field "intraR_hbscbb_dis" .intraR_hbscbb_dis Codec.float
+        |> Codec.field "intraR_hbscbb_the" .intraR_hbscbb_the Codec.float
+        |> Codec.field "intraR_hbscbb_phi" .intraR_hbscbb_phi Codec.float
+        |> Codec.field "aapropensity" .aapropensity Codec.float
+        |> Codec.field "ramachandran" .ramachandran Codec.float
+        |> Codec.field "dunbrack" .dunbrack Codec.float
+        |> Codec.field "interS_vdwatt" .interS_vdwatt Codec.float
+        |> Codec.field "interS_vdwrep" .interS_vdwrep Codec.float
+        |> Codec.field "interS_electr" .interS_electr Codec.float
+        |> Codec.field "interS_deslvP" .interS_deslvP Codec.float
+        |> Codec.field "interS_deslvH" .interS_deslvH Codec.float
+        |> Codec.field "interS_ssbond" .interS_ssbond Codec.float
+        |> Codec.field "interS_hbbbbb_dis" .interS_hbbbbb_dis Codec.float
+        |> Codec.field "interS_hbbbbb_the" .interS_hbbbbb_the Codec.float
+        |> Codec.field "interS_hbbbbb_phi" .interS_hbbbbb_phi Codec.float
+        |> Codec.field "interS_hbscbb_dis" .interS_hbscbb_dis Codec.float
+        |> Codec.field "interS_hbscbb_the" .interS_hbscbb_the Codec.float
+        |> Codec.field "interS_hbscbb_phi" .interS_hbscbb_phi Codec.float
+        |> Codec.field "interS_hbscsc_dis" .interS_hbscsc_dis Codec.float
+        |> Codec.field "interS_hbscsc_the" .interS_hbscsc_the Codec.float
+        |> Codec.field "interS_hbscsc_phi" .interS_hbscsc_phi Codec.float
+        |> Codec.field "interD_vdwatt" .interD_vdwatt Codec.float
+        |> Codec.field "interD_vdwrep" .interD_vdwrep Codec.float
+        |> Codec.field "interD_electr" .interD_electr Codec.float
+        |> Codec.field "interD_deslvP" .interD_deslvP Codec.float
+        |> Codec.field "interD_deslvH" .interD_deslvH Codec.float
+        |> Codec.field "interD_ssbond" .interD_ssbond Codec.float
+        |> Codec.field "interD_hbbbbb_dis" .interD_hbbbbb_dis Codec.float
+        |> Codec.field "interD_hbbbbb_the" .interD_hbbbbb_the Codec.float
+        |> Codec.field "interD_hbbbbb_phi" .interD_hbbbbb_phi Codec.float
+        |> Codec.field "interD_hbscbb_dis" .interD_hbscbb_dis Codec.float
+        |> Codec.field "interD_hbscbb_the" .interD_hbscbb_the Codec.float
+        |> Codec.field "interD_hbscbb_phi" .interD_hbscbb_phi Codec.float
+        |> Codec.field "interD_hbscsc_dis" .interD_hbscsc_dis Codec.float
+        |> Codec.field "interD_hbscsc_the" .interD_hbscsc_the Codec.float
+        |> Codec.field "interD_hbscsc_phi" .interD_hbscsc_phi Codec.float
+        |> Codec.field "total" .total Codec.float
+        |> Codec.field "ref_total" .ref_total Codec.float
+        |> Codec.field "intraR_total" .intraR_total Codec.float
+        |> Codec.field "interS_total" .interS_total Codec.float
+        |> Codec.field "interD_total" .interD_total Codec.float
+        |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ RefSetMetrics
 
 
 type alias RefSetMetrics =
@@ -149,6 +310,7 @@ meanAndStdDevCodec =
 
 
 
+-- }}}
 -- {{{ Helper Functions
 
 
