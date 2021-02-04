@@ -2,10 +2,14 @@ import numpy as np
 import json
 import pathlib
 import typing as t
+import graphene
+import re
 
 from destress_big_structure.analysis import run_evoef2
-from destress_big_structure.settings import EVOEF2_BINARY_PATH_TEST
+from destress_big_structure.settings import EVOEF2_BINARY_PATH
 from destress_big_structure.elm_types import EvoEF2Output
+from destress_big_structure.schema import Query
+from destress_big_structure.big_structure_models import big_structure_db_session
 
 
 def test_check_run_evoef_executes():
@@ -15,7 +19,7 @@ def test_check_run_evoef_executes():
         pdb_string = inf.read()
 
     evoef_results = run_evoef2(
-        pdb_string=pdb_string, evoef2_binary_path=EVOEF2_BINARY_PATH_TEST
+        pdb_string=pdb_string, evoef2_binary_path=EVOEF2_BINARY_PATH
     )
 
     # Testing the results encoding
@@ -184,18 +188,51 @@ def test_check_run_evoef_executes():
         + evoef_interD_total_calc
     )
 
-    # Testing that the EvoEF2 total energy field corresponds to
+    # Testing that the EvoEF2 ref total energy field corresponds to
     # summing all the energy fields (rounded to 1 decimal place)
     np.testing.assert_almost_equal(
         evoef_results.ref_total, evoef_ref_total_calc, decimal=1
     )
+
+    # Testing that the EvoEF2 intraR total energy field corresponds to
+    # summing the energy fields (rounded to 1 decimal place)
     np.testing.assert_almost_equal(
         evoef_results.intraR_total, evoef_intraR_total_calc, decimal=1
     )
+
+    # Testing that the EvoEF2 interS total energy field corresponds to
+    # summing the energy fields (rounded to 1 decimal place)
     np.testing.assert_almost_equal(
         evoef_results.interS_total, evoef_interS_total_calc, decimal=1
     )
+
+    # Testing that the EvoEF2 interD energy field corresponds to
+    # summing the energy fields (rounded to 1 decimal place)
     np.testing.assert_almost_equal(
         evoef_results.interD_total, evoef_interD_total_calc, decimal=1
     )
+
+    # Testing that the EvoEF2 total energy field corresponds to
+    # summing all the energy fields (rounded to 1 decimal place)
     np.testing.assert_almost_equal(evoef_results.total, evoef_total_calc, decimal=1)
+
+    # Querying the data base to get the field names in the
+    # EvoEF2Results table
+    schema = graphene.Schema(query=Query)
+    result = schema.execute(
+        """{  __type(name: "EvoEF2Results") {name fields { name } } }"""
+    )
+
+    # Extracting the results of this query and converting from camel case
+    # to snake case
+    db_column_list = []
+    for i in result.data["__type"]["fields"]:
+        db_column_list.append(re.sub(r"(?<!^)(?=[A-Z])", "_", i["name"]).lower())
+
+    # Removing some extra fields (id, state, state_id)
+    db_column_list = [a for a in db_column_list if a not in ["id", "state", "state_id"]]
+
+    # Checking that the fields from the evoef_results object
+    # are the same as the fields in the EvoEF2Results table
+    # in the data base
+    assert set(evoef_results.__dict__.keys()) & set(db_column_list)
