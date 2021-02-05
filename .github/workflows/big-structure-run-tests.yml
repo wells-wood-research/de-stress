@@ -22,6 +22,6 @@ jobs:
     - name: Build and test `big-structure`.
       run: |
         cd big-structure/
-        cp env-default .env
+        cp .env-testing .env
         docker build -t big-structure .
         docker run --rm big-structure poetry run pytest
