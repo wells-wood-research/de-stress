@@ -74,7 +74,7 @@ function connect_to_server(app) {
   };
 
   sessionCommsSocket.onmessage = function (event) {
-    app.ports.incoming.send(JSON.parse(event.data));
+    app.ports.incoming.send(JSON.parse(event.data.replace(/\bNaN\b/g, "null")));
   };
 
   sessionCommsSocket.onclose = function (event) {
