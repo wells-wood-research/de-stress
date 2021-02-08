@@ -73,6 +73,30 @@ def find_disallowed_monomers(assembly: ampal.Assembly) -> Optional[Set[str]]:
     return disallowed_monomers
 
 
+def convert_string_to_float(input_string: str) -> Optional[float]:
+
+    """Defining a function to convert a string to a float while handling the
+    error when the string cannot be converted.
+
+    Parameters
+    ----------
+    input_string: str
+        Input string to be converted to a float.
+
+    Returns
+    -------
+    output_float: Optional[float]
+        Output float if the conversion is successful. None if the conversion has failed.
+    """
+
+    try:
+        output_float = float(input_string)
+    except ValueError:
+        output_float = None
+
+    return output_float
+
+
 # }}}
 # {{{ Jpred Submission
 
@@ -320,34 +344,118 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
+
+    try:
         evoef2_stdout.check_returncode()
 
-    # Splitting the result string at a substring with 92 #'s
-    # then splitting the string at "Structure energy details:\n"
-    # which can separate the EvoEF2 log information from the actual structure
-    # energy details
-    log_info, _, result_string = (
-        evoef2_stdout.stdout.decode()
-        .partition("#" * 92)[2]
-        .partition("Structure energy details:\n")
-    )
+        # Splitting the result string at a substring with 92 #'s
+        # then splitting the string at "Structure energy details:\n"
+        # which can separate the EvoEF2 log information from the actual structure
+        # energy details
+        log_info, _, result_string = (
+            evoef2_stdout.stdout.decode()
+            .partition("#" * 92)[2]
+            .partition("Structure energy details:\n")
+        )
 
-    # Finding lines with key-value pairs seperated by either ":" or "=" then creating
-    # a dictionary from the pairs.
-    energy_values = {
-        k.strip(): float(v.strip())
-        for k, v in re.findall(r"(.+)[=:](.+)", result_string)
+        # Finding lines with key-value pairs seperated by either ":" or "=" then creating
+        # a dictionary from the pairs.
+        energy_values = {
+            k.strip(): convert_string_to_float(v.strip())
+            for k, v in re.findall(r"(.+)[=:](.+)", result_string)
+        }
+
+        # Renaming some of the keys in the output dictionary
+        energy_values["total"] = energy_values.pop("Total")
+        energy_values["time_spent"] = energy_values.pop("Time spent")
+
+    except subprocess.CalledProcessError:
+
+        log_info = evoef2_stdout.stdout.decode()
+
+        # Creating a list of the energy value fields
+        energy_field_list = [
+            "reference_ALA",
+            "reference_CYS",
+            "reference_ASP",
+            "reference_GLU",
+            "reference_PHE",
+            "reference_GLY",
+            "reference_HIS",
+            "reference_ILE",
+            "reference_LYS",
+            "reference_LEU",
+            "reference_MET",
+            "reference_ASN",
+            "reference_PRO",
+            "reference_GLN",
+            "reference_ARG",
+            "reference_SER",
+            "reference_THR",
+            "reference_VAL",
+            "reference_TRP",
+            "reference_TYR",
+            "intraR_vdwatt",
+            "intraR_vdwrep",
+            "intraR_electr",
+            "intraR_deslvP",
+            "intraR_deslvH",
+            "intraR_hbscbb_dis",
+            "intraR_hbscbb_the",
+            "intraR_hbscbb_phi",
+            "aapropensity",
+            "ramachandran",
+            "dunbrack",
+            "interS_vdwatt",
+            "interS_vdwrep",
+            "interS_electr",
+            "interS_deslvP",
+            "interS_deslvH",
+            "interS_ssbond",
+            "interS_hbbbbb_dis",
+            "interS_hbbbbb_the",
+            "interS_hbbbbb_phi",
+            "interS_hbscbb_dis",
+            "interS_hbscbb_the",
+            "interS_hbscbb_phi",
+            "interS_hbscsc_dis",
+            "interS_hbscsc_the",
+            "interS_hbscsc_phi",
+            "interD_vdwatt",
+            "interD_vdwrep",
+            "interD_electr",
+            "interD_deslvP",
+            "interD_deslvH",
+            "interD_ssbond",
+            "interD_hbbbbb_dis",
+            "interD_hbbbbb_the",
+            "interD_hbbbbb_phi",
+            "interD_hbscbb_dis",
+            "interD_hbscbb_the",
+            "interD_hbscbb_phi",
+            "interD_hbscsc_dis",
+            "interD_hbscsc_the",
+            "interD_hbscsc_phi",
+            "total",
+            "time_spent",
+        ]
+
+        # Setting all the energy values to None
+        energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
+
+    # Returning any errors
+    error_info = {
+        "stderr": evoef2_stdout.stderr.decode(),
+        "returncode": evoef2_stdout.returncode,
     }
 
     # There should be 63 energy components
     assert len(energy_values) == 63
 
-    # Renaming some of the keys in the output dictionary
-    energy_values["total"] = energy_values.pop("Total")
-    energy_values["time_spent"] = energy_values.pop("Time spent")
-
     # Creating an EvoEF2 object by unpacking the output dictionary
-    evoef2_output = EvoEF2Output(log_info=log_info, **energy_values)
+    evoef2_output = EvoEF2Output(
+        log_info=log_info, error_info=error_info, **energy_values
+    )
 
     return evoef2_output
 
@@ -407,21 +515,36 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
 
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
+
+    # Setting the stdout as the log info
+    log_info = dfire2_stdout.stdout.decode()
+
+    # Capturing any error information
+    error_info = error_info = {
+        "stderr": dfire2_stdout.stderr.decode(),
+        "returncode": dfire2_stdout.returncode,
+    }
+
+    try:
         dfire2_stdout.check_returncode()
 
-        # Decoding the stdout
-        stdout_decoded = dfire2_stdout.stdout.decode()
-
-        # Setting the stdout as the log info
-        dfire2_log_info = stdout_decoded
-
         # Extracting the energy value from the output
-        dfire2_total_energy = float(stdout_decoded.partition(" ")[2].strip())
-
-        # Creating the DFIRE2Output object
-        dfire2_output = DFIRE2Output(
-            log_info=dfire2_log_info, total=dfire2_total_energy
+        dfire2_total_energy = convert_string_to_float(
+            input_string=dfire2_stdout.stdout.decode().partition(" ")[2].strip()
         )
+
+    except subprocess.CalledProcessError:
+
+        # Setting total energy to None if there has been
+        # an error
+        dfire2_total_energy = None
+
+    # Creating the DFIRE2Output object
+    dfire2_output = DFIRE2Output(
+        log_info=log_info,
+        error_info=error_info,
+        total=dfire2_total_energy,
+    )
 
     return dfire2_output
 

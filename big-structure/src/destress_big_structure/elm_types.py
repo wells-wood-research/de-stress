@@ -30,73 +30,74 @@ class SequenceInfo:
 @dataclass(eq=False)
 class EvoEF2Output:
     log_info: str
-    reference_ALA: float
-    reference_CYS: float
-    reference_ASP: float
-    reference_GLU: float
-    reference_PHE: float
-    reference_GLY: float
-    reference_HIS: float
-    reference_ILE: float
-    reference_LYS: float
-    reference_LEU: float
-    reference_MET: float
-    reference_ASN: float
-    reference_PRO: float
-    reference_GLN: float
-    reference_ARG: float
-    reference_SER: float
-    reference_THR: float
-    reference_VAL: float
-    reference_TRP: float
-    reference_TYR: float
-    intraR_vdwatt: float
-    intraR_vdwrep: float
-    intraR_electr: float
-    intraR_deslvP: float
-    intraR_deslvH: float
-    intraR_hbscbb_dis: float
-    intraR_hbscbb_the: float
-    intraR_hbscbb_phi: float
-    aapropensity: float
-    ramachandran: float
-    dunbrack: float
-    interS_vdwatt: float
-    interS_vdwrep: float
-    interS_electr: float
-    interS_deslvP: float
-    interS_deslvH: float
-    interS_ssbond: float
-    interS_hbbbbb_dis: float
-    interS_hbbbbb_the: float
-    interS_hbbbbb_phi: float
-    interS_hbscbb_dis: float
-    interS_hbscbb_the: float
-    interS_hbscbb_phi: float
-    interS_hbscsc_dis: float
-    interS_hbscsc_the: float
-    interS_hbscsc_phi: float
-    interD_vdwatt: float
-    interD_vdwrep: float
-    interD_electr: float
-    interD_deslvP: float
-    interD_deslvH: float
-    interD_ssbond: float
-    interD_hbbbbb_dis: float
-    interD_hbbbbb_the: float
-    interD_hbbbbb_phi: float
-    interD_hbscbb_dis: float
-    interD_hbscbb_the: float
-    interD_hbscbb_phi: float
-    interD_hbscsc_dis: float
-    interD_hbscsc_the: float
-    interD_hbscsc_phi: float
-    total: float
-    time_spent: float
-    ref_total: float = field(init=False)
-    intraR_total: float = field(init=False)
-    interS_total: float = field(init=False)
-    interD_total: float = field(init=False)
+    error_info: Dict
+    reference_ALA: Optional[float]
+    reference_CYS: Optional[float]
+    reference_ASP: Optional[float]
+    reference_GLU: Optional[float]
+    reference_PHE: Optional[float]
+    reference_GLY: Optional[float]
+    reference_HIS: Optional[float]
+    reference_ILE: Optional[float]
+    reference_LYS: Optional[float]
+    reference_LEU: Optional[float]
+    reference_MET: Optional[float]
+    reference_ASN: Optional[float]
+    reference_PRO: Optional[float]
+    reference_GLN: Optional[float]
+    reference_ARG: Optional[float]
+    reference_SER: Optional[float]
+    reference_THR: Optional[float]
+    reference_VAL: Optional[float]
+    reference_TRP: Optional[float]
+    reference_TYR: Optional[float]
+    intraR_vdwatt: Optional[float]
+    intraR_vdwrep: Optional[float]
+    intraR_electr: Optional[float]
+    intraR_deslvP: Optional[float]
+    intraR_deslvH: Optional[float]
+    intraR_hbscbb_dis: Optional[float]
+    intraR_hbscbb_the: Optional[float]
+    intraR_hbscbb_phi: Optional[float]
+    aapropensity: Optional[float]
+    ramachandran: Optional[float]
+    dunbrack: Optional[float]
+    interS_vdwatt: Optional[float]
+    interS_vdwrep: Optional[float]
+    interS_electr: Optional[float]
+    interS_deslvP: Optional[float]
+    interS_deslvH: Optional[float]
+    interS_ssbond: Optional[float]
+    interS_hbbbbb_dis: Optional[float]
+    interS_hbbbbb_the: Optional[float]
+    interS_hbbbbb_phi: Optional[float]
+    interS_hbscbb_dis: Optional[float]
+    interS_hbscbb_the: Optional[float]
+    interS_hbscbb_phi: Optional[float]
+    interS_hbscsc_dis: Optional[float]
+    interS_hbscsc_the: Optional[float]
+    interS_hbscsc_phi: Optional[float]
+    interD_vdwatt: Optional[float]
+    interD_vdwrep: Optional[float]
+    interD_electr: Optional[float]
+    interD_deslvP: Optional[float]
+    interD_deslvH: Optional[float]
+    interD_ssbond: Optional[float]
+    interD_hbbbbb_dis: Optional[float]
+    interD_hbbbbb_the: Optional[float]
+    interD_hbbbbb_phi: Optional[float]
+    interD_hbscbb_dis: Optional[float]
+    interD_hbscbb_the: Optional[float]
+    interD_hbscbb_phi: Optional[float]
+    interD_hbscsc_dis: Optional[float]
+    interD_hbscsc_the: Optional[float]
+    interD_hbscsc_phi: Optional[float]
+    total: Optional[float]
+    time_spent: Optional[float]
+    ref_total: Optional[float] = field(init=False)
+    intraR_total: Optional[float] = field(init=False)
+    interS_total: Optional[float] = field(init=False)
+    interD_total: Optional[float] = field(init=False)
 
     # Redefining the __repr__ method to return the total energy value from EvoEF2
     def __repr__(self):
@@ -116,25 +117,39 @@ class EvoEF2Output:
 
     # Calculating sub totals
     def __post_init__(self):
-        self.ref_total = sum(
-            (v for k, v in self.__dict__.items() if k.startswith("reference"))
-        )
-        self.intraR_total = sum(
-            (v for k, v in self.__dict__.items() if k.startswith("intraR"))
-        )
-        self.interS_total = sum(
-            (v for k, v in self.__dict__.items() if k.startswith("interS"))
-        )
-        self.interD_total = sum(
-            (v for k, v in self.__dict__.items() if k.startswith("interD"))
-        )
+
+        if list(self.__dict__.values()).count(None) == len(self.__dict__.values()) - 2:
+
+            self.ref_total = None
+            self.intraR_total = None
+            self.interS_total = None
+            self.interD_total = None
+
+        else:
+
+            self.ref_total = sum(
+                (v for k, v in self.__dict__.items() if k.startswith("reference"))
+            )
+
+            self.intraR_total = sum(
+                (v for k, v in self.__dict__.items() if k.startswith("intraR"))
+            )
+
+            self.interS_total = sum(
+                (v for k, v in self.__dict__.items() if k.startswith("interS"))
+            )
+
+            self.interD_total = sum(
+                (v for k, v in self.__dict__.items() if k.startswith("interD"))
+            )
 
 
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass()
 class DFIRE2Output:
     log_info: str
-    total: float
+    error_info: Dict
+    total: Optional[float]
 
     # Redefining the __repr__ method to return the total energy value from DFIRE2
     def __repr__(self):
