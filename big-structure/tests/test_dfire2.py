@@ -7,6 +7,7 @@ import re
 
 from destress_big_structure.analysis import run_dfire2
 from destress_big_structure.settings import DFIRE2_BINARY_PATH
+from destress_big_structure.elm_types import DFIRE2Output
 from destress_big_structure.schema import Query
 from destress_big_structure.big_structure_models import big_structure_db_session
 
@@ -27,15 +28,24 @@ def test_check_run_dfire2_executes():
 
     # Testing that the decoded results have the correct number of fields
     decoded_results = json.loads(results_json_str)
-    assert len(decoded_results) == 2
+    assert len(decoded_results) == 3
 
     # DFIRE2 results obtained from running the binary file
     # directly in the command line on the pdb file 1aac.pdb
-    test_dfire2_total = -161.6
+    test_dfire2_results = DFIRE2Output(
+        log_info="/tmp/tmpmen_yc50 -161.6\n",
+        error_info={"stderr": "", "returncode": 0},
+        total=-161.6,
+    )
 
     # Comparing the returned DFIRE2 results from the results obtained from directly running
     # the binary file in the command line (test_dfire2_results)
-    assert dfire2_results.total == test_dfire2_total
+    # Only checking error_info and total as the tmp file name
+    # in log_info might change with each run
+    assert (
+        dfire2_results.error_info == test_dfire2_results.error_info
+        and dfire2_results.total == test_dfire2_results.total
+    )
 
     # Querying the data base to get the field names in the
     # DFIRE2Results table
@@ -56,4 +66,4 @@ def test_check_run_dfire2_executes():
     # Checking that the fields from the dfire2_results object
     # are the same as the fields in the DFIRE2Results table
     # in the data base
-    assert set(dfire2_results.__dict__.keys()) & set(db_column_list)
+    assert set(dfire2_results.__dict__.keys()) == set(db_column_list)
