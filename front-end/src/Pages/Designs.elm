@@ -8,12 +8,14 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Input as Input
 import Element.Keyed as Keyed
 import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
 import Html
 import Html.Attributes as HAtt
+import Set
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design exposing (Design)
@@ -68,6 +70,10 @@ type alias Model =
     -- , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
+    , selectedUuids : Set.Set String
+    , tagString : String
+    , filterTags : Set.Set String
+    , displaySettings : { controlPanel : Bool, overviewPlots : Bool }
     }
 
 
@@ -107,6 +113,10 @@ init shared _ =
             --, mOverviewInfo = Nothing
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
+            , selectedUuids = Set.empty
+            , tagString = ""
+            , filterTags = Set.empty
+            , displaySettings = { controlPanel = False, overviewPlots = False }
             }
     in
     ( model
@@ -141,6 +151,33 @@ type Msg
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
+    | ToggleSectionVisibility HideableSection
+    | SelectedDesign String Bool
+    | UpdateTagString String
+    | AddTags (Set.Set String) String
+    | CancelSelection
+    | UpdateFilterTags FilterTagsOption
+
+
+type HideableSection
+    = OverviewPlots
+    | ControlPanel
+
+
+hideableSectionToString : HideableSection -> String
+hideableSectionToString hideableSection =
+    case hideableSection of
+        OverviewPlots ->
+            "Overview Plots"
+
+        ControlPanel ->
+            "Control Panel"
+
+
+type FilterTagsOption
+    = AddOrRemove String
+    | RemoveAll
+    | AddAll
 
 
 
@@ -250,6 +287,7 @@ update msg model =
                             , deleteStatus = Buttons.initDangerStatus
                             , metricsJobStatus = jobStatus
                             , mMeetsActiveSpecification = Nothing
+                            , tags = Set.empty
                             }
                     in
                     ( { model
@@ -353,6 +391,95 @@ update msg model =
                 (Route.Designs__Uuid_String { uuid = uuid })
             )
 
+        ToggleSectionVisibility section ->
+            let
+                displaySettings =
+                    model.displaySettings
+            in
+            ( { model
+                | displaySettings =
+                    case section of
+                        OverviewPlots ->
+                            { displaySettings
+                                | overviewPlots =
+                                    not displaySettings.overviewPlots
+                            }
+
+                        ControlPanel ->
+                            { displaySettings
+                                | controlPanel =
+                                    not displaySettings.controlPanel
+                            }
+              }
+            , Cmd.none
+            )
+
+        SelectedDesign uuid selected ->
+            ( if selected then
+                { model | selectedUuids = Set.insert uuid model.selectedUuids }
+
+              else
+                { model | selectedUuids = Set.remove uuid model.selectedUuids }
+            , Cmd.none
+            )
+
+        UpdateTagString tagString ->
+            ( { model | tagString = tagString }
+            , Cmd.none
+            )
+
+        AddTags selectedUuids tagString ->
+            let
+                newTags =
+                    stringToTags tagString
+            in
+            ( { model
+                | designs =
+                    Dict.map
+                        (\k storedDesign ->
+                            if Set.member k selectedUuids then
+                                Design.mapStoredDesign
+                                    (\d -> { d | tags = Set.union d.tags newTags })
+                                    storedDesign
+
+                            else
+                                storedDesign
+                        )
+                        model.designs
+                , selectedUuids = Set.empty
+                , tagString = ""
+              }
+            , Cmd.none
+            )
+
+        CancelSelection ->
+            ( { model
+                | selectedUuids = Set.empty
+                , tagString = ""
+              }
+            , Cmd.none
+            )
+
+        UpdateFilterTags option ->
+            ( { model
+                | filterTags =
+                    case option of
+                        AddOrRemove tag ->
+                            if Set.member tag model.filterTags then
+                                Set.remove tag model.filterTags
+
+                            else
+                                Set.insert tag model.filterTags
+
+                        RemoveAll ->
+                            Set.empty
+
+                        AddAll ->
+                            getAllTags model.designs
+              }
+            , Cmd.none
+            )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -425,6 +552,7 @@ makeOverViewSpecCmd model =
                             --         )
                             -- )
                             model.mSelectedSpecification
+                            model.selectedUuids
                         )
                     |> List.indexedMap Tuple.pair
                     |> List.reverse
@@ -461,10 +589,10 @@ view model =
 
 
 bodyView : Model -> Element Msg
-bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
+bodyView model =
     let
         designCardData =
-            designs
+            model.designs
                 |> Dict.toList
                 |> List.map
                     (\( k, v ) ->
@@ -482,14 +610,15 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                         --             >> .aggregateData
                         --         )
                         -- )
-                        mSelectedSpecification
+                        model.mSelectedSpecification
+                        model.selectedUuids
                     )
     in
     el [ centerX, width <| maximum 800 <| fill ] <|
         column [ spacing 15, width fill ]
             [ let
                 ( buttonLabel, isActive ) =
-                    case loadingState of
+                    case model.loadingState of
                         LoadingFiles total remaining ->
                             ( "Loaded "
                                 ++ String.fromInt remaining
@@ -512,7 +641,7 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                     , Buttons.dangerousButton
                         { label = text "Delete All"
                         , confirmText = "Are you sure you want to delete ALL design?"
-                        , status = deleteAllStatus
+                        , status = model.deleteAllStatus
                         , dangerousMsg = DeleteAllDesigns
                         }
                     ]
@@ -525,14 +654,76 @@ bodyView { designs, mSelectedSpecification, loadingState, deleteAllStatus } =
                     column
                         [ spacing 10, width fill ]
                         [ overviewPlots
+                            |> hideableSectionView model.displaySettings.overviewPlots
+                                OverviewPlots
+                        , controlPanel model
+                            |> hideableSectionView model.displaySettings.controlPanel
+                                ControlPanel
+                        , if Set.isEmpty model.selectedUuids then
+                            none
+
+                          else
+                            selectedCommandsView model.selectedUuids model.tagString
 
                         -- model.overviewOptionDropDown
                         -- designCardData
                         , designCardsView
-                            mSelectedSpecification
+                            model.filterTags
+                            model.mSelectedSpecification
                             designCardData
                         ]
             ]
+
+
+hideableSectionView : Bool -> HideableSection -> Element Msg -> Element Msg
+hideableSectionView isVisible sectionType sectionView =
+    if isVisible then
+        column []
+            [ el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+                (text <| hideableSectionToString sectionType ++ " vv")
+            , el [ padding 10 ] sectionView
+            ]
+
+    else
+        el [ Events.onClick <| ToggleSectionVisibility sectionType ]
+            (text <| hideableSectionToString sectionType ++ " >>")
+
+
+controlPanel : Model -> Element Msg
+controlPanel model =
+    let
+        allTags =
+            getAllTags model.designs
+    in
+    column []
+        [ if Set.isEmpty allTags then
+            paragraph []
+                [ text <|
+                    ("No designs are tagged, select designs in order to tag them. "
+                        ++ "This will help you keep your designs organised."
+                    )
+                ]
+
+          else
+            allTagsView
+                { tags = getAllTags model.designs
+                , filterTags = model.filterTags
+                }
+        ]
+
+
+allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
+allTagsView { tags, filterTags } =
+    tags
+        |> Set.toList
+        |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
+        |> (++)
+            [ text "Filter by Tag"
+            , filterNoneTag { filterTags = filterTags, allTags = tags }
+            , filterAllTag { filterTags = filterTags, allTags = tags }
+            , text "|"
+            ]
+        |> wrappedRow [ spacing 10 ]
 
 
 type alias DesignCardData =
@@ -540,15 +731,17 @@ type alias DesignCardData =
     , designStub : Design.DesignStub
     , mMeetsSpecification :
         Maybe Bool
+    , selected : Bool
     }
 
 
 createDesignCardData :
     Maybe Metrics.AggregateData
     -> Maybe Specification
+    -> Set.Set String
     -> ( String, Design.DesignStub )
     -> DesignCardData
-createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
+createDesignCardData mAggregateData mSpecification selectedUuids ( uuidString, designStub ) =
     { uuidString = uuidString
     , designStub = designStub
     , mMeetsSpecification =
@@ -561,6 +754,7 @@ createDesignCardData mAggregateData mSpecification ( uuidString, designStub ) =
 
             _ ->
                 Nothing
+    , selected = Set.member uuidString selectedUuids
     }
 
 
@@ -606,58 +800,27 @@ partitionDesignCardData remainingData partitionedData =
             partitionDesignCardData rest newPartitioned
 
 
-designCard :
-    { uuidString : String
-    , designStub : Design.DesignStub
-    , mMeetsSpecification :
-        Maybe Bool
-    }
-    -> Element Msg
-designCard { uuidString, designStub, mMeetsSpecification } =
-    row
-        [ mouseOver [ Background.color Style.colorPalette.c4 ]
-        , width fill
-        , Background.color Style.colorPalette.c5
-        , case mMeetsSpecification of
-            Nothing ->
-                Border.color Style.colorPalette.c5
-
-            Just False ->
-                Border.color Style.colorPalette.red
-
-            Just True ->
-                Border.color Style.colorPalette.c3
-        , Border.width 4
-        , Border.rounded 10
-        ]
-        [ column
-            [ padding 10
-            , pointer
-            , width fill
-            , DesignDetails uuidString
-                |> Events.onClick
-            ]
-            [ Style.h2 <| text designStub.name
-            , paragraph []
-                [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
-                    |> text
-                ]
-            ]
-        , el [ alignRight, padding 10 ] <|
-            Buttons.dangerousButton
-                { label = Style.featherIconToElmUi FeatherIcons.trash2
-                , confirmText = "Are you sure you want to delete this design?"
-                , status = designStub.deleteStatus
-                , dangerousMsg = DeleteDesign uuidString
-                }
-        ]
-
-
-designCardsView : Maybe Specification -> List DesignCardData -> Element Msg
-designCardsView mSelectedSpecification designCardData =
+designCardsView : Set.Set String -> Maybe Specification -> List DesignCardData -> Element Msg
+designCardsView filterTags mSelectedSpecification allDesignCardData =
     let
         cardContainer =
             column [ spacing 10, width fill ]
+
+        designCardData =
+            List.filter
+                (\{ designStub } ->
+                    if Set.isEmpty filterTags then
+                        True
+
+                    else if Set.isEmpty designStub.tags then
+                        True
+
+                    else
+                        Set.diff designStub.tags filterTags
+                            |> Set.isEmpty
+                            |> not
+                )
+                allDesignCardData
     in
     case mSelectedSpecification of
         Just _ ->
@@ -672,22 +835,185 @@ designCardsView mSelectedSpecification designCardData =
             column [ spacing 15, width fill ]
                 [ Style.h2 <| text "Meets Specification"
                 , meetsSpecification
-                    |> List.map designCard
+                    |> List.map designCardView
                     |> cardContainer
                 , Style.h2 <| text "Failed to Meet Specification"
                 , failedSpecification
-                    |> List.map designCard
+                    |> List.map designCardView
                     |> cardContainer
                 , Style.h2 <| text "No Metrics Available"
                 , noMetrics
-                    |> List.map designCard
+                    |> List.map designCardView
                     |> cardContainer
                 ]
 
         Nothing ->
             designCardData
-                |> List.map designCard
+                |> List.map designCardView
                 |> cardContainer
+
+
+designCardView :
+    { uuidString : String
+    , designStub : Design.DesignStub
+    , mMeetsSpecification :
+        Maybe Bool
+    , selected : Bool
+    }
+    -> Element Msg
+designCardView { uuidString, designStub, mMeetsSpecification, selected } =
+    row
+        [ mouseOver [ Background.color Style.colorPalette.c4 ]
+        , spacing 10
+        , width fill
+        , Background.color Style.colorPalette.c5
+        , case mMeetsSpecification of
+            Nothing ->
+                Border.color Style.colorPalette.c5
+
+            Just False ->
+                Border.color Style.colorPalette.red
+
+            Just True ->
+                Border.color Style.colorPalette.c3
+        , Border.width 4
+        , Border.rounded 10
+        ]
+        [ Input.checkbox
+            [ alignLeft
+            , padding 5
+            , width <| px 10
+            ]
+            { onChange = SelectedDesign uuidString
+
+            -- TODO Change this
+            , icon = Input.defaultCheckbox
+            , checked = selected
+            , label = Input.labelHidden "Select Design"
+            }
+        , column
+            [ padding 10
+            , spacing 5
+            , width fill
+            ]
+            [ column
+                [ pointer
+                , width fill
+                , DesignDetails uuidString
+                    |> Events.onClick
+                ]
+                [ Style.h2 <| text designStub.name
+                , paragraph []
+                    [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
+                        |> text
+                    ]
+                ]
+            , if Set.isEmpty designStub.tags then
+                none
+
+              else
+                wrappedRow [ spacing 5 ]
+                    (text "Tags:"
+                        :: (Set.toList designStub.tags
+                                |> List.map (tagView Nothing Set.empty)
+                           )
+                    )
+            ]
+        , el [ alignRight, padding 10 ] <|
+            Buttons.dangerousButton
+                { label = Style.featherIconToElmUi FeatherIcons.trash2
+                , confirmText = "Are you sure you want to delete this design?"
+                , status = designStub.deleteStatus
+                , dangerousMsg = DeleteDesign uuidString
+                }
+        ]
+
+
+filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
+filterNoneTag { filterTags, allTags } =
+    el
+        [ padding 5
+        , pointer
+        , if Set.isEmpty filterTags then
+            Background.color Style.colorPalette.c3
+
+          else
+            Background.color Style.colorPalette.c4
+        , Border.rounded 8
+        , Events.onClick (RemoveAll |> UpdateFilterTags)
+        ]
+    <|
+        text "None"
+
+
+filterAllTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
+filterAllTag { filterTags, allTags } =
+    el
+        [ padding 5
+        , pointer
+        , if filterTags == allTags then
+            Background.color Style.colorPalette.c3
+
+          else
+            Background.color Style.colorPalette.c4
+        , Border.rounded 8
+        , Events.onClick (AddAll |> UpdateFilterTags)
+        ]
+    <|
+        text "All"
+
+
+tagView : Maybe (String -> Msg) -> Set.Set String -> String -> Element Msg
+tagView mMsg filterTags tag =
+    el
+        ([ padding 5
+         , pointer
+         , if Set.member tag filterTags then
+            Background.color Style.colorPalette.c4
+
+           else
+            Background.color Style.colorPalette.c3
+         , Border.rounded 8
+         ]
+            ++ (case mMsg of
+                    Just msg ->
+                        [ Events.onClick (msg tag) ]
+
+                    Nothing ->
+                        []
+               )
+        )
+    <|
+        text tag
+
+
+selectedCommandsView : Set.Set String -> String -> Element Msg
+selectedCommandsView selectedUuids tagString =
+    wrappedRow [ spacing 10, width fill ]
+        [ Input.text []
+            { onChange = UpdateTagString
+            , text = tagString
+            , placeholder =
+                Just
+                    (Input.placeholder [] <|
+                        text "Enter new tags (comma separated)..."
+                    )
+            , label = Input.labelLeft [] <| text "Tags"
+            }
+        , Buttons.conditionalButton
+            { label = text "Ok"
+            , clickMsg = Just <| AddTags selectedUuids tagString
+            , isActive =
+                stringToTags tagString
+                    |> Set.isEmpty
+                    |> not
+            }
+        , Buttons.alwaysActiveButton
+            { label = text "Cancel"
+            , clickMsg = CancelSelection
+            , pressed = False
+            }
+        ]
 
 
 
@@ -717,8 +1043,7 @@ overviewPlots : Element msg
 overviewPlots =
     column
         [ width fill ]
-        [ Style.h3 <| text "Overview"
-        , Keyed.el [ centerX ]
+        [ Keyed.el [ centerX ]
             ( "overview"
             , Html.div
                 [ HAtt.id "overview"
@@ -786,4 +1111,27 @@ makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification 
 
 
 -- }}}
+-- }}}
+-- {{{ Utils
+
+
+stringToTags : String -> Set.Set String
+stringToTags tagString =
+    tagString
+        |> String.split ","
+        |> List.map String.trim
+        |> List.filter (String.isEmpty >> not)
+        |> Set.fromList
+
+
+getAllTags : Dict String Design.StoredDesign -> Set.Set String
+getAllTags designDict =
+    designDict
+        |> Dict.values
+        |> List.map (Design.storedDesignToStub >> .tags >> Set.toList)
+        |> List.concat
+        |> Set.fromList
+
+
+
 -- }}}
