@@ -28,13 +28,14 @@ def test_check_run_dfire2_executes():
 
     # Testing that the decoded results have the correct number of fields
     decoded_results = json.loads(results_json_str)
-    assert len(decoded_results) == 3
+    assert len(decoded_results) == 4
 
     # DFIRE2 results obtained from running the binary file
     # directly in the command line on the pdb file 1aac.pdb
     test_dfire2_results = DFIRE2Output(
         log_info="/tmp/tmpmen_yc50 -161.6\n",
-        error_info={"stderr": "", "returncode": 0},
+        error_info="",
+        return_code=0,
         total=-161.6,
     )
 
