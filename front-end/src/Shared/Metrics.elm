@@ -93,7 +93,7 @@ sequenceInfoCodec =
 type alias EvoEF2Results =
     { log_info : String
     , error_info : String
-    , return_code: Int
+    , return_code : Int
     , reference_ALA : Maybe Float
     , reference_CYS : Maybe Float
     , reference_ASP : Maybe Float
@@ -237,8 +237,11 @@ evoEF2ResultsCodec =
         |> Codec.field "interD_total" .interD_total (Codec.maybe Codec.float)
         |> Codec.buildObject
 
+
+
 -- }}}
 -- {{{ DFIRE2Results
+
 
 type alias DFIRE2Results =
     { log_info : String
@@ -246,6 +249,7 @@ type alias DFIRE2Results =
     , return_code : Int
     , total : Maybe Float
     }
+
 
 dfire2ResultsCodec : Codec DFIRE2Results
 dfire2ResultsCodec =
@@ -255,6 +259,8 @@ dfire2ResultsCodec =
         |> Codec.field "return_code" .return_code Codec.int
         |> Codec.field "total" .total (Codec.maybe Codec.float)
         |> Codec.buildObject
+
+
 
 -- }}}
 -- {{{ RefSetMetrics
