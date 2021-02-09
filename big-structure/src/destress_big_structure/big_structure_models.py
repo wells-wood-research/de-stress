@@ -113,6 +113,7 @@ class EvoEF2ResultsModel(BigStructureBase):  # type: ignore
     # EvoEF2 Output fields
     log_info = Column(String, nullable=False)
     error_info = Column(String, nullable=False)
+    return_code = Column(Integer, nullable=False)
     reference_ALA = Column(Float, nullable=True)
     reference_CYS = Column(Float, nullable=True)
     reference_ASP = Column(Float, nullable=True)
@@ -196,6 +197,7 @@ class DFIRE2ResultsModel(BigStructureBase):  # type: ignore
     # DFIRE2 Output fields
     log_info = Column(String, nullable=False)
     error_info = Column(String, nullable=False)
+    return_code = Column(Integer, nullable=False)
     total = Column(Float, nullable=True)
 
     # Parent

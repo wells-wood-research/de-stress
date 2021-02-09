@@ -443,18 +443,19 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
         # Setting all the energy values to None
         energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
 
-    # Returning any errors
-    error_info = {
-        "stderr": evoef2_stdout.stderr.decode(),
-        "returncode": evoef2_stdout.returncode,
-    }
+    # Extracting error information and the return code
+    error_info = evoef2_stdout.stderr.decode()
+    return_code = evoef2_stdout.returncode
 
     # There should be 63 energy components
     assert len(energy_values) == 63
 
     # Creating an EvoEF2 object by unpacking the output dictionary
     evoef2_output = EvoEF2Output(
-        log_info=log_info, error_info=error_info, **energy_values
+        log_info=log_info,
+        error_info=error_info,
+        return_code=return_code,
+        **energy_values,
     )
 
     return evoef2_output
@@ -519,11 +520,9 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
     # Setting the stdout as the log info
     log_info = dfire2_stdout.stdout.decode()
 
-    # Capturing any error information
-    error_info = error_info = {
-        "stderr": dfire2_stdout.stderr.decode(),
-        "returncode": dfire2_stdout.returncode,
-    }
+    # Extracting error information and the return code
+    error_info = dfire2_stdout.stderr.decode()
+    return_code = dfire2_stdout.returncode
 
     try:
         dfire2_stdout.check_returncode()
@@ -535,14 +534,14 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
 
     except subprocess.CalledProcessError:
 
-        # Setting total energy to None if there has been
-        # an error
+        # Setting total energy to None if there has been an error
         dfire2_total_energy = None
 
     # Creating the DFIRE2Output object
     dfire2_output = DFIRE2Output(
         log_info=log_info,
         error_info=error_info,
+        return_code=return_code,
         total=dfire2_total_energy,
     )
 

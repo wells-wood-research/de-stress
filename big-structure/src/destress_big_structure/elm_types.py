@@ -30,7 +30,8 @@ class SequenceInfo:
 @dataclass(eq=False)
 class EvoEF2Output:
     log_info: str
-    error_info: Dict
+    error_info: str
+    return_code: int
     reference_ALA: Optional[float]
     reference_CYS: Optional[float]
     reference_ASP: Optional[float]
@@ -148,7 +149,8 @@ class EvoEF2Output:
 @dataclass()
 class DFIRE2Output:
     log_info: str
-    error_info: Dict
+    error_info: str
+    return_code: int
     total: Optional[float]
 
     # Redefining the __repr__ method to return the total energy value from DFIRE2
