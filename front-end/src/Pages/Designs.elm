@@ -20,6 +20,7 @@ import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design exposing (Design)
 import Shared.Editable as Editable
+import Shared.Folds as Folds
 import Shared.Metrics as Metrics exposing (DesignMetrics)
 import Shared.Plots as Plots exposing (ColumnData)
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
@@ -653,12 +654,18 @@ bodyView model =
                 else
                     column
                         [ spacing 10, width fill ]
-                        [ overviewPlots
-                            |> hideableSectionView model.displaySettings.overviewPlots
-                                OverviewPlots
-                        , controlPanel model
-                            |> hideableSectionView model.displaySettings.controlPanel
-                                ControlPanel
+                        [ Folds.sectionFoldView
+                            { foldVisible = model.displaySettings.overviewPlots
+                            , title = hideableSectionToString OverviewPlots
+                            , toggleMsg = ToggleSectionVisibility OverviewPlots
+                            , contentView = overviewPlots
+                            }
+                        , Folds.sectionFoldView
+                            { foldVisible = model.displaySettings.controlPanel
+                            , title = hideableSectionToString ControlPanel
+                            , toggleMsg = ToggleSectionVisibility ControlPanel
+                            , contentView = controlPanel model
+                            }
                         , if Set.isEmpty model.selectedUuids then
                             none
 
@@ -673,20 +680,6 @@ bodyView model =
                             designCardData
                         ]
             ]
-
-
-hideableSectionView : Bool -> HideableSection -> Element Msg -> Element Msg
-hideableSectionView isVisible sectionType sectionView =
-    if isVisible then
-        column []
-            [ el [ Events.onClick <| ToggleSectionVisibility sectionType ]
-                (text <| hideableSectionToString sectionType ++ " vv")
-            , el [ padding 10 ] sectionView
-            ]
-
-    else
-        el [ Events.onClick <| ToggleSectionVisibility sectionType ]
-            (text <| hideableSectionToString sectionType ++ " >>")
 
 
 controlPanel : Model -> Element Msg
