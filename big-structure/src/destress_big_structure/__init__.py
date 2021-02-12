@@ -11,6 +11,7 @@ import gevent
 import redis
 import rq
 from rq.job import Job
+from rq.registry import FailedJobRegistry
 
 from .analysis import create_metrics_from_pdb, JpredSubmission
 from .big_structure_models import big_structure_db_session
@@ -35,6 +36,7 @@ app.debug = True
 # Job queue setup, the worker runs in the `rq_worker` container
 REDIS_CONNECTION = redis.Redis("redis", 6379)
 JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION)
+FAILED_JOBS_REGISTRY = FailedJobRegistry(queue=JOB_QUEUE)
 
 
 class ServerJobManager:
@@ -139,17 +141,22 @@ def app_comms_socket(ws):
     server_jobs: t.Dict[str, ServerJobManager] = {"RequestMetrics": []}
     while not ws.closed:
         # Check the websocket for new jobs
-        with gevent.Timeout(1, False):
+        message_string = None
+        with gevent.Timeout(2, False):
             print("Checking websocket...")
             message_string: t.Optional[str] = ws.receive()
-            print("Got something...")
 
-            # First check is message is None, seems to do this on init
-            if message_string:
-                (job_type, server_job) = process_client_message(message_string, ws)
-                server_jobs[job_type].append(server_job)
-            else:
-                print("Received empty message.")
+        # First check is message is None, seems to do this on init
+        if message_string:
+            print("Got message...")
+            (job_type, server_job) = process_client_message(message_string, ws)
+            server_jobs[job_type].append(server_job)
+
+        # Check for failed jobs
+        print("Checking failed jobs...")
+        for job_id in FAILED_JOBS_REGISTRY.get_job_ids():
+            job = Job.fetch(job_id, connection=REDIS_CONNECTION)
+            print(job_id, job.exc_info)
 
         # Update the status of existing jobs
         for s_job in (
@@ -186,9 +193,7 @@ def process_client_message(
         # This should always succeed as the job is always the submitted type
         input_pdb_string = server_job_manager.status.submitted().pdb_string
         rq_job = Job.create(
-            create_metrics_from_pdb,
-            [input_pdb_string],
-            connection=REDIS_CONNECTION,
+            create_metrics_from_pdb, [input_pdb_string], connection=REDIS_CONNECTION,
         )
         rq_job_handle = JOB_QUEUE.enqueue_job(rq_job)
         server_job_manager.rq_job_handle = rq_job_handle
