@@ -90,6 +90,8 @@ sequenceInfoCodec =
 
 type alias EvoEF2Results =
     { log_info : String
+    , error_info : String
+    , return_code : Int
     , reference_ALA : Maybe Float
     , reference_CYS : Maybe Float
     , reference_ASP : Maybe Float
@@ -163,6 +165,8 @@ evoEF2ResultsCodec : Codec EvoEF2Results
 evoEF2ResultsCodec =
     Codec.object EvoEF2Results
         |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "error_info" .error_info Codec.string
+        |> Codec.field "return_code" .return_code Codec.int
         |> Codec.field "reference_ALA" .reference_ALA (Codec.maybe Codec.float)
         |> Codec.field "reference_CYS" .reference_CYS (Codec.maybe Codec.float)
         |> Codec.field "reference_ASP" .reference_ASP (Codec.maybe Codec.float)

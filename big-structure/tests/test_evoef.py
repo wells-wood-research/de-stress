@@ -13,7 +13,7 @@ from destress_big_structure.big_structure_models import big_structure_db_session
 
 
 def test_check_run_evoef_executes():
-    test_path = pathlib.Path("tests/testing_files/1aac.pdb")
+    test_path = pathlib.Path("/app/tests/testing_files/1aac.pdb")
 
     with open(test_path) as inf:
         pdb_string = inf.read()
@@ -28,12 +28,14 @@ def test_check_run_evoef_executes():
 
     # Testing that the decoded results have the correct number of fields
     decoded_results = json.loads(results_json_str)
-    assert len(decoded_results) == 68
+    assert len(decoded_results) == 70
 
     # EvoEF2 results obtained from running the binary file
     # directly in the command line on the pdb file 1aac.pdb
     test_evoEF2_results = EvoEF2Output(
         log_info="""\n                                    EvoEF2                                                  \n  A framework for macromolecular modeling, e.g.,protein design, protein side-chain packing, \nprotein structure energy minimization, add and optimize hydrogen bonds, build mutant model, \ncalculate protein folding stability, calculate protein-protein binding free energy, etc     \n\n\n  Copyright (c) Xiaoqiang Huang (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)\n  Dept. of Computational Medicine & Bioinformatics\n  Medical School\n  University of Michigan\n############################################################################################\ncommand ComputeStability works\n\n""",
+        error_info="",
+        return_code=0,
         reference_ALA=-5.30,
         reference_CYS=-0.11,
         reference_ASP=-4.01,
