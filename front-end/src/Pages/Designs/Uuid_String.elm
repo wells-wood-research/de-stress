@@ -216,6 +216,17 @@ update msg model =
                     ( { model | pageState = Design des }
                     , Cmd.batch
                         [ Design.viewStructure des.pdbString
+                        , case
+                            ( model.mSelectedReferenceSet
+                                |> Maybe.andThen Stored.getData
+                            , WebSockets.getDesignMetrics des.metricsJobStatus
+                            )
+                          of
+                            ( Just referenceSet, Just metrics ) ->
+                                plotCommands metrics referenceSet
+
+                            _ ->
+                                Cmd.none
                         ]
                     )
 
