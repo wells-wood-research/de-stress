@@ -134,7 +134,6 @@ init shared _ =
 
             Nothing ->
                 Cmd.none
-        , makeOverViewSpecCmd model
         ]
     )
 
@@ -396,23 +395,31 @@ update msg model =
             let
                 displaySettings =
                     model.displaySettings
-            in
-            ( { model
-                | displaySettings =
-                    case section of
-                        OverviewPlots ->
-                            { displaySettings
-                                | overviewPlots =
-                                    not displaySettings.overviewPlots
-                            }
 
-                        ControlPanel ->
-                            { displaySettings
-                                | controlPanel =
-                                    not displaySettings.controlPanel
-                            }
-              }
-            , Cmd.none
+                newModel =
+                    { model
+                        | displaySettings =
+                            case section of
+                                OverviewPlots ->
+                                    { displaySettings
+                                        | overviewPlots =
+                                            not displaySettings.overviewPlots
+                                    }
+
+                                ControlPanel ->
+                                    { displaySettings
+                                        | controlPanel =
+                                            not displaySettings.controlPanel
+                                    }
+                    }
+            in
+            ( newModel
+            , case ( section, newModel.displaySettings.overviewPlots ) of
+                ( OverviewPlots, True ) ->
+                    makeOverViewSpecCmd model
+
+                _ ->
+                    Cmd.none
             )
 
         SelectedDesign uuid selected ->
