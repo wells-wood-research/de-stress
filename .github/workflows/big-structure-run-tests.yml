@@ -19,10 +19,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - with: 
+      repository: wells-wood-research/de-stress_dependencies
+      token: ${{ secrets.ACCESS_TOKEN }}
     - name: Build and test `big-structure`.
       run: |
         cd big-structure/dependencies_for_isambard/
-        curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/wells-wood-research/de-stress_dependencies/contents/EvoEF2/
+        git clone https://github.com/wells-wood-research/de-stress_dependencies.git
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
