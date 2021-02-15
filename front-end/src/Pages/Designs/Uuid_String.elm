@@ -17,6 +17,7 @@ import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design
 import Shared.Editable exposing (Editable(..))
+import Shared.Folds as Folds
 import Shared.Metrics as Metrics
 import Shared.Plots as Plots
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet)
@@ -92,6 +93,7 @@ type EvoEF2TableOption
     | InterS
     | InterD
 
+
 type HideableSection
     = EvoEF2LogInfo
 
@@ -101,7 +103,6 @@ hideableSectionToString hideableSection =
     case hideableSection of
         EvoEF2LogInfo ->
             "EvoEF2 Log Information"
-
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -699,15 +700,12 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
                         , Input.option InterD (text "InterD")
                         ]
                     }
-        
+
         logInfoBox =
             paragraph
                 [ spacing 20
                 , padding 20
                 , width fill
-                , Border.rounded 1
-                , Border.color (rgba 0 0 0 1)
-                , Border.widthXY 2 2
                 , Font.family
                     [ Font.typeface "Roboto Mono"
                     , Font.monospace
@@ -744,8 +742,12 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
                             evoef2InterDColumns
                    )
             )
-        , hideableSectionView displaySettings.evoEF2LogInfo EvoEF2LogInfo logInfoBox
-                                
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.evoEF2LogInfo
+            , title = hideableSectionToString EvoEF2LogInfo
+            , toggleMsg = ToggleSectionVisibility EvoEF2LogInfo
+            , contentView = logInfoBox
+            }
         ]
 
 
@@ -836,20 +838,6 @@ evoef2InterDColumns metrics =
     , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
     , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
     ]
-
-
-hideableSectionView : Bool -> HideableSection -> Element Msg -> Element Msg
-hideableSectionView isVisible sectionType sectionView =
-    if isVisible then
-        column []
-            [ el [ Events.onClick <| ToggleSectionVisibility sectionType ]
-                (text <| hideableSectionToString sectionType ++ " vv")
-            , el [ padding 10 ] sectionView
-            ]
-
-    else
-        el [ Events.onClick <| ToggleSectionVisibility sectionType ]
-            (text <| hideableSectionToString sectionType ++ " >>")
 
 
 referenceSetComparisonView : Element msg
