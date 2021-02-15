@@ -21,6 +21,8 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build and test `big-structure`.
       run: |
+        cd big-structure/dependencies_for_isambard/
+        curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/wells-wood-research/de-stress_dependencies/contents/EvoEF2/
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
