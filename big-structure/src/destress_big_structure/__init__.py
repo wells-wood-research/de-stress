@@ -11,7 +11,6 @@ import gevent
 import redis
 import rq
 from rq.job import Job
-from rq.registry import FailedJobRegistry
 
 from .analysis import create_metrics_from_pdb, JpredSubmission
 from .big_structure_models import big_structure_db_session
@@ -36,7 +35,8 @@ app.debug = True
 # Job queue setup, the worker runs in the `rq_worker` container
 REDIS_CONNECTION = redis.Redis("redis", 6379)
 JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION)
-FAILED_JOBS_REGISTRY = FailedJobRegistry(queue=JOB_QUEUE)
+
+# {{{ ServerJobManager
 
 
 class ServerJobManager:
@@ -78,7 +78,7 @@ class ServerJobManager:
     def status(self, new_status: ServerJobStatus):
         """Updates `self.server_job.status` and attempts to sync state with client."""
         self.server_job.status = new_status
-        if (new_status == ServerJobStatus.CANCELLED()) and (self.rq_job_handle):
+        if (new_status == ServerJobStatus.CANCELLED()) and (self.rq_job_handle):  # type: ignore
             print(f"Cancelling job {self.server_job.uuid}...")
             self.rq_job_handle.cancel()
         outgoing_message = self.out_msg_constructor(self.server_job)
@@ -130,6 +130,9 @@ class ServerJobManager:
         return
 
 
+# }}}
+
+
 @sockets.route("/app-comms")
 def app_comms_socket(ws):
     """Provides 2-way communication for the app.
@@ -139,24 +142,17 @@ def app_comms_socket(ws):
     be mapped to Python dataclasses.
     """
     server_jobs: t.Dict[str, ServerJobManager] = {"RequestMetrics": []}
+    print("Connected to client.")
     while not ws.closed:
         # Check the websocket for new jobs
         message_string = None
         with gevent.Timeout(2, False):
-            print("Checking websocket...")
             message_string: t.Optional[str] = ws.receive()
 
         # First check is message is None, seems to do this on init
         if message_string:
-            print("Got message...")
             (job_type, server_job) = process_client_message(message_string, ws)
             server_jobs[job_type].append(server_job)
-
-        # Check for failed jobs
-        print("Checking failed jobs...")
-        for job_id in FAILED_JOBS_REGISTRY.get_job_ids():
-            job = Job.fetch(job_id, connection=REDIS_CONNECTION)
-            print(job_id, job.exc_info)
 
         # Update the status of existing jobs
         for s_job in (
