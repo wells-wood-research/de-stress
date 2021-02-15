@@ -706,9 +706,6 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
                 [ spacing 20
                 , padding 20
                 , width fill
-                , Border.rounded 1
-                , Border.color (rgba 0 0 0 1)
-                , Border.widthXY 2 2
                 , Font.family
                     [ Font.typeface "Roboto Mono"
                     , Font.monospace
