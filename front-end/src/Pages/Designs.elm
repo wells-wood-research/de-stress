@@ -3,6 +3,7 @@ port module Pages.Designs exposing (Model, Msg, Params, page)
 import Biomolecules
 import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
+import Csv.Encode as CsvEncode
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
@@ -161,6 +162,7 @@ type Msg
     | AddTags (Set.Set String) String
     | CancelSelection
     | UpdateFilterTags FilterTagsOption
+    | ExportAllDesignData
 
 
 type HideableSection
@@ -508,6 +510,138 @@ update msg model =
             , Cmd.none
             )
 
+        ExportAllDesignData ->
+            let
+                designStubs : List Design.DesignStub
+                designStubs =
+                    model.designs
+                        |> Dict.values
+                        |> List.map Design.storedDesignToStub
+
+                noDataDesigns : List String
+                noDataDesigns =
+                    designStubs
+                        |> List.filterMap
+                            (\stub ->
+                                if WebSockets.metricsAvailable stub.metricsJobStatus then
+                                    Nothing
+
+                                else
+                                    Just stub.name
+                            )
+
+                csvString : String
+                csvString =
+                    designStubs
+                        |> CsvEncode.encode
+                            { encoder =
+                                CsvEncode.withFieldNames
+                                    designStubCSVEncoder
+                            , fieldSeparator = ','
+                            }
+                        |> Debug.log "CSV String"
+            in
+            ( { model
+                | loadErrors =
+                    if List.isEmpty noDataDesigns then
+                        model.loadErrors
+
+                    else
+                        (noDataDesigns
+                            |> List.intersperse ", "
+                            |> String.concat
+                            |> (++) "The following designs do not have metrics available:"
+                        )
+                            :: model.loadErrors
+              }
+            , Cmd.none
+            )
+
+
+designStubCSVEncoder : Design.DesignStub -> List ( String, String )
+designStubCSVEncoder designStub =
+    let
+        header =
+            [ ( "design name", designStub.name )
+            , ( "file name", designStub.fileName )
+            , ( "tags", String.join ":" (Set.toList designStub.tags) )
+            ]
+
+        mMetrics =
+            WebSockets.getDesignMetrics designStub.metricsJobStatus
+
+        createCompLine : Dict String Float -> String -> ( String, String )
+        createCompLine compDict label =
+            ( "composition: " ++ label
+            , Dict.get label compDict
+                |> Maybe.withDefault 0.0
+                |> String.fromFloat
+            )
+    in
+    header
+        ++ (case mMetrics of
+                Just metrics ->
+                    -- , hydrophobicFitness = Maybe Float
+                    -- , isoelectricPoint = Float
+                    -- , mass = Float
+                    -- , numOfResidues = Int
+                    -- , packingDensity = Float
+                    -- , evoEF2Results = EvoEF2Results
+                    -- }
+                    ("ACDEFGHIKLMNPQRSTVWXY"
+                        |> String.toList
+                        |> List.map String.fromChar
+                        |> List.map (createCompLine metrics.composition)
+                    )
+                        ++ [ ( "hydrophobic fitness"
+                             , Maybe.map String.fromFloat metrics.hydrophobicFitness
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "isoelectric point (pH)"
+                             , String.fromFloat metrics.isoelectricPoint
+                             )
+                           , ( "mass (da)"
+                             , String.fromFloat metrics.mass
+                             )
+                           , ( "number of residues"
+                             , String.fromInt metrics.numOfResidues
+                             )
+                           , ( "packing density"
+                             , String.fromFloat metrics.packingDensity
+                             )
+
+                           -- EvoEF2
+                           , ( "evoef2: total"
+                             , Maybe.map String.fromFloat
+                                metrics.evoEF2Results.total
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "evoef2: ref total"
+                             , Maybe.map String.fromFloat
+                                metrics.evoEF2Results.ref_total
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "evoef2: intraR total"
+                             , Maybe.map String.fromFloat
+                                metrics.evoEF2Results.intraR_total
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "evoef2: interS total"
+                             , Maybe.map String.fromFloat
+                                metrics.evoEF2Results.interS_total
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "evoef2 - interD total"
+                             , Maybe.map String.fromFloat
+                                metrics.evoEF2Results.interD_total
+                                |> Maybe.withDefault "NaN"
+                             )
+                           ]
+
+                Nothing ->
+                    []
+           )
+
 
 structureRequested : Cmd Msg
 structureRequested =
@@ -730,8 +864,23 @@ controlPanel model =
         allTags =
             getAllTags model.designs
     in
-    column []
-        [ if Set.isEmpty allTags then
+    column [ padding 10, spacing 10 ]
+        [ Style.h3 <| text "Export Design Data"
+        , wrappedRow []
+            [ Buttons.conditionalButton
+                { label = text "Export All"
+                , clickMsg = Just ExportAllDesignData
+                , isActive =
+                    case model.loadingState of
+                        LoadingFiles _ _ ->
+                            False
+
+                        Free ->
+                            True
+                }
+            ]
+        , Style.h3 <| text "Tags"
+        , if Set.isEmpty allTags then
             paragraph []
                 [ text <|
                     ("No designs are tagged, select designs in order to tag them. "
