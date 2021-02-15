@@ -8,6 +8,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import FeatherIcons
@@ -30,10 +31,9 @@ import Shared.WebSockets as WebSockets
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
-import Spa.Url as Url exposing (Url)
+import Spa.Url exposing (Url)
 import Task
 import Utils.Route exposing (navigate)
-import VegaLite
 
 
 page : Page Params Model Msg
@@ -74,7 +74,10 @@ type alias Model =
     , selectedUuids : Set.Set String
     , tagString : String
     , filterTags : Set.Set String
-    , displaySettings : { controlPanel : Bool, overviewPlots : Bool }
+    , displaySettings :
+        { controlPanel : Bool
+        , overviewPlots : Bool
+        }
     }
 
 
@@ -147,6 +150,7 @@ type Msg
     = StructuresRequested
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
+    | ClearErrors
     | GotSpecification Value
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
@@ -230,7 +234,18 @@ update msg model =
             in
             case ( model.mResourceUuid, rStructuralData ) of
                 ( Nothing, _ ) ->
-                    Debug.todo "Add error panel"
+                    ( { model
+                        | loadErrors =
+                            ("Could not generate UUID, please try refreshing your "
+                                ++ "browser. If this issue persists, please report it. "
+                                ++ "See the front page for information on contacting "
+                                ++ "the authors."
+                            )
+                                :: model.loadErrors
+                        , loadingState = loadingState
+                      }
+                    , Cmd.none
+                    )
 
                 ( _, Err (Biomolecules.PdbParseError errorString) ) ->
                     ( { model
@@ -308,6 +323,11 @@ update msg model =
                         , requestMetricsCmd
                         ]
                     )
+
+        ClearErrors ->
+            ( { model | loadErrors = [] }
+            , Cmd.none
+            )
 
         GotSpecification specificationValue ->
             let
@@ -528,7 +548,17 @@ load shared model =
             )
 
         Nothing ->
-            Debug.todo "Should I deal with this or leave to the shared view?"
+            ( { model
+                | loadErrors =
+                    ("Something has went wrong and the application has failed to "
+                        ++ "initialise. Please try refreshing your broswer. If this "
+                        ++ "error persists, please submit a bug report. See the front "
+                        ++ "page for information on how to contact the authors."
+                    )
+                        :: model.loadErrors
+              }
+            , Cmd.none
+            )
 
 
 makeOverViewSpecCmd : Model -> Cmd Msg
@@ -654,6 +684,11 @@ bodyView model =
                         }
                     ]
                 ]
+            , if List.isEmpty model.loadErrors then
+                none
+
+              else
+                errorsView model.loadErrors
             , el [ width fill ] <|
                 if List.isEmpty designCardData then
                     el [ centerX ] (text "Click \"Load\" to add models.")
@@ -724,6 +759,21 @@ allTagsView { tags, filterTags } =
             , text "|"
             ]
         |> wrappedRow [ spacing 10 ]
+
+
+errorsView : List String -> Element Msg
+errorsView errorStrings =
+    column [ padding 10, spacing 10 ] <|
+        paragraph [ Font.bold ]
+            [ text "One or more errors occurred while loading your files: "
+            ]
+            :: List.map (\es -> paragraph [] [ text <| "- " ++ es ]) errorStrings
+            ++ [ Buttons.alwaysActiveButton
+                    { label = text "Clear Errors"
+                    , clickMsg = ClearErrors
+                    , pressed = False
+                    }
+               ]
 
 
 type alias DesignCardData =
@@ -885,8 +935,6 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
             , width <| px 10
             ]
             { onChange = SelectedDesign uuidString
-
-            -- TODO Change this
             , icon = Input.defaultCheckbox
             , checked = selected
             , label = Input.labelHidden "Select Design"
@@ -930,7 +978,7 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
 
 
 filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
-filterNoneTag { filterTags, allTags } =
+filterNoneTag { filterTags } =
     el
         [ padding 5
         , pointer
