@@ -775,6 +775,8 @@ evoef2SummaryColumns metrics =
     ]
 
 
+
+
 evoef2RefColumns : Metrics.DesignMetrics -> List (Element msg)
 evoef2RefColumns metrics =
     [ createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
@@ -986,9 +988,16 @@ onePlaceFloatText =
         >> (\a -> cell a)
 
 
-createTableFloatColumn : Float -> String -> Element msg
+createTableFloatColumn : Maybe Float -> String -> Element msg
 createTableFloatColumn =
-    createTableColumn onePlaceFloatText
+    createTableColumn
+    (\a ->
+        case a of
+            Just b ->
+                onePlaceFloatText b
+            Nothing ->
+                text "--"
+    )
 
 
 
