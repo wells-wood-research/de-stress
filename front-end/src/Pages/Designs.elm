@@ -53,6 +53,9 @@ page =
 -- {{{ PORTS
 
 
+port createFile : String -> Cmd msg
+
+
 port setSpecificationForDesign : (Value -> msg) -> Sub msg
 
 
@@ -539,7 +542,6 @@ update msg model =
                                     designStubCSVEncoder
                             , fieldSeparator = ','
                             }
-                        |> Debug.log "CSV String"
             in
             ( { model
                 | loadErrors =
@@ -554,7 +556,7 @@ update msg model =
                         )
                             :: model.loadErrors
               }
-            , Cmd.none
+            , createFile csvString
             )
 
 

@@ -282,4 +282,10 @@ app.ports.vegaPlot.subscribe((plotDetails) => {
   });
 });
 // }}}
+// {{{ FileSaver
+app.ports.createFile.subscribe((fileString) => {
+  var blob = new Blob([fileString], { type: "text/plain;charset=utf-8" });
+  saveAs(blob, "design_data.csv");
+});
+// }}}
 // }}}
