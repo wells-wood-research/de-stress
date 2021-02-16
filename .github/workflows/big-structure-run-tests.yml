@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v1
       with:
         repository: wells-wood-research/de-stress_dependencies
-        token: ${{ secrets.ACCESS_TOKEN }}
+        token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
 
     - name: Cloning de-stress dependencies
       run: |
