@@ -19,13 +19,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - with: 
+    - name: Cloning de-stress dependencies
+      with:
         repository: wells-wood-research/de-stress_dependencies
         token: ${{ secrets.ACCESS_TOKEN }}
-    - name: Build and test `big-structure`.
       run: |
         cd big-structure/dependencies_for_isambard/
-        git clone https://github.com/wells-wood-research/de-stress_dependencies.git
+        git clone"https://$GITHUB\_TOKEN@github.com/wells-wood-research/de-stress_dependencies.git"
+    - uses: actions/checkout@v1
+    - name: Build and test `big-structure`.
+      run: |
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
