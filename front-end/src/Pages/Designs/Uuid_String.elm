@@ -74,7 +74,7 @@ type alias Model =
     , mSelectedReferenceSet : Maybe (Stored ReferenceSet)
     , pageState : PageState
     , evoEF2TableOption : EvoEF2TableOption
-    , displaySettings : { evoEF2LogInfo : Bool }
+    , displaySettings : DisplaySettings
     }
 
 
@@ -96,6 +96,13 @@ type EvoEF2TableOption
 
 type HideableSection
     = EvoEF2LogInfo
+    | DFIRE2LogInfo
+
+
+type alias DisplaySettings =
+    { evoEF2LogInfo : Bool
+    , dfire2LogInfo : Bool
+    }
 
 
 hideableSectionToString : HideableSection -> String
@@ -103,6 +110,9 @@ hideableSectionToString hideableSection =
     case hideableSection of
         EvoEF2LogInfo ->
             "EvoEF2 Log Information"
+
+        DFIRE2LogInfo ->
+            "DFIRE2 Log Information"
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -159,7 +169,10 @@ init shared { params } =
                             Nothing ->
                                 LoadingNoStub
                     , evoEF2TableOption = Summary
-                    , displaySettings = { evoEF2LogInfo = False }
+                    , displaySettings =
+                        { evoEF2LogInfo = False
+                        , dfire2LogInfo = False
+                        }
                     }
             in
             ( model
@@ -188,7 +201,10 @@ init shared { params } =
               , mSelectedReferenceSet = Nothing
               , pageState = AppNotRunning
               , evoEF2TableOption = Summary
-              , displaySettings = { evoEF2LogInfo = False }
+              , displaySettings =
+                    { evoEF2LogInfo = False
+                    , dfire2LogInfo = False
+                    }
               }
             , Cmd.none
             )
@@ -328,6 +344,12 @@ update msg model =
                             { displaySettings
                                 | evoEF2LogInfo =
                                     not displaySettings.evoEF2LogInfo
+                            }
+                        
+                        DFIRE2LogInfo ->
+                            { displaySettings
+                                | dfire2LogInfo =
+                                    not displaySettings.dfire2LogInfo
                             }
               }
             , Cmd.none
@@ -477,7 +499,7 @@ designDetailsView :
     -> Maybe ReferenceSet
     -> Design.Design
     -> EvoEF2TableOption
-    -> { evoEF2LogInfo : Bool }
+    -> DisplaySettings
     -> Element Msg
 designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings =
     let
@@ -565,6 +587,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                     Just designMetrics ->
                         [ basicMetrics designMetrics
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
+                        , dfire2ResultsView designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -686,7 +709,7 @@ sequenceInfoView ( chainId, sequenceInfo ) =
         ]
 
 
-evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> { evoEF2LogInfo : Bool } -> Element Msg
+evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> DisplaySettings -> Element Msg
 evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
     let
         radioInputSelection =
@@ -851,6 +874,57 @@ evoef2InterDColumns metrics =
     , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
     , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
     ]
+
+
+dfire2LogInfoSelection : Metrics.DesignMetrics -> String
+dfire2LogInfoSelection metrics =
+    if metrics.dfire2Results.return_code == 0 && metrics.dfire2Results.error_info == "" then
+        metrics.dfire2Results.log_info
+
+    else
+        metrics.dfire2Results.error_info
+
+
+dfire2ResultsView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
+dfire2ResultsView metrics displaySettings =
+    let
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text (dfire2LogInfoSelection metrics)
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <|
+            text
+                "DFIRE2 Energy Function Results"
+        , wrappedRow
+            [ centerX ]
+            [ text "Total DFIRE2 Energy: "
+            , (\mDF ->
+                case mDF of
+                    Just df ->
+                        onePlaceFloatText df
+
+                    Nothing ->
+                        text "--"
+              )
+                metrics.dfire2Results.total
+            ]
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.dfire2LogInfo
+            , title = hideableSectionToString DFIRE2LogInfo
+            , toggleMsg = ToggleSectionVisibility DFIRE2LogInfo
+            , contentView = logInfoBox
+            }
+        ]
 
 
 referenceSetComparisonView : Element msg
