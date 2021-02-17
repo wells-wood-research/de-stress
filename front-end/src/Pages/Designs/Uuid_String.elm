@@ -878,11 +878,12 @@ evoef2InterDColumns metrics =
 
 dfire2LogInfoSelection : Metrics.DesignMetrics -> String
 dfire2LogInfoSelection metrics =
-    if metrics.dfire2Results.return_code == 0 && metrics.dfire2Results.error_info == "" then
-        metrics.dfire2Results.log_info
+    case (metrics.dfire2Results.return_code, metrics.dfire2Results.error_info) of
+        (0, "") ->
+            metrics.dfire2Results.log_info
 
-    else
-        metrics.dfire2Results.error_info
+        _ ->
+            metrics.dfire2Results.error_info
 
 
 dfire2ResultsView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
