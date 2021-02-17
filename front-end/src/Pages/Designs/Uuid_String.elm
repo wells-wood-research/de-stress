@@ -909,10 +909,8 @@ dfire2ResultsView metrics displaySettings =
             [ text "Total DFIRE2 Energy: "
             , metrics.dfire2Results.total
                 |> Maybe.map onePlaceFloatText
-                -- function sig Maybe.map : (a -> b) -> Maybe a -> Maybe b
                 |> Maybe.withDefault (text "--")
 
-            -- Extracts value if Just a, but uses default if Nothing
             ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
