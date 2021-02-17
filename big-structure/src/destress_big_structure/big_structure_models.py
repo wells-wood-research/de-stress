@@ -77,6 +77,7 @@ class StateModel(BigStructureBase):  # type: ignore
 
     # Children
     evoef2_results = relationship("EvoEF2ResultsModel", uselist=False)
+    dfire2_results = relationship("DFIRE2ResultsModel", uselist=False)
     chains = relationship("ChainModel")
 
     def __repr__(self):
@@ -186,4 +187,22 @@ class EvoEF2ResultsModel(BigStructureBase):  # type: ignore
     state = relationship("StateModel", back_populates="evoef2_results")
 
     def __repr__(self):
-        return "<>"
+        return f"<EvoEF2ResultsModel: Total Energy = {self.total}>"
+
+
+class DFIRE2ResultsModel(BigStructureBase):  # type: ignore
+    __tablename__ = "dfire2_results"
+    id = Column(Integer, primary_key=True)
+
+    # DFIRE2 Output fields
+    log_info = Column(String, nullable=False)
+    error_info = Column(String, nullable=False)
+    return_code = Column(Integer, nullable=False)
+    total = Column(Float, nullable=True)
+
+    # Parent
+    state_id = Column(Integer, ForeignKey("state.id"))
+    state = relationship("StateModel", back_populates="dfire2_results")
+
+    def __repr__(self):
+        return f"<DFIRE2ResultsModel: Total Energy = {self.total}>"
