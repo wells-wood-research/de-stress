@@ -345,7 +345,7 @@ update msg model =
                                 | evoEF2LogInfo =
                                     not displaySettings.evoEF2LogInfo
                             }
-                        
+
                         DFIRE2LogInfo ->
                             { displaySettings
                                 | dfire2LogInfo =
@@ -798,8 +798,6 @@ evoef2SummaryColumns metrics =
     ]
 
 
-
-
 evoef2RefColumns : Metrics.DesignMetrics -> List (Element msg)
 evoef2RefColumns metrics =
     [ createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
@@ -908,15 +906,12 @@ dfire2ResultsView metrics displaySettings =
         , wrappedRow
             [ centerX ]
             [ text "Total DFIRE2 Energy: "
-            , (\mDF ->
-                case mDF of
-                    Just df ->
-                        onePlaceFloatText df
+            , metrics.dfire2Results.total
+                |> Maybe.map onePlaceFloatText
+                -- function sig Maybe.map : (a -> b) -> Maybe a -> Maybe b
+                |> Maybe.withDefault (text "--")
 
-                    Nothing ->
-                        text "--"
-              )
-                metrics.dfire2Results.total
+            -- Extracts value if Just a, but uses default if Nothing
             ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
@@ -1065,13 +1060,14 @@ onePlaceFloatText =
 createTableFloatColumn : Maybe Float -> String -> Element msg
 createTableFloatColumn =
     createTableColumn
-    (\a ->
-        case a of
-            Just b ->
-                onePlaceFloatText b
-            Nothing ->
-                text "--"
-    )
+        (\a ->
+            case a of
+                Just b ->
+                    onePlaceFloatText b
+
+                Nothing ->
+                    text "--"
+        )
 
 
 
