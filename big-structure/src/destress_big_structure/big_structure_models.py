@@ -187,7 +187,7 @@ class EvoEF2ResultsModel(BigStructureBase):  # type: ignore
     state = relationship("StateModel", back_populates="evoef2_results")
 
     def __repr__(self):
-        return "<>"
+        return f"<EvoEF2ResultsModel: Total Energy = {self.total}>"
 
 
 class DFIRE2ResultsModel(BigStructureBase):  # type: ignore
@@ -205,4 +205,4 @@ class DFIRE2ResultsModel(BigStructureBase):  # type: ignore
     state = relationship("StateModel", back_populates="dfire2_results")
 
     def __repr__(self):
-        return "<>"
+        return f"<DFIRE2ResultsModel: Total Energy = {self.total}>"
