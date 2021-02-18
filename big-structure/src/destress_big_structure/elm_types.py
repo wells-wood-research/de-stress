@@ -158,6 +158,42 @@ class DFIRE2Output:
         return f"<DFIRE2Output: Total Energy = {self.total}>"
 
 
+@dataclass_json()  # letter_case=LetterCase.CAMEL)
+@dataclass()
+class RosettaOutput:
+    log_info: str
+    error_info: str
+    return_code: int
+    dslf_fa13: Optional[float]
+    fa_atr: Optional[float]
+    fa_dun: Optional[float]
+    fa_elec: Optional[float]
+    fa_intra_rep: Optional[float]
+    fa_intra_sol_xover4: Optional[float]
+    fa_rep: Optional[float]
+    fa_sol: Optional[float]
+    hbond_bb_sc: Optional[float]
+    hbond_lr_bb: Optional[float]
+    hbond_sc: Optional[float]
+    hbond_sr_bb: Optional[float]
+    linear_chainbreak: Optional[float]
+    lk_ball_wtd: Optional[float]
+    omega: Optional[float]
+    overlap_chainbreak: Optional[float]
+    p_aa_pp: Optional[float]
+    pro_close: Optional[float]
+    rama_prepro: Optional[float]
+    ref: Optional[float]
+    score: Optional[float]
+    time: Optional[float]
+    total_score: Optional[float]
+    yhh_planarity: Optional[float]
+
+    # Redefining the __repr__ method to return the total energy value from Rosetta
+    def __repr__(self):
+        return f"<RosettaOutput: Total Energy = {self.total_score}>"
+
+
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
 class DesignMetrics:
@@ -171,6 +207,7 @@ class DesignMetrics:
     packing_density: float
     evoEF2_results: EvoEF2Output
     dfire2_results: DFIRE2Output
+    rosetta_results: RosettaOutput
 
 
 # }}}

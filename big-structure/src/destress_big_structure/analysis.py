@@ -6,6 +6,7 @@ import pathlib
 import subprocess
 import tempfile
 import re
+import json
 
 from bs4 import BeautifulSoup
 import ampal
@@ -13,8 +14,18 @@ import isambard.evaluation as ev
 import numpy as np
 import requests
 
-from .elm_types import DesignMetrics, EvoEF2Output, DFIRE2Output, SequenceInfo
-from destress_big_structure.settings import EVOEF2_BINARY_PATH, DFIRE2_BINARY_PATH
+from .elm_types import (
+    DesignMetrics,
+    EvoEF2Output,
+    DFIRE2Output,
+    RosettaOutput,
+    SequenceInfo,
+)
+from destress_big_structure.settings import (
+    EVOEF2_BINARY_PATH,
+    DFIRE2_BINARY_PATH,
+    ROSETTA_BINARY_PATH,
+)
 
 # {{{ Input Validation
 
@@ -247,6 +258,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         packing_density=design_mean_packing_density(design),
         evoEF2_results=run_evoef2(design.pdb, EVOEF2_BINARY_PATH),
         dfire2_results=run_dfire2(design.pdb, DFIRE2_BINARY_PATH),
+        rosetta_results=run_rosetta(design.pdb, ROSETTA_BINARY_PATH),
     )
     return design_metrics
 
@@ -535,6 +547,169 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
     )
 
     return dfire2_output
+
+
+# }}}
+# {{{ RosettaOutput
+
+
+# def run_rosetta(pdb_string: str) -> RosettaOutput:
+#     """Defining a function to run the Rosetta energy function on an input PDB file,
+#        parse the output file and return a RosettaOutput object.
+
+#     Notes
+#     -----
+#     Reference: Alford, R. F., Leaver-Fay, A., Jeliazkov, J. R., O’Meara, M. J., DiMaio, F. P., Park, H.,
+#                Shapovalov, M. V., Renfrew, P. D., Mulligan, V. K., Kappel, K., Labonte, J. W., Pacella, M. S.,
+#                Bonneau, R., Bradley, P., Dunbrack, R. L., Das, R., Baker, D., Kuhlman, B., Kortemme, T., & Gray,
+#                J. J. (2017). The Rosetta All-Atom Energy Function for Macromolecular Modeling and Design. Journal
+#                of Chemical Theory and Computation, 13(6), 3031–3048. https://doi.org/10.1021/acs.jctc.7b00125
+
+#                Chaudhury, S., Lyskov, S., & Gray, J. J. (2010). PyRosetta: a script-based interface for implementing
+#                molecular modeling algorithms using Rosetta. Bioinformatics, 26(5), 689–691.
+#                https://doi.org/10.1093/bioinformatics/btq007
+
+#     Parameters
+#     ----------
+#     pdb_file_path: str
+#         File path for the PDB file.
+#     rosetta_binary_path: str
+#         File path for the Rosetta energy function.
+
+#     Returns
+#     -------
+#     rosetta_output: RosettaOutput
+#         RosettaOutput object which contains the log and error information from the
+#         Rosetta run and the energy function output.
+#     """
+
+#     starting_directory = pathlib.Path.cwd()
+#     with tempfile.NamedTemporaryFile(mode="w") as tmp:
+#         # Changing the working directory so that Rosetta doesn't create files in the users cwd
+#         temp_folder = pathlib.Path(tmp.name).parent
+#         os.chdir(temp_folder)
+
+#         # Writing the pdb string to a temp file as input for Rosetta
+#         tmp.write(pdb_string)
+
+#         # Coverting pdb string to a pose object for Rosetta
+#         pose = pyrosetta.pose_from_pdb(tmp.name)
+
+#         # Extracting Rosetta all atom scoring function
+#         sfxn = pyrosetta.get_fa_scorefxn()
+
+#         # Scoring the pose object
+#         sfxn(pose)
+
+#         # Extracting the energy values
+#         energy_values = pose.energies().active_total_energies()
+
+#         # Change back to starting directory
+#         os.chdir(starting_directory)
+
+#         # Creating an RosettaOutput object by unpacking the output dictionary
+#         rosetta_output = RosettaOutput(
+#             log_info="",
+#             error_info="",
+#             return_code=0,
+#             **energy_values,
+#         )
+
+#     # Returning the output
+#     return rosetta_output
+
+
+def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
+    """Defining a function to run the Rosetta energy function on an input PDB file,
+       parse the output file and return a RosettaOutput object.
+
+    Notes
+    -----
+    Reference: Alford, R. F., Leaver-Fay, A., Jeliazkov, J. R., O’Meara, M. J., DiMaio, F. P., Park, H.,
+               Shapovalov, M. V., Renfrew, P. D., Mulligan, V. K., Kappel, K., Labonte, J. W., Pacella, M. S.,
+               Bonneau, R., Bradley, P., Dunbrack, R. L., Das, R., Baker, D., Kuhlman, B., Kortemme, T., & Gray,
+               J. J. (2017). The Rosetta All-Atom Energy Function for Macromolecular Modeling and Design. Journal
+               of Chemical Theory and Computation, 13(6), 3031–3048. https://doi.org/10.1021/acs.jctc.7b00125
+
+               Chaudhury, S., Lyskov, S., & Gray, J. J. (2010). PyRosetta: a script-based interface for implementing
+               molecular modeling algorithms using Rosetta. Bioinformatics, 26(5), 689–691.
+               https://doi.org/10.1093/bioinformatics/btq007
+
+    Parameters
+    ----------
+    pdb_file_path: str
+        File path for the PDB file.
+    rosetta_binary_path: str
+        File path for the Rosetta energy function.
+
+    Returns
+    -------
+    rosetta_output: RosettaOutput
+        RosettaOutput object which contains the log and error information from the
+        Rosetta run and the energy function output.
+    """
+
+    starting_directory = pathlib.Path.cwd()
+    with tempfile.TemporaryDirectory() as tmp:
+
+        # Changing working directory to the temporary folder so that Rosetta
+        # doesn't create files in the users working directory
+        os.chdir(tmp)
+
+        with tempfile.NamedTemporaryFile(mode="w") as pdb:
+
+            # Writing the pdb string to a temp file as input for Rosetta
+            pdb.write(pdb_string)
+
+            # Creating bash command
+            cmd = [
+                rosetta_binary_path,
+                "-in:file:s",
+                pdb.name,
+                "-ignore_unrecognized_res",
+                "-scorefile_format json",
+            ]
+
+            # Using subprocess to run this command and capturing the output
+            rosetta_stdout = subprocess.run(cmd, capture_output=True)
+
+        try:
+            rosetta_stdout.check_returncode()
+
+            # Opening the json file score.sc to get the energy values
+            with open("score.sc") as json_file:
+                energy_values = json.load(json_file)
+
+                # Removing decoy key that is not needed
+                energy_values.pop("decoy", None)
+
+        except subprocess.CalledProcessError:
+
+            energy_values = None
+
+    # Change back to starting directory
+    os.chdir(starting_directory)
+
+    # Extracting the log information
+    log_info = rosetta_stdout.stdout.decode()
+
+    # Extracting error information and the return code
+    error_info = rosetta_stdout.stderr.decode()
+    return_code = rosetta_stdout.returncode
+
+    # There should be 24 energy components
+    assert len(energy_values) == 24
+
+    # Creating an RosettaOutput object by unpacking the output dictionary
+    rosetta_output = RosettaOutput(
+        log_info=log_info,
+        error_info=error_info,
+        return_code=return_code,
+        **energy_values,
+    )
+
+    # Returning the output
+    return rosetta_output
 
 
 # }}}
