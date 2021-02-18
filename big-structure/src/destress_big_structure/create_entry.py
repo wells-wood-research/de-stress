@@ -18,7 +18,7 @@ from destress_big_structure.design_models import (
 )
 from destress_big_structure import analysis
 
-from .settings import EVOEF2_BINARY_PATH, DFIRE2_BINARY_PATH
+from .settings import EVOEF2_BINARY_PATH, DFIRE2_FOLDER_PATH
 
 
 def create_biounit_entry(
@@ -80,7 +80,7 @@ def create_state_entry(
 
     create_evoef2_results_entry(ampal_assembly, state_model, EVOEF2_BINARY_PATH)
 
-    create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_BINARY_PATH)
+    create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_FOLDER_PATH)
 
     return state_model
 
