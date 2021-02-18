@@ -583,13 +583,6 @@ designStubCSVEncoder designStub =
     header
         ++ (case mMetrics of
                 Just metrics ->
-                    -- , hydrophobicFitness = Maybe Float
-                    -- , isoelectricPoint = Float
-                    -- , mass = Float
-                    -- , numOfResidues = Int
-                    -- , packingDensity = Float
-                    -- , evoEF2Results = EvoEF2Results
-                    -- }
                     ("ACDEFGHIKLMNPQRSTVWXY"
                         |> String.toList
                         |> List.map String.fromChar
@@ -636,6 +629,13 @@ designStubCSVEncoder designStub =
                            , ( "evoef2 - interD total"
                              , Maybe.map String.fromFloat
                                 metrics.evoEF2Results.interD_total
+                                |> Maybe.withDefault "NaN"
+                             )
+
+                           -- DFIRE2
+                           , ( "dfire2 - total"
+                             , Maybe.map String.fromFloat
+                                metrics.dfire2Results.total
                                 |> Maybe.withDefault "NaN"
                              )
                            ]

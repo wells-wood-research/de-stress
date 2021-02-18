@@ -41,6 +41,7 @@ type alias DesignMetrics =
     , numOfResidues : Int
     , packingDensity : Float
     , evoEF2Results : EvoEF2Results
+    , dfire2Results : DFIRE2Results
     }
 
 
@@ -66,6 +67,7 @@ desMetricsCodec =
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
         |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
+        |> Codec.field "dfire2Results" .dfire2Results dfire2ResultsCodec
         |> Codec.buildObject
 
 
@@ -233,6 +235,29 @@ evoEF2ResultsCodec =
         |> Codec.field "intraR_total" .intraR_total (Codec.maybe Codec.float)
         |> Codec.field "interS_total" .interS_total (Codec.maybe Codec.float)
         |> Codec.field "interD_total" .interD_total (Codec.maybe Codec.float)
+        |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ DFIRE2Results
+
+
+type alias DFIRE2Results =
+    { log_info : String
+    , error_info : String
+    , return_code : Int
+    , total : Maybe Float
+    }
+
+
+dfire2ResultsCodec : Codec DFIRE2Results
+dfire2ResultsCodec =
+    Codec.object DFIRE2Results
+        |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "error_info" .error_info Codec.string
+        |> Codec.field "return_code" .return_code Codec.int
+        |> Codec.field "total" .total (Codec.maybe Codec.float)
         |> Codec.buildObject
 
 
