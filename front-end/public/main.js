@@ -1,6 +1,10 @@
 import { saveAs } from "file-saver-es";
 import { createStore, clear, del, get, set } from "idb-keyval";
+import { Stage } from "ngl";
+import { IntlDate } from "./ngl-web-component";
 import embed from "vega-embed";
+
+customElements.define("intl-date", IntlDate);
 
 // {{{ storage
 
@@ -259,17 +263,9 @@ app.ports.outgoing.subscribe((action) => {
 // {{{ PV
 app.ports.viewStructure.subscribe((pdbString) => {
   window.requestAnimationFrame(() => {
-    const options = {
-      width: "auto",
-      height: "auto",
-      antialias: true,
-      quality: "medium",
-    };
-    var viewer = pv.Viewer(document.getElementById("viewer"), options);
-    viewer.fitParent();
-    var structure = pv.io.pdb(pdbString);
-    viewer.fitTo(structure);
-    viewer.trace("trace", structure, { color: pv.color.byChain() });
+    var stage = new Stage("viewer");
+    var stringBlob = new Blob([pdbString], { type: "text/plain" });
+    stage.loadFile(stringBlob, { defaultRepresentation: true, ext: "pdb" });
   });
 });
 // }}}
