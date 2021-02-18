@@ -1,36 +1,29 @@
-function localizeDate(lang, year, month) {
-  const dateTimeFormat = new Intl.DateTimeFormat(lang, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+import { Stage } from "ngl";
 
-  return dateTimeFormat.format(new Date(year, month));
-}
-
-class IntlDate extends HTMLElement {
-  // things required by Custom Elements
+class NGLViewer extends HTMLElement {
   constructor() {
     super();
   }
   connectedCallback() {
-    this.setTextContent();
+    this.showStructure();
   }
-  attributeChangedCallback() {
-    this.setTextContent();
-  }
-  static get observedAttributes() {
-    return ["lang", "year", "month"];
-  }
+  // attributeChangedCallback() {
+  //   this.showStructure();
+  // }
+  // static get observedAttributes() {
+  //   return ["pdb-string"];
+  // }
 
-  // Our function to set the textContent based on attributes.
-  setTextContent() {
-    const lang = this.getAttribute("lang");
-    const year = this.getAttribute("year");
-    const month = this.getAttribute("month");
-    this.textContent = localizeDate(lang, year, month);
+  showStructure() {
+    const pdbString = this.getAttribute("pdb-string");
+
+    var stage = new Stage(this.id);
+    var stringBlob = new Blob([pdbString], { type: "text/plain" });
+    stage.loadFile(stringBlob, { ext: "pdb" }).then(function (component) {
+      component.addRepresentation("cartoon");
+      component.autoView();
+    });
   }
 }
 
-export { IntlDate };
+export { NGLViewer };

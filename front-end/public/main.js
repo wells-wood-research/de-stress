@@ -1,10 +1,9 @@
 import { saveAs } from "file-saver-es";
 import { createStore, clear, del, get, set } from "idb-keyval";
-import { Stage } from "ngl";
-import { IntlDate } from "./ngl-web-component";
+import { NGLViewer } from "./ngl-web-component";
 import embed from "vega-embed";
 
-customElements.define("intl-date", IntlDate);
+customElements.define("ngl-viewer", NGLViewer);
 
 // {{{ storage
 
@@ -259,15 +258,6 @@ app.ports.outgoing.subscribe((action) => {
   sessionCommsSocket.send(JSON.stringify(action));
 });
 
-// }}}
-// {{{ PV
-app.ports.viewStructure.subscribe((pdbString) => {
-  window.requestAnimationFrame(() => {
-    var stage = new Stage("viewer");
-    var stringBlob = new Blob([pdbString], { type: "text/plain" });
-    stage.loadFile(stringBlob, { defaultRepresentation: true, ext: "pdb" });
-  });
-});
 // }}}
 // {{{ VegaLite
 app.ports.vegaPlot.subscribe((plotDetails) => {
