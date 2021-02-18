@@ -97,11 +97,13 @@ type EvoEF2TableOption
 type HideableSection
     = EvoEF2LogInfo
     | DFIRE2LogInfo
+    | RosettaLogInfo
 
 
 type alias DisplaySettings =
     { evoEF2LogInfo : Bool
     , dfire2LogInfo : Bool
+    , rosettaLogInfo : Bool
     }
 
 
@@ -113,6 +115,9 @@ hideableSectionToString hideableSection =
 
         DFIRE2LogInfo ->
             "DFIRE2 Log Information"
+
+        RosettaLogInfo ->
+            "Rosetta Log Information"
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -172,6 +177,7 @@ init shared { params } =
                     , displaySettings =
                         { evoEF2LogInfo = False
                         , dfire2LogInfo = False
+                        , rosettaLogInfo = False   
                         }
                     }
             in
@@ -204,6 +210,7 @@ init shared { params } =
               , displaySettings =
                     { evoEF2LogInfo = False
                     , dfire2LogInfo = False
+                    , rosettaLogInfo = False   
                     }
               }
             , Cmd.none
@@ -350,6 +357,12 @@ update msg model =
                             { displaySettings
                                 | dfire2LogInfo =
                                     not displaySettings.dfire2LogInfo
+                            }
+
+                        RosettaLogInfo ->
+                            { displaySettings
+                                | rosettaLogInfo =
+                                    not displaySettings.rosettaLogInfo
                             }
               }
             , Cmd.none
@@ -588,6 +601,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         [ basicMetrics designMetrics
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
                         , dfire2ResultsView designMetrics displaySettings
+                        , rosettaResultsTableView designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -919,6 +933,60 @@ dfire2ResultsView metrics displaySettings =
             , contentView = logInfoBox
             }
         ]
+
+rosettaResultsTableView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
+rosettaResultsTableView metrics displaySettings =
+    let
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , width fill
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text metrics.rosettaResults.log_info
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <|
+            text "Rosetta Energy Function Results"
+        , wrappedRow
+            [ centerX ]
+            ( rosettaColumns metrics )
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.rosettaLogInfo
+            , title = hideableSectionToString RosettaLogInfo
+            , toggleMsg = ToggleSectionVisibility RosettaLogInfo
+            , contentView = logInfoBox
+            }
+        ]
+
+rosettaColumns : Metrics.DesignMetrics -> List (Element msg)
+rosettaColumns metrics =
+    [ createTableFloatColumn metrics.rosettaResults.dslf_fa13 "DSLF FA13"
+    , createTableFloatColumn metrics.rosettaResults.fa_atr "FA ATR"
+    , createTableFloatColumn metrics.rosettaResults.fa_dun "FA DUN"
+    , createTableFloatColumn metrics.rosettaResults.fa_elec "FA ELEC"
+    , createTableFloatColumn metrics.rosettaResults.fa_intra_rep "FA INTRA REP"
+    , createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "FA INTRA SOL XOVER4"
+    , createTableFloatColumn metrics.rosettaResults.fa_rep "FA REP"
+    , createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HBOND BB SC"
+    , createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HBOND LR BB"
+    , createTableFloatColumn metrics.rosettaResults.hbond_sc "HBOND SC"
+    , createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HBOND SR BB"
+    , createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "LK BALL WTD"
+    , createTableFloatColumn metrics.rosettaResults.omega "OMEGA"
+    , createTableFloatColumn metrics.rosettaResults.p_aa_pp "P AA PP"
+    , createTableFloatColumn metrics.rosettaResults.pro_close "PRO CLOSE"
+    , createTableFloatColumn metrics.rosettaResults.rama_prepro "RAMA PREPRO"
+    , createTableFloatColumn metrics.rosettaResults.ref "REF"
+    , createTableFloatColumn metrics.rosettaResults.total_score "TOTAL SCORE"
+    , createTableFloatColumn metrics.rosettaResults.yhh_planarity "YHH PLANARITY"
+    ]
 
 
 referenceSetComparisonView : Element msg
