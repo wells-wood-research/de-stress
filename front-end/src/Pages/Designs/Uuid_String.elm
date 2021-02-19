@@ -177,7 +177,7 @@ init shared { params } =
                     , displaySettings =
                         { evoEF2LogInfo = False
                         , dfire2LogInfo = False
-                        , rosettaLogInfo = False   
+                        , rosettaLogInfo = False
                         }
                     }
             in
@@ -210,7 +210,7 @@ init shared { params } =
               , displaySettings =
                     { evoEF2LogInfo = False
                     , dfire2LogInfo = False
-                    , rosettaLogInfo = False   
+                    , rosettaLogInfo = False
                     }
               }
             , Cmd.none
@@ -890,8 +890,8 @@ evoef2InterDColumns metrics =
 
 dfire2LogInfoSelection : Metrics.DesignMetrics -> String
 dfire2LogInfoSelection metrics =
-    case (metrics.dfire2Results.return_code, metrics.dfire2Results.error_info) of
-        (0, "") ->
+    case ( metrics.dfire2Results.return_code, metrics.dfire2Results.error_info ) of
+        ( 0, "" ) ->
             metrics.dfire2Results.log_info
 
         _ ->
@@ -924,7 +924,6 @@ dfire2ResultsView metrics displaySettings =
             , metrics.dfire2Results.total
                 |> Maybe.map onePlaceFloatText
                 |> Maybe.withDefault (text "--")
-
             ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
@@ -933,6 +932,7 @@ dfire2ResultsView metrics displaySettings =
             , contentView = logInfoBox
             }
         ]
+
 
 rosettaResultsTableView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
 rosettaResultsTableView metrics displaySettings =
@@ -956,7 +956,7 @@ rosettaResultsTableView metrics displaySettings =
             text "Rosetta Energy Function Results"
         , wrappedRow
             [ centerX ]
-            ( rosettaColumns metrics )
+            (rosettaColumns metrics)
         , Folds.sectionFoldView
             { foldVisible = displaySettings.rosettaLogInfo
             , title = hideableSectionToString RosettaLogInfo
@@ -965,27 +965,29 @@ rosettaResultsTableView metrics displaySettings =
             }
         ]
 
+
 rosettaColumns : Metrics.DesignMetrics -> List (Element msg)
 rosettaColumns metrics =
-    [ createTableFloatColumn metrics.rosettaResults.dslf_fa13 "DSLF FA13"
-    , createTableFloatColumn metrics.rosettaResults.fa_atr "FA ATR"
-    , createTableFloatColumn metrics.rosettaResults.fa_dun "FA DUN"
-    , createTableFloatColumn metrics.rosettaResults.fa_elec "FA ELEC"
-    , createTableFloatColumn metrics.rosettaResults.fa_intra_rep "FA INTRA REP"
-    , createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "FA INTRA SOL XOVER4"
-    , createTableFloatColumn metrics.rosettaResults.fa_rep "FA REP"
-    , createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HBOND BB SC"
-    , createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HBOND LR BB"
-    , createTableFloatColumn metrics.rosettaResults.hbond_sc "HBOND SC"
-    , createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HBOND SR BB"
-    , createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "LK BALL WTD"
-    , createTableFloatColumn metrics.rosettaResults.omega "OMEGA"
-    , createTableFloatColumn metrics.rosettaResults.p_aa_pp "P AA PP"
-    , createTableFloatColumn metrics.rosettaResults.pro_close "PRO CLOSE"
-    , createTableFloatColumn metrics.rosettaResults.rama_prepro "RAMA PREPRO"
-    , createTableFloatColumn metrics.rosettaResults.ref "REF"
-    , createTableFloatColumn metrics.rosettaResults.total_score "TOTAL SCORE"
-    , createTableFloatColumn metrics.rosettaResults.yhh_planarity "YHH PLANARITY"
+    [ createTableFloatColumn metrics.rosettaResults.total_score "Total"
+    , createTableFloatColumn metrics.rosettaResults.ref "Reference"
+    , createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
+    , createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
+    , createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive IntraR"
+    , createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
+    , createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
+    , createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atom"
+    , createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic IntraR"
+    , createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
+    , createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
+    , createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
+    , createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain"
+    , createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bonds"
+    , createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
+    , createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
+    , createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
+    , createTableFloatColumn metrics.rosettaResults.omega "Torsion Omega"
+    , createTableFloatColumn metrics.rosettaResults.pro_close "Torsion Proline Closure"
+    , createTableFloatColumn metrics.rosettaResults.yhh_planarity "Torsion Tyrosine Hydroxyl"
     ]
 
 
@@ -1096,6 +1098,8 @@ createTableColumn metricView metric metricName =
                 , centerX
                 , centerY
                 , height <| px 90
+
+                -- , width <| px 110
                 , Background.color Style.colorPalette.c1
                 , Font.center
                 , Font.color Style.colorPalette.white
