@@ -553,72 +553,6 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
 # {{{ RosettaOutput
 
 
-# def run_rosetta(pdb_string: str) -> RosettaOutput:
-#     """Defining a function to run the Rosetta energy function on an input PDB file,
-#        parse the output file and return a RosettaOutput object.
-
-#     Notes
-#     -----
-#     Reference: Alford, R. F., Leaver-Fay, A., Jeliazkov, J. R., O’Meara, M. J., DiMaio, F. P., Park, H.,
-#                Shapovalov, M. V., Renfrew, P. D., Mulligan, V. K., Kappel, K., Labonte, J. W., Pacella, M. S.,
-#                Bonneau, R., Bradley, P., Dunbrack, R. L., Das, R., Baker, D., Kuhlman, B., Kortemme, T., & Gray,
-#                J. J. (2017). The Rosetta All-Atom Energy Function for Macromolecular Modeling and Design. Journal
-#                of Chemical Theory and Computation, 13(6), 3031–3048. https://doi.org/10.1021/acs.jctc.7b00125
-
-#                Chaudhury, S., Lyskov, S., & Gray, J. J. (2010). PyRosetta: a script-based interface for implementing
-#                molecular modeling algorithms using Rosetta. Bioinformatics, 26(5), 689–691.
-#                https://doi.org/10.1093/bioinformatics/btq007
-
-#     Parameters
-#     ----------
-#     pdb_file_path: str
-#         File path for the PDB file.
-#     rosetta_binary_path: str
-#         File path for the Rosetta energy function.
-
-#     Returns
-#     -------
-#     rosetta_output: RosettaOutput
-#         RosettaOutput object which contains the log and error information from the
-#         Rosetta run and the energy function output.
-#     """
-
-#     starting_directory = pathlib.Path.cwd()
-#     with tempfile.NamedTemporaryFile(mode="w") as tmp:
-#         # Changing the working directory so that Rosetta doesn't create files in the users cwd
-#         temp_folder = pathlib.Path(tmp.name).parent
-#         os.chdir(temp_folder)
-
-#         # Writing the pdb string to a temp file as input for Rosetta
-#         tmp.write(pdb_string)
-
-#         # Coverting pdb string to a pose object for Rosetta
-#         pose = pyrosetta.pose_from_pdb(tmp.name)
-
-#         # Extracting Rosetta all atom scoring function
-#         sfxn = pyrosetta.get_fa_scorefxn()
-
-#         # Scoring the pose object
-#         sfxn(pose)
-
-#         # Extracting the energy values
-#         energy_values = pose.energies().active_total_energies()
-
-#         # Change back to starting directory
-#         os.chdir(starting_directory)
-
-#         # Creating an RosettaOutput object by unpacking the output dictionary
-#         rosetta_output = RosettaOutput(
-#             log_info="",
-#             error_info="",
-#             return_code=0,
-#             **energy_values,
-#         )
-
-#     # Returning the output
-#     return rosetta_output
-
-
 def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
     """Defining a function to run the Rosetta energy function on an input PDB file,
        parse the output file and return a RosettaOutput object.
@@ -630,10 +564,6 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
                Bonneau, R., Bradley, P., Dunbrack, R. L., Das, R., Baker, D., Kuhlman, B., Kortemme, T., & Gray,
                J. J. (2017). The Rosetta All-Atom Energy Function for Macromolecular Modeling and Design. Journal
                of Chemical Theory and Computation, 13(6), 3031–3048. https://doi.org/10.1021/acs.jctc.7b00125
-
-               Chaudhury, S., Lyskov, S., & Gray, J. J. (2010). PyRosetta: a script-based interface for implementing
-               molecular modeling algorithms using Rosetta. Bioinformatics, 26(5), 689–691.
-               https://doi.org/10.1093/bioinformatics/btq007
 
     Parameters
     ----------
@@ -685,7 +615,38 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
 
         except subprocess.CalledProcessError:
 
-            energy_values = None
+            # Creating a list of the energy value fields
+            energy_field_list = [
+                "dslf_fa13",
+                "fa_atr",
+                "fa_dun",
+                "fa_elec",
+                "fa_intra_rep",
+                "fa_intra_sol_xover4",
+                "fa_rep",
+                "fa_sol",
+                "hbond_bb_sc",
+                "hbond_lr_bb",
+                "hbond_sc",
+                "hbond_sr_bb",
+                "linear_chainbreak",
+                "lk_ball_wtd",
+                "omega",
+                "overlap_chainbreak",
+                "p_aa_pp",
+                "pro_close",
+                "rama_prepro",
+                "ref",
+                "score",
+                "time",
+                "total_score",
+                "yhh_planarity",
+            ]
+
+            # Setting all the energy values to None
+            energy_values = dict(
+                zip(energy_field_list, [None] * len(energy_field_list))
+            )
 
     # Change back to starting directory
     os.chdir(starting_directory)
