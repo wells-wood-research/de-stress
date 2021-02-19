@@ -87,7 +87,3 @@ def test_check_run_rosetta_executes():
     # are the same as the fields in the RosettaResults table
     # in the data base
     assert set(rosetta_results.__dict__.keys()) & set(db_column_list)
-
-    print(rosetta_results.__dict__)
-    print(db_column_list)
-    assert False
