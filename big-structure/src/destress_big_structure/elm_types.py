@@ -159,7 +159,7 @@ class DFIRE2Output:
 
 
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
-@dataclass()
+@dataclass(eq=False)
 class RosettaOutput:
     log_info: str
     error_info: str
@@ -192,6 +192,24 @@ class RosettaOutput:
     # Redefining the __repr__ method to return the total energy value from Rosetta
     def __repr__(self):
         return f"<RosettaOutput: Total Energy = {self.total_score}>"
+
+    # Defining the __eq__method to compare all the fields except the time_spent field
+    def __eq__(self, other):
+        self_dict = self.__dict__
+        other_dict = other.__dict__
+
+        self_dict_new = {
+            k: v
+            for k, v in self_dict.items()
+            if k not in ["log_info", "error_info", "return_code", "time"]
+        }
+        other_dict_new = {
+            k: v
+            for k, v in other_dict.items()
+            if k not in ["log_info", "error_info", "return_code", "time"]
+        }
+
+        return self_dict_new == other_dict_new
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL)
