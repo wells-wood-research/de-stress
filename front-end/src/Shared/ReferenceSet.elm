@@ -174,7 +174,7 @@ queryToCmd :
 queryToCmd query msgConstructor =
     query
         |> Graphql.Http.queryRequest
-            "http://pragmaticproteindesign.bio.ed.ac.uk/big-structure/graphql"
+            "https://pragmaticproteindesign.bio.ed.ac.uk/big-structure/graphql"
         |> Graphql.Http.send (RD.fromResult >> msgConstructor)
 
 

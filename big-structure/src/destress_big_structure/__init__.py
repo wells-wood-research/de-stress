@@ -33,7 +33,7 @@ CORS(app)
 app.debug = True
 
 # Job queue setup, the worker runs in the `rq_worker` container
-REDIS_CONNECTION = redis.Redis("redis", 6379)
+REDIS_CONNECTION = redis.Redis("destress-redis", 6379)
 JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION)
 
 # {{{ ServerJobManager
