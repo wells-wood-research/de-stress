@@ -23,11 +23,6 @@ jobs:
         repository: wells-wood-research/de-stress_dependencies
         token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
 
-    - name: Cloning de-stress dependencies
-      run: |
-        cd big-structure/dependencies_for_isambard/
-        git clone https://${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}:x-oauth-basic@github.com/wells-wood-research/de-stress_dependencies.git
-
     - name: Build and test `big-structure`.
       run: |
         cd big-structure/
