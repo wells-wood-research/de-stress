@@ -26,7 +26,7 @@ jobs:
     - name: Cloning de-stress dependencies
       run: |
         cd big-structure/dependencies_for_isambard/
-        git clone https://github.com/wells-wood-research/de-stress_dependencies.git
+        git clone git@github.com:wells-wood-research/de-stress_dependencies.git
 
     - name: Build and test `big-structure`.
       run: |
