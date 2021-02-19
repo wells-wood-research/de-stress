@@ -2,22 +2,23 @@ version: '2'
 services:
   destress-front-end:
     build:
-      context: ./front-end/
+      context: ./de-stress/front-end/
   destress-big-structure:
     build:
-      context: ./big-structure/
+      context: ./de-stress/big-structure/
     environment:
       - GUNICORN_WORKERS=2
+      - APP_PORT=80
     depends_on:
-      - redis
+      - destress-redis
     restart: always
   destress-rq-worker:
     build:
-      context: ./big-structure/
+      context: ./de-stress/big-structure/
     depends_on:
-      - big-structure
-      - redis
+      - destress-big-structure
+      - destress-redis
     restart: always
-    command: rq worker --url redis://redis:6379 --disable-job-desc-logging
+    command: rq worker --url redis://destress-redis:6379 --disable-job-desc-logging
   destress-redis:
     image: redis
