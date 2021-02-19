@@ -70,7 +70,9 @@ const flags = {
 // }}}
 // {{{ websockets
 function connect_to_server(app) {
-  sessionCommsSocket = new WebSocket("ws://localhost:8181/app-comms");
+  sessionCommsSocket = new WebSocket(
+    "ws://pragmaticproteindesign.bio.ed.ac.uk/big-structure/app-comms"
+  );
 
   sessionCommsSocket.onopen = function () {
     // subscribe to some channels
