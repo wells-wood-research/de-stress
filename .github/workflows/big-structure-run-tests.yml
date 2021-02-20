@@ -26,6 +26,7 @@ jobs:
         docker build -t big-structure .
         cd dependencies_for_isambard/
         git clone https://${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}:x-oauth-basic@github.com/wells-wood-research/de-stress_dependencies.git
-        ls -l
-        cd ../
+        cd de-stress_dependencies/EvoEF2/
+        chmod +x EvoEF2
+        cd ../../../
         docker run --rm big-structure poetry run pytest
