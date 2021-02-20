@@ -19,10 +19,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-      with:
-        repository: wells-wood-research/de-stress_dependencies
-        token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
-
     - name: Build and test `big-structure`.
       run: |
         cd big-structure/
