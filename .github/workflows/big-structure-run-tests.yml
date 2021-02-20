@@ -28,4 +28,7 @@ jobs:
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
+        cd big-structure/dependencies_for_isambard/
+        git clone https://${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}:x-oauth-basic@github.com/wells-wood-research/de-stress_dependencies.git
+        cd big-structure/
         docker run --rm big-structure poetry run pytest
