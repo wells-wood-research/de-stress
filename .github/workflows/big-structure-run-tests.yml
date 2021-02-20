@@ -27,4 +27,5 @@ jobs:
         cd dependencies_for_isambard/
         git clone https://${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}:x-oauth-basic@github.com/wells-wood-research/de-stress_dependencies.git
         cd ../
+        ls -l
         docker run --rm big-structure poetry run pytest
