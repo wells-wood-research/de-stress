@@ -30,7 +30,7 @@ jobs:
         repository: wells-wood-research/de-stress_dependencies.git
         token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
         ref: master
-        path: de-stress_dependencies
+        path: big-structure
     - name: Running tests.
       run: |
         docker run --rm big-structure poetry run pytest
