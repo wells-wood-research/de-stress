@@ -33,9 +33,9 @@ jobs:
         path: big-structure/dependencies_for_isambard/de-stress_dependencies/
     - name: Running tests.
       run: |
-        cd big-structure/dependencies_for_isambard/
-        ls -l 
-        cd ../
+        cd big-structure/
+        mkdir de-stress_dependencies
+        cp -r /home/runner/work/de-stress/de-stress_dependencies/ /big-structure/de-stress_dependencies/
         docker run --rm big-structure poetry run pytest
       
 
