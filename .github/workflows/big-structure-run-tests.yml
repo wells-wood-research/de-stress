@@ -31,11 +31,9 @@ jobs:
         token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
         ref: master
         path: de-stress_dependencies/
-    - name: Copying de-stress_dependencies and then running tests.
+    - name: Running tests.
       run: |
         cd big-structure/
-        sudo mkdir dependencies_for_isambard/de-stress_dependencies
-        cp -r /home/runner/work/de-stress/de-stress_dependencies/ /dependencies_for_isambard/de-stress_dependencies/
         docker run --rm big-structure poetry run pytest
       
 
