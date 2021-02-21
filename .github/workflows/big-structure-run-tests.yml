@@ -19,11 +19,11 @@ jobs:
 
     steps:
     - name: Build `big-structure` and run tests.
-      uses: actions/checkout@v1  
+      uses: actions/checkout@v2  
       with:
           repository: wells-wood-research/de-stress_dependencies.git
           token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
-          path: dependencies_for_isambard/
+          path: /dependencies_for_isambard/
      - run: |
           cd big-structure/
           cp .env-testing .env
