@@ -20,7 +20,7 @@ jobs:
     steps:
     - name: Build `big-structure`.
     - uses: actions/checkout@v1  
-      run: |
+    - run: |
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
