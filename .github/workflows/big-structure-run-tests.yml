@@ -25,8 +25,8 @@ jobs:
         cp .env-testing .env
         docker build -t big-structure .
         cd dependencies_for_isambard/
-    - name: Clone de-stress_dependencies
-    - uses: actions/checkout@v2
+      name: Clone de-stress_dependencies
+      uses: actions/checkout@v2
       with:
           repository: wells-wood-research/de-stress_dependencies.git
           token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
