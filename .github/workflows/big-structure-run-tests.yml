@@ -34,8 +34,8 @@ jobs:
     - name: Copying de-stress_dependencies and then running tests.
       run: |
         cd big-structure/
-        mkdir de-stress_dependencies
-        cp -r /home/runner/work/de-stress/de-stress_dependencies/ /de-stress_dependencies/
+        sudo mkdir dependencies_for_isambard/de-stress_dependencies
+        cp -r /home/runner/work/de-stress/de-stress_dependencies/ /dependencies_for_isambard/de-stress_dependencies/
         docker run --rm big-structure poetry run pytest
       
 
