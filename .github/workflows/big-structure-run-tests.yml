@@ -33,7 +33,9 @@ jobs:
         path: big-structure
     - name: Running tests.
       run: |
+        cd big-structure/
         ls -l 
+        cd ../
         docker run --rm big-structure poetry run pytest
       
 
