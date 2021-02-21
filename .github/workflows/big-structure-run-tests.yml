@@ -33,7 +33,8 @@ jobs:
         path: de-stress_dependencies/
     - name: Running tests.
       run: |
-        cd big-structure/
+        cd ../ 
+        ls -l
         docker run --rm big-structure poetry run pytest
       
 
