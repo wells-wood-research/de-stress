@@ -23,7 +23,7 @@ jobs:
       with:
           repository: wells-wood-research/de-stress_dependencies.git
           token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
-          path: /big-structure/dependencies_for_isambard/
+          path: dependencies_for_isambard/
      - run: |
           cd big-structure/
           cp .env-testing .env
