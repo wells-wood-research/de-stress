@@ -33,7 +33,7 @@ jobs:
         path: de-stress_dependencies/
     - name: Copying de-stress_dependencies and then running tests.
       run: |
-        cp -r /home/runner/work/de-stress/de-stress_dependencies/ /big-structure/
+        cp -r /home/runner/work/de-stress/de-stress_dependencies/ /big-structure/de-stress_dependencies/
         cd big-structure/
         docker run --rm big-structure poetry run pytest
       
