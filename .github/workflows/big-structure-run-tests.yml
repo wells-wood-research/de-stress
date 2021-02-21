@@ -35,7 +35,9 @@ jobs:
       run: |
         sudo chmod -R 755 big-structure/dependencies_for_isambard/
         cp -r /home/runner/work/de-stress/de-stress_dependencies/ big-structure/dependencies_for_isambard/de-stress_dependencies/
-        chmod +x big-structure/dependencies_for_isambard/de-stress_dependencies/EvoEF/EvoEF
+        cd big-structure/dependencies_for_isambard/de-stress_dependencies/
+        ls -l
+        cd ../../
         docker run --rm big-structure poetry run pytest
       
 
