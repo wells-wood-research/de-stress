@@ -18,7 +18,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Build `big-structure` and cloning de-stress_dependencies repo.
+    - name: Build `big-structure`
+      uses: actions/checkout@v1
+      run: |
+        cd big-structure/
+        cp .env-testing .env
+        docker build -t big-structure .
+    - name: Clone de-stress dependencies
       uses: actions/checkout@v1
       with:
         repository: wells-wood-research/de-stress_dependencies.git
@@ -27,9 +33,6 @@ jobs:
         path: de-stress_dependencies
     - name: Running tests.
       run: |
-        cd big-structure/
-        cp .env-testing .env
-        docker build -t big-structure .
         docker run --rm big-structure poetry run pytest
       
 
