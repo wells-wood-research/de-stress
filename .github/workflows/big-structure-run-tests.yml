@@ -33,7 +33,7 @@ jobs:
         path: de-stress_dependencies/
     - name: Copying de-stress_dependencies and then running tests.
       run: |
-        cp -r /de-stress_dependencies /app/big-structure
+        cp -r ${{ github.workspace }}/de-stress_dependencies /app/big-structure/
         cd big-structure/
         docker run --rm big-structure poetry run pytest
       
