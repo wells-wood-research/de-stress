@@ -18,15 +18,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Build and test `big-structure`.
+    - name: Build `big-structure`.
+    - uses: actions/checkout@v1  
       run: |
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
         cd dependencies_for_isambard/
-        git clone https://${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}:x-oauth-basic@github.com/wells-wood-research/de-stress_dependencies.git
-        cd de-stress_dependencies/EvoEF2/
-        pwd
-        cd ../../../
-        docker run --rm big-structure poetry run pytest
+    - name: Clone de-stress_dependencies
+    - uses: actions/checkout@v2
+      with:
+          repository: wells-wood-research/de-stress_dependencies.git
+          token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
+      run: |
+         ls 
+         pwd 
+      
+
