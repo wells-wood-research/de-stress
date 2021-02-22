@@ -19,7 +19,7 @@ def test_check_run_dfire2_executes():
         pdb_string = inf.read()
 
     dfire2_results = run_dfire2(
-        pdb_string=pdb_string, dfire2_binary_path=DFIRE2_FOLDER_PATH
+        pdb_string=pdb_string, dfire2_folder_path=DFIRE2_FOLDER_PATH
     )
 
     # Testing the results encoding
