@@ -37,3 +37,4 @@ jobs:
           cp .env-testing .env
           docker build -t big-structure .
           docker run --rm big-structure poetry run pytest
+          
