@@ -18,20 +18,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Build and test `big-structure` 
-      with:
+      - name: Checkout de-stress
+        uses: actions/checkout@v2
+
+      - name: Checkout de-stress_dependencies
+        uses: actions/checkout@v2
+        with:
           repository: wells-wood-research/de-stress_dependencies.git
           token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
           ref: master
-          path: /home/runner/work/de-stress/big-structure/de-stress_dependencies/
-      run: |
-        chmod -R 755 /home/runner/work/de-stress/big-structure/de-stress_dependencies/
-        cd big-structure/
-        cp .env-testing .env
-        docker build -t big-structure .
-        docker run --rm big-structure poetry run pytest
-        
-        
-      
+          path: de-stress_dependencies
 
+      - name: Build and test `big-structure`   
+        run: |
+          chmod -R 755 de-stress_dependencies/
+          cp -r de-stress_dependencies/ big-structure/dependencies_for_isambard/de-stress_dependencies/
+          cd big-structure/
+          cp .env-testing .env
+          docker build -t big-structure .
+          docker run --rm big-structure poetry run pytest
