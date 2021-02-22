@@ -19,22 +19,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Build `big-structure`
+    - name: Build and test `big-structure` 
+      with:
+          repository: wells-wood-research/de-stress_dependencies.git
+          token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
+          ref: master
+          path: /home/runner/work/de-stress/big-structure/de-stress_dependencies/
       run: |
+        chmod -R 755 /home/runner/work/de-stress/big-structure/de-stress_dependencies/
         cd big-structure/
         cp .env-testing .env
         docker build -t big-structure .
-    - name: Clone de-stress dependencies
-      uses: actions/checkout@v1
-      with:
-        repository: wells-wood-research/de-stress_dependencies.git
-        token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
-        ref: master
-        path: de-stress_dependencies/
-    - name: Running tests.
-      run: |
-        sudo chmod -R 755 big-structure/dependencies_for_isambard/
-        cp -r /home/runner/work/de-stress/de-stress_dependencies/ big-structure/dependencies_for_isambard/de-stress_dependencies/
         docker run --rm big-structure poetry run pytest
+        
+        
       
 
