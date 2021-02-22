@@ -14,7 +14,7 @@ import numpy as np
 import requests
 
 from .elm_types import DesignMetrics, EvoEF2Output, DFIRE2Output, SequenceInfo
-from destress_big_structure.settings import EVOEF2_BINARY_PATH, DFIRE2_BINARY_PATH
+from destress_big_structure.settings import EVOEF2_BINARY_PATH, DFIRE2_FOLDER_PATH
 
 # {{{ Input Validation
 
@@ -246,7 +246,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         mass=mass,
         packing_density=design_mean_packing_density(design),
         evoEF2_results=run_evoef2(design.pdb, EVOEF2_BINARY_PATH),
-        dfire2_results=run_dfire2(design.pdb, DFIRE2_BINARY_PATH),
+        dfire2_results=run_dfire2(design.pdb, DFIRE2_FOLDER_PATH),
     )
     return design_metrics
 

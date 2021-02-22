@@ -1,18 +1,20 @@
-import {
-  Store,
-  clear,
-  del,
-  get,
-  set,
-} from "https://cdn.jsdelivr.net/npm/idb-keyval@3/dist/idb-keyval.mjs";
+import { saveAs } from "file-saver-es";
+import { createStore, clear, del, get, set } from "idb-keyval";
+import embed from "vega-embed";
 
 // {{{ storage
 
 const localStorageKey = "globalState";
 
-const designStore = new Store("designs", "design-store");
-const referenceSetStore = new Store("referenceSets", "reference-set-store");
-const specificationStore = new Store("specifications", "specification-store");
+const designStore = new createStore("designs", "design-store");
+const referenceSetStore = new createStore(
+  "referenceSets",
+  "reference-set-store"
+);
+const specificationStore = new createStore(
+  "specifications",
+  "specification-store"
+);
 
 // {{{ utilities
 
@@ -274,10 +276,16 @@ app.ports.viewStructure.subscribe((pdbString) => {
 // {{{ VegaLite
 app.ports.vegaPlot.subscribe((plotDetails) => {
   window.requestAnimationFrame(() => {
-    vegaEmbed("#" + plotDetails.plotId, plotDetails.spec, {
+    embed("#" + plotDetails.plotId, plotDetails.spec, {
       actions: false,
     }).catch(console.warn);
   });
+});
+// }}}
+// {{{ FileSaver
+app.ports.createFile.subscribe((fileString) => {
+  var blob = new Blob([fileString], { type: "text/plain;charset=utf-8" });
+  saveAs(blob, "design_data.csv");
 });
 // }}}
 // }}}
