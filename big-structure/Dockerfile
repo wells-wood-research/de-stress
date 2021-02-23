@@ -11,9 +11,6 @@ ENV PYTHONFAULTHANDLER=1 \
 # System deps:
 RUN pip install "poetry==$POETRY_VERSION"
 
-# Set up EvoEF2
-RUN cd /home && git clone https://github.com/tommyhuangthu/EvoEF2.git && cd EvoEF2/ && g++ -O3 --fast-math -o EvoEF2 src/*.cpp
-
 # Copy only requirements to cache them in docker layer
 WORKDIR /app
 COPY poetry.lock pyproject.toml /app/

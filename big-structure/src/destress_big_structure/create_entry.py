@@ -19,7 +19,7 @@ from destress_big_structure.design_models import (
 )
 from destress_big_structure import analysis
 
-from .settings import EVOEF2_BINARY_PATH, DFIRE2_BINARY_PATH, ROSETTA_BINARY_PATH
+from .settings import EVOEF2_BINARY_PATH, DFIRE2_FOLDER_PATH, ROSETTA_BINARY_PATH
 
 
 def create_biounit_entry(
@@ -81,7 +81,7 @@ def create_state_entry(
 
     create_evoef2_results_entry(ampal_assembly, state_model, EVOEF2_BINARY_PATH)
 
-    create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_BINARY_PATH)
+    create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_FOLDER_PATH)
 
     create_rosetta_results_entry(ampal_assembly, state_model, ROSETTA_BINARY_PATH)
 
@@ -106,9 +106,9 @@ def create_evoef2_results_entry(
 
 
 def create_dfire2_results_entry(
-    ampal_assembly: ampal.Assembly, state_model: StateModel, dfire2_binary_path: str
+    ampal_assembly: ampal.Assembly, state_model: StateModel, dfire2_folder_path: str
 ) -> DFIRE2ResultsModel:
-    dfire2_results = analysis.run_dfire2(ampal_assembly.pdb, dfire2_binary_path)
+    dfire2_results = analysis.run_dfire2(ampal_assembly.pdb, dfire2_folder_path)
     dfire2_results_model = DFIRE2ResultsModel(
         state=state_model, **dfire2_results.__dict__
     )

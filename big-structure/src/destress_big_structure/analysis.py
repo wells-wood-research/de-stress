@@ -23,7 +23,7 @@ from .elm_types import (
 )
 from destress_big_structure.settings import (
     EVOEF2_BINARY_PATH,
-    DFIRE2_BINARY_PATH,
+    DFIRE2_FOLDER_PATH,
     ROSETTA_BINARY_PATH,
 )
 
@@ -257,7 +257,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         mass=mass,
         packing_density=design_mean_packing_density(design),
         evoEF2_results=run_evoef2(design.pdb, EVOEF2_BINARY_PATH),
-        dfire2_results=run_dfire2(design.pdb, DFIRE2_BINARY_PATH),
+        dfire2_results=run_dfire2(design.pdb, DFIRE2_FOLDER_PATH),
         rosetta_results=run_rosetta(design.pdb, ROSETTA_BINARY_PATH),
     )
     return design_metrics
@@ -471,7 +471,7 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 # {{{ DFIRE2Output
 
 
-def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
+def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
     """Defining a function to run DFIRE2 on an input PDB file.
     DFIRE2 is an energy function that was optimised by sequence recapitulation
     and can be used to estimate protein stability. First this function runs
@@ -488,8 +488,8 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
     ----------
     pdb_file_path: str
         File path for the PDB file.
-    dfire2_path: str
-        File path for the dfire2 binary.
+    dfire2_folder_path: str
+        Folder path for dfire2.
     Returns
     -------
     dfire2_output: DFIRE2Output
@@ -507,8 +507,8 @@ def run_dfire2(pdb_string: str, dfire2_binary_path: str) -> DFIRE2Output:
 
         # Creating bash command
         cmd = [
-            dfire2_binary_path + "calene",
-            dfire2_binary_path + "dfire_pair.lib",
+            dfire2_folder_path + "calene",
+            dfire2_folder_path + "dfire_pair.lib",
             tmp.name,
         ]
 
