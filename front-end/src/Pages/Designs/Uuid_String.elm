@@ -1088,8 +1088,6 @@ createTableColumn metricView metric metricName =
         tableColumn =
             column
                 [ alignTop
-
-                -- , width <| px 100
                 ]
 
         headerParagraph =
@@ -1098,8 +1096,6 @@ createTableColumn metricView metric metricName =
                 , centerX
                 , centerY
                 , height <| px 90
-
-                -- , width <| px 110
                 , Background.color Style.colorPalette.c1
                 , Font.center
                 , Font.color Style.colorPalette.white
