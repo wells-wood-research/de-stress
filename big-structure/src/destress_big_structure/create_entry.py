@@ -103,9 +103,9 @@ def create_evoef2_results_entry(
 
 
 def create_dfire2_results_entry(
-    ampal_assembly: ampal.Assembly, state_model: StateModel, dfire2_binary_path: str
+    ampal_assembly: ampal.Assembly, state_model: StateModel, dfire2_folder_path: str
 ) -> DFIRE2ResultsModel:
-    dfire2_results = analysis.run_dfire2(ampal_assembly.pdb, dfire2_binary_path)
+    dfire2_results = analysis.run_dfire2(ampal_assembly.pdb, dfire2_folder_path)
     dfire2_results_model = DFIRE2ResultsModel(
         state=state_model, **dfire2_results.__dict__
     )
