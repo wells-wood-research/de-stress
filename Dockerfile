@@ -13,19 +13,20 @@ RUN pip install "poetry==$POETRY_VERSION"
 
 # Copy only requirements to cache them in docker layer
 WORKDIR /app
-COPY poetry.lock pyproject.toml /app/
+COPY ./big-structure/poetry.lock ./big-structure/pyproject.toml /app/
 
 # Project initialization:
 RUN poetry config virtualenvs.create false \
   && poetry install --no-interaction --no-ansi
 
 # Creating folders, and files for a project:
-COPY . /app
-RUN ln -s /app/dependencies_for_isambard/dssp/dssp-2.0.4 /usr/local/bin/mkdssp
+WORKDIR dependencies_for_de-stress
+COPY ./dependencies_for_de-stress /dependencies_for_de-stress/
+RUN ln -s /dependencies_for_de-stress/dssp/dssp-2.0.4 /usr/local/bin/mkdssp
+WORKDIR /app
+COPY ./big-structure /app/
 
 RUN poetry install --no-interaction --no-ansi
-
-
 
 # Run webserver
 CMD gunicorn \

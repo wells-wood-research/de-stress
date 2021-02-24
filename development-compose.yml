@@ -2,7 +2,7 @@ version: '2'
 services:
   big-structure:
     build:
-      context: ./big-structure/
+      context: .
     environment:
       - GUNICORN_WORKERS=2
       - APP_PORT=8181
@@ -15,7 +15,7 @@ services:
       - ./big-structure:/app
   rq-worker:
     build:
-      context: ./big-structure/
+      context: .
     depends_on:
       - big-structure
       - redis
