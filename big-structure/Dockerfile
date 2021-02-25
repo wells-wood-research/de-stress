@@ -1,5 +1,9 @@
 FROM python:3.8
 
+RUN apt update && apt install -y dssp
+
+WORKDIR /app
+
 ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
   PYTHONHASHSEED=random \
@@ -12,19 +16,14 @@ ENV PYTHONFAULTHANDLER=1 \
 RUN pip install "poetry==$POETRY_VERSION"
 
 # Copy only requirements to cache them in docker layer
-WORKDIR /app
-COPY ./big-structure/poetry.lock ./big-structure/pyproject.toml /app/
+COPY ./poetry.lock ./pyproject.toml /app/
 
 # Project initialization:
 RUN poetry config virtualenvs.create false \
   && poetry install --no-interaction --no-ansi
 
 # Creating folders, and files for a project:
-WORKDIR dependencies_for_de-stress
-COPY ./dependencies_for_de-stress /dependencies_for_de-stress/
-RUN ln -s /dependencies_for_de-stress/dssp/dssp-2.0.4 /usr/local/bin/mkdssp
-WORKDIR /app
-COPY ./big-structure /app/
+COPY ./ /app/
 
 RUN poetry install --no-interaction --no-ansi
 
