@@ -35,5 +35,7 @@ jobs:
           cd big-structure/
           cp .env-testing .env
           docker build -t big-structure .
-          docker run --rm big-structure poetry run pytest
+          cd ..
+          docker run --rm -v $(pwd)/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
+              big-structure poetry run pytest
           
