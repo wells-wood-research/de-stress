@@ -1,5 +1,9 @@
 FROM python:3.8
 
+RUN apt update && apt install -y dssp
+
+WORKDIR /app
+
 ENV PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
   PYTHONHASHSEED=random \
@@ -12,20 +16,16 @@ ENV PYTHONFAULTHANDLER=1 \
 RUN pip install "poetry==$POETRY_VERSION"
 
 # Copy only requirements to cache them in docker layer
-WORKDIR /app
-COPY poetry.lock pyproject.toml /app/
+COPY ./poetry.lock ./pyproject.toml /app/
 
 # Project initialization:
 RUN poetry config virtualenvs.create false \
   && poetry install --no-interaction --no-ansi
 
 # Creating folders, and files for a project:
-COPY . /app
-RUN ln -s /app/dependencies_for_isambard/dssp/dssp-2.0.4 /usr/local/bin/mkdssp
+COPY ./ /app/
 
 RUN poetry install --no-interaction --no-ansi
-
-
 
 # Run webserver
 CMD gunicorn \

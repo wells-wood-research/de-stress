@@ -2,6 +2,8 @@ module Shared.Metrics exposing
     ( AggregateData
     , DesignMetrics
     , EvoEF2Results
+    , DFIRE2Results
+    , RosettaResults
     , MeanAndStdDev
     , RefSetMetrics
     , SequenceInfo
@@ -42,6 +44,7 @@ type alias DesignMetrics =
     , packingDensity : Float
     , evoEF2Results : EvoEF2Results
     , dfire2Results : DFIRE2Results
+    , rosettaResults : RosettaResults
     }
 
 
@@ -68,6 +71,7 @@ desMetricsCodec =
         |> Codec.field "packingDensity" .packingDensity Codec.float
         |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
         |> Codec.field "dfire2Results" .dfire2Results dfire2ResultsCodec
+        |> Codec.field "rosettaResults" .rosettaResults rosettaResultsCodec
         |> Codec.buildObject
 
 
@@ -260,6 +264,74 @@ dfire2ResultsCodec =
         |> Codec.field "total" .total (Codec.maybe Codec.float)
         |> Codec.buildObject
 
+
+
+-- }}}
+-- {{{ RosettaResults
+
+
+type alias RosettaResults =
+    { log_info: String
+    , error_info: String
+    , return_code: Int
+    , dslf_fa13: Maybe Float
+    , fa_atr: Maybe Float
+    , fa_dun: Maybe Float
+    , fa_elec: Maybe Float
+    , fa_intra_rep: Maybe Float
+    , fa_intra_sol_xover4: Maybe Float
+    , fa_rep: Maybe Float
+    , fa_sol: Maybe Float
+    , hbond_bb_sc: Maybe Float
+    , hbond_lr_bb: Maybe Float
+    , hbond_sc: Maybe Float
+    , hbond_sr_bb: Maybe Float
+    , linear_chainbreak: Maybe Float
+    , lk_ball_wtd: Maybe Float
+    , omega: Maybe Float
+    , overlap_chainbreak: Maybe Float
+    , p_aa_pp: Maybe Float
+    , pro_close: Maybe Float
+    , rama_prepro: Maybe Float
+    , ref: Maybe Float
+    , score: Maybe Float
+    , time: Maybe Float
+    , total_score: Maybe Float
+    , yhh_planarity: Maybe Float
+    }
+
+
+rosettaResultsCodec : Codec RosettaResults
+rosettaResultsCodec =
+    Codec.object RosettaResults
+        |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "error_info" .error_info Codec.string
+        |> Codec.field "return_code" .return_code Codec.int
+        |> Codec.field "dslf_fa13" .dslf_fa13 (Codec.maybe Codec.float)
+        |> Codec.field "fa_atr" .fa_atr (Codec.maybe Codec.float)
+        |> Codec.field "fa_dun" .fa_dun (Codec.maybe Codec.float)
+        |> Codec.field "fa_elec" .fa_elec (Codec.maybe Codec.float)
+        |> Codec.field "fa_intra_rep" .fa_intra_rep (Codec.maybe Codec.float)
+        |> Codec.field "fa_intra_sol_xover4" .fa_intra_sol_xover4 (Codec.maybe Codec.float)
+        |> Codec.field "fa_rep" .fa_rep (Codec.maybe Codec.float)
+        |> Codec.field "fa_sol" .fa_sol (Codec.maybe Codec.float)
+        |> Codec.field "hbond_bb_sc" .hbond_bb_sc (Codec.maybe Codec.float)
+        |> Codec.field "hbond_lr_bb" .hbond_lr_bb (Codec.maybe Codec.float)
+        |> Codec.field "hbond_sc" .hbond_sc (Codec.maybe Codec.float)
+        |> Codec.field "hbond_sr_bb" .hbond_sr_bb (Codec.maybe Codec.float)
+        |> Codec.field "linear_chainbreak" .linear_chainbreak (Codec.maybe Codec.float)
+        |> Codec.field "lk_ball_wtd" .lk_ball_wtd (Codec.maybe Codec.float)
+        |> Codec.field "omega" .omega (Codec.maybe Codec.float)
+        |> Codec.field "overlap_chainbreak" .overlap_chainbreak (Codec.maybe Codec.float)
+        |> Codec.field "p_aa_pp" .p_aa_pp (Codec.maybe Codec.float)
+        |> Codec.field "pro_close" .pro_close (Codec.maybe Codec.float)
+        |> Codec.field "rama_prepro" .rama_prepro (Codec.maybe Codec.float)
+        |> Codec.field "ref" .ref (Codec.maybe Codec.float)
+        |> Codec.field "score" .score (Codec.maybe Codec.float)
+        |> Codec.field "time" .time (Codec.maybe Codec.float)
+        |> Codec.field "total_score" .total_score (Codec.maybe Codec.float)
+        |> Codec.field "yhh_planarity" .yhh_planarity (Codec.maybe Codec.float)
+        |> Codec.buildObject
 
 
 -- }}}

@@ -78,6 +78,7 @@ class StateModel(BigStructureBase):  # type: ignore
     # Children
     evoef2_results = relationship("EvoEF2ResultsModel", uselist=False)
     dfire2_results = relationship("DFIRE2ResultsModel", uselist=False)
+    rosetta_results = relationship("RosettaResultsModel", uselist=False)
     chains = relationship("ChainModel")
 
     def __repr__(self):
@@ -206,3 +207,44 @@ class DFIRE2ResultsModel(BigStructureBase):  # type: ignore
 
     def __repr__(self):
         return f"<DFIRE2ResultsModel: Total Energy = {self.total}>"
+
+
+class RosettaResultsModel(BigStructureBase):  # type: ignore
+    __tablename__ = "rosetta_results"
+    id = Column(Integer, primary_key=True)
+
+    # Rosetta Output fields
+    log_info = Column(String, nullable=False)
+    error_info = Column(String, nullable=False)
+    return_code = Column(Integer, nullable=False)
+    dslf_fa13 = Column(Float, nullable=True)
+    fa_atr = Column(Float, nullable=True)
+    fa_dun = Column(Float, nullable=True)
+    fa_elec = Column(Float, nullable=True)
+    fa_intra_rep = Column(Float, nullable=True)
+    fa_intra_sol_xover4 = Column(Float, nullable=True)
+    fa_rep = Column(Float, nullable=True)
+    fa_sol = Column(Float, nullable=True)
+    hbond_bb_sc = Column(Float, nullable=True)
+    hbond_lr_bb = Column(Float, nullable=True)
+    hbond_sc = Column(Float, nullable=True)
+    hbond_sr_bb = Column(Float, nullable=True)
+    linear_chainbreak = Column(Float, nullable=True)
+    lk_ball_wtd = Column(Float, nullable=True)
+    omega = Column(Float, nullable=True)
+    overlap_chainbreak = Column(Float, nullable=True)
+    p_aa_pp = Column(Float, nullable=True)
+    pro_close = Column(Float, nullable=True)
+    rama_prepro = Column(Float, nullable=True)
+    ref = Column(Float, nullable=True)
+    score = Column(Float, nullable=True)
+    time = Column(Float, nullable=True)
+    total_score = Column(Float, nullable=True)
+    yhh_planarity = Column(Float, nullable=True)
+
+    # Parent
+    state_id = Column(Integer, ForeignKey("state.id"))
+    state = relationship("StateModel", back_populates="rosetta_results")
+
+    def __repr__(self):
+        return f"<RosettaOutput: Total Energy = {self.total_score}>"

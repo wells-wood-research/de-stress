@@ -97,11 +97,13 @@ type EvoEF2TableOption
 type HideableSection
     = EvoEF2LogInfo
     | DFIRE2LogInfo
+    | RosettaLogInfo
 
 
 type alias DisplaySettings =
     { evoEF2LogInfo : Bool
     , dfire2LogInfo : Bool
+    , rosettaLogInfo : Bool
     }
 
 
@@ -113,6 +115,9 @@ hideableSectionToString hideableSection =
 
         DFIRE2LogInfo ->
             "DFIRE2 Log Information"
+
+        RosettaLogInfo ->
+            "Rosetta Log Information"
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -172,6 +177,7 @@ init shared { params } =
                     , displaySettings =
                         { evoEF2LogInfo = False
                         , dfire2LogInfo = False
+                        , rosettaLogInfo = False
                         }
                     }
             in
@@ -204,6 +210,7 @@ init shared { params } =
               , displaySettings =
                     { evoEF2LogInfo = False
                     , dfire2LogInfo = False
+                    , rosettaLogInfo = False
                     }
               }
             , Cmd.none
@@ -350,6 +357,12 @@ update msg model =
                             { displaySettings
                                 | dfire2LogInfo =
                                     not displaySettings.dfire2LogInfo
+                            }
+
+                        RosettaLogInfo ->
+                            { displaySettings
+                                | rosettaLogInfo =
+                                    not displaySettings.rosettaLogInfo
                             }
               }
             , Cmd.none
@@ -588,6 +601,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         [ basicMetrics designMetrics
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
                         , dfire2ResultsView designMetrics displaySettings
+                        , rosettaResultsTableView designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -876,8 +890,8 @@ evoef2InterDColumns metrics =
 
 dfire2LogInfoSelection : Metrics.DesignMetrics -> String
 dfire2LogInfoSelection metrics =
-    case (metrics.dfire2Results.return_code, metrics.dfire2Results.error_info) of
-        (0, "") ->
+    case ( metrics.dfire2Results.return_code, metrics.dfire2Results.error_info ) of
+        ( 0, "" ) ->
             metrics.dfire2Results.log_info
 
         _ ->
@@ -910,7 +924,6 @@ dfire2ResultsView metrics displaySettings =
             , metrics.dfire2Results.total
                 |> Maybe.map onePlaceFloatText
                 |> Maybe.withDefault (text "--")
-
             ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
@@ -919,6 +932,63 @@ dfire2ResultsView metrics displaySettings =
             , contentView = logInfoBox
             }
         ]
+
+
+rosettaResultsTableView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
+rosettaResultsTableView metrics displaySettings =
+    let
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , width fill
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text metrics.rosettaResults.log_info
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <|
+            text "Rosetta Energy Function Results"
+        , wrappedRow
+            [ centerX ]
+            (rosettaColumns metrics)
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.rosettaLogInfo
+            , title = hideableSectionToString RosettaLogInfo
+            , toggleMsg = ToggleSectionVisibility RosettaLogInfo
+            , contentView = logInfoBox
+            }
+        ]
+
+
+rosettaColumns : Metrics.DesignMetrics -> List (Element msg)
+rosettaColumns metrics =
+    [ createTableFloatColumn metrics.rosettaResults.total_score "Total"
+    , createTableFloatColumn metrics.rosettaResults.ref "Reference"
+    , createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
+    , createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
+    , createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive IntraR"
+    , createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
+    , createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
+    , createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atom"
+    , createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic IntraR"
+    , createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
+    , createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
+    , createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
+    , createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain"
+    , createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bonds"
+    , createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
+    , createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
+    , createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
+    , createTableFloatColumn metrics.rosettaResults.omega "Torsion Omega"
+    , createTableFloatColumn metrics.rosettaResults.pro_close "Torsion Proline Closure"
+    , createTableFloatColumn metrics.rosettaResults.yhh_planarity "Torsion Tyrosine Hydroxyl"
+    ]
 
 
 referenceSetComparisonView : Element msg
@@ -1018,8 +1088,6 @@ createTableColumn metricView metric metricName =
         tableColumn =
             column
                 [ alignTop
-
-                -- , width <| px 100
                 ]
 
         headerParagraph =

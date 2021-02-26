@@ -953,6 +953,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "scons"
+version = "4.1.0.post1"
+description = "Open Source next-generation build tool."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
 name = "singledispatch"
 version = "3.4.0.3"
 description = "This library brings functools.singledispatch from Python 3.4 to Python 2.6-3.3."
@@ -1115,7 +1123,7 @@ testing = ["jaraco.itertools", "func-timeout"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "12d8e62a9de95fe104c312e81c524c02f5526cb5065d8cbb933b1f27a432cf8b"
+content-hash = "18b6a7b534e815e88995ebbdee76066d4a56554362b7c317056b0b537604ff37"
 
 [metadata.files]
 algebraic-data-types = [
@@ -1680,6 +1688,10 @@ rq = [
 rx = [
     {file = "Rx-1.6.1-py2.py3-none-any.whl", hash = "sha256:7357592bc7e881a95e0c2013b73326f704953301ab551fbc8133a6fadab84105"},
     {file = "Rx-1.6.1.tar.gz", hash = "sha256:13a1d8d9e252625c173dc795471e614eadfe1cf40ffc684e08b8fff0d9748c23"},
+]
+scons = [
+    {file = "SCons-4.1.0.post1-py3-none-any.whl", hash = "sha256:52272288986f3e401d28590562c573405dff0decfbf701926e751c0954b64da6"},
+    {file = "SCons-4.1.0.post1.tar.gz", hash = "sha256:ecb062482b9d80319b56758c0341eb717735437f86a575bac3552804428bd73e"},
 ]
 singledispatch = [
     {file = "singledispatch-3.4.0.3-py2.py3-none-any.whl", hash = "sha256:833b46966687b3de7f438c761ac475213e53b306740f1abfaa86e1d1aae56aa8"},
