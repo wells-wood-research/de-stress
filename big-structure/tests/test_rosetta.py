@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import pathlib
+import pytest
 import typing as t
 import graphene
 import re
@@ -12,6 +13,7 @@ from destress_big_structure.schema import Query
 from destress_big_structure.big_structure_models import big_structure_db_session
 
 
+@pytest.mark.rosetta
 def test_check_run_rosetta_executes():
 
     test_path = pathlib.Path("tests/testing_files/1aac.pdb")
