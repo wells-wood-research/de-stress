@@ -24,6 +24,7 @@ rq = "^1.4.0"
 gevent = "^20.5.0"
 requests = "^2.23.0"
 python-dotenv = "^0.15.0"
+SCons = "^4.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.0"

@@ -6,7 +6,7 @@ import graphene
 import re
 
 from destress_big_structure.analysis import run_dfire2
-from destress_big_structure.settings import DFIRE2_BINARY_PATH
+from destress_big_structure.settings import DFIRE2_FOLDER_PATH
 from destress_big_structure.elm_types import DFIRE2Output
 from destress_big_structure.schema import Query
 from destress_big_structure.big_structure_models import big_structure_db_session
@@ -19,7 +19,7 @@ def test_check_run_dfire2_executes():
         pdb_string = inf.read()
 
     dfire2_results = run_dfire2(
-        pdb_string=pdb_string, dfire2_binary_path=DFIRE2_BINARY_PATH
+        pdb_string=pdb_string, dfire2_folder_path=DFIRE2_FOLDER_PATH
     )
 
     # Testing the results encoding

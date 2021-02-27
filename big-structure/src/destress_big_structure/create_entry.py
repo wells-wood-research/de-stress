@@ -11,6 +11,7 @@ from destress_big_structure.big_structure_models import (
     ChainModel,
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
+    RosettaResultsModel,
 )
 from destress_big_structure.design_models import (
     DesignModel,
@@ -18,7 +19,7 @@ from destress_big_structure.design_models import (
 )
 from destress_big_structure import analysis
 
-from .settings import EVOEF2_BINARY_PATH, DFIRE2_FOLDER_PATH
+from .settings import EVOEF2_BINARY_PATH, DFIRE2_FOLDER_PATH, ROSETTA_BINARY_PATH
 
 
 def create_biounit_entry(
@@ -82,6 +83,8 @@ def create_state_entry(
 
     create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_FOLDER_PATH)
 
+    create_rosetta_results_entry(ampal_assembly, state_model, ROSETTA_BINARY_PATH)
+
     return state_model
 
 
@@ -103,11 +106,22 @@ def create_evoef2_results_entry(
 
 
 def create_dfire2_results_entry(
-    ampal_assembly: ampal.Assembly, state_model: StateModel, dfire2_binary_path: str
+    ampal_assembly: ampal.Assembly, state_model: StateModel, dfire2_folder_path: str
 ) -> DFIRE2ResultsModel:
-    dfire2_results = analysis.run_dfire2(ampal_assembly.pdb, dfire2_binary_path)
+    dfire2_results = analysis.run_dfire2(ampal_assembly.pdb, dfire2_folder_path)
     dfire2_results_model = DFIRE2ResultsModel(
         state=state_model, **dfire2_results.__dict__
     )
 
     return dfire2_results_model
+
+
+def create_rosetta_results_entry(
+    ampal_assembly: ampal.Assembly, state_model: StateModel, rosetta_binary_path: str
+) -> RosettaResultsModel:
+    rosetta_results = analysis.run_rosetta(ampal_assembly.pdb, rosetta_binary_path)
+    rosetta_results_model = RosettaResultsModel(
+        state=state_model, **rosetta_results.__dict__
+    )
+
+    return rosetta_results_model
