@@ -75,6 +75,7 @@ type alias Model =
     , pageState : PageState
     , evoEF2TableOption : EvoEF2TableOption
     , displaySettings : DisplaySettings
+    , hoverInfoOption : HoverInfoOption
     }
 
 
@@ -105,6 +106,11 @@ type alias DisplaySettings =
     , dfire2LogInfo : Bool
     , rosettaLogInfo : Bool
     }
+
+
+type HoverInfoOption
+    = DFIRE2Total
+    | NoHoverInfo
 
 
 hideableSectionToString : HideableSection -> String
@@ -179,6 +185,8 @@ init shared { params } =
                         , dfire2LogInfo = False
                         , rosettaLogInfo = False
                         }
+                    , hoverInfoOption =
+                        NoHoverInfo
                     }
             in
             ( model
@@ -212,6 +220,8 @@ init shared { params } =
                     , dfire2LogInfo = False
                     , rosettaLogInfo = False
                     }
+              , hoverInfoOption =
+                    NoHoverInfo
               }
             , Cmd.none
             )
@@ -228,6 +238,7 @@ type Msg
     | SetReferenceSet { uuidString : String, refSetValue : Value }
     | SetEvoEF2TableOption EvoEF2TableOption
     | ToggleSectionVisibility HideableSection
+    | ChangeHoverInfo HoverInfoOption
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -368,6 +379,11 @@ update msg model =
             , Cmd.none
             )
 
+        ChangeHoverInfo option ->
+            ( { model | hoverInfoOption = option }
+            , Cmd.none
+            )
+
 
 plotCommands : Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
 plotCommands metrics referenceSet =
@@ -492,6 +508,7 @@ bodyView model =
                         design
                         model.evoEF2TableOption
                         model.displaySettings
+                        model.hoverInfoOption
                     ]
         ]
 
@@ -513,8 +530,9 @@ designDetailsView :
     -> Design.Design
     -> EvoEF2TableOption
     -> DisplaySettings
+    -> HoverInfoOption
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings =
+designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings hoverInfoOption =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
@@ -600,7 +618,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                     Just designMetrics ->
                         [ basicMetrics designMetrics
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
-                        , dfire2ResultsView designMetrics displaySettings
+                        , dfire2ResultsView hoverInfoOption designMetrics displaySettings
                         , rosettaResultsTableView designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
@@ -898,8 +916,8 @@ dfire2LogInfoSelection metrics =
             metrics.dfire2Results.error_info
 
 
-dfire2ResultsView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
-dfire2ResultsView metrics displaySettings =
+dfire2ResultsView : HoverInfoOption -> Metrics.DesignMetrics -> DisplaySettings -> Element Msg
+dfire2ResultsView hoverInfoOption metrics displaySettings =
     let
         logInfoBox =
             paragraph
@@ -913,13 +931,54 @@ dfire2ResultsView metrics displaySettings =
                 ]
                 [ text (dfire2LogInfoSelection metrics)
                 ]
+
+        dfire2TotalInfoBox option =
+            case option of
+                NoHoverInfo ->
+                    [ centerX ]
+
+                DFIRE2Total ->
+                    [ centerX
+                    , above
+                        (column
+                            [ spacing 15
+                            , padding 15
+                            , centerX
+                            , width (px 180)
+                            , Font.family
+                                [ Font.typeface "Roboto Mono"
+                                , Font.monospace
+                                ]
+                            , Font.size 10
+                            , Border.innerShadow
+                                { offset = ( 0, 0 )
+                                , size = 1
+                                , blur = 0
+                                , color = rgba 0.5 0.5 0.5 0.4
+                                }
+                            , Border.rounded 10
+                            , Background.color Style.colorPalette.c1
+                            , Font.color Style.colorPalette.white
+                            ]
+                            [ paragraph
+                                [ Font.size 15 ]
+                                [ text "DFIRE2 Energy Function Results" ]
+                            , paragraph
+                                [ Font.size 12 ]
+                                [ text "This text will show as a pop up and give extra information about the dfire2 energy value." ]
+                            ]
+                        )
+                    ]
     in
     sectionColumn
         [ Style.h3 <|
             text
                 "DFIRE2 Energy Function Results"
         , wrappedRow
-            [ centerX ]
+            (Events.onMouseEnter (ChangeHoverInfo DFIRE2Total)
+                :: Events.onMouseLeave (ChangeHoverInfo NoHoverInfo)
+                :: dfire2TotalInfoBox hoverInfoOption
+            )
             [ text "Total DFIRE2 Energy: "
             , metrics.dfire2Results.total
                 |> Maybe.map onePlaceFloatText
