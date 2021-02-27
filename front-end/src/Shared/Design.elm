@@ -69,7 +69,7 @@ codec =
     Codec.object Design
         |> Codec.field "name"
             .name
-            (Codec.map Editable.NotEditing (\a -> Editable.editableValue a) Codec.string)
+            (Codec.map Editable.createEditable (\a -> Editable.getValue a) Codec.string)
         |> Codec.field "fileName" .fileName Codec.string
         |> Codec.field "pdbString" .pdbString Codec.string
         |> Codec.field "deleteStatus"
@@ -124,7 +124,7 @@ designStubCodec =
 
 createDesignStub : Design -> DesignStub
 createDesignStub design =
-    { name = Editable.editableValue design.name
+    { name = Editable.getValue design.name
     , fileName = design.fileName
     , deleteStatus = design.deleteStatus
     , metricsJobStatus = design.metricsJobStatus
