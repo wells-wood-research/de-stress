@@ -642,7 +642,7 @@ metricsOverview metrics =
     column [ spacing 10, width fill ]
         [ Style.h2 <| text "Metrics"
         , wrappedRow
-            []
+            [ spacing 5 ]
             [ createTableColumn
                 (\mHF ->
                     case mHF of
@@ -728,14 +728,14 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
     let
         radioInputSelection =
             el
-                [ centerX
-                , spacing 20
+                [ spacing 20
                 , padding 20
                 ]
             <|
                 Input.radioRow
                     [ padding 20
                     , spacing 20
+                    , scrollbarX
                     ]
                     { onChange = SetEvoEF2TableOption
                     , selected = Just evoEF2TableOption
@@ -771,7 +771,7 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
                 )
         , radioInputSelection
         , wrappedRow
-            []
+            [ spacing 5 ]
             (metrics
                 |> (case evoEF2TableOption of
                         Summary ->
@@ -955,7 +955,7 @@ rosettaResultsTableView metrics displaySettings =
         [ Style.h3 <|
             text "Rosetta Energy Function Results"
         , wrappedRow
-            [ centerX ]
+            [ spacing 5 ]
             (rosettaColumns metrics)
         , Folds.sectionFoldView
             { foldVisible = displaySettings.rosettaLogInfo
@@ -1088,22 +1088,27 @@ createTableColumn metricView metric metricName =
         tableColumn =
             column
                 [ alignTop
-                ]
-
-        headerParagraph =
-            paragraph
-                [ padding 10
-                , centerX
-                , centerY
-                , height <| px 90
-                , Background.color Style.colorPalette.c1
-                , Font.center
-                , Font.color Style.colorPalette.white
+                , Font.size 18
                 ]
     in
     tableColumn
-        [ headerParagraph [ text metricName ]
-        , metricView metric
+        [ el
+            [ padding 5
+            , height <| px 80
+            , width <| px 150
+            , Background.color Style.colorPalette.c1
+            , Font.center
+            , Font.color Style.colorPalette.white
+            ]
+          <|
+            paragraph [ centerY ] [ text metricName ]
+        , el
+            [ width fill
+            , Border.solid
+            , Border.widthEach { top = 0, bottom = 1, left = 1, right = 1 }
+            ]
+          <|
+            metricView metric
         ]
 
 
