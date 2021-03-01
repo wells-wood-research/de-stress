@@ -238,8 +238,7 @@ update msg model =
                 Ok des ->
                     ( { model | pageState = Design des }
                     , Cmd.batch
-                        [ Design.viewStructure des.pdbString
-                        , case
+                        [ case
                             ( model.mSelectedReferenceSet
                                 |> Maybe.andThen Stored.getData
                             , WebSockets.getDesignMetrics des.metricsJobStatus
@@ -584,12 +583,12 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
             ]
         , sectionColumn
             [ Style.h2 <| text "Structure"
-            , Keyed.el [ height <| px 400, width fill, padding 5, Border.width 1 ]
-                ( "viewer"
-                , Html.div
+            , el [ height <| px 400, width fill, padding 5, Border.width 1 ]
+                (Html.node "ngl-viewer"
                     [ HAtt.id "viewer"
-                    , HAtt.style "height" "100%"
                     , HAtt.style "width" "100%"
+                    , HAtt.style "height" "100%"
+                    , HAtt.attribute "pdb-string" design.pdbString
                     ]
                     []
                     |> html

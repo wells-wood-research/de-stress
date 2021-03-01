@@ -15,7 +15,7 @@
     "build:elm-spa": "elm-spa build .",
     "dev:elm": "elm-live src/Main.elm -u -d public -- --debug --output=public/dist/elm.compiled.js",
     "dev:elm-spa": "chokidar src/Pages -c \"elm-spa build .\"",
-    "bundle": "webpack --entry ./public/main.js -o ./public/dist/"
+    "bundle": "webpack"
   },
   "keywords": [],
   "author": "",
@@ -34,6 +34,7 @@
   "dependencies": {
     "file-saver-es": "^2.0.5",
     "idb-keyval": "^5.0.2",
+    "ngl": "^0.10.4",
     "vega": "^5.19.1",
     "vega-embed": "^6.15.1",
     "vega-lite": "^4.17.0"
