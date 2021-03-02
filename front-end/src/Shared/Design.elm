@@ -14,6 +14,7 @@ port module Shared.Design exposing
     , storedDesignCodec
     , storedDesignToStub
     , updateDesignMetricsStatus
+    , updateDesignName
     , viewStructure
     )
 
@@ -32,6 +33,9 @@ port storeDesign : { uuidString : String, design : Value } -> Cmd msg
 
 
 port getStoredDesign : { uuidString : String } -> Cmd msg
+
+
+port updateDesignName : { uuidString : String, name : String } -> Cmd msg
 
 
 port updateDesignMetricsStatus :

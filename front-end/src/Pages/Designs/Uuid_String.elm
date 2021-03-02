@@ -391,20 +391,30 @@ update msg model =
             )
 
         ClickedAcceptNameEdit ->
-            ( { model
-                | pageState =
-                    mapIfDesign
-                        (\d ->
-                            { d
+            case model.pageState of
+                Design design ->
+                    let
+                        updatedDesign =
+                            { design
                                 | name =
                                     Editable.acceptEdit
-                                        d.name
+                                        design.name
                             }
-                        )
-                        model.pageState
-              }
-            , Cmd.none
-            )
+                    in
+                    ( { model
+                        | pageState =
+                            Design updatedDesign
+                      }
+                    , Design.updateDesignName
+                        { uuidString = model.designUuid
+                        , name =
+                            Editable.getValue updatedDesign.name
+                        }
+                    )
+
+                _ ->
+                    Debug.log "Should we report an error here?"
+                        ( model, Cmd.none )
 
         SetEvoEF2TableOption option ->
             ( { model | evoEF2TableOption = option }

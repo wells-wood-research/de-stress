@@ -142,6 +142,14 @@ app.ports.getStoredDesign.subscribe(({ uuidString }) => {
 });
 
 // Update design metrics for stored design
+app.ports.updateDesignName.subscribe(({ uuidString, name }) => {
+  get(uuidString, designStore).then((design) => {
+    design.name = name;
+    set(uuidString, design, designStore);
+  });
+});
+
+// Update design metrics for stored design
 app.ports.updateDesignMetricsStatus.subscribe(
   ({ uuidString, updatedMetricsStatus }) => {
     get(uuidString, designStore).then((design) => {
