@@ -4,10 +4,14 @@ import Browser.Navigation as Nav
 import Codec exposing (Value)
 import Dict
 import Element exposing (..)
+import Element.Keyed as Keyed
+import Html
+import Html.Attributes as HAtt
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Folds as Folds
-import Shared.Metrics exposing (RefSetMetrics)
+import Shared.Metrics as Metrics exposing (RefSetMetrics)
+import Shared.Plots as Plots
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
 import Shared.Style as Style
 import Spa.Document exposing (Document)
@@ -140,7 +144,9 @@ update msg model =
         SetFocus { uuidString, refSetValue } ->
             case Codec.decodeValue ReferenceSet.codec refSetValue of
                 Ok refSet ->
-                    ( { model | pageState = RefSet uuidString refSet }, Cmd.none )
+                    ( { model | pageState = RefSet uuidString refSet }
+                    , plotCommands refSet
+                    )
 
                 Err _ ->
                     ( { model | pageState = RefSetNotFound uuidString }, Cmd.none )
@@ -177,6 +183,42 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+plotCommands : ReferenceSet -> Cmd msg
+plotCommands referenceSet =
+    Cmd.batch
+        [ Plots.vegaPlot <|
+            { plotId = "composition"
+            , spec =
+                Metrics.createCompositionSpec
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .aggregateData
+                    )
+                    Nothing
+            }
+        , Plots.vegaPlot <|
+            { plotId = "torsionAngles"
+            , spec =
+                Metrics.createTorsionAngleSpec
+                    Nothing
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .metrics
+                    )
+            }
+        , Plots.vegaPlot <|
+            { plotId = "metricsHistograms"
+            , spec =
+                Metrics.createAllHistogramsSpec
+                    Nothing
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .metrics
+                    )
+            }
+        ]
 
 
 save : Model -> Shared.Model -> Shared.Model
@@ -316,8 +358,96 @@ fullDetails uuidString displaySettings referenceSet =
                         |> text
                     ]
             }
+        , referenceOverview
         ]
 
 
 
+-- {{{ Overview Plots
+
+
+referenceOverview : Element msg
+referenceOverview =
+    sectionColumn
+        [ compositionView
+        , torsionAnglesView
+        , metricsHistogramsView
+        ]
+
+
+compositionView : Element msg
+compositionView =
+    column
+        [ width fill ]
+        [ Style.h3 <| text "Composition"
+        , Keyed.el [ centerX ]
+            ( "composition"
+            , Html.div
+                [ HAtt.id "composition"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+torsionAnglesView : Element msg
+torsionAnglesView =
+    column
+        [ width fill ]
+        [ Style.h3 <| text "Backbone Torsion Angles"
+        , Keyed.el [ centerX ]
+            ( "torsionAngles"
+            , Html.div
+                [ HAtt.id "torsionAngles"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+metricsHistogramsView : Element msg
+metricsHistogramsView =
+    column [ width fill ]
+        [ Style.h3 <| text "Metrics Histograms"
+        , Keyed.el [ centerX ]
+            ( "metricsHistograms"
+            , Html.div
+                [ HAtt.id "metricsHistograms"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+
+-- }}}
 -- }}}

@@ -379,13 +379,13 @@ plotCommands metrics referenceSet =
                         |> ReferenceSet.getGenericData
                         |> .aggregateData
                     )
-                    metrics
+                    (Just metrics)
             }
         , Plots.vegaPlot <|
             { plotId = "torsionAngles"
             , spec =
                 Metrics.createTorsionAngleSpec
-                    metrics
+                    (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
@@ -395,7 +395,7 @@ plotCommands metrics referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
-                    metrics
+                    (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
@@ -405,17 +405,17 @@ plotCommands metrics referenceSet =
 
 
 save : Model -> Shared.Model -> Shared.Model
-save model shared =
+save _ shared =
     shared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
-load shared model =
+load _ model =
     ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ setFocussedDesign SetFocus
         , setSelectedSpecDesignDetails SetSpecification
