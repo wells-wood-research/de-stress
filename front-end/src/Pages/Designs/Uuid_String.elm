@@ -109,8 +109,7 @@ type alias DisplaySettings =
 
 
 type HoverInfoOption
-    = DFIRE2Total
-    | EvoEF2Total
+    = EvoEF2Total
     | EvoEF2RefTotal
     | EvoEF2IntaRTotal
     | EvoEF2InterSTotal
@@ -176,6 +175,27 @@ type HoverInfoOption
     | EvoEF2InterDHBSCSCDis
     | EvoEF2InterDHBSCSCThe
     | EvoEF2InterDHBSCSCPhi
+    | DFIRE2Total
+    | RosettaTotal
+    | RosettaReference
+    | RosettaVDWAtt
+    | RosettaVDWRep
+    | RosettaVDWRepIntraR
+    | RosettaElec
+    | RosettaSolvIso
+    | RosettaSolvAniso
+    | RosettaSolvIsoIntraR
+    | RosettaHBLRBB
+    | RosettaHBSRBB
+    | RosettaHBBBSC
+    | RosettaHBSC
+    | RosettaSSbond
+    | RosettaRama
+    | RosettaAAProp
+    | RosettaDunbrack
+    | RosettaOmega
+    | RosettaProClos
+    | RosettaTyroHydr
     | NoHoverInfo
 
 
@@ -684,7 +704,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         [ basicMetrics designMetrics
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
-                        , rosettaResultsTableView designMetrics displaySettings
+                        , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -897,7 +917,7 @@ evoef2SummaryColumns metrics hoverInfoOption =
         evoEF2SummaryTotalHoverBox : List (Attribute Msg)
         evoEF2SummaryTotalHoverBox =
             hoverInfoView
-                { title = "Total"
+                { title = "Total EvoEF2"
                 , info = """This value is the total EvoEF2 energy. It is the sum of the reference, 
                             intra residue, inter residue - same chain and inter residue - different 
                             chains, energy values. In the EvoEF2 output this field is called `Total`."""
@@ -945,7 +965,7 @@ evoef2SummaryColumns metrics hoverInfoOption =
                 , hoverInfoOption = hoverInfoOption
                 }
     in
-    [ el evoEF2SummaryTotalHoverBox <| createTableFloatColumn metrics.evoEF2Results.total "Total"
+    [ el evoEF2SummaryTotalHoverBox <| createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
     , el evoEF2SummaryRefHoverBox <| createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
     , el evoEF2SummaryIntraRHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
     , el evoEF2SummaryInterSHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
@@ -1721,11 +1741,15 @@ dfire2ResultsView metrics displaySettings hoverInfoOption =
                 [ text (dfire2LogInfoSelection metrics)
                 ]
 
-        dfire2TotalHoverBoxTitle =
-            "Total DFIRE2 Energy"
-
-        dfire2TotalHoverBoxInfo =
-            "This text will show as a pop up and give extra information about the dfire2 energy value."
+        dfire2TotalHoverBox : List (Attribute Msg)
+        dfire2TotalHoverBox =
+            hoverInfoView
+                { title = "Total DFIRE2"
+                , info = """This value is the total DFIRE2 energy. This is the only field that is returned from
+                            running DFIRE2 on a pdb file."""
+                , mouseEnterMsg = DFIRE2Total
+                , hoverInfoOption = hoverInfoOption
+                }
     in
     sectionColumn
         [ Style.h3 <|
@@ -1734,19 +1758,10 @@ dfire2ResultsView metrics displaySettings hoverInfoOption =
                     "DFIRE2 Energy Function Results"
                 ]
         , wrappedRow
-            (centerX
-                :: hoverInfoView
-                    { title = dfire2TotalHoverBoxTitle
-                    , info = dfire2TotalHoverBoxInfo
-                    , mouseEnterMsg = DFIRE2Total
-                    , hoverInfoOption = hoverInfoOption
-                    }
-            )
-            [ text "Total DFIRE2 Energy: "
-            , metrics.dfire2Results.total
-                |> Maybe.map onePlaceFloatText
-                |> Maybe.withDefault (text "--")
+            [ spacing 5
+            , centerX
             ]
+            [ el dfire2TotalHoverBox <| createTableFloatColumn metrics.dfire2Results.total "Total DFIRE2" ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
             , title = hideableSectionToString DFIRE2LogInfo
@@ -1756,8 +1771,12 @@ dfire2ResultsView metrics displaySettings hoverInfoOption =
         ]
 
 
-rosettaResultsTableView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
-rosettaResultsTableView metrics displaySettings =
+rosettaResultsTableView :
+    Metrics.DesignMetrics
+    -> DisplaySettings
+    -> HoverInfoOption
+    -> Element Msg
+rosettaResultsTableView metrics displaySettings hoverInfoOption =
     let
         logInfoBox =
             paragraph
@@ -1779,7 +1798,7 @@ rosettaResultsTableView metrics displaySettings =
                 [ text "Rosetta Energy Function Results" ]
         , wrappedRow
             [ spacing 5 ]
-            (rosettaColumns metrics)
+            (rosettaColumns metrics hoverInfoOption)
         , Folds.sectionFoldView
             { foldVisible = displaySettings.rosettaLogInfo
             , title = hideableSectionToString RosettaLogInfo
@@ -1789,28 +1808,212 @@ rosettaResultsTableView metrics displaySettings =
         ]
 
 
-rosettaColumns : Metrics.DesignMetrics -> List (Element msg)
-rosettaColumns metrics =
-    [ createTableFloatColumn metrics.rosettaResults.total_score "Total"
-    , createTableFloatColumn metrics.rosettaResults.ref "Reference"
-    , createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
-    , createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
-    , createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive IntraR"
-    , createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
-    , createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
-    , createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atom"
-    , createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic IntraR"
-    , createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
-    , createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
-    , createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
-    , createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain"
-    , createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bonds"
-    , createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
-    , createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
-    , createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
-    , createTableFloatColumn metrics.rosettaResults.omega "Torsion Omega"
-    , createTableFloatColumn metrics.rosettaResults.pro_close "Torsion Proline Closure"
-    , createTableFloatColumn metrics.rosettaResults.yhh_planarity "Torsion Tyrosine Hydroxyl"
+rosettaColumns :
+    Metrics.DesignMetrics
+    -> HoverInfoOption
+    -> List (Element Msg)
+rosettaColumns metrics hoverInfoOption =
+    let
+        rosettaTotalHoverBox : List (Attribute Msg)
+        rosettaTotalHoverBox =
+            hoverInfoView
+                { title = "Total Rosetta"
+                , info = """"""
+                , mouseEnterMsg = RosettaTotal
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaReferenceHoverBox : List (Attribute Msg)
+        rosettaReferenceHoverBox =
+            hoverInfoView
+                { title = "Reference"
+                , info = """"""
+                , mouseEnterMsg = RosettaReference
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaVDWAttHoverBox : List (Attribute Msg)
+        rosettaVDWAttHoverBox =
+            hoverInfoView
+                { title = "VDW Attractive"
+                , info = """"""
+                , mouseEnterMsg = RosettaVDWAtt
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaVDWRepHoverBox : List (Attribute Msg)
+        rosettaVDWRepHoverBox =
+            hoverInfoView
+                { title = "VDW Repulsive"
+                , info = """"""
+                , mouseEnterMsg = RosettaVDWRep
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaVDWRepIntraRHoverBox : List (Attribute Msg)
+        rosettaVDWRepIntraRHoverBox =
+            hoverInfoView
+                { title = "VDW Repulsive IntraR"
+                , info = """"""
+                , mouseEnterMsg = RosettaVDWRepIntraR
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaElecHoverBox : List (Attribute Msg)
+        rosettaElecHoverBox =
+            hoverInfoView
+                { title = "Electrostatics"
+                , info = """"""
+                , mouseEnterMsg = RosettaElec
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaSolvIsoHoverBox : List (Attribute Msg)
+        rosettaSolvIsoHoverBox =
+            hoverInfoView
+                { title = "Solvation Isotropic"
+                , info = """"""
+                , mouseEnterMsg = RosettaSolvIso
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaSolvAnisoHoverBox : List (Attribute Msg)
+        rosettaSolvAnisoHoverBox =
+            hoverInfoView
+                { title = "Solvation Anisotropic Polar Atom"
+                , info = """"""
+                , mouseEnterMsg = RosettaSolvAniso
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaSolvIsoIntraRHoverBox : List (Attribute Msg)
+        rosettaSolvIsoIntraRHoverBox =
+            hoverInfoView
+                { title = "Solvation Isotropic IntraR"
+                , info = """"""
+                , mouseEnterMsg = RosettaSolvIsoIntraR
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaHBLRBBHoverBox : List (Attribute Msg)
+        rosettaHBLRBBHoverBox =
+            hoverInfoView
+                { title = "HB Long Range Backbone"
+                , info = """"""
+                , mouseEnterMsg = RosettaHBLRBB
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaHBSRBBHoverBox : List (Attribute Msg)
+        rosettaHBSRBBHoverBox =
+            hoverInfoView
+                { title = "HB Short Range Backbone"
+                , info = """"""
+                , mouseEnterMsg = RosettaHBSRBB
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaHBBBSCHoverBox : List (Attribute Msg)
+        rosettaHBBBSCHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Sidechain"
+                , info = """"""
+                , mouseEnterMsg = RosettaHBBBSC
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaHBSCHoverBox : List (Attribute Msg)
+        rosettaHBSCHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain"
+                , info = """"""
+                , mouseEnterMsg = RosettaHBSC
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaSSbondHoverBox : List (Attribute Msg)
+        rosettaSSbondHoverBox =
+            hoverInfoView
+                { title = "Disulfide Bonds"
+                , info = """"""
+                , mouseEnterMsg = RosettaSSbond
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaRamaHoverBox : List (Attribute Msg)
+        rosettaRamaHoverBox =
+            hoverInfoView
+                { title = "Backbone Torsion Preference"
+                , info = """"""
+                , mouseEnterMsg = RosettaRama
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaAAPropHoverBox : List (Attribute Msg)
+        rosettaAAPropHoverBox =
+            hoverInfoView
+                { title = "Amino Acid Propensity"
+                , info = """"""
+                , mouseEnterMsg = RosettaAAProp
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaDunbrackHoverBox : List (Attribute Msg)
+        rosettaDunbrackHoverBox =
+            hoverInfoView
+                { title = "Dunbrack Rotamer"
+                , info = """"""
+                , mouseEnterMsg = RosettaDunbrack
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaOmegaHoverBox : List (Attribute Msg)
+        rosettaOmegaHoverBox =
+            hoverInfoView
+                { title = "Torsion Omega"
+                , info = """"""
+                , mouseEnterMsg = RosettaOmega
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaProClosHoverBox : List (Attribute Msg)
+        rosettaProClosHoverBox =
+            hoverInfoView
+                { title = "Torsion Proline Closure"
+                , info = """"""
+                , mouseEnterMsg = RosettaProClos
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        rosettaTyroHydrHoverBox : List (Attribute Msg)
+        rosettaTyroHydrHoverBox =
+            hoverInfoView
+                { title = "Torsion Tyrosine Hydroxyl"
+                , info = """"""
+                , mouseEnterMsg = RosettaTyroHydr
+                , hoverInfoOption = hoverInfoOption
+                }
+    in
+    [ el rosettaTotalHoverBox <| createTableFloatColumn metrics.rosettaResults.total_score "Total Rosetta"
+    , el rosettaReferenceHoverBox <| createTableFloatColumn metrics.rosettaResults.ref "Reference"
+    , el rosettaVDWAttHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
+    , el rosettaVDWRepHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
+    , el rosettaVDWRepIntraRHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive IntraR"
+    , el rosettaElecHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
+    , el rosettaSolvIsoHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
+    , el rosettaSolvAnisoHoverBox <| createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atom"
+    , el rosettaSolvIsoIntraRHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic IntraR"
+    , el rosettaHBLRBBHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
+    , el rosettaHBSRBBHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
+    , el rosettaHBBBSCHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
+    , el rosettaHBSCHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain"
+    , el rosettaSSbondHoverBox <| createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bonds"
+    , el rosettaRamaHoverBox <| createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
+    , el rosettaAAPropHoverBox <| createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
+    , el rosettaDunbrackHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
+    , el rosettaOmegaHoverBox <| createTableFloatColumn metrics.rosettaResults.omega "Torsion Omega"
+    , el rosettaProClosHoverBox <| createTableFloatColumn metrics.rosettaResults.pro_close "Torsion Proline Closure"
+    , el rosettaTyroHydrHoverBox <| createTableFloatColumn metrics.rosettaResults.yhh_planarity "Torsion Tyrosine Hydroxyl"
     ]
 
 
