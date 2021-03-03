@@ -16,7 +16,7 @@ import Round
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design
-import Shared.Editable exposing (Editable(..))
+import Shared.Editable as Editable exposing (Editable(..))
 import Shared.Folds as Folds
 import Shared.Metrics as Metrics
 import Shared.Plots as Plots
@@ -84,6 +84,16 @@ type PageState
     | LoadingWithStub Design.DesignStub
     | UnknownDesignUuid
     | Design Design.Design
+
+
+mapIfDesign : (Design.Design -> Design.Design) -> PageState -> PageState
+mapIfDesign fn pageState =
+    case pageState of
+        Design design ->
+            Design <| fn design
+
+        _ ->
+            pageState
 
 
 type EvoEF2TableOption
@@ -226,6 +236,10 @@ type Msg
     = SetFocus { uuidString : String, design : Value }
     | SetSpecification { uuidString : String, specValue : Value }
     | SetReferenceSet { uuidString : String, refSetValue : Value }
+    | ClickedNameEdit
+    | EditedName String
+    | ClickedCancelNameEdit
+    | ClickedAcceptNameEdit
     | SetEvoEF2TableOption EvoEF2TableOption
     | ToggleSectionVisibility HideableSection
 
@@ -333,6 +347,74 @@ update msg model =
                         "A reference set was set, but I was not expecting one."
                         ( model, Cmd.none )
 
+        ClickedNameEdit ->
+            ( { model
+                | pageState =
+                    mapIfDesign
+                        (\d -> { d | name = Editable.startEditing d.name })
+                        model.pageState
+              }
+            , Cmd.none
+            )
+
+        EditedName updatedName ->
+            ( { model
+                | pageState =
+                    mapIfDesign
+                        (\d ->
+                            { d
+                                | name =
+                                    Editable.editValue
+                                        (if String.isEmpty updatedName then
+                                            Nothing
+
+                                         else
+                                            Just updatedName
+                                        )
+                                        d.name
+                            }
+                        )
+                        model.pageState
+              }
+            , Cmd.none
+            )
+
+        ClickedCancelNameEdit ->
+            ( { model
+                | pageState =
+                    mapIfDesign
+                        (\d -> { d | name = Editable.cancelEdit d.name })
+                        model.pageState
+              }
+            , Cmd.none
+            )
+
+        ClickedAcceptNameEdit ->
+            case model.pageState of
+                Design design ->
+                    let
+                        updatedDesign =
+                            { design
+                                | name =
+                                    Editable.acceptEdit
+                                        design.name
+                            }
+                    in
+                    ( { model
+                        | pageState =
+                            Design updatedDesign
+                      }
+                    , Design.updateDesignName
+                        { uuidString = model.designUuid
+                        , name =
+                            Editable.getValue updatedDesign.name
+                        }
+                    )
+
+                _ ->
+                    Debug.log "Should we report an error here?"
+                        ( model, Cmd.none )
+
         SetEvoEF2TableOption option ->
             ( { model | evoEF2TableOption = option }
             , Cmd.none
@@ -406,16 +488,34 @@ plotCommands metrics referenceSet =
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
-    shared
+    case model.pageState of
+        Design design ->
+            Shared.mapRunState
+                (\runState ->
+                    { runState
+                        | designs =
+                            Dict.insert
+                                model.designUuid
+                                (design
+                                    |> Design.createDesignStub
+                                    |> Design.storeDesignStubLocally
+                                )
+                                runState.designs
+                    }
+                )
+                shared
+
+        _ ->
+            shared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
-load shared model =
+load _ model =
     ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ setFocussedDesign SetFocus
         , setSelectedSpecDesignDetails SetSpecification
@@ -528,8 +628,10 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                 (case design.name of
                     NotEditing currentName ->
                         [ paragraph [] [ Style.h2 <| text <| "Name: " ++ currentName ]
-                        , el [ centerY ]
-                            --, Events.onClick <| ClickedNameEdit ]
+                        , el
+                            [ centerY
+                            , Events.onClick <| ClickedNameEdit
+                            ]
                             (FeatherIcons.edit
                                 |> FeatherIcons.toHtml []
                                 |> html
@@ -537,34 +639,35 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         ]
 
                     Editing _ mNewName ->
-                        -- [ Input.text
-                        --     Style.textInputStyle
-                        --     { onChange = EditedName
-                        --     , text = Maybe.withDefault "" mNewName
-                        --     , placeholder = Nothing
-                        --     , label =
-                        --         Input.labelRight [ centerY ]
-                        --             (row [ spacing 5 ]
-                        --                 [ Style.conditionalButton
-                        --                     { label = text "Ok"
-                        --                     , clickMsg = Just ClickedAcceptNameEdit
-                        --                     , isActive =
-                        --                         case mNewName of
-                        --                             Just newName ->
-                        --                                 String.isEmpty newName
-                        --                                     |> not
-                        --                             Nothing ->
-                        --                                 False
-                        --                     }
-                        --                 , Style.alwaysActiveButton
-                        --                     { label = text "Cancel"
-                        --                     , clickMsg = ClickedCancelNameEdit
-                        --                     , pressed = False
-                        --                     }
-                        --                 ]
-                        --             )
-                        --     }
-                        []
+                        [ Input.text
+                            Style.textInputStyle
+                            { onChange = EditedName
+                            , text = Maybe.withDefault "" mNewName
+                            , placeholder = Nothing
+                            , label =
+                                Input.labelRight [ centerY ]
+                                    (row [ spacing 5 ]
+                                        [ Buttons.conditionalButton
+                                            { label = text "Ok"
+                                            , clickMsg = Just ClickedAcceptNameEdit
+                                            , isActive =
+                                                case mNewName of
+                                                    Just newName ->
+                                                        String.isEmpty newName
+                                                            |> not
+
+                                                    Nothing ->
+                                                        False
+                                            }
+                                        , Buttons.alwaysActiveButton
+                                            { label = text "Cancel"
+                                            , clickMsg = ClickedCancelNameEdit
+                                            , pressed = False
+                                            }
+                                        ]
+                                    )
+                            }
+                        ]
                 )
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
             ]
@@ -573,13 +676,6 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                 { label = text "Back"
                 , route = Route.Designs
                 }
-
-            -- , Buttons.dangerousButton
-            --     { label = text "Delete"
-            --     , confirmText = "Are you sure you want to delete this design?"
-            --     , status = deleteStatus
-            --     , dangerousMsg = DeleteFocussedDesign uuidString
-            --     }
             ]
         , sectionColumn
             [ Style.h2 <| text "Structure"
