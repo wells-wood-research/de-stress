@@ -1,11 +1,11 @@
 module Shared.Metrics exposing
     ( AggregateData
+    , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
-    , DFIRE2Results
-    , RosettaResults
     , MeanAndStdDev
     , RefSetMetrics
+    , RosettaResults
     , SequenceInfo
     , aggregateDataCodec
     , calculateMeanComposition
@@ -271,33 +271,33 @@ dfire2ResultsCodec =
 
 
 type alias RosettaResults =
-    { log_info: String
-    , error_info: String
-    , return_code: Int
-    , dslf_fa13: Maybe Float
-    , fa_atr: Maybe Float
-    , fa_dun: Maybe Float
-    , fa_elec: Maybe Float
-    , fa_intra_rep: Maybe Float
-    , fa_intra_sol_xover4: Maybe Float
-    , fa_rep: Maybe Float
-    , fa_sol: Maybe Float
-    , hbond_bb_sc: Maybe Float
-    , hbond_lr_bb: Maybe Float
-    , hbond_sc: Maybe Float
-    , hbond_sr_bb: Maybe Float
-    , linear_chainbreak: Maybe Float
-    , lk_ball_wtd: Maybe Float
-    , omega: Maybe Float
-    , overlap_chainbreak: Maybe Float
-    , p_aa_pp: Maybe Float
-    , pro_close: Maybe Float
-    , rama_prepro: Maybe Float
-    , ref: Maybe Float
-    , score: Maybe Float
-    , time: Maybe Float
-    , total_score: Maybe Float
-    , yhh_planarity: Maybe Float
+    { log_info : String
+    , error_info : String
+    , return_code : Int
+    , dslf_fa13 : Maybe Float
+    , fa_atr : Maybe Float
+    , fa_dun : Maybe Float
+    , fa_elec : Maybe Float
+    , fa_intra_rep : Maybe Float
+    , fa_intra_sol_xover4 : Maybe Float
+    , fa_rep : Maybe Float
+    , fa_sol : Maybe Float
+    , hbond_bb_sc : Maybe Float
+    , hbond_lr_bb : Maybe Float
+    , hbond_sc : Maybe Float
+    , hbond_sr_bb : Maybe Float
+    , linear_chainbreak : Maybe Float
+    , lk_ball_wtd : Maybe Float
+    , omega : Maybe Float
+    , overlap_chainbreak : Maybe Float
+    , p_aa_pp : Maybe Float
+    , pro_close : Maybe Float
+    , rama_prepro : Maybe Float
+    , ref : Maybe Float
+    , score : Maybe Float
+    , time : Maybe Float
+    , total_score : Maybe Float
+    , yhh_planarity : Maybe Float
     }
 
 
@@ -334,12 +334,14 @@ rosettaResultsCodec =
         |> Codec.buildObject
 
 
+
 -- }}}
 -- {{{ RefSetMetrics
 
 
 type alias RefSetMetrics =
-    { composition : Dict String Float
+    { pdbCode : String
+    , composition : Dict String Float
     , torsionAngles : Dict String ( Float, Float, Float )
     , hydrophobicFitness : Maybe Float
     , isoelectricPoint : Float
@@ -352,6 +354,7 @@ type alias RefSetMetrics =
 refSetMetricsCodec : Codec RefSetMetrics
 refSetMetricsCodec =
     Codec.object RefSetMetrics
+        |> Codec.field "pdbCode" .pdbCode Codec.string
         |> Codec.field "composition" .composition (Codec.dict Codec.float)
         |> Codec.field "torsionAngles"
             .torsionAngles

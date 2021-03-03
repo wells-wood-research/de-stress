@@ -6,6 +6,7 @@ import Dict
 import Element exposing (..)
 import Shared
 import Shared.Buttons as Buttons
+import Shared.Metrics as Metrics exposing (RefSetMetrics)
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
 import Shared.Style as Style
 import Spa.Document exposing (Document)
@@ -213,7 +214,7 @@ bodyView model =
 
             RefSet uuidString referenceSet ->
                 sectionColumn
-                    [ simpleDetails uuidString (referenceSet |> ReferenceSet.getGenericData)
+                    [ fullDetails uuidString (referenceSet |> ReferenceSet.getGenericData)
                     ]
 
             Deleted uuidString ->
@@ -259,6 +260,28 @@ simpleDetails uuidString refSetOrStub =
             , paragraph
                 []
                 [ text refSetOrStub.description ]
+            ]
+        ]
+
+
+fullDetails :
+    String
+    ->
+        { a
+            | name : String
+            , description : String
+            , deleteStatus : Buttons.DangerStatus
+            , metrics : List RefSetMetrics
+        }
+    -> Element Msg
+fullDetails uuidString referenceSet =
+    sectionColumn
+        [ simpleDetails uuidString referenceSet
+        , Style.h2 <| text "PDB Codes"
+        , paragraph []
+            [ List.map .pdbCode referenceSet.metrics
+                |> String.join " "
+                |> text
             ]
         ]
 
