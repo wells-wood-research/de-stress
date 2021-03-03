@@ -188,14 +188,14 @@ type HoverInfoOption
     | RosettaHBLRBB
     | RosettaHBSRBB
     | RosettaHBBBSC
-    | RosettaHBSC
+    | RosettaHBSCSC
     | RosettaSSbond
     | RosettaRama
     | RosettaAAProp
     | RosettaDunbrack
-    | RosettaOmega
-    | RosettaProClos
-    | RosettaTyroHydr
+    | RosettaOmegaPen
+    | RosettaOpenProPen
+    | RosettaTyroPen
     | NoHoverInfo
 
 
@@ -1818,7 +1818,9 @@ rosettaColumns metrics hoverInfoOption =
         rosettaTotalHoverBox =
             hoverInfoView
                 { title = "Total Rosetta"
-                , info = """"""
+                , info = """This value is the total Rosetta energy. It is a weighted sum of the different 
+                            Rosetta energy values. In the Rosetta `score.sc` output file, this value is called 
+                            `total_score`."""
                 , mouseEnterMsg = RosettaTotal
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1827,7 +1829,8 @@ rosettaColumns metrics hoverInfoOption =
         rosettaReferenceHoverBox =
             hoverInfoView
                 { title = "Reference"
-                , info = """"""
+                , info = """This value is the reference energy for the different amino acids. 
+                            In the Rosetta `score.sc` output file, this value is called `ref`."""
                 , mouseEnterMsg = RosettaReference
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1836,7 +1839,9 @@ rosettaColumns metrics hoverInfoOption =
         rosettaVDWAttHoverBox =
             hoverInfoView
                 { title = "VDW Attractive"
-                , info = """"""
+                , info = """This value is the attractive energy between two atoms on different residues 
+                            separated by distance, d. In the Rosetta `score.sc` output file, this value 
+                            is called `fa_atr`."""
                 , mouseEnterMsg = RosettaVDWAtt
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1845,7 +1850,9 @@ rosettaColumns metrics hoverInfoOption =
         rosettaVDWRepHoverBox =
             hoverInfoView
                 { title = "VDW Repulsive"
-                , info = """"""
+                , info = """This value is the repulsive energy between two atoms on different residues 
+                            separated by distance, d. In the Rosetta `score.sc` output file, this value 
+                            is called `fa_rep`."""
                 , mouseEnterMsg = RosettaVDWRep
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1853,8 +1860,10 @@ rosettaColumns metrics hoverInfoOption =
         rosettaVDWRepIntraRHoverBox : List (Attribute Msg)
         rosettaVDWRepIntraRHoverBox =
             hoverInfoView
-                { title = "VDW Repulsive IntraR"
-                , info = """"""
+                { title = "VDW Repulsive Intra Residue"
+                , info = """This value is the repulsive energy between two atoms on the same residue 
+                            separated by distance, d. In the Rosetta `score.sc` output file, this value 
+                            is called `fa_intra_rep`."""
                 , mouseEnterMsg = RosettaVDWRepIntraR
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1863,7 +1872,9 @@ rosettaColumns metrics hoverInfoOption =
         rosettaElecHoverBox =
             hoverInfoView
                 { title = "Electrostatics"
-                , info = """"""
+                , info = """This value is the energy of interaction between two non-bonded charged atoms 
+                            separated by distance, d. In the Rosetta `score.sc` output file, this value 
+                            is called `fa_elec`."""
                 , mouseEnterMsg = RosettaElec
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1872,7 +1883,9 @@ rosettaColumns metrics hoverInfoOption =
         rosettaSolvIsoHoverBox =
             hoverInfoView
                 { title = "Solvation Isotropic"
-                , info = """"""
+                , info = """This value is the Gaussian exclusion implicit solvation energy between 
+                            protein atoms in different residues. In the Rosetta `score.sc` output file, 
+                            this value is called `fa_sol`."""
                 , mouseEnterMsg = RosettaSolvIso
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1880,8 +1893,10 @@ rosettaColumns metrics hoverInfoOption =
         rosettaSolvAnisoHoverBox : List (Attribute Msg)
         rosettaSolvAnisoHoverBox =
             hoverInfoView
-                { title = "Solvation Anisotropic Polar Atom"
-                , info = """"""
+                { title = "Solvation Anisotropic Polar Atoms"
+                , info = """This value is the orientation-dependent solvation of polar atoms 
+                            assuming ideal water geometry. In the Rosetta `score.sc` output file, 
+                            this value is called `lk_ball_wtd`."""
                 , mouseEnterMsg = RosettaSolvAniso
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1889,8 +1904,10 @@ rosettaColumns metrics hoverInfoOption =
         rosettaSolvIsoIntraRHoverBox : List (Attribute Msg)
         rosettaSolvIsoIntraRHoverBox =
             hoverInfoView
-                { title = "Solvation Isotropic IntraR"
-                , info = """"""
+                { title = "Solvation Isotropic Intra Residue"
+                , info = """This value is the Gaussian exclusion implicit solvation energy between 
+                            protein atoms in the same residue. In the Rosetta `score.sc` output file, 
+                            this value is called `fa_sol_intraR`."""
                 , mouseEnterMsg = RosettaSolvIsoIntraR
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1899,7 +1916,8 @@ rosettaColumns metrics hoverInfoOption =
         rosettaHBLRBBHoverBox =
             hoverInfoView
                 { title = "HB Long Range Backbone"
-                , info = """"""
+                , info = """This value is the energy of long range hydrogen bonds. In the Rosetta `score.sc` 
+                            output file, this value is called `hbond_lr_bb`."""
                 , mouseEnterMsg = RosettaHBLRBB
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1908,7 +1926,8 @@ rosettaColumns metrics hoverInfoOption =
         rosettaHBSRBBHoverBox =
             hoverInfoView
                 { title = "HB Short Range Backbone"
-                , info = """"""
+                , info = """This value is the energy of short range hydrogen bonds. In the Rosetta `score.sc` 
+                            output file, this value is called `hbond_sr_bb`."""
                 , mouseEnterMsg = RosettaHBSRBB
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1917,25 +1936,28 @@ rosettaColumns metrics hoverInfoOption =
         rosettaHBBBSCHoverBox =
             hoverInfoView
                 { title = "HB Backbone Sidechain"
-                , info = """"""
+                , info = """This value is the energy of backbone-side chain hydrogen bonds. In the Rosetta `score.sc` 
+                            output file, this value is called `hbond_bb_sc`."""
                 , mouseEnterMsg = RosettaHBBBSC
                 , hoverInfoOption = hoverInfoOption
                 }
 
-        rosettaHBSCHoverBox : List (Attribute Msg)
-        rosettaHBSCHoverBox =
+        rosettaHBSCSCHoverBox : List (Attribute Msg)
+        rosettaHBSCSCHoverBox =
             hoverInfoView
-                { title = "HB Sidechain"
-                , info = """"""
-                , mouseEnterMsg = RosettaHBSC
+                { title = "HB Sidechain Sidechain"
+                , info = """This value is the energy of side chain-side chain hydrogen bonds. In the Rosetta `score.sc` 
+                            output file, this value is called `hbond_sc`."""
+                , mouseEnterMsg = RosettaHBSCSC
                 , hoverInfoOption = hoverInfoOption
                 }
 
         rosettaSSbondHoverBox : List (Attribute Msg)
         rosettaSSbondHoverBox =
             hoverInfoView
-                { title = "Disulfide Bonds"
-                , info = """"""
+                { title = "Disulfide Bridges"
+                , info = """This value is the energy of disulfide bridges. In the Rosetta `score.sc` 
+                            output file, this value is called `dslf_fa13`."""
                 , mouseEnterMsg = RosettaSSbond
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1944,7 +1966,8 @@ rosettaColumns metrics hoverInfoOption =
         rosettaRamaHoverBox =
             hoverInfoView
                 { title = "Backbone Torsion Preference"
-                , info = """"""
+                , info = """This value is the probability of backbone ϕ, ψ angles given the amino acid type. 
+                            In the Rosetta `score.sc` output file, this value is called `rama_prepro`."""
                 , mouseEnterMsg = RosettaRama
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1953,7 +1976,8 @@ rosettaColumns metrics hoverInfoOption =
         rosettaAAPropHoverBox =
             hoverInfoView
                 { title = "Amino Acid Propensity"
-                , info = """"""
+                , info = """This value is the probability of amino acid identity given the backbone ϕ, ψ angles. 
+                            In the Rosetta `score.sc` output file, this value is called `p_aa_pp`."""
                 , mouseEnterMsg = RosettaAAProp
                 , hoverInfoOption = hoverInfoOption
                 }
@@ -1962,35 +1986,41 @@ rosettaColumns metrics hoverInfoOption =
         rosettaDunbrackHoverBox =
             hoverInfoView
                 { title = "Dunbrack Rotamer"
-                , info = """"""
+                , info = """This value is the probability that a chosen rotamer is native-like given 
+                            backbone ϕ, ψ angles. In the Rosetta `score.sc` output file, this value 
+                            is called `fa_dun`."""
                 , mouseEnterMsg = RosettaDunbrack
                 , hoverInfoOption = hoverInfoOption
                 }
 
-        rosettaOmegaHoverBox : List (Attribute Msg)
-        rosettaOmegaHoverBox =
+        rosettaOmegaPenHoverBox : List (Attribute Msg)
+        rosettaOmegaPenHoverBox =
             hoverInfoView
-                { title = "Torsion Omega"
-                , info = """"""
-                , mouseEnterMsg = RosettaOmega
+                { title = "Omega Penalty"
+                , info = """This value is a backbone-dependent penalty for cis ω dihedrals that deviate 
+                            from 0° and trans ω dihedrals that deviate from 180°. In the Rosetta `score.sc` 
+                            output file, this value is called `omega`."""
+                , mouseEnterMsg = RosettaOmegaPen
                 , hoverInfoOption = hoverInfoOption
                 }
 
-        rosettaProClosHoverBox : List (Attribute Msg)
-        rosettaProClosHoverBox =
+        rosettaOpenProPenHoverBox : List (Attribute Msg)
+        rosettaOpenProPenHoverBox =
             hoverInfoView
-                { title = "Torsion Proline Closure"
-                , info = """"""
-                , mouseEnterMsg = RosettaProClos
+                { title = "Open Proline Penalty"
+                , info = """This value is a penalty for an open proline ring and proline ω bonding energy. 
+                            In the Rosetta `score.sc` output file, this value is called `pro_close`."""
+                , mouseEnterMsg = RosettaOpenProPen
                 , hoverInfoOption = hoverInfoOption
                 }
 
-        rosettaTyroHydrHoverBox : List (Attribute Msg)
-        rosettaTyroHydrHoverBox =
+        rosettaTyroPenHoverBox : List (Attribute Msg)
+        rosettaTyroPenHoverBox =
             hoverInfoView
-                { title = "Torsion Tyrosine Hydroxyl"
-                , info = """"""
-                , mouseEnterMsg = RosettaTyroHydr
+                { title = "Tyrosine χ3 Dihedral Angle Penalty"
+                , info = """This value is a sinusoidal penalty for non-planar tyrosine χ3 dihedral angle. 
+                            In the Rosetta `score.sc` output file, this value is called `yhh_planarity`."""
+                , mouseEnterMsg = RosettaTyroPen
                 , hoverInfoOption = hoverInfoOption
                 }
     in
@@ -1998,22 +2028,22 @@ rosettaColumns metrics hoverInfoOption =
     , el rosettaReferenceHoverBox <| createTableFloatColumn metrics.rosettaResults.ref "Reference"
     , el rosettaVDWAttHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
     , el rosettaVDWRepHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
-    , el rosettaVDWRepIntraRHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive IntraR"
+    , el rosettaVDWRepIntraRHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive Intra Residue"
     , el rosettaElecHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
     , el rosettaSolvIsoHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
-    , el rosettaSolvAnisoHoverBox <| createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atom"
-    , el rosettaSolvIsoIntraRHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic IntraR"
+    , el rosettaSolvAnisoHoverBox <| createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atoms"
+    , el rosettaSolvIsoIntraRHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic Intra Residue"
     , el rosettaHBLRBBHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
     , el rosettaHBSRBBHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
     , el rosettaHBBBSCHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
-    , el rosettaHBSCHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain"
-    , el rosettaSSbondHoverBox <| createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bonds"
+    , el rosettaHBSCSCHoverBox <| createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain Sidechain"
+    , el rosettaSSbondHoverBox <| createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bridges"
     , el rosettaRamaHoverBox <| createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
     , el rosettaAAPropHoverBox <| createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
     , el rosettaDunbrackHoverBox <| createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
-    , el rosettaOmegaHoverBox <| createTableFloatColumn metrics.rosettaResults.omega "Torsion Omega"
-    , el rosettaProClosHoverBox <| createTableFloatColumn metrics.rosettaResults.pro_close "Torsion Proline Closure"
-    , el rosettaTyroHydrHoverBox <| createTableFloatColumn metrics.rosettaResults.yhh_planarity "Torsion Tyrosine Hydroxyl"
+    , el rosettaOmegaPenHoverBox <| createTableFloatColumn metrics.rosettaResults.omega "Omega Penalty"
+    , el rosettaOpenProPenHoverBox <| createTableFloatColumn metrics.rosettaResults.pro_close "Open Proline Penalty"
+    , el rosettaTyroPenHoverBox <| createTableFloatColumn metrics.rosettaResults.yhh_planarity "Tyrosine χ3 Dihedral Angle Penalty"
     ]
 
 
