@@ -631,21 +631,6 @@ designStubCSVEncoder designStub =
                                 metrics.evoEF2Results.interD_total
                                 |> Maybe.withDefault "NaN"
                              )
-                           , ( "evoef2 - aapropensity"
-                             , Maybe.map String.fromFloat
-                                metrics.evoEF2Results.aapropensity
-                                |> Maybe.withDefault "NaN"
-                             )
-                           , ( "evoef2 - dunbrack"
-                             , Maybe.map String.fromFloat
-                                metrics.evoEF2Results.dunbrack
-                                |> Maybe.withDefault "NaN"
-                             )
-                           , ( "evoef2 - ramachandran"
-                             , Maybe.map String.fromFloat
-                                metrics.evoEF2Results.ramachandran
-                                |> Maybe.withDefault "NaN"
-                             )
 
                            -- DFIRE2
                            , ( "dfire2 - total"
