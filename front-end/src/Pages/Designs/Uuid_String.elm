@@ -931,52 +931,24 @@ dfire2ResultsView hoverInfoOption metrics displaySettings =
                 [ text (dfire2LogInfoSelection metrics)
                 ]
 
-        dfire2TotalInfoBox option =
-            case option of
-                NoHoverInfo ->
-                    [ centerX ]
+        dfire2TotalHoverBoxTitle =
+            "Total DFIRE2 Energy"
 
-                DFIRE2Total ->
-                    [ centerX
-                    , above
-                        (column
-                            [ spacing 15
-                            , padding 15
-                            , centerX
-                            , width (px 180)
-                            , Font.family
-                                [ Font.typeface "Roboto Mono"
-                                , Font.monospace
-                                ]
-                            , Font.size 10
-                            , Border.innerShadow
-                                { offset = ( 0, 0 )
-                                , size = 1
-                                , blur = 0
-                                , color = rgba 0.5 0.5 0.5 0.4
-                                }
-                            , Border.rounded 10
-                            , Background.color Style.colorPalette.c1
-                            , Font.color Style.colorPalette.white
-                            ]
-                            [ paragraph
-                                [ Font.size 15 ]
-                                [ text "DFIRE2 Energy Function Results" ]
-                            , paragraph
-                                [ Font.size 12 ]
-                                [ text "This text will show as a pop up and give extra information about the dfire2 energy value." ]
-                            ]
-                        )
-                    ]
+        dfire2TotalHoverBoxInfo =
+            "This text will show as a pop up and give extra information about the dfire2 energy value."
     in
     sectionColumn
         [ Style.h3 <|
             text
                 "DFIRE2 Energy Function Results"
         , wrappedRow
-            (Events.onMouseEnter (ChangeHoverInfo DFIRE2Total)
-                :: Events.onMouseLeave (ChangeHoverInfo NoHoverInfo)
-                :: dfire2TotalInfoBox hoverInfoOption
+            (centerX
+                :: hoverInfoView
+                    { title = dfire2TotalHoverBoxTitle
+                    , info = dfire2TotalHoverBoxInfo
+                    , mouseEnterMsg = DFIRE2Total
+                    , hoverInfoOption = hoverInfoOption
+                    }
             )
             [ text "Total DFIRE2 Energy: "
             , metrics.dfire2Results.total
@@ -1198,6 +1170,61 @@ createTableFloatColumn =
                 Nothing ->
                     text "--"
         )
+
+
+
+-- }}}
+-- {{{ hoverInfoView
+
+
+hoverInfoView :
+    { title : String
+    , info : String
+    , mouseEnterMsg : HoverInfoOption
+    , hoverInfoOption : HoverInfoOption
+    }
+    -> List (Attribute Msg)
+hoverInfoView { title, info, mouseEnterMsg, hoverInfoOption } =
+    let
+        content : HoverInfoOption -> List (Attribute msg)
+        content option =
+            if option == mouseEnterMsg then
+                [ above
+                    (column
+                        [ spacing 15
+                        , padding 15
+                        , centerX
+                        , width (px 180)
+                        , Border.innerShadow
+                            { offset = ( 0, 0 )
+                            , size = 1
+                            , blur = 0
+                            , color = rgba 0.5 0.5 0.5 0.4
+                            }
+                        , Border.color Style.colorPalette.black
+                        , Border.width 1
+                        , Background.color Style.colorPalette.white
+                        , Font.color Style.colorPalette.black
+                        ]
+                        [ paragraph
+                            [ Font.size 14
+                            ]
+                            [ text title
+                            ]
+                        , paragraph
+                            [ Font.size 12 ]
+                            [ text info ]
+                        ]
+                    )
+                ]
+
+            else
+                []
+    in
+    [ Events.onMouseEnter (ChangeHoverInfo mouseEnterMsg)
+    , Events.onMouseLeave (ChangeHoverInfo NoHoverInfo)
+    ]
+        ++ content hoverInfoOption
 
 
 
