@@ -136,13 +136,13 @@ evoEF2TableOptionToString evoEF2TableOption =
             "Reference"
 
         IntraR ->
-            "IntraR"
+            "Intra Residue"
 
         InterS ->
-            "InterS"
+            "Inter Residue - Same Chain"
 
         InterD ->
-            "InterD"
+            "Inter Residue - Different Chains"
 
 
 
@@ -747,22 +747,23 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
             el
                 [ spacing 20
                 , padding 20
+                , centerX
                 ]
             <|
-                Input.radioRow
+                Input.radio
                     [ padding 20
                     , spacing 20
                     , scrollbarX
                     ]
                     { onChange = SetEvoEF2TableOption
                     , selected = Just evoEF2TableOption
-                    , label = Input.labelAbove [] (text "Select Table View")
+                    , label = Input.labelAbove [] (text "Select the table view for the EvoEF2 results")
                     , options =
-                        [ Input.option Summary (text "Summary")
-                        , Input.option Reference (text "Reference")
-                        , Input.option IntraR (text "IntraR")
-                        , Input.option InterS (text "InterS")
-                        , Input.option InterD (text "InterD")
+                        [ Input.option Summary (text (evoEF2TableOptionToString Summary))
+                        , Input.option Reference (text (evoEF2TableOptionToString Reference))
+                        , Input.option IntraR (text (evoEF2TableOptionToString IntraR))
+                        , Input.option InterS (text (evoEF2TableOptionToString InterS))
+                        , Input.option InterD (text (evoEF2TableOptionToString InterD))
                         ]
                     }
 
@@ -782,10 +783,12 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
     in
     sectionColumn
         [ Style.h3 <|
-            text
-                ("EvoEF2 Energy Function Results - "
-                    ++ evoEF2TableOptionToString evoEF2TableOption
-                )
+            paragraph []
+                [ text
+                    ("EvoEF2 Energy Function Results - "
+                        ++ evoEF2TableOptionToString evoEF2TableOption
+                    )
+                ]
         , radioInputSelection
         , wrappedRow
             [ spacing 5 ]
@@ -819,9 +822,6 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
 evoef2SummaryColumns : Metrics.DesignMetrics -> List (Element msg)
 evoef2SummaryColumns metrics =
     [ createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2 Energy"
-    , createTableFloatColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
-    , createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
-    , createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
     , createTableFloatColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
     , createTableFloatColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
     , createTableFloatColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
@@ -861,6 +861,9 @@ evoef2IntraRColumns metrics =
     , createTableFloatColumn metrics.evoEF2Results.intraR_electr "ELECTR"
     , createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "DESLVP"
     , createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "DESLVH"
+    , createTableFloatColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
+    , createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
+    , createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
     , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HBSCBB DIS"
     , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HBSCBB THE"
     , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HBSCBB PHI"
@@ -939,8 +942,10 @@ dfire2ResultsView hoverInfoOption metrics displaySettings =
     in
     sectionColumn
         [ Style.h3 <|
-            text
-                "DFIRE2 Energy Function Results"
+            paragraph []
+                [ text
+                    "DFIRE2 Energy Function Results"
+                ]
         , wrappedRow
             (centerX
                 :: hoverInfoView
@@ -983,7 +988,8 @@ rosettaResultsTableView metrics displaySettings =
     in
     sectionColumn
         [ Style.h3 <|
-            text "Rosetta Energy Function Results"
+            paragraph []
+                [ text "Rosetta Energy Function Results" ]
         , wrappedRow
             [ spacing 5 ]
             (rosettaColumns metrics)

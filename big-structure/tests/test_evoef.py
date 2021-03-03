@@ -136,6 +136,9 @@ def test_check_run_evoef_executes():
         + evoef_results.intraR_electr
         + evoef_results.intraR_deslvP
         + evoef_results.intraR_deslvH
+        + evoef_results.aapropensity
+        + evoef_results.ramachandran
+        + evoef_results.dunbrack
         + evoef_results.intraR_hbscbb_dis
         + evoef_results.intraR_hbscbb_the
         + evoef_results.intraR_hbscbb_phi
@@ -183,9 +186,6 @@ def test_check_run_evoef_executes():
     evoef_total_calc = (
         evoef_ref_total_calc
         + evoef_intraR_total_calc
-        + evoef_results.aapropensity
-        + evoef_results.ramachandran
-        + evoef_results.dunbrack
         + evoef_interS_total_calc
         + evoef_interD_total_calc
     )
