@@ -938,7 +938,7 @@ evoef2SummaryColumns metrics hoverInfoOption =
         evoEF2SummaryIntraRHoverBox : List (Attribute Msg)
         evoEF2SummaryIntraRHoverBox =
             hoverInfoView
-                { title = "Intra Residues"
+                { title = "Intra Residue"
                 , info = """This value is the total energy for intra residue interactions. This value is 
                             not included in the EvoEF2 output and is calculated in DE-STRESS."""
                 , mouseEnterMsg = EvoEF2IntaRTotal
@@ -948,7 +948,7 @@ evoef2SummaryColumns metrics hoverInfoOption =
         evoEF2SummaryInterSHoverBox : List (Attribute Msg)
         evoEF2SummaryInterSHoverBox =
             hoverInfoView
-                { title = "Inter Residues - Same Chain"
+                { title = "Inter Residue - Same Chain"
                 , info = """This value is the total energy for inter residue interactions in the same chain. 
                             This value is not included in the EvoEF2 output and is calculated in DE-STRESS."""
                 , mouseEnterMsg = EvoEF2InterSTotal
@@ -958,7 +958,7 @@ evoef2SummaryColumns metrics hoverInfoOption =
         evoEF2SummaryInterDHoverBox : List (Attribute Msg)
         evoEF2SummaryInterDHoverBox =
             hoverInfoView
-                { title = "Inter Residues - Different Chains"
+                { title = "Inter Residue - Different Chains"
                 , info = """This value is the total energy for inter residue interactions in different chains. 
                             This value is not included in the EvoEF2 output and is calculated in DE-STRESS."""
                 , mouseEnterMsg = EvoEF2InterDTotal
@@ -1346,7 +1346,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSVDWAttHoverBox : List (Attribute Msg)
         evoEF2InterSVDWAttHoverBox =
             hoverInfoView
-                { title = "VDW Attractive - Inter Residues - Same Chain"
+                { title = "VDW Attractive - Inter Residue - Same Chain"
                 , info = """This value is the Van der Waals attractive energy for inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_vdwatt`."""
                 , mouseEnterMsg = EvoEF2InterSVDWAtt
@@ -1356,7 +1356,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSVDWRepHoverBox : List (Attribute Msg)
         evoEF2InterSVDWRepHoverBox =
             hoverInfoView
-                { title = "VDW Repulsive - Inter Residues - Same Chain"
+                { title = "VDW Repulsive - Inter Residue - Same Chain"
                 , info = """This value is the Van der Waals repulsive energy for inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_vdwrep`."""
                 , mouseEnterMsg = EvoEF2InterSVDWRep
@@ -1366,7 +1366,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSElecHoverBox : List (Attribute Msg)
         evoEF2InterSElecHoverBox =
             hoverInfoView
-                { title = "Electrostatics - Inter Residues - Same Chain"
+                { title = "Electrostatics - Inter Residue - Same Chain"
                 , info = """This value is the Coulomb’s electrostatics energy for inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_electr`."""
                 , mouseEnterMsg = EvoEF2InterSElec
@@ -1376,7 +1376,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSDesolvPHoverBox : List (Attribute Msg)
         evoEF2InterSDesolvPHoverBox =
             hoverInfoView
-                { title = "Desolvation Polar - Inter Residues - Same Chain"
+                { title = "Desolvation Polar - Inter Residue - Same Chain"
                 , info = """This value is the polar atoms desolvation energy for inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_deslvP`."""
                 , mouseEnterMsg = EvoEF2InterSDesolvP
@@ -1386,7 +1386,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSDesolvHHoverBox : List (Attribute Msg)
         evoEF2InterSDesolvHHoverBox =
             hoverInfoView
-                { title = "Desolvation Non Polar - Inter Residues - Same Chain"
+                { title = "Desolvation Non Polar - Inter Residue - Same Chain"
                 , info = """This value is the non polar atoms desolvation energy for inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_deslvH`."""
                 , mouseEnterMsg = EvoEF2InterSDesolvH
@@ -1396,7 +1396,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSSSbondHHoverBox : List (Attribute Msg)
         evoEF2InterSSSbondHHoverBox =
             hoverInfoView
-                { title = "Disulfide Bonding - Inter Residues - Same Chain"
+                { title = "Disulfide Bonding - Inter Residue - Same Chain"
                 , info = """This value is the disulfide bonding energy for inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_ssbond`."""
                 , mouseEnterMsg = EvoEF2InterSSSbond
@@ -1406,7 +1406,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBBBBBDisHoverBox : List (Attribute Msg)
         evoEF2InterSHBBBBBDisHoverBox =
             hoverInfoView
-                { title = "HB Backbone Backbone Distance - Inter Residues - Same Chain"
+                { title = "HB Backbone Backbone Distance - Inter Residue - Same Chain"
                 , info = """This value is the energy for the hydrogen-acceptor distance
                             from backbone - backbone and inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_hbbbbb_dis`."""
@@ -1417,7 +1417,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBBBBBTheHoverBox : List (Attribute Msg)
         evoEF2InterSHBBBBBTheHoverBox =
             hoverInfoView
-                { title = "HB Backbone Backbone Theta - Inter Residues - Same Chain"
+                { title = "HB Backbone Backbone Theta - Inter Residue - Same Chain"
                 , info = """This value is the energy for the angle between the donor, 
                             hydrogen and acceptor atoms (theta), from backbone - backbone 
                             and inter residue interactions - same chain. 
@@ -1429,7 +1429,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBBBBBPhiHoverBox : List (Attribute Msg)
         evoEF2InterSHBBBBBPhiHoverBox =
             hoverInfoView
-                { title = "HB Backbone Backbone Phi - Inter Residues - Same Chain"
+                { title = "HB Backbone Backbone Phi - Inter Residue - Same Chain"
                 , info = """This value is the energy for the angle between the hydrogen, 
                             acceptor and base atoms (phi), from backbone - backbone 
                             and inter residue interactions - same chain. 
@@ -1441,7 +1441,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBSCBBDisHoverBox : List (Attribute Msg)
         evoEF2InterSHBSCBBDisHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Backbone Distance - Inter Residues - Same Chain"
+                { title = "HB Sidechain Backbone Distance - Inter Residue - Same Chain"
                 , info = """This value is the energy for the hydrogen-acceptor distance
                             from side chain - backbone and inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_hbscbb_dis`."""
@@ -1452,7 +1452,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBSCBBTheHoverBox : List (Attribute Msg)
         evoEF2InterSHBSCBBTheHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Backbone Theta - Inter Residues - Same Chain"
+                { title = "HB Sidechain Backbone Theta - Inter Residue - Same Chain"
                 , info = """This value is the energy for the angle between the donor, 
                             hydrogen and acceptor atoms (theta), from side chain - backbone 
                             and inter residue interactions - same chain. 
@@ -1464,7 +1464,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBSCBBPhiHoverBox : List (Attribute Msg)
         evoEF2InterSHBSCBBPhiHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Backbone Phi - Inter Residues - Same Chain"
+                { title = "HB Sidechain Backbone Phi - Inter Residue - Same Chain"
                 , info = """This value is the energy for the angle between the hydrogen, 
                             acceptor and base atoms (phi), from side chain - backbone 
                             and inter residue interactions - same chain. 
@@ -1476,7 +1476,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBSCSCDisHoverBox : List (Attribute Msg)
         evoEF2InterSHBSCSCDisHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Sidechain Distance - Inter Residues - Same Chain"
+                { title = "HB Sidechain Sidechain Distance - Inter Residue - Same Chain"
                 , info = """This value is the energy for the hydrogen-acceptor distance
                             from side chain - side chain and inter residue interactions - same chain. 
                             In the EvoEF2 output this value is called `interS_hbscsc_dis`."""
@@ -1487,7 +1487,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBSCSCTheHoverBox : List (Attribute Msg)
         evoEF2InterSHBSCSCTheHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Sidechain Theta - Inter Residues - Same Chain"
+                { title = "HB Sidechain Sidechain Theta - Inter Residue - Same Chain"
                 , info = """This value is the energy for the angle between the donor, 
                             hydrogen and acceptor atoms (theta), from side chain - side chain 
                             and inter residue interactions - same chain. 
@@ -1499,7 +1499,7 @@ evoef2InterSColumns metrics hoverInfoOption =
         evoEF2InterSHBSCSCPhiHoverBox : List (Attribute Msg)
         evoEF2InterSHBSCSCPhiHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Sidechain Phi - Inter Residues - Same Chain"
+                { title = "HB Sidechain Sidechain Phi - Inter Residue - Same Chain"
                 , info = """This value is the energy for the angle between the hydrogen, 
                             acceptor and base atoms (phi), from side chain - side chain
                             and inter residue interactions - same chain. 
@@ -1535,7 +1535,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDVDWAttHoverBox : List (Attribute Msg)
         evoEF2InterDVDWAttHoverBox =
             hoverInfoView
-                { title = "VDW Attractive - Inter Residues - Different Chains"
+                { title = "VDW Attractive - Inter Residue - Different Chains"
                 , info = """This value is the Van der Waals attractive energy for inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_vdwatt`."""
                 , mouseEnterMsg = EvoEF2InterDVDWAtt
@@ -1545,7 +1545,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDVDWRepHoverBox : List (Attribute Msg)
         evoEF2InterDVDWRepHoverBox =
             hoverInfoView
-                { title = "VDW Repulsive - Inter Residues - Different Chains"
+                { title = "VDW Repulsive - Inter Residue - Different Chains"
                 , info = """This value is the Van der Waals repulsive energy for inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_vdwrep`."""
                 , mouseEnterMsg = EvoEF2InterDVDWRep
@@ -1555,7 +1555,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDElecHoverBox : List (Attribute Msg)
         evoEF2InterDElecHoverBox =
             hoverInfoView
-                { title = "Electrostatics - Inter Residues - Different Chains"
+                { title = "Electrostatics - Inter Residue - Different Chains"
                 , info = """This value is the Coulomb’s electrostatics energy for inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_electr`."""
                 , mouseEnterMsg = EvoEF2InterDElec
@@ -1565,7 +1565,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDDesolvPHoverBox : List (Attribute Msg)
         evoEF2InterDDesolvPHoverBox =
             hoverInfoView
-                { title = "Desolvation Polar - Inter Residues - Different Chains"
+                { title = "Desolvation Polar - Inter Residue - Different Chains"
                 , info = """This value is the polar atoms desolvation energy for inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_deslvP`."""
                 , mouseEnterMsg = EvoEF2InterDDesolvP
@@ -1575,7 +1575,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDDesolvHHoverBox : List (Attribute Msg)
         evoEF2InterDDesolvHHoverBox =
             hoverInfoView
-                { title = "Desolvation Non Polar - Inter Residues - Different Chains"
+                { title = "Desolvation Non Polar - Inter Residue - Different Chains"
                 , info = """This value is the non polar atoms desolvation energy for inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_deslvH`."""
                 , mouseEnterMsg = EvoEF2InterDDesolvH
@@ -1585,7 +1585,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDSSbondHHoverBox : List (Attribute Msg)
         evoEF2InterDSSbondHHoverBox =
             hoverInfoView
-                { title = "Disulfide Bonding - Inter Residues - Different Chains"
+                { title = "Disulfide Bonding - Inter Residue - Different Chains"
                 , info = """This value is the disulfide bonding energy for inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_ssbond`."""
                 , mouseEnterMsg = EvoEF2InterDSSbond
@@ -1595,7 +1595,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBBBBBDisHoverBox : List (Attribute Msg)
         evoEF2InterDHBBBBBDisHoverBox =
             hoverInfoView
-                { title = "HB Backbone Backbone Distance - Inter Residues - Different Chains"
+                { title = "HB Backbone Backbone Distance - Inter Residue - Different Chains"
                 , info = """This value is the energy for the hydrogen-acceptor distance
                             from backbone - backbone and inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_hbbbbb_dis`."""
@@ -1606,7 +1606,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBBBBBTheHoverBox : List (Attribute Msg)
         evoEF2InterDHBBBBBTheHoverBox =
             hoverInfoView
-                { title = "HB Backbone Backbone Theta - Inter Residues - Different Chains"
+                { title = "HB Backbone Backbone Theta - Inter Residue - Different Chains"
                 , info = """This value is the energy for the angle between the donor, 
                             hydrogen and acceptor atoms (theta), from backbone - backbone 
                             and inter residue interactions - different chains. 
@@ -1618,7 +1618,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBBBBBPhiHoverBox : List (Attribute Msg)
         evoEF2InterDHBBBBBPhiHoverBox =
             hoverInfoView
-                { title = "HB Backbone Backbone Phi - Inter Residues - Different Chains"
+                { title = "HB Backbone Backbone Phi - Inter Residue - Different Chains"
                 , info = """This value is the energy for the angle between the hydrogen, 
                             acceptor and base atoms (phi), from backbone - backbone 
                             and inter residue interactions - different chains. 
@@ -1630,7 +1630,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBSCBBDisHoverBox : List (Attribute Msg)
         evoEF2InterDHBSCBBDisHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Backbone Distance - Inter Residues - Different Chains"
+                { title = "HB Sidechain Backbone Distance - Inter Residue - Different Chains"
                 , info = """This value is the energy for the hydrogen-acceptor distance
                             from side chain - backbone and inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_hbscbb_dis`."""
@@ -1641,7 +1641,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBSCBBTheHoverBox : List (Attribute Msg)
         evoEF2InterDHBSCBBTheHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Backbone Theta - Inter Residues - Different Chains"
+                { title = "HB Sidechain Backbone Theta - Inter Residue - Different Chains"
                 , info = """This value is the energy for the angle between the donor, 
                             hydrogen and acceptor atoms (theta), from side chain - backbone 
                             and inter residue interactions - different chains. 
@@ -1653,7 +1653,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBSCBBPhiHoverBox : List (Attribute Msg)
         evoEF2InterDHBSCBBPhiHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Backbone Phi - Inter Residues - Different Chains"
+                { title = "HB Sidechain Backbone Phi - Inter Residue - Different Chains"
                 , info = """This value is the energy for the angle between the hydrogen, 
                             acceptor and base atoms (phi), from side chain - backbone 
                             and inter residue interactions - different chains. 
@@ -1665,7 +1665,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBSCSCDisHoverBox : List (Attribute Msg)
         evoEF2InterDHBSCSCDisHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Sidechain Distance - Inter Residues - Different Chains"
+                { title = "HB Sidechain Sidechain Distance - Inter Residue - Different Chains"
                 , info = """This value is the energy for the hydrogen-acceptor distance
                             from side chain - side chain and inter residue interactions - different chains. 
                             In the EvoEF2 output this value is called `interD_hbscsc_dis`."""
@@ -1676,7 +1676,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBSCSCTheHoverBox : List (Attribute Msg)
         evoEF2InterDHBSCSCTheHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Sidechain Theta - Inter Residues - Different Chains"
+                { title = "HB Sidechain Sidechain Theta - Inter Residue - Different Chains"
                 , info = """This value is the energy for the angle between the donor, 
                             hydrogen and acceptor atoms (theta), from side chain - side chain 
                             and inter residue interactions - different chains. 
@@ -1688,7 +1688,7 @@ evoef2InterDColumns metrics hoverInfoOption =
         evoEF2InterDHBSCSCPhiHoverBox : List (Attribute Msg)
         evoEF2InterDHBSCSCPhiHoverBox =
             hoverInfoView
-                { title = "HB Sidechain Sidechain Phi - Inter Residues - Different Chains"
+                { title = "HB Sidechain Sidechain Phi - Inter Residue - Different Chains"
                 , info = """This value is the energy for the angle between the hydrogen, 
                             acceptor and base atoms (phi), from side chain - side chain
                             and inter residue interactions - different chains. 
