@@ -110,6 +110,72 @@ type alias DisplaySettings =
 
 type HoverInfoOption
     = DFIRE2Total
+    | EvoEF2Total
+    | EvoEF2RefTotal
+    | EvoEF2IntaRTotal
+    | EvoEF2InterSTotal
+    | EvoEF2InterDTotal
+    | EvoEF2RefALA
+    | EvoEF2RefCYS
+    | EvoEF2RefASP
+    | EvoEF2RefGLU
+    | EvoEF2RefPHE
+    | EvoEF2RefGLY
+    | EvoEF2RefHIS
+    | EvoEF2RefILE
+    | EvoEF2RefLYS
+    | EvoEF2RefLEU
+    | EvoEF2RefMET
+    | EvoEF2RefASN
+    | EvoEF2RefPRO
+    | EvoEF2RefGLN
+    | EvoEF2RefARG
+    | EvoEF2RefSER
+    | EvoEF2RefTHR
+    | EvoEF2RefVAL
+    | EvoEF2RefTRP
+    | EvoEF2RefTYR
+    | EvoEF2IntraRVDWAtt
+    | EvoEF2IntraRVDWRep
+    | EvoEF2IntraRElec
+    | EvoEF2IntraRDesolvP
+    | EvoEF2IntraRDesolvH
+    | EvoEF2AAProp
+    | EvoEF2Rama
+    | EvoEF2Dunbrack
+    | EvoEF2IntraRHBSCBBDis
+    | EvoEF2IntraRHBSCBBThe
+    | EvoEF2IntraRHBSCBBPhi
+    | EvoEF2InterSVDWAtt
+    | EvoEF2InterSVDWRep
+    | EvoEF2InterSElec
+    | EvoEF2InterSDesolvP
+    | EvoEF2InterSDesolvH
+    | EvoEF2InterSSSbond
+    | EvoEF2InterSHBBBBBDis
+    | EvoEF2InterSHBBBBBThe
+    | EvoEF2InterSHBBBBBPhi
+    | EvoEF2InterSHBSCBBDis
+    | EvoEF2InterSHBSCBBThe
+    | EvoEF2InterSHBSCBBPhi
+    | EvoEF2InterSHBSCSCDis
+    | EvoEF2InterSHBSCSCThe
+    | EvoEF2InterSHBSCSCPhi
+    | EvoEF2InterDVDWAtt
+    | EvoEF2InterDVDWRep
+    | EvoEF2InterDElec
+    | EvoEF2InterDDesolvP
+    | EvoEF2InterDDesolvH
+    | EvoEF2InterDSSbond
+    | EvoEF2InterDHBBBBBDis
+    | EvoEF2InterDHBBBBBThe
+    | EvoEF2InterDHBBBBBPhi
+    | EvoEF2InterDHBSCBBDis
+    | EvoEF2InterDHBSCBBThe
+    | EvoEF2InterDHBSCBBPhi
+    | EvoEF2InterDHBSCSCDis
+    | EvoEF2InterDHBSCSCThe
+    | EvoEF2InterDHBSCSCPhi
     | NoHoverInfo
 
 
@@ -616,8 +682,8 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
-                        , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
-                        , dfire2ResultsView hoverInfoOption designMetrics displaySettings
+                        , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
+                        , dfire2ResultsView designMetrics displaySettings hoverInfoOption
                         , rosettaResultsTableView designMetrics displaySettings
                         , case mReferenceSet of
                             Just refSet ->
@@ -740,8 +806,13 @@ sequenceInfoView ( chainId, sequenceInfo ) =
         ]
 
 
-evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> DisplaySettings -> Element Msg
-evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
+evoEF2ResultsTableView :
+    EvoEF2TableOption
+    -> Metrics.DesignMetrics
+    -> DisplaySettings
+    -> HoverInfoOption
+    -> Element Msg
+evoEF2ResultsTableView evoEF2TableOption metrics displaySettings hoverInfoOption =
     let
         radioInputSelection =
             el
@@ -792,23 +863,21 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
         , radioInputSelection
         , wrappedRow
             [ spacing 5 ]
-            (metrics
-                |> (case evoEF2TableOption of
-                        Summary ->
-                            evoef2SummaryColumns
+            (case evoEF2TableOption of
+                Summary ->
+                    evoef2SummaryColumns metrics hoverInfoOption
 
-                        Reference ->
-                            evoef2RefColumns
+                Reference ->
+                    evoef2RefColumns metrics hoverInfoOption
 
-                        IntraR ->
-                            evoef2IntraRColumns
+                IntraR ->
+                    evoef2IntraRColumns metrics hoverInfoOption
 
-                        InterS ->
-                            evoef2InterSColumns
+                InterS ->
+                    evoef2InterSColumns metrics hoverInfoOption
 
-                        InterD ->
-                            evoef2InterDColumns
-                   )
+                InterD ->
+                    evoef2InterDColumns metrics hoverInfoOption
             )
         , Folds.sectionFoldView
             { foldVisible = displaySettings.evoEF2LogInfo
@@ -819,92 +888,810 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
         ]
 
 
-evoef2SummaryColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2SummaryColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2 Energy"
-    , createTableFloatColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
-    , createTableFloatColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
-    , createTableFloatColumn metrics.evoEF2Results.interD_total "InterD \nEnergy"
+evoef2SummaryColumns :
+    Metrics.DesignMetrics
+    -> HoverInfoOption
+    -> List (Element Msg)
+evoef2SummaryColumns metrics hoverInfoOption =
+    let
+        evoEF2SummaryTotalHoverBox : List (Attribute Msg)
+        evoEF2SummaryTotalHoverBox =
+            hoverInfoView
+                { title = "Total"
+                , info = """This value is the total EvoEF2 energy. It is the sum of the reference, 
+                            intra residue, inter residue - same chain and inter residue - different 
+                            chains, energy values. In the EvoEF2 output this field is called `Total`."""
+                , mouseEnterMsg = EvoEF2Total
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2SummaryRefHoverBox : List (Attribute Msg)
+        evoEF2SummaryRefHoverBox =
+            hoverInfoView
+                { title = "Reference"
+                , info = """This value is the total reference energy. This value is not included in 
+                            the EvoEF2 output and is calculated in DE-STRESS."""
+                , mouseEnterMsg = EvoEF2RefTotal
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2SummaryIntraRHoverBox : List (Attribute Msg)
+        evoEF2SummaryIntraRHoverBox =
+            hoverInfoView
+                { title = "Intra Residues"
+                , info = """This value is the total energy for intra residue interactions. This value is 
+                            not included in the EvoEF2 output and is calculated in DE-STRESS."""
+                , mouseEnterMsg = EvoEF2IntaRTotal
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2SummaryInterSHoverBox : List (Attribute Msg)
+        evoEF2SummaryInterSHoverBox =
+            hoverInfoView
+                { title = "Inter Residues - Same Chain"
+                , info = """This value is the total energy for inter residue interactions in the same chain. 
+                            This value is not included in the EvoEF2 output and is calculated in DE-STRESS."""
+                , mouseEnterMsg = EvoEF2InterSTotal
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2SummaryInterDHoverBox : List (Attribute Msg)
+        evoEF2SummaryInterDHoverBox =
+            hoverInfoView
+                { title = "Inter Residues - Different Chains"
+                , info = """This value is the total energy for inter residue interactions in different chains. 
+                            This value is not included in the EvoEF2 output and is calculated in DE-STRESS."""
+                , mouseEnterMsg = EvoEF2InterDTotal
+                , hoverInfoOption = hoverInfoOption
+                }
+    in
+    [ el evoEF2SummaryTotalHoverBox <| createTableFloatColumn metrics.evoEF2Results.total "Total"
+    , el evoEF2SummaryRefHoverBox <| createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
+    , el evoEF2SummaryIntraRHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
+    , el evoEF2SummaryInterSHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
+    , el evoEF2SummaryInterDHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
     ]
 
 
-evoef2RefColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2RefColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
-    , createTableFloatColumn metrics.evoEF2Results.reference_CYS "CYS"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ASP "ASP"
-    , createTableFloatColumn metrics.evoEF2Results.reference_GLU "GLU"
-    , createTableFloatColumn metrics.evoEF2Results.reference_PHE "PHE"
-    , createTableFloatColumn metrics.evoEF2Results.reference_GLY "GLY"
-    , createTableFloatColumn metrics.evoEF2Results.reference_HIS "HIS"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ILE "ILE"
-    , createTableFloatColumn metrics.evoEF2Results.reference_LYS "LYS"
-    , createTableFloatColumn metrics.evoEF2Results.reference_LEU "LEU"
-    , createTableFloatColumn metrics.evoEF2Results.reference_MET "MET"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ASN "ASN"
-    , createTableFloatColumn metrics.evoEF2Results.reference_PRO "PRO"
-    , createTableFloatColumn metrics.evoEF2Results.reference_GLN "GLN"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ARG "ARG"
-    , createTableFloatColumn metrics.evoEF2Results.reference_SER "SER"
-    , createTableFloatColumn metrics.evoEF2Results.reference_THR "THR"
-    , createTableFloatColumn metrics.evoEF2Results.reference_VAL "VAL"
-    , createTableFloatColumn metrics.evoEF2Results.reference_TRP "TRP"
-    , createTableFloatColumn metrics.evoEF2Results.reference_TYR "TYR"
+evoef2RefColumns :
+    Metrics.DesignMetrics
+    -> HoverInfoOption
+    -> List (Element Msg)
+evoef2RefColumns metrics hoverInfoOption =
+    let
+        evoEF2RefALAHoverBox : List (Attribute Msg)
+        evoEF2RefALAHoverBox =
+            hoverInfoView
+                { title = "ALA - Reference"
+                , info = """This value is reference energy for the amino acid Alanine (ALA). In the EvoEF2
+                            output this value is called `reference_ALA`."""
+                , mouseEnterMsg = EvoEF2RefALA
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefCYSHoverBox : List (Attribute Msg)
+        evoEF2RefCYSHoverBox =
+            hoverInfoView
+                { title = "CYS - Reference"
+                , info = """This value is reference energy for the amino acid Cysteine (CYS). In the EvoEF2
+                            output this value is called `reference_CYS`."""
+                , mouseEnterMsg = EvoEF2RefCYS
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefASPHoverBox : List (Attribute Msg)
+        evoEF2RefASPHoverBox =
+            hoverInfoView
+                { title = "ASP - Reference"
+                , info = """This value is reference energy for the amino acid Aspartic acid (ASP). In the EvoEF2
+                            output this value is called `reference_ASP`."""
+                , mouseEnterMsg = EvoEF2RefASP
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefGLUHoverBox : List (Attribute Msg)
+        evoEF2RefGLUHoverBox =
+            hoverInfoView
+                { title = "GLU - Reference"
+                , info = """This value is reference energy for the amino acid Glutamic acid (GLU). In the EvoEF2
+                            output this value is called `reference_GLU`."""
+                , mouseEnterMsg = EvoEF2RefGLU
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefPHEHoverBox : List (Attribute Msg)
+        evoEF2RefPHEHoverBox =
+            hoverInfoView
+                { title = "PHE - Reference"
+                , info = """This value is reference energy for the amino acid Phenylalanine (PHE). In the EvoEF2
+                            output this value is called `reference_PHE`."""
+                , mouseEnterMsg = EvoEF2RefPHE
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefGLYHoverBox : List (Attribute Msg)
+        evoEF2RefGLYHoverBox =
+            hoverInfoView
+                { title = "GLY - Reference"
+                , info = """This value is reference energy for the amino acid glycine (GLY). In the EvoEF2
+                            output this value is called `reference_GLY`."""
+                , mouseEnterMsg = EvoEF2RefGLY
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefHISHoverBox : List (Attribute Msg)
+        evoEF2RefHISHoverBox =
+            hoverInfoView
+                { title = "HIS - Reference"
+                , info = """This value is reference energy for the amino acid Histidine (HIS). In the EvoEF2
+                            output this value is called `reference_HIS`."""
+                , mouseEnterMsg = EvoEF2RefHIS
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefILEHoverBox : List (Attribute Msg)
+        evoEF2RefILEHoverBox =
+            hoverInfoView
+                { title = "ILE - Reference"
+                , info = """This value is reference energy for the amino acid Isoleucine (ILE). In the EvoEF2
+                            output this value is called `reference_ILE`."""
+                , mouseEnterMsg = EvoEF2RefILE
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefLYSHoverBox : List (Attribute Msg)
+        evoEF2RefLYSHoverBox =
+            hoverInfoView
+                { title = "LYS - Reference"
+                , info = """This value is reference energy for the amino acid Lysine (LYS). In the EvoEF2
+                            output this value is called `reference_LYS`."""
+                , mouseEnterMsg = EvoEF2RefLYS
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefLEUHoverBox : List (Attribute Msg)
+        evoEF2RefLEUHoverBox =
+            hoverInfoView
+                { title = "LEU - Reference"
+                , info = """This value is reference energy for the amino acid Leucine (LEU). In the EvoEF2
+                            output this value is called `reference_LEU`."""
+                , mouseEnterMsg = EvoEF2RefLEU
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefMETHoverBox : List (Attribute Msg)
+        evoEF2RefMETHoverBox =
+            hoverInfoView
+                { title = "MET - Reference"
+                , info = """This value is reference energy for the amino acid Methionine (MET). In the EvoEF2
+                            output this value is called `reference_MET`."""
+                , mouseEnterMsg = EvoEF2RefMET
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefASNHoverBox : List (Attribute Msg)
+        evoEF2RefASNHoverBox =
+            hoverInfoView
+                { title = "ASN - Reference"
+                , info = """This value is reference energy for the amino acid Asparagine (ASN). In the EvoEF2
+                            output this value is called `reference_ASN`."""
+                , mouseEnterMsg = EvoEF2RefASN
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefPROHoverBox : List (Attribute Msg)
+        evoEF2RefPROHoverBox =
+            hoverInfoView
+                { title = "PRO - Reference"
+                , info = """This value is reference energy for the amino acid Proline (PRO). In the EvoEF2
+                            output this value is called `reference_PRO`."""
+                , mouseEnterMsg = EvoEF2RefPRO
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefGLNHoverBox : List (Attribute Msg)
+        evoEF2RefGLNHoverBox =
+            hoverInfoView
+                { title = "GLN - Reference"
+                , info = """This value is reference energy for the amino acid Glutamine (GLN). In the EvoEF2
+                            output this value is called `reference_GLN`."""
+                , mouseEnterMsg = EvoEF2RefGLN
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefARGHoverBox : List (Attribute Msg)
+        evoEF2RefARGHoverBox =
+            hoverInfoView
+                { title = "ARG - Reference"
+                , info = """This value is reference energy for the amino acid Arginine (ARG). In the EvoEF2
+                            output this value is called `reference_ARG`."""
+                , mouseEnterMsg = EvoEF2RefARG
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefSERHoverBox : List (Attribute Msg)
+        evoEF2RefSERHoverBox =
+            hoverInfoView
+                { title = "SER - Reference"
+                , info = """This value is reference energy for the amino acid Serine  (SER). In the EvoEF2
+                            output this value is called `reference_SER`."""
+                , mouseEnterMsg = EvoEF2RefSER
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefTHRHoverBox : List (Attribute Msg)
+        evoEF2RefTHRHoverBox =
+            hoverInfoView
+                { title = "THR - Reference"
+                , info = """This value is reference energy for the amino acid Threonine (THR). In the EvoEF2
+                            output this value is called `reference_THR`."""
+                , mouseEnterMsg = EvoEF2RefTHR
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefVALHoverBox : List (Attribute Msg)
+        evoEF2RefVALHoverBox =
+            hoverInfoView
+                { title = "VAL - Reference"
+                , info = """This value is reference energy for the amino acid Valine (VAL). In the EvoEF2
+                            output this value is called `reference_VAL`."""
+                , mouseEnterMsg = EvoEF2RefVAL
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefTRPHoverBox : List (Attribute Msg)
+        evoEF2RefTRPHoverBox =
+            hoverInfoView
+                { title = "TRP - Reference"
+                , info = """This value is reference energy for the amino acid Tryptophan (TRP). In the EvoEF2
+                            output this value is called `reference_TRP`."""
+                , mouseEnterMsg = EvoEF2RefTRP
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2RefTYRHoverBox : List (Attribute Msg)
+        evoEF2RefTYRHoverBox =
+            hoverInfoView
+                { title = "TYR - Reference"
+                , info = """This value is reference energy for the amino acid Tyrosine (TYR). In the EvoEF2
+                            output this value is called `reference_TYR`."""
+                , mouseEnterMsg = EvoEF2RefTYR
+                , hoverInfoOption = hoverInfoOption
+                }
+    in
+    [ el evoEF2RefALAHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
+    , el evoEF2RefARGHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_ARG "ARG"
+    , el evoEF2RefASNHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_ASN "ASN"
+    , el evoEF2RefASPHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_ASP "ASP"
+    , el evoEF2RefCYSHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_CYS "CYS"
+    , el evoEF2RefGLNHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_GLN "GLN"
+    , el evoEF2RefGLUHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_GLU "GLU"
+    , el evoEF2RefGLYHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_GLY "GLY"
+    , el evoEF2RefHISHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_HIS "HIS"
+    , el evoEF2RefILEHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_ILE "ILE"
+    , el evoEF2RefLEUHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_LEU "LEU"
+    , el evoEF2RefLYSHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_LYS "LYS"
+    , el evoEF2RefMETHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_MET "MET"
+    , el evoEF2RefPHEHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_PHE "PHE"
+    , el evoEF2RefPROHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_PRO "PRO"
+    , el evoEF2RefSERHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_SER "SER"
+    , el evoEF2RefTHRHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_THR "THR"
+    , el evoEF2RefTRPHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_TRP "TRP"
+    , el evoEF2RefTYRHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_TYR "TYR"
+    , el evoEF2RefVALHoverBox <| createTableFloatColumn metrics.evoEF2Results.reference_VAL "VAL"
     ]
 
 
-evoef2IntraRColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2IntraRColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt "VDWATT"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep "VDWREP"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_electr "ELECTR"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "DESLVP"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "DESLVH"
-    , createTableFloatColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
-    , createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
-    , createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HBSCBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HBSCBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HBSCBB PHI"
+evoef2IntraRColumns :
+    Metrics.DesignMetrics
+    -> HoverInfoOption
+    -> List (Element Msg)
+evoef2IntraRColumns metrics hoverInfoOption =
+    let
+        evoEF2IntraRVDWAttHoverBox : List (Attribute Msg)
+        evoEF2IntraRVDWAttHoverBox =
+            hoverInfoView
+                { title = "VDW Attractive - Intra Residue"
+                , info = """This value is the Van der Waals attractive energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `intraR_vdwatt`."""
+                , mouseEnterMsg = EvoEF2IntraRVDWAtt
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRVDWRepHoverBox : List (Attribute Msg)
+        evoEF2IntraRVDWRepHoverBox =
+            hoverInfoView
+                { title = "VDW Repulsive - Intra Residue"
+                , info = """This value is the Van der Waals repulsive energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `intraR_vdwrep`."""
+                , mouseEnterMsg = EvoEF2IntraRVDWRep
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRElecHoverBox : List (Attribute Msg)
+        evoEF2IntraRElecHoverBox =
+            hoverInfoView
+                { title = "Electrostatics - Intra Residue"
+                , info = """This value is the Coulomb’s electrostatics energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `intraR_electr`."""
+                , mouseEnterMsg = EvoEF2IntraRElec
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRDesolvPHoverBox : List (Attribute Msg)
+        evoEF2IntraRDesolvPHoverBox =
+            hoverInfoView
+                { title = "Desolvation Polar - Intra Residue"
+                , info = """This value is the polar atoms desolvation energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `intraR_deslvP`."""
+                , mouseEnterMsg = EvoEF2IntraRDesolvP
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRDesolvHHoverBox : List (Attribute Msg)
+        evoEF2IntraRDesolvHHoverBox =
+            hoverInfoView
+                { title = "Desolvation Non Polar - Intra Residue"
+                , info = """This value is the non polar atoms desolvation energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `intraR_deslvH`."""
+                , mouseEnterMsg = EvoEF2IntraRDesolvH
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRAAPropHoverBox : List (Attribute Msg)
+        evoEF2IntraRAAPropHoverBox =
+            hoverInfoView
+                { title = "Amino Acid Propensity - Intra Residue"
+                , info = """This value is the amino acid propensity energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `aapropensity`."""
+                , mouseEnterMsg = EvoEF2AAProp
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRRamaHoverBox : List (Attribute Msg)
+        evoEF2IntraRRamaHoverBox =
+            hoverInfoView
+                { title = "Ramachandran - Intra Residue"
+                , info = """This value is the Ramachandran energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `ramachandran`."""
+                , mouseEnterMsg = EvoEF2Rama
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRDunbrackHoverBox : List (Attribute Msg)
+        evoEF2IntraRDunbrackHoverBox =
+            hoverInfoView
+                { title = "Dunbrack Rotamer - Intra Residue"
+                , info = """This value is the Dunbrack Rotamer energy for intra residue interactions. 
+                            In the EvoEF2 output this value is called `dunbrack`."""
+                , mouseEnterMsg = EvoEF2Dunbrack
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRHBSCBBDisHoverBox : List (Attribute Msg)
+        evoEF2IntraRHBSCBBDisHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Distance - Intra Residue"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from sidechain - backbone and intra residue interactions. 
+                            In the EvoEF2 output this value is called `intraR_hbscbb_dis`."""
+                , mouseEnterMsg = EvoEF2IntraRHBSCBBDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRHBSCBBTheHoverBox : List (Attribute Msg)
+        evoEF2IntraRHBSCBBTheHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Theta - Intra Residue"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from sidechain - backbone 
+                            and intra residue interactions. In the EvoEF2 output this value is 
+                            called `intraR_hbscbb_the`."""
+                , mouseEnterMsg = EvoEF2IntraRHBSCBBThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2IntraRHBSCBBPhiHoverBox : List (Attribute Msg)
+        evoEF2IntraRHBSCBBPhiHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Phi - Intra Residue"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from sidechain - backbone 
+                            and intra residue interactions. In the EvoEF2 output this value is 
+                            called `intraR_hbscbb_phi`."""
+                , mouseEnterMsg = EvoEF2IntraRHBSCBBPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+    in
+    [ el evoEF2IntraRVDWAttHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt "VDW Attractive"
+    , el evoEF2IntraRVDWRepHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep "VDW Repulsive"
+    , el evoEF2IntraRElecHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_electr "Electrostatics"
+    , el evoEF2IntraRDesolvPHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "Desolvation Polar"
+    , el evoEF2IntraRDesolvHHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "Desolvation Non Polar"
+    , el evoEF2IntraRAAPropHoverBox <| createTableFloatColumn metrics.evoEF2Results.aapropensity "Amino Acid Propensity"
+    , el evoEF2IntraRRamaHoverBox <| createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran"
+    , el evoEF2IntraRDunbrackHoverBox <| createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Rotamer"
+    , el evoEF2IntraRHBSCBBDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HB Sidechain Backbone Distance"
+    , el evoEF2IntraRHBSCBBTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HB Sidechain Backbone Theta"
+    , el evoEF2IntraRHBSCBBPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HB Sidechain Backbone Phi"
     ]
 
 
-evoef2InterSColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2InterSColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.interS_vdwatt "VDWATT"
-    , createTableFloatColumn metrics.evoEF2Results.interS_vdwrep "VDWREP"
-    , createTableFloatColumn metrics.evoEF2Results.interS_electr "ELECTR"
-    , createTableFloatColumn metrics.evoEF2Results.interS_deslvP "DESLVP"
-    , createTableFloatColumn metrics.evoEF2Results.interS_deslvH "DESLVH"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis "HBBBBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the "HBBBBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi "HBBBBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis "HBSCBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the "HBSCBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi "HBSCBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis "HBSCSC DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the "HBSCSC THE"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi "HBSCSC PHI"
+evoef2InterSColumns :
+    Metrics.DesignMetrics
+    -> HoverInfoOption
+    -> List (Element Msg)
+evoef2InterSColumns metrics hoverInfoOption =
+    let
+        evoEF2InterSVDWAttHoverBox : List (Attribute Msg)
+        evoEF2InterSVDWAttHoverBox =
+            hoverInfoView
+                { title = "VDW Attractive - Inter Residues - Same Chain"
+                , info = """This value is the Van der Waals attractive energy for inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_vdwatt`."""
+                , mouseEnterMsg = EvoEF2InterSVDWAtt
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSVDWRepHoverBox : List (Attribute Msg)
+        evoEF2InterSVDWRepHoverBox =
+            hoverInfoView
+                { title = "VDW Repulsive - Inter Residues - Same Chain"
+                , info = """This value is the Van der Waals repulsive energy for inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_vdwrep`."""
+                , mouseEnterMsg = EvoEF2InterSVDWRep
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSElecHoverBox : List (Attribute Msg)
+        evoEF2InterSElecHoverBox =
+            hoverInfoView
+                { title = "Electrostatics - Inter Residues - Same Chain"
+                , info = """This value is the Coulomb’s electrostatics energy for inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_electr`."""
+                , mouseEnterMsg = EvoEF2InterSElec
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSDesolvPHoverBox : List (Attribute Msg)
+        evoEF2InterSDesolvPHoverBox =
+            hoverInfoView
+                { title = "Desolvation Polar - Inter Residues - Same Chain"
+                , info = """This value is the polar atoms desolvation energy for inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_deslvP`."""
+                , mouseEnterMsg = EvoEF2InterSDesolvP
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSDesolvHHoverBox : List (Attribute Msg)
+        evoEF2InterSDesolvHHoverBox =
+            hoverInfoView
+                { title = "Desolvation Non Polar - Inter Residues - Same Chain"
+                , info = """This value is the non polar atoms desolvation energy for inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_deslvH`."""
+                , mouseEnterMsg = EvoEF2InterSDesolvH
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSSSbondHHoverBox : List (Attribute Msg)
+        evoEF2InterSSSbondHHoverBox =
+            hoverInfoView
+                { title = "Disulfide Bonding - Inter Residues - Same Chain"
+                , info = """This value is the disulfide bonding energy for inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_ssbond`."""
+                , mouseEnterMsg = EvoEF2InterSSSbond
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBBBBBDisHoverBox : List (Attribute Msg)
+        evoEF2InterSHBBBBBDisHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Backbone Distance - Inter Residues - Same Chain"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from backbone - backbone and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbbbbb_dis`."""
+                , mouseEnterMsg = EvoEF2InterSHBBBBBDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBBBBBTheHoverBox : List (Attribute Msg)
+        evoEF2InterSHBBBBBTheHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Backbone Theta - Inter Residues - Same Chain"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from backbone - backbone 
+                            and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbbbbb_the`."""
+                , mouseEnterMsg = EvoEF2InterSHBBBBBThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBBBBBPhiHoverBox : List (Attribute Msg)
+        evoEF2InterSHBBBBBPhiHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Backbone Phi - Inter Residues - Same Chain"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from backbone - backbone 
+                            and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbbbbb_phi`."""
+                , mouseEnterMsg = EvoEF2InterSHBBBBBPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBSCBBDisHoverBox : List (Attribute Msg)
+        evoEF2InterSHBSCBBDisHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Distance - Inter Residues - Same Chain"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from side chain - backbone and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbscbb_dis`."""
+                , mouseEnterMsg = EvoEF2InterSHBSCBBDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBSCBBTheHoverBox : List (Attribute Msg)
+        evoEF2InterSHBSCBBTheHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Theta - Inter Residues - Same Chain"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from side chain - backbone 
+                            and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbscbb_the`."""
+                , mouseEnterMsg = EvoEF2InterSHBSCBBThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBSCBBPhiHoverBox : List (Attribute Msg)
+        evoEF2InterSHBSCBBPhiHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Phi - Inter Residues - Same Chain"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from side chain - backbone 
+                            and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbscbb_phi`."""
+                , mouseEnterMsg = EvoEF2InterSHBSCBBPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBSCSCDisHoverBox : List (Attribute Msg)
+        evoEF2InterSHBSCSCDisHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Sidechain Distance - Inter Residues - Same Chain"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from side chain - side chain and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbscsc_dis`."""
+                , mouseEnterMsg = EvoEF2InterSHBSCSCDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBSCSCTheHoverBox : List (Attribute Msg)
+        evoEF2InterSHBSCSCTheHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Sidechain Theta - Inter Residues - Same Chain"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from side chain - side chain 
+                            and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbscsc_the`."""
+                , mouseEnterMsg = EvoEF2InterSHBSCSCThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterSHBSCSCPhiHoverBox : List (Attribute Msg)
+        evoEF2InterSHBSCSCPhiHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Sidechain Phi - Inter Residues - Same Chain"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from side chain - side chain
+                            and inter residue interactions - same chain. 
+                            In the EvoEF2 output this value is called `interS_hbscsc_phi`."""
+                , mouseEnterMsg = EvoEF2InterSHBSCSCPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+    in
+    [ el evoEF2InterSVDWAttHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_vdwatt "VDW Attractive"
+    , el evoEF2InterSVDWRepHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_vdwrep "VDW Repulsive"
+    , el evoEF2InterSElecHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_electr "Electrostatics"
+    , el evoEF2InterSDesolvPHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_deslvP "Desolvation Polar"
+    , el evoEF2InterSDesolvHHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_deslvH "Desolvation Non Polar"
+    , el evoEF2InterSSSbondHHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_ssbond "Disulfide Bonding"
+    , el evoEF2InterSHBBBBBDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis "HB Backbone Backbone Distance"
+    , el evoEF2InterSHBBBBBTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the "HB Backbone Backbone Theta"
+    , el evoEF2InterSHBBBBBPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi "HB Backbone Backbone Phi"
+    , el evoEF2InterSHBSCBBDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis "HB Sidechain Backbone Distance"
+    , el evoEF2InterSHBSCBBTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the "HB Sidechain Backbone Theta"
+    , el evoEF2InterSHBSCBBPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi "HB Sidechain Backbone Phi"
+    , el evoEF2InterSHBSCSCDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis "HB Sidechain Sidechain Distance"
+    , el evoEF2InterSHBSCSCTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the "HB Sidechain Sidechain Theta"
+    , el evoEF2InterSHBSCSCPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi "HB Sidechain Sidechain Phi"
     ]
 
 
-evoef2InterDColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2InterDColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.interD_vdwatt "VDWATT"
-    , createTableFloatColumn metrics.evoEF2Results.interD_vdwrep "VDWREP"
-    , createTableFloatColumn metrics.evoEF2Results.interD_electr "ELECTR"
-    , createTableFloatColumn metrics.evoEF2Results.interD_deslvP "DESLVP"
-    , createTableFloatColumn metrics.evoEF2Results.interD_deslvH "DESLVH"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis "HBBBBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the "HBBBBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi "HBBBBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis "HBSCBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the "HBSCBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi "HBSCBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis "HBSCSC DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
+evoef2InterDColumns :
+    Metrics.DesignMetrics
+    -> HoverInfoOption
+    -> List (Element Msg)
+evoef2InterDColumns metrics hoverInfoOption =
+    let
+        evoEF2InterDVDWAttHoverBox : List (Attribute Msg)
+        evoEF2InterDVDWAttHoverBox =
+            hoverInfoView
+                { title = "VDW Attractive - Inter Residues - Different Chains"
+                , info = """This value is the Van der Waals attractive energy for inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_vdwatt`."""
+                , mouseEnterMsg = EvoEF2InterDVDWAtt
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDVDWRepHoverBox : List (Attribute Msg)
+        evoEF2InterDVDWRepHoverBox =
+            hoverInfoView
+                { title = "VDW Repulsive - Inter Residues - Different Chains"
+                , info = """This value is the Van der Waals repulsive energy for inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_vdwrep`."""
+                , mouseEnterMsg = EvoEF2InterDVDWRep
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDElecHoverBox : List (Attribute Msg)
+        evoEF2InterDElecHoverBox =
+            hoverInfoView
+                { title = "Electrostatics - Inter Residues - Different Chains"
+                , info = """This value is the Coulomb’s electrostatics energy for inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_electr`."""
+                , mouseEnterMsg = EvoEF2InterDElec
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDDesolvPHoverBox : List (Attribute Msg)
+        evoEF2InterDDesolvPHoverBox =
+            hoverInfoView
+                { title = "Desolvation Polar - Inter Residues - Different Chains"
+                , info = """This value is the polar atoms desolvation energy for inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_deslvP`."""
+                , mouseEnterMsg = EvoEF2InterDDesolvP
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDDesolvHHoverBox : List (Attribute Msg)
+        evoEF2InterDDesolvHHoverBox =
+            hoverInfoView
+                { title = "Desolvation Non Polar - Inter Residues - Different Chains"
+                , info = """This value is the non polar atoms desolvation energy for inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_deslvH`."""
+                , mouseEnterMsg = EvoEF2InterDDesolvH
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDSSbondHHoverBox : List (Attribute Msg)
+        evoEF2InterDSSbondHHoverBox =
+            hoverInfoView
+                { title = "Disulfide Bonding - Inter Residues - Different Chains"
+                , info = """This value is the disulfide bonding energy for inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_ssbond`."""
+                , mouseEnterMsg = EvoEF2InterDSSbond
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBBBBBDisHoverBox : List (Attribute Msg)
+        evoEF2InterDHBBBBBDisHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Backbone Distance - Inter Residues - Different Chains"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from backbone - backbone and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbbbbb_dis`."""
+                , mouseEnterMsg = EvoEF2InterDHBBBBBDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBBBBBTheHoverBox : List (Attribute Msg)
+        evoEF2InterDHBBBBBTheHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Backbone Theta - Inter Residues - Different Chains"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from backbone - backbone 
+                            and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbbbbb_the`."""
+                , mouseEnterMsg = EvoEF2InterDHBBBBBThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBBBBBPhiHoverBox : List (Attribute Msg)
+        evoEF2InterDHBBBBBPhiHoverBox =
+            hoverInfoView
+                { title = "HB Backbone Backbone Phi - Inter Residues - Different Chains"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from backbone - backbone 
+                            and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbbbbb_phi`."""
+                , mouseEnterMsg = EvoEF2InterDHBBBBBPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBSCBBDisHoverBox : List (Attribute Msg)
+        evoEF2InterDHBSCBBDisHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Distance - Inter Residues - Different Chains"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from side chain - backbone and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbscbb_dis`."""
+                , mouseEnterMsg = EvoEF2InterDHBSCBBDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBSCBBTheHoverBox : List (Attribute Msg)
+        evoEF2InterDHBSCBBTheHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Theta - Inter Residues - Different Chains"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from side chain - backbone 
+                            and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbscbb_the`."""
+                , mouseEnterMsg = EvoEF2InterDHBSCBBThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBSCBBPhiHoverBox : List (Attribute Msg)
+        evoEF2InterDHBSCBBPhiHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Backbone Phi - Inter Residues - Different Chains"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from side chain - backbone 
+                            and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbscbb_phi`."""
+                , mouseEnterMsg = EvoEF2InterDHBSCBBPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBSCSCDisHoverBox : List (Attribute Msg)
+        evoEF2InterDHBSCSCDisHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Sidechain Distance - Inter Residues - Different Chains"
+                , info = """This value is the energy for the hydrogen-acceptor distance
+                            from side chain - side chain and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbscsc_dis`."""
+                , mouseEnterMsg = EvoEF2InterDHBSCSCDis
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBSCSCTheHoverBox : List (Attribute Msg)
+        evoEF2InterDHBSCSCTheHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Sidechain Theta - Inter Residues - Different Chains"
+                , info = """This value is the energy for the angle between the donor, 
+                            hydrogen and acceptor atoms (theta), from side chain - side chain 
+                            and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbscsc_the`."""
+                , mouseEnterMsg = EvoEF2InterDHBSCSCThe
+                , hoverInfoOption = hoverInfoOption
+                }
+
+        evoEF2InterDHBSCSCPhiHoverBox : List (Attribute Msg)
+        evoEF2InterDHBSCSCPhiHoverBox =
+            hoverInfoView
+                { title = "HB Sidechain Sidechain Phi - Inter Residues - Different Chains"
+                , info = """This value is the energy for the angle between the hydrogen, 
+                            acceptor and base atoms (phi), from side chain - side chain
+                            and inter residue interactions - different chains. 
+                            In the EvoEF2 output this value is called `interD_hbscsc_phi`."""
+                , mouseEnterMsg = EvoEF2InterDHBSCSCPhi
+                , hoverInfoOption = hoverInfoOption
+                }
+    in
+    [ el evoEF2InterDVDWAttHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_vdwatt "VDW Attractive"
+    , el evoEF2InterDVDWRepHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_vdwrep "VDW Repulsive"
+    , el evoEF2InterDElecHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_electr "Electrostatics"
+    , el evoEF2InterDDesolvPHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_deslvP "Desolvation Polar"
+    , el evoEF2InterDDesolvHHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_deslvH "Desolvation Non Polar"
+    , el evoEF2InterDSSbondHHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_ssbond "Disulfide Bonding"
+    , el evoEF2InterDHBBBBBDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis "HB Backbone Backbone Distance"
+    , el evoEF2InterDHBBBBBTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the "HB Backbone Backbone Theta"
+    , el evoEF2InterDHBBBBBPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi "HB Backbone Backbone Phi"
+    , el evoEF2InterDHBSCBBDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis "HB Sidechain Backbone Distance"
+    , el evoEF2InterDHBSCBBTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the "HB Sidechain Backbone Theta"
+    , el evoEF2InterDHBSCBBPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi "HB Sidechain Backbone Phi"
+    , el evoEF2InterDHBSCSCDisHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis "HB Sidechain Sidechain Distance"
+    , el evoEF2InterDHBSCSCTheHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HB Sidechain Sidechain Theta"
+    , el evoEF2InterDHBSCSCPhiHoverBox <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HB Sidechain Sidechain Phi"
     ]
 
 
@@ -918,8 +1705,8 @@ dfire2LogInfoSelection metrics =
             metrics.dfire2Results.error_info
 
 
-dfire2ResultsView : HoverInfoOption -> Metrics.DesignMetrics -> DisplaySettings -> Element Msg
-dfire2ResultsView hoverInfoOption metrics displaySettings =
+dfire2ResultsView : Metrics.DesignMetrics -> DisplaySettings -> HoverInfoOption -> Element Msg
+dfire2ResultsView metrics displaySettings hoverInfoOption =
     let
         logInfoBox =
             paragraph
