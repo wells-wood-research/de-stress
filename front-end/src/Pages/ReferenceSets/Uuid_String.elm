@@ -6,7 +6,8 @@ import Dict
 import Element exposing (..)
 import Shared
 import Shared.Buttons as Buttons
-import Shared.Metrics as Metrics exposing (RefSetMetrics)
+import Shared.Folds as Folds
+import Shared.Metrics exposing (RefSetMetrics)
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
 import Shared.Style as Style
 import Spa.Document exposing (Document)
@@ -45,6 +46,7 @@ port setFocussedReferenceSet :
 type alias Model =
     { key : Nav.Key
     , pageState : PageState
+    , displaySettings : DisplaySettings
     }
 
 
@@ -82,6 +84,10 @@ mapPageState refSetFn focus =
             focus
 
 
+type alias DisplaySettings =
+    { pdbCodes : Bool }
+
+
 
 -- }}}
 -- {{{ INIT
@@ -100,10 +106,16 @@ init shared { params } =
                     |> Maybe.map ReferenceSet.storedReferenceSetToStub
               of
                 Just stub ->
-                    { key = shared.key, pageState = LoadingWithStub params.uuid stub }
+                    { key = shared.key
+                    , pageState = LoadingWithStub params.uuid stub
+                    , displaySettings = { pdbCodes = False }
+                    }
 
                 Nothing ->
-                    { key = shared.key, pageState = LoadingNoStub params.uuid }
+                    { key = shared.key
+                    , pageState = LoadingNoStub params.uuid
+                    , displaySettings = { pdbCodes = False }
+                    }
             , ReferenceSet.getReferenceSetForRefSetDetails { uuidString = params.uuid }
             )
 
@@ -119,6 +131,7 @@ init shared { params } =
 type Msg
     = SetFocus { uuidString : String, refSetValue : Value }
     | DeleteFocussedReferenceSet String Buttons.DangerStatus
+    | TogglePdbCodesFold
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -155,6 +168,15 @@ update msg model =
                   }
                 , Cmd.none
                 )
+
+        TogglePdbCodesFold ->
+            ( { model
+                | displaySettings =
+                    { pdbCodes = not model.displaySettings.pdbCodes
+                    }
+              }
+            , Cmd.none
+            )
 
 
 save : Model -> Shared.Model -> Shared.Model
@@ -214,7 +236,10 @@ bodyView model =
 
             RefSet uuidString referenceSet ->
                 sectionColumn
-                    [ fullDetails uuidString (referenceSet |> ReferenceSet.getGenericData)
+                    [ fullDetails
+                        uuidString
+                        model.displaySettings
+                        (referenceSet |> ReferenceSet.getGenericData)
                     ]
 
             Deleted uuidString ->
@@ -266,6 +291,7 @@ simpleDetails uuidString refSetOrStub =
 
 fullDetails :
     String
+    -> DisplaySettings
     ->
         { a
             | name : String
@@ -274,15 +300,22 @@ fullDetails :
             , metrics : List RefSetMetrics
         }
     -> Element Msg
-fullDetails uuidString referenceSet =
+fullDetails uuidString displaySettings referenceSet =
     sectionColumn
         [ simpleDetails uuidString referenceSet
-        , Style.h2 <| text "PDB Codes"
-        , paragraph []
-            [ List.map .pdbCode referenceSet.metrics
-                |> String.join " "
-                |> text
-            ]
+        , Style.h2 <|
+            text "Overview"
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.pdbCodes
+            , title = "PDB Codes"
+            , toggleMsg = TogglePdbCodesFold
+            , contentView =
+                paragraph []
+                    [ List.map .pdbCode referenceSet.metrics
+                        |> String.join " "
+                        |> text
+                    ]
+            }
         ]
 
 
