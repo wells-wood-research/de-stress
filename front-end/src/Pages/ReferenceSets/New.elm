@@ -290,7 +290,7 @@ update msg model =
                                 }
                       }
                     , ReferenceSet.queryToCmd
-                        (preferredStatesSubsetQuery params.pdbCodeList)
+                        (ReferenceSet.preferredStatesSubsetQuery params.pdbCodeList)
                         GotPreferredSubsetData
                     )
 
@@ -386,25 +386,6 @@ subscriptions _ =
 
 
 
--- {{{ GraphQL
-
-
-preferredStatesSubsetQuery : Set String -> SelectionSet (List Metrics.RefSetMetrics) RootQuery
-preferredStatesSubsetQuery pdbCodeList =
-    Query.preferredStatesSubset { codes = Set.toList pdbCodeList }
-        (SelectionSet.map7 Metrics.RefSetMetrics
-            (SelectionSet.map Metrics.compositionStringToDict State.composition)
-            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
-            State.hydrophobicFitness
-            State.isoelectricPoint
-            State.mass
-            State.numOfResidues
-            State.meanPackingDensity
-        )
-
-
-
--- }}}
 -- }}}
 -- {{{ VIEW
 

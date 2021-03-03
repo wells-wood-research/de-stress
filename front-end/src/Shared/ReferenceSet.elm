@@ -13,6 +13,7 @@ port module Shared.ReferenceSet exposing
     , highResBiolUnits
     , mapStoredReferenceSet
     , mapStubParams
+    , preferredStatesSubsetQuery
     , queryToCmd
     , referenceSetStubCodec
     , storeReferenceSet
@@ -22,6 +23,8 @@ port module Shared.ReferenceSet exposing
     , updateDeleteStatus
     )
 
+import BigStructure.Object.BiolUnit as BiolUnit
+import BigStructure.Object.Pdb as Pdb
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
 import Codec exposing (Codec, Value)
@@ -205,7 +208,43 @@ highResBiolMetricQuery : SelectionSet (List RefSetMetrics) RootQuery
 highResBiolMetricQuery =
     Query.preferredStates
         (\optionals -> { optionals | first = Absent })
-        (SelectionSet.map7 RefSetMetrics
+        (SelectionSet.map8 RefSetMetrics
+            (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                |> SelectionSet.map
+                    (\mmPdbCode ->
+                        case mmPdbCode of
+                            Just (Just pdbCode) ->
+                                pdbCode
+
+                            _ ->
+                                "Unknown PDB"
+                    )
+            )
+            (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            State.hydrophobicFitness
+            State.isoelectricPoint
+            State.mass
+            State.numOfResidues
+            State.meanPackingDensity
+        )
+
+
+preferredStatesSubsetQuery : Set String -> SelectionSet (List Metrics.RefSetMetrics) RootQuery
+preferredStatesSubsetQuery pdbCodeList =
+    Query.preferredStatesSubset { codes = Set.toList pdbCodeList }
+        (SelectionSet.map8 Metrics.RefSetMetrics
+            (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                |> SelectionSet.map
+                    (\mmPdbCode ->
+                        case mmPdbCode of
+                            Just (Just pdbCode) ->
+                                pdbCode
+
+                            _ ->
+                                "Unknown PDB"
+                    )
+            )
             (SelectionSet.map Metrics.compositionStringToDict State.composition)
             (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
             State.hydrophobicFitness

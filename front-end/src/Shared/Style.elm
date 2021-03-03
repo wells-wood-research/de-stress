@@ -46,34 +46,34 @@ pageWidths =
 
 h1 : Element msg -> Element msg
 h1 content =
-    el
+    paragraph
         [ paddingEach { top = 12, bottom = 8, left = 0, right = 0 }
         , Font.bold
         , Font.size 32
         , Region.heading 1
         ]
-        content
+        [ content ]
 
 
 h2 : Element msg -> Element msg
 h2 content =
-    el
+    paragraph
         [ paddingEach { top = 12, bottom = 8, left = 0, right = 0 }
         , Font.size 26
         , Region.heading 2
         ]
-        content
+        [ content ]
 
 
 h3 : Element msg -> Element msg
 h3 content =
-    el
+    paragraph
         [ paddingEach { top = 12, bottom = 8, left = 0, right = 0 }
         , Font.italic
         , Font.size 22
         , Region.heading 3
         ]
-        content
+        [ content ]
 
 
 

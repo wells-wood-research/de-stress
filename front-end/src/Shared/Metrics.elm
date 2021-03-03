@@ -1,11 +1,11 @@
 module Shared.Metrics exposing
     ( AggregateData
+    , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
-    , DFIRE2Results
-    , RosettaResults
     , MeanAndStdDev
     , RefSetMetrics
+    , RosettaResults
     , SequenceInfo
     , aggregateDataCodec
     , calculateMeanComposition
@@ -271,33 +271,33 @@ dfire2ResultsCodec =
 
 
 type alias RosettaResults =
-    { log_info: String
-    , error_info: String
-    , return_code: Int
-    , dslf_fa13: Maybe Float
-    , fa_atr: Maybe Float
-    , fa_dun: Maybe Float
-    , fa_elec: Maybe Float
-    , fa_intra_rep: Maybe Float
-    , fa_intra_sol_xover4: Maybe Float
-    , fa_rep: Maybe Float
-    , fa_sol: Maybe Float
-    , hbond_bb_sc: Maybe Float
-    , hbond_lr_bb: Maybe Float
-    , hbond_sc: Maybe Float
-    , hbond_sr_bb: Maybe Float
-    , linear_chainbreak: Maybe Float
-    , lk_ball_wtd: Maybe Float
-    , omega: Maybe Float
-    , overlap_chainbreak: Maybe Float
-    , p_aa_pp: Maybe Float
-    , pro_close: Maybe Float
-    , rama_prepro: Maybe Float
-    , ref: Maybe Float
-    , score: Maybe Float
-    , time: Maybe Float
-    , total_score: Maybe Float
-    , yhh_planarity: Maybe Float
+    { log_info : String
+    , error_info : String
+    , return_code : Int
+    , dslf_fa13 : Maybe Float
+    , fa_atr : Maybe Float
+    , fa_dun : Maybe Float
+    , fa_elec : Maybe Float
+    , fa_intra_rep : Maybe Float
+    , fa_intra_sol_xover4 : Maybe Float
+    , fa_rep : Maybe Float
+    , fa_sol : Maybe Float
+    , hbond_bb_sc : Maybe Float
+    , hbond_lr_bb : Maybe Float
+    , hbond_sc : Maybe Float
+    , hbond_sr_bb : Maybe Float
+    , linear_chainbreak : Maybe Float
+    , lk_ball_wtd : Maybe Float
+    , omega : Maybe Float
+    , overlap_chainbreak : Maybe Float
+    , p_aa_pp : Maybe Float
+    , pro_close : Maybe Float
+    , rama_prepro : Maybe Float
+    , ref : Maybe Float
+    , score : Maybe Float
+    , time : Maybe Float
+    , total_score : Maybe Float
+    , yhh_planarity : Maybe Float
     }
 
 
@@ -334,12 +334,14 @@ rosettaResultsCodec =
         |> Codec.buildObject
 
 
+
 -- }}}
 -- {{{ RefSetMetrics
 
 
 type alias RefSetMetrics =
-    { composition : Dict String Float
+    { pdbCode : String
+    , composition : Dict String Float
     , torsionAngles : Dict String ( Float, Float, Float )
     , hydrophobicFitness : Maybe Float
     , isoelectricPoint : Float
@@ -352,6 +354,7 @@ type alias RefSetMetrics =
 refSetMetricsCodec : Codec RefSetMetrics
 refSetMetricsCodec =
     Codec.object RefSetMetrics
+        |> Codec.field "pdbCode" .pdbCode Codec.string
         |> Codec.field "composition" .composition (Codec.dict Codec.float)
         |> Codec.field "torsionAngles"
             .torsionAngles
@@ -550,8 +553,8 @@ overviewSpec metricName overviewMetricDict =
         ]
 
 
-createAllHistogramsSpec : DesignMetrics -> List RefSetMetrics -> VL.Spec
-createAllHistogramsSpec designMetrics pdbMetricsList =
+createAllHistogramsSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
+createAllHistogramsSpec mDesignMetrics pdbMetricsList =
     case List.filter (\a -> a.hydrophobicFitness /= Nothing) pdbMetricsList of
         [] ->
             VL.toVegaLite []
@@ -564,13 +567,19 @@ createAllHistogramsSpec designMetrics pdbMetricsList =
                     )
                         >> VL.dataFromRows []
 
-                designData =
-                    metricDataRow designMetrics
-                        >> VL.dataFromRows []
+                mDesignData =
+                    Maybe.map
+                        (\designMetrics ->
+                            (metricDataRow designMetrics
+                                >> VL.dataFromRows []
+                            )
+                                []
+                        )
+                        mDesignMetrics
             in
             [ VL.asSpec
                 [ List.map
-                    (histogramSpec (pdbData []) (designData []))
+                    (histogramSpec (pdbData []) mDesignData)
                     [ "Hydrophobic Fitness"
                     , "Isoelectric Point"
                     ]
@@ -578,7 +587,7 @@ createAllHistogramsSpec designMetrics pdbMetricsList =
                 ]
             , VL.asSpec
                 [ List.map
-                    (histogramSpec (pdbData []) (designData []))
+                    (histogramSpec (pdbData []) mDesignData)
                     [ "Mean Packing Density"
                     , "# Residues"
                     ]
@@ -607,13 +616,13 @@ metricDataRow { hydrophobicFitness, isoelectricPoint, numOfResidues, packingDens
         ]
 
 
-histogramSpec : VL.Data -> VL.Data -> String -> VL.Spec
-histogramSpec pdbData designData fieldName =
+histogramSpec : VL.Data -> Maybe VL.Data -> String -> VL.Spec
+histogramSpec pdbData mDesignData fieldName =
     VL.asSpec
         [ VL.height 225
         , VL.width 225
         , VL.layer
-            [ VL.asSpec
+            ([ VL.asSpec
                 [ pdbData
                 , VL.bar []
                 , (VL.encoding
@@ -630,19 +639,27 @@ histogramSpec pdbData designData fieldName =
                   )
                     []
                 ]
-            , VL.asSpec
-                [ designData
-                , VL.rule [ VL.maSize 3 ]
-                , (VL.encoding
-                    << VL.position VL.X
-                        [ VL.pName fieldName
-                        , VL.pMType VL.Quantitative
-                        , VL.pAxis [ VL.axTitle "" ]
-                        ]
-                  )
-                    []
-                ]
-            ]
+             ]
+                ++ (case mDesignData of
+                        Just designData ->
+                            [ VL.asSpec
+                                [ designData
+                                , VL.rule [ VL.maSize 3 ]
+                                , (VL.encoding
+                                    << VL.position VL.X
+                                        [ VL.pName fieldName
+                                        , VL.pMType VL.Quantitative
+                                        , VL.pAxis [ VL.axTitle "" ]
+                                        ]
+                                  )
+                                    []
+                                ]
+                            ]
+
+                        Nothing ->
+                            []
+                   )
+            )
         ]
 
 
@@ -718,51 +735,79 @@ calculateMeanComposition compositionList =
 
 createCompositionSpec :
     AggregateData
-    -> DesignMetrics
+    -> Maybe DesignMetrics
     -> VL.Spec
-createCompositionSpec aggregateData designMetrics =
-    let
-        designComposition =
-            designMetrics.composition
-                |> compositionDictWithDefaultValues
-    in
-    compositionSpec designComposition
-        (Dict.toList aggregateData.meanComposition
-            |> List.map
-                (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
-            |> Dict.fromList
-        )
+createCompositionSpec aggregateData mDesignMetrics =
+    case mDesignMetrics of
+        Just designMetrics ->
+            let
+                designComposition =
+                    designMetrics.composition
+                        |> compositionDictWithDefaultValues
+            in
+            compositionSpec
+                (Just designComposition)
+                (Dict.toList aggregateData.meanComposition
+                    |> List.map
+                        (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+                    |> Dict.fromList
+                )
+
+        Nothing ->
+            compositionSpec
+                Nothing
+                (Dict.toList aggregateData.meanComposition
+                    |> List.map
+                        (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+                    |> Dict.fromList
+                )
 
 
-compositionSpec : Dict String Float -> Dict String Float -> VL.Spec
-compositionSpec designCompositionDict pdbCompositionDict =
+compositionSpec : Maybe (Dict String Float) -> Dict String Float -> VL.Spec
+compositionSpec mDesignCompositionDict pdbCompositionDict =
     let
         data =
             VL.dataFromColumns []
                 << VL.dataColumn
                     "Amino Acids"
                     (VL.strs <|
-                        List.concat
-                            [ Dict.keys designCompositionDict
-                            , Dict.keys pdbCompositionDict
-                            ]
+                        ((case mDesignCompositionDict of
+                            Just designCompositionDict ->
+                                Dict.keys designCompositionDict
+
+                            Nothing ->
+                                []
+                         )
+                            ++ Dict.keys pdbCompositionDict
+                        )
                     )
                 << VL.dataColumn
                     "Proportion"
                     (VL.nums <|
-                        List.concat
-                            [ Dict.values designCompositionDict
-                            , Dict.values pdbCompositionDict
-                            ]
+                        (case mDesignCompositionDict of
+                            Just designCompositionDict ->
+                                Dict.values designCompositionDict
+
+                            Nothing ->
+                                []
+                        )
+                            ++ Dict.values pdbCompositionDict
                     )
                 << VL.dataColumn
                     "Set"
                     (VL.strs <|
-                        List.concat
-                            [ List.repeat (List.length <| Dict.keys designCompositionDict) "Design"
-                            , List.repeat (List.length <| Dict.keys pdbCompositionDict)
+                        (case mDesignCompositionDict of
+                            Just designCompositionDict ->
+                                List.repeat
+                                    (List.length <| Dict.keys designCompositionDict)
+                                    "Design"
+
+                            Nothing ->
+                                []
+                        )
+                            ++ List.repeat
+                                (List.length <| Dict.keys pdbCompositionDict)
                                 "Reference"
-                            ]
                     )
 
         config =
@@ -805,15 +850,21 @@ type alias TorsionAnglesDict =
     Dict String ( Float, Float, Float )
 
 
-createTorsionAngleSpec : DesignMetrics -> List RefSetMetrics -> VL.Spec
-createTorsionAngleSpec designMetrics referenceSetMetricsList =
-    torsionAnglesSpec
-        designMetrics.torsionAngles
-        (List.map .torsionAngles referenceSetMetricsList)
+createTorsionAngleSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
+createTorsionAngleSpec mDesignMetrics referenceSetMetricsList =
+    case mDesignMetrics of
+        Just designMetrics ->
+            fullTorsionAnglesSpec
+                designMetrics.torsionAngles
+                (List.map .torsionAngles referenceSetMetricsList)
+
+        Nothing ->
+            refSetTorsionAnglesSpec
+                (List.map .torsionAngles referenceSetMetricsList)
 
 
-torsionAnglesSpec : TorsionAnglesDict -> List TorsionAnglesDict -> VL.Spec
-torsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
+fullTorsionAnglesSpec : TorsionAnglesDict -> List TorsionAnglesDict -> VL.Spec
+fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
     let
         designIds =
             Dict.keys designTorsionAngles
@@ -927,6 +978,85 @@ torsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                         ]
                   )
                     []
+                ]
+            , VL.asSpec
+                [ VL.width 400
+                , pdbData []
+                , sel []
+                , VL.tick []
+                , (VL.encoding
+                    << VL.position VL.X
+                        [ VL.pName "Omega"
+                        , VL.pMType VL.Quantitative
+                        , VL.pAxis [ VL.axTitle "PDB Omega Values" ]
+                        ]
+                  )
+                    []
+                ]
+            ]
+        ]
+
+
+refSetTorsionAnglesSpec : List TorsionAnglesDict -> VL.Spec
+refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
+    let
+        ( pdbOms, pdbPhis, pdbPsis ) =
+            List.map Dict.values pdbTorsionAnglesDicts
+                |> List.concat
+                |> ListExtra.unzipTriples
+
+        pdbData =
+            VL.dataFromColumns []
+                << VL.dataColumn
+                    "Omega"
+                    (VL.nums pdbOms)
+                << VL.dataColumn
+                    "Phi"
+                    (VL.nums pdbPhis)
+                << VL.dataColumn
+                    "Psi"
+                    (VL.nums pdbPsis)
+
+        sel =
+            VL.selection
+                << VL.select "grid"
+                    VL.seInterval
+                    [ VL.seBindScales
+                    , VL.seZoom
+                        "wheel![event.shiftKey]"
+                    ]
+    in
+    VL.toVegaLite
+        [ VL.vConcat
+            [ VL.asSpec
+                [ VL.height 400
+                , VL.width 400
+                , VL.layer
+                    [ VL.asSpec
+                        [ pdbData []
+                        , VL.rect []
+                        , (VL.encoding
+                            << VL.position VL.X
+                                [ VL.pName "Phi"
+                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pMType VL.Quantitative
+                                , VL.pAxis [ VL.axTitle "Phi" ]
+                                ]
+                            << VL.position VL.Y
+                                [ VL.pName "Psi"
+                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pMType VL.Quantitative
+                                , VL.pAxis [ VL.axTitle "Psi" ]
+                                ]
+                            << VL.color
+                                [ VL.mAggregate VL.opCount
+                                , VL.mMType VL.Quantitative
+                                , VL.mLegend [ VL.leTitle "PDB Counts" ]
+                                ]
+                          )
+                            []
+                        ]
+                    ]
                 ]
             , VL.asSpec
                 [ VL.width 400

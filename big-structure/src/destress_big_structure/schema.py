@@ -167,14 +167,18 @@ class Query(graphene.ObjectType):
             "parameter, which is a list of PDB codes to create the subset."
         ),
         codes=graphene.List(graphene.NonNull(graphene.String), required=True),
+        state_number=graphene.Int(),
     )
 
     def resolve_preferred_states_subset(self, info, **args):
         codes = args.get("codes")
+        state_number = args.get("state_number", 0)
         query = (
             State.get_query(info)
-            .join(BiolUnitModel, PdbModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
             .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
             .filter(PdbModel.pdb_code.in_(codes))
         )
         return query.all()

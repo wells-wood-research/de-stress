@@ -461,13 +461,13 @@ plotCommands metrics referenceSet =
                         |> ReferenceSet.getGenericData
                         |> .aggregateData
                     )
-                    metrics
+                    (Just metrics)
             }
         , Plots.vegaPlot <|
             { plotId = "torsionAngles"
             , spec =
                 Metrics.createTorsionAngleSpec
-                    metrics
+                    (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
@@ -477,7 +477,7 @@ plotCommands metrics referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
-                    metrics
+                    (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
