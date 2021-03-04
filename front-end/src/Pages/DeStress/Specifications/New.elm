@@ -1,4 +1,4 @@
-module Pages.Specifications.New exposing (Model, Msg, Params, page)
+module Pages.DeStress.Specifications.New exposing (Model, Msg, Params, page)
 
 import Browser.Navigation as Nav
 import Codec
@@ -484,7 +484,7 @@ update msg model =
                                     |> Codec.encoder
                                         Specification.codec
                             }
-                        , navigate newModel.navKey Route.Specifications
+                        , navigate newModel.navKey Route.DeStress__Specifications
                         ]
                     )
 

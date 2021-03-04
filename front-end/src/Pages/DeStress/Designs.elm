@@ -1,4 +1,4 @@
-port module Pages.Designs exposing (Model, Msg, Params, page)
+port module Pages.DeStress.Designs exposing (Model, Msg, Params, page)
 
 import Biomolecules
 import Browser.Navigation exposing (Key)
@@ -413,7 +413,7 @@ update msg model =
             ( model
             , navigate
                 model.navKey
-                (Route.Designs__Uuid_String { uuid = uuid })
+                (Route.DeStress__Designs__Uuid_String { uuid = uuid })
             )
 
         ToggleSectionVisibility section ->

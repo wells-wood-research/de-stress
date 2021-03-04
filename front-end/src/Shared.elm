@@ -372,7 +372,7 @@ viewHeader connStat currentRoute =
         , Region.navigation
         ]
         [ row [ centerX, spacing 10 ]
-            [ Style.h1 <| link [] { url = "/", label = text "DE-STRESS" }
+            [ Style.h1 <| link [] { url = "/de-stress/", label = text "DE-STRESS" }
             , el [] <|
                 WebSockets.statusIconView connStat
             ]
@@ -387,9 +387,9 @@ viewHeader connStat currentRoute =
             , Font.medium
             , Font.size 24
             ]
-            ([ viewLink currentRoute ( text "Designs", Route.Designs )
-             , viewLink currentRoute ( text "Reference Sets", Route.ReferenceSets )
-             , viewLink currentRoute ( text "Specifications", Route.Specifications )
+            ([ viewLink currentRoute ( text "Designs", Route.DeStress__Designs )
+             , viewLink currentRoute ( text "Reference Sets", Route.DeStress__ReferenceSets )
+             , viewLink currentRoute ( text "Specifications", Route.DeStress__Specifications )
              , viewLink currentRoute
                 ( FeatherIcons.settings
                     |> Style.featherIconToElmUi

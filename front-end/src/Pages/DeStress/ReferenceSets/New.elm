@@ -1,4 +1,4 @@
-module Pages.ReferenceSets.New exposing (Model, Msg, Params, page)
+module Pages.DeStress.ReferenceSets.New exposing (Model, Msg, Params, page)
 
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
@@ -206,7 +206,7 @@ update msg model =
                                     |> Codec.encoder
                                         ReferenceSet.codec
                             }
-                        , navigate model.navKey Route.ReferenceSets
+                        , navigate model.navKey Route.DeStress__ReferenceSets
                         ]
                     )
 
@@ -339,7 +339,7 @@ update msg model =
                                     ReferenceSet.codec
                                     referenceSet
                             }
-                        , navigate model.navKey Route.ReferenceSets
+                        , navigate model.navKey Route.DeStress__ReferenceSets
                         ]
                     )
 

@@ -1,4 +1,4 @@
-module Pages.Top exposing (Model, Msg, Params, page)
+module Pages.DeStress exposing (Model, Msg, Params, page)
 
 import Element exposing (..)
 import Shared.Style as Style

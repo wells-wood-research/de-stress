@@ -1,4 +1,4 @@
-port module Pages.Specifications.Uuid_String exposing (Model, Msg, Params, page)
+port module Pages.DeStress.Specifications.Uuid_String exposing (Model, Msg, Params, page)
 
 import Browser.Navigation as Nav
 import Codec exposing (Value)
@@ -141,7 +141,7 @@ update msg model =
                 ( { model | pageState = Deleted uuid }
                 , Cmd.batch
                     [ Specification.deleteSpecification { uuidString = uuid }
-                    , navigate model.key Route.Specifications
+                    , navigate model.key Route.DeStress__Specifications
                     ]
                 )
 
@@ -254,7 +254,7 @@ simpleDetails uuidString specOrStub =
             , row [ spacing 10 ]
                 [ Buttons.linkButton
                     { label = text "Back"
-                    , route = Route.Specifications
+                    , route = Route.DeStress__Specifications
                     }
                 , Buttons.dangerousButton
                     { label = text "Delete"

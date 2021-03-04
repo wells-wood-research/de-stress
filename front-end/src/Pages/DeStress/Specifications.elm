@@ -1,4 +1,4 @@
-module Pages.Specifications exposing (Model, Msg, Params, page)
+module Pages.DeStress.Specifications exposing (Model, Msg, Params, page)
 
 import Dict exposing (Dict)
 import Element exposing (..)
@@ -166,7 +166,7 @@ bodyView model =
                 ]
             , Buttons.linkButton
                 { route =
-                    Route.Specifications__New
+                    Route.DeStress__Specifications__New
                 , label = text "New"
                 }
             ]
@@ -248,7 +248,7 @@ specificationStubView mSelectedSpecification ( uuidString, { name, description, 
             , Buttons.linkButton
                 { label = text "Details"
                 , route =
-                    Route.Specifications__Uuid_String { uuid = uuidString }
+                    Route.DeStress__Specifications__Uuid_String { uuid = uuidString }
                 }
             , Buttons.dangerousButton
                 { label = text "Delete"

@@ -1,4 +1,4 @@
-module Pages.ReferenceSets exposing (Model, Msg, Params, page)
+module Pages.DeStress.ReferenceSets exposing (Model, Msg, Params, page)
 
 import Dict exposing (Dict)
 import Element exposing (..)
@@ -165,7 +165,7 @@ bodyView model =
                         text "Reference Sets"
                     ]
                 , Buttons.linkButton
-                    { route = Route.ReferenceSets__New, label = text "New" }
+                    { route = Route.DeStress__ReferenceSets__New, label = text "New" }
                 ]
             , column [ width fill, spacing 15 ]
                 (Dict.toList model.referenceSets
@@ -247,7 +247,7 @@ referenceSetStubView mSelectedReferenceSet ( uuidString, stub ) =
                         }
             , Buttons.linkButton
                 { label = text "Details"
-                , route = Route.ReferenceSets__Uuid_String { uuid = uuidString }
+                , route = Route.DeStress__ReferenceSets__Uuid_String { uuid = uuidString }
                 }
             , Buttons.dangerousButton
                 { label = text "Delete"

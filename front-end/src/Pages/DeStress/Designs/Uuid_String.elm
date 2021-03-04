@@ -1,4 +1,4 @@
-port module Pages.Designs.Uuid_String exposing (Model, Msg, Params, page)
+port module Pages.DeStress.Designs.Uuid_String exposing (Model, Msg, Params, page)
 
 import Codec exposing (Value)
 import Dict exposing (Dict)
@@ -688,7 +688,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
         , row [ spacing 10 ]
             [ Buttons.linkButton
                 { label = text "Back"
-                , route = Route.Designs
+                , route = Route.DeStress__Designs
                 }
             ]
         , sectionColumn

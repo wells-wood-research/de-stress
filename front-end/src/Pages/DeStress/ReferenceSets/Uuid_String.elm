@@ -1,4 +1,4 @@
-port module Pages.ReferenceSets.Uuid_String exposing (Model, Msg, Params, page)
+port module Pages.DeStress.ReferenceSets.Uuid_String exposing (Model, Msg, Params, page)
 
 import Browser.Navigation as Nav
 import Codec exposing (Value)
@@ -156,7 +156,7 @@ update msg model =
                 ( { model | pageState = Deleted uuid }
                 , Cmd.batch
                     [ ReferenceSet.deleteReferenceSet { uuidString = uuid }
-                    , navigate model.key Route.ReferenceSets
+                    , navigate model.key Route.DeStress__ReferenceSets
                     ]
                 )
 
@@ -309,7 +309,7 @@ simpleDetails uuidString refSetOrStub =
             , row [ spacing 10 ]
                 [ Buttons.linkButton
                     { label = text "Back"
-                    , route = Route.ReferenceSets
+                    , route = Route.DeStress__ReferenceSets
                     }
                 , Buttons.dangerousButton
                     { label = text "Delete"
