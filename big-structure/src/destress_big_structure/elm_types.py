@@ -133,7 +133,14 @@ class EvoEF2Output:
             )
 
             self.intraR_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("intraR"))
+                (
+                    v
+                    for k, v in self.__dict__.items()
+                    if (
+                        k.startswith("intraR")
+                        or k in ["aapropensity", "ramachandran", "dunbrack"]
+                    )
+                )
             )
 
             self.interS_total = sum(
