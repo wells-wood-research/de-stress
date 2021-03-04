@@ -4,8 +4,14 @@ import Browser.Navigation as Nav
 import Codec exposing (Value)
 import Dict
 import Element exposing (..)
+import Element.Keyed as Keyed
+import Html
+import Html.Attributes as HAtt
 import Shared
 import Shared.Buttons as Buttons
+import Shared.Folds as Folds
+import Shared.Metrics as Metrics exposing (RefSetMetrics)
+import Shared.Plots as Plots
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet, ReferenceSetStub)
 import Shared.Style as Style
 import Spa.Document exposing (Document)
@@ -44,6 +50,7 @@ port setFocussedReferenceSet :
 type alias Model =
     { key : Nav.Key
     , pageState : PageState
+    , displaySettings : DisplaySettings
     }
 
 
@@ -81,6 +88,10 @@ mapPageState refSetFn focus =
             focus
 
 
+type alias DisplaySettings =
+    { pdbCodes : Bool }
+
+
 
 -- }}}
 -- {{{ INIT
@@ -99,10 +110,16 @@ init shared { params } =
                     |> Maybe.map ReferenceSet.storedReferenceSetToStub
               of
                 Just stub ->
-                    { key = shared.key, pageState = LoadingWithStub params.uuid stub }
+                    { key = shared.key
+                    , pageState = LoadingWithStub params.uuid stub
+                    , displaySettings = { pdbCodes = False }
+                    }
 
                 Nothing ->
-                    { key = shared.key, pageState = LoadingNoStub params.uuid }
+                    { key = shared.key
+                    , pageState = LoadingNoStub params.uuid
+                    , displaySettings = { pdbCodes = False }
+                    }
             , ReferenceSet.getReferenceSetForRefSetDetails { uuidString = params.uuid }
             )
 
@@ -118,6 +135,7 @@ init shared { params } =
 type Msg
     = SetFocus { uuidString : String, refSetValue : Value }
     | DeleteFocussedReferenceSet String Buttons.DangerStatus
+    | TogglePdbCodesFold
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -126,7 +144,9 @@ update msg model =
         SetFocus { uuidString, refSetValue } ->
             case Codec.decodeValue ReferenceSet.codec refSetValue of
                 Ok refSet ->
-                    ( { model | pageState = RefSet uuidString refSet }, Cmd.none )
+                    ( { model | pageState = RefSet uuidString refSet }
+                    , plotCommands refSet
+                    )
 
                 Err _ ->
                     ( { model | pageState = RefSetNotFound uuidString }, Cmd.none )
@@ -154,6 +174,51 @@ update msg model =
                   }
                 , Cmd.none
                 )
+
+        TogglePdbCodesFold ->
+            ( { model
+                | displaySettings =
+                    { pdbCodes = not model.displaySettings.pdbCodes
+                    }
+              }
+            , Cmd.none
+            )
+
+
+plotCommands : ReferenceSet -> Cmd msg
+plotCommands referenceSet =
+    Cmd.batch
+        [ Plots.vegaPlot <|
+            { plotId = "composition"
+            , spec =
+                Metrics.createCompositionSpec
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .aggregateData
+                    )
+                    Nothing
+            }
+        , Plots.vegaPlot <|
+            { plotId = "torsionAngles"
+            , spec =
+                Metrics.createTorsionAngleSpec
+                    Nothing
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .metrics
+                    )
+            }
+        , Plots.vegaPlot <|
+            { plotId = "metricsHistograms"
+            , spec =
+                Metrics.createAllHistogramsSpec
+                    Nothing
+                    (referenceSet
+                        |> ReferenceSet.getGenericData
+                        |> .metrics
+                    )
+            }
+        ]
 
 
 save : Model -> Shared.Model -> Shared.Model
@@ -213,7 +278,10 @@ bodyView model =
 
             RefSet uuidString referenceSet ->
                 sectionColumn
-                    [ simpleDetails uuidString (referenceSet |> ReferenceSet.getGenericData)
+                    [ fullDetails
+                        uuidString
+                        model.displaySettings
+                        (referenceSet |> ReferenceSet.getGenericData)
                     ]
 
             Deleted uuidString ->
@@ -263,5 +331,123 @@ simpleDetails uuidString refSetOrStub =
         ]
 
 
+fullDetails :
+    String
+    -> DisplaySettings
+    ->
+        { a
+            | name : String
+            , description : String
+            , deleteStatus : Buttons.DangerStatus
+            , metrics : List RefSetMetrics
+        }
+    -> Element Msg
+fullDetails uuidString displaySettings referenceSet =
+    sectionColumn
+        [ simpleDetails uuidString referenceSet
+        , Style.h2 <|
+            text "Overview"
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.pdbCodes
+            , title = "PDB Codes"
+            , toggleMsg = TogglePdbCodesFold
+            , contentView =
+                paragraph []
+                    [ List.map .pdbCode referenceSet.metrics
+                        |> String.join " "
+                        |> text
+                    ]
+            }
+        , referenceOverview
+        ]
 
+
+
+-- {{{ Overview Plots
+
+
+referenceOverview : Element msg
+referenceOverview =
+    sectionColumn
+        [ compositionView
+        , torsionAnglesView
+        , metricsHistogramsView
+        ]
+
+
+compositionView : Element msg
+compositionView =
+    column
+        [ width fill ]
+        [ Style.h3 <| text "Composition"
+        , Keyed.el [ centerX ]
+            ( "composition"
+            , Html.div
+                [ HAtt.id "composition"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+torsionAnglesView : Element msg
+torsionAnglesView =
+    column
+        [ width fill ]
+        [ Style.h3 <| text "Backbone Torsion Angles"
+        , Keyed.el [ centerX ]
+            ( "torsionAngles"
+            , Html.div
+                [ HAtt.id "torsionAngles"
+                , HAtt.style "width" "100%"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+metricsHistogramsView : Element msg
+metricsHistogramsView =
+    column [ width fill ]
+        [ Style.h3 <| text "Metrics Histograms"
+        , Keyed.el [ centerX ]
+            ( "metricsHistograms"
+            , Html.div
+                [ HAtt.id "metricsHistograms"
+                ]
+                [ Html.div
+                    [ HAtt.height 200
+                    , HAtt.style "height" "200px"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "border-radius" "5px"
+                    , HAtt.style "background-color" "#d3d3d3"
+                    ]
+                    []
+                ]
+                |> html
+            )
+        ]
+
+
+
+-- }}}
 -- }}}

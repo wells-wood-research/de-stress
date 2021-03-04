@@ -638,6 +638,103 @@ designStubCSVEncoder designStub =
                                 metrics.dfire2Results.total
                                 |> Maybe.withDefault "NaN"
                              )
+
+                           -- Rosetta
+                           , ( "rosetta - total"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.total_score
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_atr"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_atr
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_rep"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_rep
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_intra_rep"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_intra_rep
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_elec"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_elec
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_sol"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_sol
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - lk_ball_wtd"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.lk_ball_wtd
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_intra_sol_xover4"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_intra_sol_xover4
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - hbond_lr_bb"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.hbond_lr_bb
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - hbond_sr_bb"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.hbond_sr_bb
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - hbond_bb_sc"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.hbond_bb_sc
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - hbond_sc"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.hbond_sc
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - dslf_fa13"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.dslf_fa13
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - rama_prepro"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.rama_prepro
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - p_aa_pp"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.p_aa_pp
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - fa_dun"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.fa_dun
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - omega"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.omega
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - pro_close"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.pro_close
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "rosetta - yhh_planarity"
+                             , Maybe.map String.fromFloat
+                                metrics.rosettaResults.yhh_planarity
+                                |> Maybe.withDefault "NaN"
+                             )
                            ]
 
                 Nothing ->

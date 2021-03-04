@@ -16,7 +16,7 @@ import Round
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design
-import Shared.Editable exposing (Editable(..))
+import Shared.Editable as Editable exposing (Editable(..))
 import Shared.Folds as Folds
 import Shared.Metrics as Metrics
 import Shared.Plots as Plots
@@ -25,6 +25,7 @@ import Shared.Requirement as Requirement exposing (Requirement, RequirementData)
 import Shared.Specification as Specification exposing (Specification)
 import Shared.Stored as Stored exposing (Stored(..))
 import Shared.Style as Style
+import Shared.Tooltips as Tooltips
 import Shared.WebSockets as WebSockets
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route
@@ -75,6 +76,7 @@ type alias Model =
     , pageState : PageState
     , evoEF2TableOption : EvoEF2TableOption
     , displaySettings : DisplaySettings
+    , hoverInfoOption : Tooltips.HoverInfoOption
     }
 
 
@@ -84,6 +86,16 @@ type PageState
     | LoadingWithStub Design.DesignStub
     | UnknownDesignUuid
     | Design Design.Design
+
+
+mapIfDesign : (Design.Design -> Design.Design) -> PageState -> PageState
+mapIfDesign fn pageState =
+    case pageState of
+        Design design ->
+            Design <| fn design
+
+        _ ->
+            pageState
 
 
 type EvoEF2TableOption
@@ -97,11 +109,13 @@ type EvoEF2TableOption
 type HideableSection
     = EvoEF2LogInfo
     | DFIRE2LogInfo
+    | RosettaLogInfo
 
 
 type alias DisplaySettings =
     { evoEF2LogInfo : Bool
     , dfire2LogInfo : Bool
+    , rosettaLogInfo : Bool
     }
 
 
@@ -114,6 +128,9 @@ hideableSectionToString hideableSection =
         DFIRE2LogInfo ->
             "DFIRE2 Log Information"
 
+        RosettaLogInfo ->
+            "Rosetta Log Information"
+
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
 evoEF2TableOptionToString evoEF2TableOption =
@@ -125,13 +142,13 @@ evoEF2TableOptionToString evoEF2TableOption =
             "Reference"
 
         IntraR ->
-            "IntraR"
+            "Intra Residue"
 
         InterS ->
-            "InterS"
+            "Inter Residue - Same Chain"
 
         InterD ->
-            "InterD"
+            "Inter Residue - Different Chains"
 
 
 
@@ -172,7 +189,10 @@ init shared { params } =
                     , displaySettings =
                         { evoEF2LogInfo = False
                         , dfire2LogInfo = False
+                        , rosettaLogInfo = False
                         }
+                    , hoverInfoOption =
+                        Tooltips.NoHoverInfo
                     }
             in
             ( model
@@ -204,7 +224,10 @@ init shared { params } =
               , displaySettings =
                     { evoEF2LogInfo = False
                     , dfire2LogInfo = False
+                    , rosettaLogInfo = False
                     }
+              , hoverInfoOption =
+                    Tooltips.NoHoverInfo
               }
             , Cmd.none
             )
@@ -219,8 +242,13 @@ type Msg
     = SetFocus { uuidString : String, design : Value }
     | SetSpecification { uuidString : String, specValue : Value }
     | SetReferenceSet { uuidString : String, refSetValue : Value }
+    | ClickedNameEdit
+    | EditedName String
+    | ClickedCancelNameEdit
+    | ClickedAcceptNameEdit
     | SetEvoEF2TableOption EvoEF2TableOption
     | ToggleSectionVisibility HideableSection
+    | ChangeHoverInfo Tooltips.HoverInfoOption
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -326,6 +354,74 @@ update msg model =
                         "A reference set was set, but I was not expecting one."
                         ( model, Cmd.none )
 
+        ClickedNameEdit ->
+            ( { model
+                | pageState =
+                    mapIfDesign
+                        (\d -> { d | name = Editable.startEditing d.name })
+                        model.pageState
+              }
+            , Cmd.none
+            )
+
+        EditedName updatedName ->
+            ( { model
+                | pageState =
+                    mapIfDesign
+                        (\d ->
+                            { d
+                                | name =
+                                    Editable.editValue
+                                        (if String.isEmpty updatedName then
+                                            Nothing
+
+                                         else
+                                            Just updatedName
+                                        )
+                                        d.name
+                            }
+                        )
+                        model.pageState
+              }
+            , Cmd.none
+            )
+
+        ClickedCancelNameEdit ->
+            ( { model
+                | pageState =
+                    mapIfDesign
+                        (\d -> { d | name = Editable.cancelEdit d.name })
+                        model.pageState
+              }
+            , Cmd.none
+            )
+
+        ClickedAcceptNameEdit ->
+            case model.pageState of
+                Design design ->
+                    let
+                        updatedDesign =
+                            { design
+                                | name =
+                                    Editable.acceptEdit
+                                        design.name
+                            }
+                    in
+                    ( { model
+                        | pageState =
+                            Design updatedDesign
+                      }
+                    , Design.updateDesignName
+                        { uuidString = model.designUuid
+                        , name =
+                            Editable.getValue updatedDesign.name
+                        }
+                    )
+
+                _ ->
+                    Debug.log "Should we report an error here?"
+                        ( model, Cmd.none )
+
         SetEvoEF2TableOption option ->
             ( { model | evoEF2TableOption = option }
             , Cmd.none
@@ -350,7 +446,18 @@ update msg model =
                                 | dfire2LogInfo =
                                     not displaySettings.dfire2LogInfo
                             }
+
+                        RosettaLogInfo ->
+                            { displaySettings
+                                | rosettaLogInfo =
+                                    not displaySettings.rosettaLogInfo
+                            }
               }
+            , Cmd.none
+            )
+
+        ChangeHoverInfo option ->
+            ( { model | hoverInfoOption = option }
             , Cmd.none
             )
 
@@ -366,13 +473,13 @@ plotCommands metrics referenceSet =
                         |> ReferenceSet.getGenericData
                         |> .aggregateData
                     )
-                    metrics
+                    (Just metrics)
             }
         , Plots.vegaPlot <|
             { plotId = "torsionAngles"
             , spec =
                 Metrics.createTorsionAngleSpec
-                    metrics
+                    (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
@@ -382,7 +489,7 @@ plotCommands metrics referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
-                    metrics
+                    (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
@@ -393,16 +500,34 @@ plotCommands metrics referenceSet =
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
-    shared
+    case model.pageState of
+        Design design ->
+            Shared.mapRunState
+                (\runState ->
+                    { runState
+                        | designs =
+                            Dict.insert
+                                model.designUuid
+                                (design
+                                    |> Design.createDesignStub
+                                    |> Design.storeDesignStubLocally
+                                )
+                                runState.designs
+                    }
+                )
+                shared
+
+        _ ->
+            shared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
-load shared model =
+load _ model =
     ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ setFocussedDesign SetFocus
         , setSelectedSpecDesignDetails SetSpecification
@@ -478,6 +603,7 @@ bodyView model =
                         design
                         model.evoEF2TableOption
                         model.displaySettings
+                        model.hoverInfoOption
                     ]
         ]
 
@@ -499,8 +625,9 @@ designDetailsView :
     -> Design.Design
     -> EvoEF2TableOption
     -> DisplaySettings
+    -> Tooltips.HoverInfoOption
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings =
+designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings hoverInfoOption =
     let
         { fileName, deleteStatus, metricsJobStatus } =
             design
@@ -515,8 +642,10 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                 (case design.name of
                     NotEditing currentName ->
                         [ paragraph [] [ Style.h2 <| text <| "Name: " ++ currentName ]
-                        , el [ centerY ]
-                            --, Events.onClick <| ClickedNameEdit ]
+                        , el
+                            [ centerY
+                            , Events.onClick <| ClickedNameEdit
+                            ]
                             (FeatherIcons.edit
                                 |> FeatherIcons.toHtml []
                                 |> html
@@ -524,34 +653,35 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         ]
 
                     Editing _ mNewName ->
-                        -- [ Input.text
-                        --     Style.textInputStyle
-                        --     { onChange = EditedName
-                        --     , text = Maybe.withDefault "" mNewName
-                        --     , placeholder = Nothing
-                        --     , label =
-                        --         Input.labelRight [ centerY ]
-                        --             (row [ spacing 5 ]
-                        --                 [ Style.conditionalButton
-                        --                     { label = text "Ok"
-                        --                     , clickMsg = Just ClickedAcceptNameEdit
-                        --                     , isActive =
-                        --                         case mNewName of
-                        --                             Just newName ->
-                        --                                 String.isEmpty newName
-                        --                                     |> not
-                        --                             Nothing ->
-                        --                                 False
-                        --                     }
-                        --                 , Style.alwaysActiveButton
-                        --                     { label = text "Cancel"
-                        --                     , clickMsg = ClickedCancelNameEdit
-                        --                     , pressed = False
-                        --                     }
-                        --                 ]
-                        --             )
-                        --     }
-                        []
+                        [ Input.text
+                            Style.textInputStyle
+                            { onChange = EditedName
+                            , text = Maybe.withDefault "" mNewName
+                            , placeholder = Nothing
+                            , label =
+                                Input.labelRight [ centerY ]
+                                    (row [ spacing 5 ]
+                                        [ Buttons.conditionalButton
+                                            { label = text "Ok"
+                                            , clickMsg = Just ClickedAcceptNameEdit
+                                            , isActive =
+                                                case mNewName of
+                                                    Just newName ->
+                                                        String.isEmpty newName
+                                                            |> not
+
+                                                    Nothing ->
+                                                        False
+                                            }
+                                        , Buttons.alwaysActiveButton
+                                            { label = text "Cancel"
+                                            , clickMsg = ClickedCancelNameEdit
+                                            , pressed = False
+                                            }
+                                        ]
+                                    )
+                            }
+                        ]
                 )
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
             ]
@@ -560,13 +690,6 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                 { label = text "Back"
                 , route = Route.Designs
                 }
-
-            -- , Buttons.dangerousButton
-            --     { label = text "Delete"
-            --     , confirmText = "Are you sure you want to delete this design?"
-            --     , status = deleteStatus
-            --     , dangerousMsg = DeleteFocussedDesign uuidString
-            --     }
             ]
         , sectionColumn
             [ Style.h2 <| text "Structure"
@@ -585,8 +708,9 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
-                        , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings
-                        , dfire2ResultsView designMetrics displaySettings
+                        , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
+                        , dfire2ResultsView designMetrics displaySettings hoverInfoOption
+                        , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
                         , case mReferenceSet of
                             Just refSet ->
                                 referenceSetComparisonView
@@ -627,7 +751,7 @@ metricsOverview metrics =
     column [ spacing 10, width fill ]
         [ Style.h2 <| text "Metrics"
         , wrappedRow
-            []
+            [ spacing 5 ]
             [ createTableColumn
                 (\mHF ->
                     case mHF of
@@ -708,29 +832,35 @@ sequenceInfoView ( chainId, sequenceInfo ) =
         ]
 
 
-evoEF2ResultsTableView : EvoEF2TableOption -> Metrics.DesignMetrics -> DisplaySettings -> Element Msg
-evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
+evoEF2ResultsTableView :
+    EvoEF2TableOption
+    -> Metrics.DesignMetrics
+    -> DisplaySettings
+    -> Tooltips.HoverInfoOption
+    -> Element Msg
+evoEF2ResultsTableView evoEF2TableOption metrics displaySettings hoverInfoOption =
     let
         radioInputSelection =
             el
-                [ centerX
-                , spacing 20
+                [ spacing 20
                 , padding 20
+                , centerX
                 ]
             <|
-                Input.radioRow
+                Input.radio
                     [ padding 20
                     , spacing 20
+                    , scrollbarX
                     ]
                     { onChange = SetEvoEF2TableOption
                     , selected = Just evoEF2TableOption
-                    , label = Input.labelAbove [] (text "Select Table View")
+                    , label = Input.labelAbove [] (text "Select the table view for the EvoEF2 results")
                     , options =
-                        [ Input.option Summary (text "Summary")
-                        , Input.option Reference (text "Reference")
-                        , Input.option IntraR (text "IntraR")
-                        , Input.option InterS (text "InterS")
-                        , Input.option InterD (text "InterD")
+                        [ Input.option Summary (text (evoEF2TableOptionToString Summary))
+                        , Input.option Reference (text (evoEF2TableOptionToString Reference))
+                        , Input.option IntraR (text (evoEF2TableOptionToString IntraR))
+                        , Input.option InterS (text (evoEF2TableOptionToString InterS))
+                        , Input.option InterD (text (evoEF2TableOptionToString InterD))
                         ]
                     }
 
@@ -750,30 +880,30 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
     in
     sectionColumn
         [ Style.h3 <|
-            text
-                ("EvoEF2 Energy Function Results - "
-                    ++ evoEF2TableOptionToString evoEF2TableOption
-                )
+            paragraph []
+                [ text
+                    ("EvoEF2 Energy Function Results - "
+                        ++ evoEF2TableOptionToString evoEF2TableOption
+                    )
+                ]
         , radioInputSelection
         , wrappedRow
-            []
-            (metrics
-                |> (case evoEF2TableOption of
-                        Summary ->
-                            evoef2SummaryColumns
+            [ spacing 5 ]
+            (case evoEF2TableOption of
+                Summary ->
+                    evoef2SummaryColumns metrics hoverInfoOption
 
-                        Reference ->
-                            evoef2RefColumns
+                Reference ->
+                    evoef2RefColumns metrics hoverInfoOption
 
-                        IntraR ->
-                            evoef2IntraRColumns
+                IntraR ->
+                    evoef2IntraRColumns metrics hoverInfoOption
 
-                        InterS ->
-                            evoef2InterSColumns
+                InterS ->
+                    evoef2InterSColumns metrics hoverInfoOption
 
-                        InterD ->
-                            evoef2InterDColumns
-                   )
+                InterD ->
+                    evoef2InterDColumns metrics hoverInfoOption
             )
         , Folds.sectionFoldView
             { foldVisible = displaySettings.evoEF2LogInfo
@@ -784,107 +914,128 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings =
         ]
 
 
-evoef2SummaryColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2SummaryColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2 Energy"
-    , createTableFloatColumn metrics.evoEF2Results.aapropensity "AA Propensity Energy"
-    , createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran Energy"
-    , createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Energy"
-    , createTableFloatColumn metrics.evoEF2Results.ref_total "Reference \nEnergy"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_total "IntraR \nEnergy"
-    , createTableFloatColumn metrics.evoEF2Results.interS_total "InterS \nEnergy"
-    , createTableFloatColumn metrics.evoEF2Results.interD_total "InterD \nEnergy"
+evoef2SummaryColumns :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> List (Element Msg)
+evoef2SummaryColumns metrics hoverInfoOption =
+    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
+    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
+    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
+    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
+    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
     ]
 
 
-evoef2RefColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2RefColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
-    , createTableFloatColumn metrics.evoEF2Results.reference_CYS "CYS"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ASP "ASP"
-    , createTableFloatColumn metrics.evoEF2Results.reference_GLU "GLU"
-    , createTableFloatColumn metrics.evoEF2Results.reference_PHE "PHE"
-    , createTableFloatColumn metrics.evoEF2Results.reference_GLY "GLY"
-    , createTableFloatColumn metrics.evoEF2Results.reference_HIS "HIS"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ILE "ILE"
-    , createTableFloatColumn metrics.evoEF2Results.reference_LYS "LYS"
-    , createTableFloatColumn metrics.evoEF2Results.reference_LEU "LEU"
-    , createTableFloatColumn metrics.evoEF2Results.reference_MET "MET"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ASN "ASN"
-    , createTableFloatColumn metrics.evoEF2Results.reference_PRO "PRO"
-    , createTableFloatColumn metrics.evoEF2Results.reference_GLN "GLN"
-    , createTableFloatColumn metrics.evoEF2Results.reference_ARG "ARG"
-    , createTableFloatColumn metrics.evoEF2Results.reference_SER "SER"
-    , createTableFloatColumn metrics.evoEF2Results.reference_THR "THR"
-    , createTableFloatColumn metrics.evoEF2Results.reference_VAL "VAL"
-    , createTableFloatColumn metrics.evoEF2Results.reference_TRP "TRP"
-    , createTableFloatColumn metrics.evoEF2Results.reference_TYR "TYR"
+evoef2RefColumns :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> List (Element Msg)
+evoef2RefColumns metrics hoverInfoOption =
+    [ el (Tooltips.evoEF2RefALAHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
+    , el (Tooltips.evoEF2RefARGHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ARG "ARG"
+    , el (Tooltips.evoEF2RefASNHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ASN "ASN"
+    , el (Tooltips.evoEF2RefASPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ASP "ASP"
+    , el (Tooltips.evoEF2RefCYSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_CYS "CYS"
+    , el (Tooltips.evoEF2RefGLNHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLN "GLN"
+    , el (Tooltips.evoEF2RefGLUHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLU "GLU"
+    , el (Tooltips.evoEF2RefGLYHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLY "GLY"
+    , el (Tooltips.evoEF2RefHISHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_HIS "HIS"
+    , el (Tooltips.evoEF2RefILEHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ILE "ILE"
+    , el (Tooltips.evoEF2RefLEUHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_LEU "LEU"
+    , el (Tooltips.evoEF2RefLYSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_LYS "LYS"
+    , el (Tooltips.evoEF2RefMETHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_MET "MET"
+    , el (Tooltips.evoEF2RefPHEHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_PHE "PHE"
+    , el (Tooltips.evoEF2RefPROHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_PRO "PRO"
+    , el (Tooltips.evoEF2RefSERHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_SER "SER"
+    , el (Tooltips.evoEF2RefTHRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_THR "THR"
+    , el (Tooltips.evoEF2RefTRPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_TRP "TRP"
+    , el (Tooltips.evoEF2RefTYRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_TYR "TYR"
+    , el (Tooltips.evoEF2RefVALHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_VAL "VAL"
     ]
 
 
-evoef2IntraRColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2IntraRColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt "VDWATT"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep "VDWREP"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_electr "ELECTR"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "DESLVP"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "DESLVH"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HBSCBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HBSCBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HBSCBB PHI"
+evoef2IntraRColumns :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> List (Element Msg)
+evoef2IntraRColumns metrics hoverInfoOption =
+    [ el (Tooltips.evoEF2IntraRVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt "VDW Attractive"
+    , el (Tooltips.evoEF2IntraRVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep "VDW Repulsive"
+    , el (Tooltips.evoEF2IntraRElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_electr "Electrostatics"
+    , el (Tooltips.evoEF2IntraRDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "Desolvation Polar"
+    , el (Tooltips.evoEF2IntraRDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "Desolvation Non Polar"
+    , el (Tooltips.evoEF2IntraRAAPropHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.aapropensity "Amino Acid Propensity"
+    , el (Tooltips.evoEF2IntraRRamaHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran"
+    , el (Tooltips.evoEF2IntraRDunbrackHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Rotamer"
+    , el (Tooltips.evoEF2IntraRHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HB Sidechain Backbone Distance"
+    , el (Tooltips.evoEF2IntraRHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HB Sidechain Backbone Theta"
+    , el (Tooltips.evoEF2IntraRHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HB Sidechain Backbone Phi"
     ]
 
 
-evoef2InterSColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2InterSColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.interS_vdwatt "VDWATT"
-    , createTableFloatColumn metrics.evoEF2Results.interS_vdwrep "VDWREP"
-    , createTableFloatColumn metrics.evoEF2Results.interS_electr "ELECTR"
-    , createTableFloatColumn metrics.evoEF2Results.interS_deslvP "DESLVP"
-    , createTableFloatColumn metrics.evoEF2Results.interS_deslvH "DESLVH"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis "HBBBBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the "HBBBBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi "HBBBBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis "HBSCBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the "HBSCBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi "HBSCBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis "HBSCSC DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the "HBSCSC THE"
-    , createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi "HBSCSC PHI"
+evoef2InterSColumns :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> List (Element Msg)
+evoef2InterSColumns metrics hoverInfoOption =
+    [ el (Tooltips.evoEF2InterSVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_vdwatt "VDW Attractive"
+    , el (Tooltips.evoEF2InterSVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_vdwrep "VDW Repulsive"
+    , el (Tooltips.evoEF2InterSElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_electr "Electrostatics"
+    , el (Tooltips.evoEF2InterSDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_deslvP "Desolvation Polar"
+    , el (Tooltips.evoEF2InterSDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_deslvH "Desolvation Non Polar"
+    , el (Tooltips.evoEF2InterSSSbondHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_ssbond "Disulfide Bonding"
+    , el (Tooltips.evoEF2InterSHBBBBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis "HB Backbone Backbone Distance"
+    , el (Tooltips.evoEF2InterSHBBBBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the "HB Backbone Backbone Theta"
+    , el (Tooltips.evoEF2InterSHBBBBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi "HB Backbone Backbone Phi"
+    , el (Tooltips.evoEF2InterSHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis "HB Sidechain Backbone Distance"
+    , el (Tooltips.evoEF2InterSHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the "HB Sidechain Backbone Theta"
+    , el (Tooltips.evoEF2InterSHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi "HB Sidechain Backbone Phi"
+    , el (Tooltips.evoEF2InterSHBSCSCDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis "HB Sidechain Sidechain Distance"
+    , el (Tooltips.evoEF2InterSHBSCSCTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the "HB Sidechain Sidechain Theta"
+    , el (Tooltips.evoEF2InterSHBSCSCPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi "HB Sidechain Sidechain Phi"
     ]
 
 
-evoef2InterDColumns : Metrics.DesignMetrics -> List (Element msg)
-evoef2InterDColumns metrics =
-    [ createTableFloatColumn metrics.evoEF2Results.interD_vdwatt "VDWATT"
-    , createTableFloatColumn metrics.evoEF2Results.interD_vdwrep "VDWREP"
-    , createTableFloatColumn metrics.evoEF2Results.interD_electr "ELECTR"
-    , createTableFloatColumn metrics.evoEF2Results.interD_deslvP "DESLVP"
-    , createTableFloatColumn metrics.evoEF2Results.interD_deslvH "DESLVH"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis "HBBBBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the "HBBBBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi "HBBBBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis "HBSCBB DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the "HBSCBB THE"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi "HBSCBB PHI"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis "HBSCSC DIS"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HBSCSC THE"
-    , createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HBSCSC PHI"
+evoef2InterDColumns :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> List (Element Msg)
+evoef2InterDColumns metrics hoverInfoOption =
+    [ el (Tooltips.evoEF2InterDVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_vdwatt "VDW Attractive"
+    , el (Tooltips.evoEF2InterDVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_vdwrep "VDW Repulsive"
+    , el (Tooltips.evoEF2InterDElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_electr "Electrostatics"
+    , el (Tooltips.evoEF2InterDDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_deslvP "Desolvation Polar"
+    , el (Tooltips.evoEF2InterDDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_deslvH "Desolvation Non Polar"
+    , el (Tooltips.evoEF2InterDSSbondHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_ssbond "Disulfide Bonding"
+    , el (Tooltips.evoEF2InterDHBBBBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis "HB Backbone Backbone Distance"
+    , el (Tooltips.evoEF2InterDHBBBBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the "HB Backbone Backbone Theta"
+    , el (Tooltips.evoEF2InterDHBBBBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi "HB Backbone Backbone Phi"
+    , el (Tooltips.evoEF2InterDHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis "HB Sidechain Backbone Distance"
+    , el (Tooltips.evoEF2InterDHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the "HB Sidechain Backbone Theta"
+    , el (Tooltips.evoEF2InterDHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi "HB Sidechain Backbone Phi"
+    , el (Tooltips.evoEF2InterDHBSCSCDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis "HB Sidechain Sidechain Distance"
+    , el (Tooltips.evoEF2InterDHBSCSCTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HB Sidechain Sidechain Theta"
+    , el (Tooltips.evoEF2InterDHBSCSCPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HB Sidechain Sidechain Phi"
     ]
 
 
 dfire2LogInfoSelection : Metrics.DesignMetrics -> String
 dfire2LogInfoSelection metrics =
-    case (metrics.dfire2Results.return_code, metrics.dfire2Results.error_info) of
-        (0, "") ->
+    case ( metrics.dfire2Results.return_code, metrics.dfire2Results.error_info ) of
+        ( 0, "" ) ->
             metrics.dfire2Results.log_info
 
         _ ->
             metrics.dfire2Results.error_info
 
 
-dfire2ResultsView : Metrics.DesignMetrics -> DisplaySettings -> Element Msg
-dfire2ResultsView metrics displaySettings =
+dfire2ResultsView :
+    Metrics.DesignMetrics
+    -> DisplaySettings
+    -> Tooltips.HoverInfoOption
+    -> Element Msg
+dfire2ResultsView metrics displaySettings hoverInfoOption =
     let
         logInfoBox =
             paragraph
@@ -901,16 +1052,15 @@ dfire2ResultsView metrics displaySettings =
     in
     sectionColumn
         [ Style.h3 <|
-            text
-                "DFIRE2 Energy Function Results"
+            paragraph []
+                [ text
+                    "DFIRE2 Energy Function Results"
+                ]
         , wrappedRow
-            [ centerX ]
-            [ text "Total DFIRE2 Energy: "
-            , metrics.dfire2Results.total
-                |> Maybe.map onePlaceFloatText
-                |> Maybe.withDefault (text "--")
-
+            [ spacing 5
+            , centerX
             ]
+            [ el (Tooltips.dfire2TotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.dfire2Results.total "Total DFIRE2" ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
             , title = hideableSectionToString DFIRE2LogInfo
@@ -918,6 +1068,71 @@ dfire2ResultsView metrics displaySettings =
             , contentView = logInfoBox
             }
         ]
+
+
+rosettaResultsTableView :
+    Metrics.DesignMetrics
+    -> DisplaySettings
+    -> Tooltips.HoverInfoOption
+    -> Element Msg
+rosettaResultsTableView metrics displaySettings hoverInfoOption =
+    let
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , width fill
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text metrics.rosettaResults.log_info
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <|
+            paragraph []
+                [ text "Rosetta Energy Function Results" ]
+        , wrappedRow
+            [ spacing 5 ]
+            (rosettaColumns metrics hoverInfoOption)
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.rosettaLogInfo
+            , title = hideableSectionToString RosettaLogInfo
+            , toggleMsg = ToggleSectionVisibility RosettaLogInfo
+            , contentView = logInfoBox
+            }
+        ]
+
+
+rosettaColumns :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> List (Element Msg)
+rosettaColumns metrics hoverInfoOption =
+    [ el (Tooltips.rosettaTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.total_score "Total Rosetta"
+    , el (Tooltips.rosettaReferenceHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.ref "Reference"
+    , el (Tooltips.rosettaVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
+    , el (Tooltips.rosettaVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
+    , el (Tooltips.rosettaVDWRepIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive Intra Residue"
+    , el (Tooltips.rosettaElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
+    , el (Tooltips.rosettaSolvIsoHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
+    , el (Tooltips.rosettaSolvAnisoHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atoms"
+    , el (Tooltips.rosettaSolvIsoIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic Intra Residue"
+    , el (Tooltips.rosettaHBLRBBHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
+    , el (Tooltips.rosettaHBSRBBHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
+    , el (Tooltips.rosettaHBBBSCHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
+    , el (Tooltips.rosettaHBSCSCHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain Sidechain"
+    , el (Tooltips.rosettaSSbondHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bridges"
+    , el (Tooltips.rosettaRamaHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
+    , el (Tooltips.rosettaAAPropHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
+    , el (Tooltips.rosettaDunbrackHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
+    , el (Tooltips.rosettaOmegaPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.omega "Omega Penalty"
+    , el (Tooltips.rosettaOpenProPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.pro_close "Open Proline Penalty"
+    , el (Tooltips.rosettaTyroPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.yhh_planarity "Tyrosine χ3 Dihedral Angle Penalty"
+    ]
 
 
 referenceSetComparisonView : Element msg
@@ -1017,24 +1232,27 @@ createTableColumn metricView metric metricName =
         tableColumn =
             column
                 [ alignTop
-
-                -- , width <| px 100
-                ]
-
-        headerParagraph =
-            paragraph
-                [ padding 10
-                , centerX
-                , centerY
-                , height <| px 90
-                , Background.color Style.colorPalette.c1
-                , Font.center
-                , Font.color Style.colorPalette.white
+                , Font.size 18
                 ]
     in
     tableColumn
-        [ headerParagraph [ text metricName ]
-        , metricView metric
+        [ el
+            [ padding 5
+            , height <| px 80
+            , width <| px 150
+            , Background.color Style.colorPalette.c1
+            , Font.center
+            , Font.color Style.colorPalette.white
+            ]
+          <|
+            paragraph [ centerY ] [ text metricName ]
+        , el
+            [ width fill
+            , Border.solid
+            , Border.widthEach { top = 0, bottom = 1, left = 1, right = 1 }
+            ]
+          <|
+            metricView metric
         ]
 
 

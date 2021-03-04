@@ -9,6 +9,7 @@ from .big_structure_models import (
     ChainModel,
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
+    RosettaResultsModel,
 )
 from .design_models import DesignModel, DesignChainModel
 from destress_big_structure.design_models import designs_db_session
@@ -42,6 +43,11 @@ class EvoEF2Results(SQLAlchemyObjectType):
 class DFIRE2Results(SQLAlchemyObjectType):
     class Meta:
         model = DFIRE2ResultsModel
+
+
+class RosettaResults(SQLAlchemyObjectType):
+    class Meta:
+        model = RosettaResultsModel
 
 
 class Query(graphene.ObjectType):
@@ -161,14 +167,18 @@ class Query(graphene.ObjectType):
             "parameter, which is a list of PDB codes to create the subset."
         ),
         codes=graphene.List(graphene.NonNull(graphene.String), required=True),
+        state_number=graphene.Int(),
     )
 
     def resolve_preferred_states_subset(self, info, **args):
         codes = args.get("codes")
+        state_number = args.get("state_number", 0)
         query = (
             State.get_query(info)
-            .join(BiolUnitModel, PdbModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
             .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
             .filter(PdbModel.pdb_code.in_(codes))
         )
         return query.all()
@@ -232,6 +242,22 @@ class Query(graphene.ObjectType):
 
     def resolve_all_dfire2_results(self, info, **args):
         query = DFIRE2Results.get_query(info)
+        first = args.get("first")
+        if first:
+            return query.limit(first).all()
+        return query.all()
+
+    all_rosetta_results = graphene.NonNull(
+        graphene.List(graphene.NonNull(RosettaResults), required=True),
+        description=(
+            "Gets all rosetta results records. Accepts the argument `first`, which "
+            "allows you to limit the number of results."
+        ),
+        first=graphene.Int(),
+    )
+
+    def resolve_all_rosetta_results(self, info, **args):
+        query = RosettaResults.get_query(info)
         first = args.get("first")
         if first:
             return query.limit(first).all()

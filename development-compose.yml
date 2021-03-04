@@ -13,6 +13,7 @@ services:
     restart: always
     volumes:
       - ./big-structure:/app
+      - ./dependencies_for_de-stress:/dependencies_for_de-stress
   rq-worker:
     build:
       context: ./big-structure/
@@ -22,6 +23,7 @@ services:
     restart: always
     volumes:
       - ./big-structure:/app
+      - ./dependencies_for_de-stress:/dependencies_for_de-stress
     command: rq worker --url redis://redis:6379 --disable-job-desc-logging
   redis:
     image: redis

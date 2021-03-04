@@ -18,10 +18,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Build and test `big-structure`.
-      run: |
-        cd big-structure/
-        cp .env-testing .env
-        docker build -t big-structure .
-        docker run --rm big-structure poetry run pytest
+      - name: Checkout de-stress
+        uses: actions/checkout@v2
+
+      - name: Checkout dependencies_for_de-stress
+        uses: actions/checkout@v2
+        with:
+          repository: wells-wood-research/dependencies_for_de-stress.git
+          token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
+          ref: master
+          path: dependencies_for_de-stress
+
+      - name: Build and test `big-structure`   
+        run: |
+          chmod -R 755 dependencies_for_de-stress/
+          cd big-structure/
+          cp .env-testing .env
+          docker build -t big-structure .
+          cd ..
+          docker run --rm -v $(pwd)/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
+              big-structure \
+              poetry run pytest -m "not rosetta"
+          
