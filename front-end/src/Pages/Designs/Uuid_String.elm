@@ -555,7 +555,13 @@ sectionColumn =
 bodyView : Model -> Element Msg
 bodyView model =
     column [ centerX, width (fill |> maximum 800) ]
-        [ el [ centerX ] (Style.h1 <| text "Design Details")
+        [ wrappedRow [ spacing 10 ]
+            [ Style.h1 <| text "Design Details"
+            , Buttons.linkButton
+                { label = text "Back"
+                , route = Route.Designs
+                }
+            ]
         , case model.pageState of
             AppNotRunning ->
                 sectionColumn
@@ -636,9 +642,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
         [ spacing 15, width fill ]
     <|
         [ sectionColumn
-            [ paragraph []
-                [ Style.h1 <| text "Design Details" ]
-            , row [ height fill, spacing 10 ]
+            [ row [ height fill, spacing 10 ]
                 (case design.name of
                     NotEditing currentName ->
                         [ paragraph [] [ Style.h2 <| text <| "Name: " ++ currentName ]
@@ -684,12 +688,6 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         ]
                 )
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
-            ]
-        , row [ spacing 10 ]
-            [ Buttons.linkButton
-                { label = text "Back"
-                , route = Route.Designs
-                }
             ]
         , sectionColumn
             [ Style.h2 <| text "Structure"
