@@ -206,7 +206,7 @@ view model =
 
 bodyView : Model -> Element Msg
 bodyView model =
-    el [ centerX, width (fill |> maximum 900) ] <|
+    el [ centerX, width (fill |> maximum 800) ] <|
         case model.pageState of
             LoadingNoStub uuidString ->
                 el [] ("Loading specification (id: " ++ uuidString ++ ")..." |> text)
