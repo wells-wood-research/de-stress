@@ -919,11 +919,16 @@ evoef2SummaryColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2SummaryColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
-    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
-    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
-    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
-    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
+    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
+    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
+    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
+    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
+    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
     ]
 
 
@@ -1248,6 +1253,7 @@ createTableColumn metricView metric metricName =
             paragraph [ centerY ] [ text metricName ]
         , el
             [ width fill
+            , height <| px 40
             , Border.solid
             , Border.widthEach { top = 0, bottom = 1, left = 1, right = 1 }
             ]
@@ -1282,7 +1288,7 @@ createTableFloatColumn =
                     onePlaceFloatText b
 
                 Nothing ->
-                    text "--"
+                    cell <| text "--"
         )
 
 
