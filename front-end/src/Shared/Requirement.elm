@@ -176,7 +176,7 @@ requirementView : Requirement RequirementData -> Element msg
 requirementView requirement =
     let
         arrowRow r =
-            row [ padding 5, spacing 15 ]
+            row [ padding 5, spacing 15, width fill ]
                 [ el []
                     (FeatherIcons.chevronRight
                         |> FeatherIcons.toHtml []
@@ -187,17 +187,19 @@ requirementView requirement =
     in
     case requirement of
         Data data ->
-            paragraph [] [ text <| dataToString data ]
+            paragraph
+                (Style.defaultBorder ++ [ padding 10, width fill ])
+                [ text <| dataToString data ]
 
         Not subRequirement ->
-            row [ spacing 10 ]
-                [ Style.h3 <| el [ Font.bold ] (text <| "NOT")
+            row (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
+                [ el [] <| Style.h3 <| el [ Font.bold ] (text <| "NOT")
                 , requirementView subRequirement
                 ]
 
         Or subRequirement1 subRequirement2 ->
             column
-                (Style.defaultBorder ++ [ padding 15, spacing 10 ])
+                (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
                 [ requirementView subRequirement1
                 , Style.h3 <| el [ Font.bold ] (text "---- OR ----")
                 , requirementView subRequirement2
@@ -205,7 +207,7 @@ requirementView requirement =
 
         And requirement1 requirement2 ->
             column
-                (Style.defaultBorder ++ [ padding 15, spacing 10 ])
+                (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
                 [ requirementView requirement1
                 , el [ Font.bold ]
                     (text "---- AND ----")
@@ -215,26 +217,28 @@ requirementView requirement =
         Any requirements ->
             column
                 (Style.defaultBorder
-                    ++ [ padding 15
+                    ++ [ padding 10
                        , spacing 10
+                       , width fill
                        ]
                 )
                 [ el [ Font.bold ] (text "ANY")
-                , column [ padding 15, spacing 10 ] <|
+                , column [ padding 10, spacing 10, width fill ] <|
                     List.map arrowRow requirements
                 ]
 
         All requirements ->
             column
                 (Style.defaultBorder
-                    ++ [ padding 15
+                    ++ [ padding 10
                        , spacing 10
+                       , width fill
                        , Background.color
                             Style.colorPalette.white
                        ]
                 )
                 [ el [ Font.bold ] (text "ALL")
-                , column [ padding 10, spacing 5 ] <|
+                , column [ padding 10, spacing 5, width fill ] <|
                     List.map arrowRow requirements
                 ]
 

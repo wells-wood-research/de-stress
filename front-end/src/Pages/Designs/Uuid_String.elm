@@ -1420,7 +1420,7 @@ requirementView metrics requirement =
 
             Requirement.Not subRequirement ->
                 row (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
-                    [ Style.h3 <| el [ Font.bold ] (text <| "NOT")
+                    [ el [] <| Style.h3 <| el [ Font.bold ] (text <| "NOT")
                     , requirementView metrics subRequirement
                     ]
 
