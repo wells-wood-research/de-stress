@@ -1131,19 +1131,26 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                         }
             in
             column [ spacing 15, width fill ]
-                [ Style.h2 <| text "Meets Specification"
-                , meetsSpecification
+                ([ Style.h2 <| text "Meets Specification"
+                 , meetsSpecification
                     |> List.map designCardView
                     |> cardContainer
-                , Style.h2 <| text "Failed to Meet Specification"
-                , failedSpecification
+                 , Style.h2 <| text "Failed to Meet Specification"
+                 , failedSpecification
                     |> List.map designCardView
                     |> cardContainer
-                , Style.h2 <| text "No Metrics Available"
-                , noMetrics
-                    |> List.map designCardView
-                    |> cardContainer
-                ]
+                 ]
+                    ++ (if List.isEmpty noMetrics then
+                            []
+
+                        else
+                            [ Style.h2 <| text "No Metrics Available"
+                            , noMetrics
+                                |> List.map designCardView
+                                |> cardContainer
+                            ]
+                       )
+                )
 
         Nothing ->
             designCardData
