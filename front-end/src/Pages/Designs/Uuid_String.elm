@@ -555,7 +555,13 @@ sectionColumn =
 bodyView : Model -> Element Msg
 bodyView model =
     column [ centerX, width (fill |> maximum 800) ]
-        [ el [ centerX ] (Style.h1 <| text "Design Details")
+        [ wrappedRow [ spacing 10 ]
+            [ Style.h1 <| text "Design Details"
+            , Buttons.linkButton
+                { label = text "Back"
+                , route = Route.Designs
+                }
+            ]
         , case model.pageState of
             AppNotRunning ->
                 sectionColumn
@@ -636,9 +642,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
         [ spacing 15, width fill ]
     <|
         [ sectionColumn
-            [ paragraph []
-                [ Style.h1 <| text "Design Details" ]
-            , row [ height fill, spacing 10 ]
+            [ row [ height fill, spacing 10 ]
                 (case design.name of
                     NotEditing currentName ->
                         [ paragraph [] [ Style.h2 <| text <| "Name: " ++ currentName ]
@@ -684,12 +688,6 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         ]
                 )
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
-            ]
-        , row [ spacing 10 ]
-            [ Buttons.linkButton
-                { label = text "Back"
-                , route = Route.Designs
-                }
             ]
         , sectionColumn
             [ Style.h2 <| text "Structure"
@@ -919,11 +917,16 @@ evoef2SummaryColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2SummaryColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
-    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
-    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
-    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
-    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
+    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
+    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
+    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
+    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
+    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
     ]
 
 
@@ -1248,6 +1251,7 @@ createTableColumn metricView metric metricName =
             paragraph [ centerY ] [ text metricName ]
         , el
             [ width fill
+            , height <| px 40
             , Border.solid
             , Border.widthEach { top = 0, bottom = 1, left = 1, right = 1 }
             ]
@@ -1282,7 +1286,7 @@ createTableFloatColumn =
                     onePlaceFloatText b
 
                 Nothing ->
-                    text "--"
+                    cell <| text "--"
         )
 
 
@@ -1414,7 +1418,7 @@ requirementView metrics requirement =
 
             Requirement.Not subRequirement ->
                 row (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
-                    [ Style.h3 <| el [ Font.bold ] (text <| "NOT")
+                    [ el [] <| Style.h3 <| el [ Font.bold ] (text <| "NOT")
                     , requirementView metrics subRequirement
                     ]
 

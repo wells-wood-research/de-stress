@@ -544,83 +544,84 @@ view model =
 
 bodyView : Model -> Element Msg
 bodyView model =
-    column
-        [ width fill, spacing 15 ]
-        [ text "Create New Specification"
-            |> Style.h1
-            |> el [ centerX ]
-        , Input.text
-            Style.textInputStyle
-            { onChange = UpdatedName
-            , text = Maybe.withDefault "" model.name
-            , placeholder = Nothing
-            , label =
-                Input.labelAbove []
-                    (Style.h2 <| text "Name")
-            }
-        , Input.multiline
-            Style.textInputStyle
-            { onChange = UpdatedDescription
-            , text = Maybe.withDefault "" model.description
-            , placeholder = Nothing
-            , label =
-                Input.labelAbove []
-                    (Style.h2 <| text "Description")
-            , spellcheck = True
-            }
-        , Style.h2 <| text "Requirements"
-        , case model.mode of
-            View ->
-                Buttons.alwaysActiveButton
-                    { clickMsg = ClickedNewRequirement
-                    , label = text "New Requirement"
-                    , pressed = False
-                    }
+    el [ centerX, width <| maximum 800 <| fill ] <|
+        column
+            [ width fill, spacing 15 ]
+            [ text "Create New Specification"
+                |> Style.h1
+                |> el [ centerX ]
+            , Input.text
+                Style.textInputStyle
+                { onChange = UpdatedName
+                , text = Maybe.withDefault "" model.name
+                , placeholder = Nothing
+                , label =
+                    Input.labelAbove []
+                        (Style.h2 <| text "Name")
+                }
+            , Input.multiline
+                Style.textInputStyle
+                { onChange = UpdatedDescription
+                , text = Maybe.withDefault "" model.description
+                , placeholder = Nothing
+                , label =
+                    Input.labelAbove []
+                        (Style.h2 <| text "Description")
+                , spellcheck = True
+                }
+            , Style.h2 <| text "Requirements"
+            , case model.mode of
+                View ->
+                    Buttons.alwaysActiveButton
+                        { clickMsg = ClickedNewRequirement
+                        , label = text "New Requirement"
+                        , pressed = False
+                        }
 
-            Add mNewRequirement ->
-                addRequirementView model.errors mNewRequirement
-        , el []
-            (case model.requirements of
-                [] ->
-                    paragraph []
-                        [ text """No requirements defined. Click "New Requirement" to
+                Add mNewRequirement ->
+                    addRequirementView model.errors mNewRequirement
+            , el []
+                (case model.requirements of
+                    [] ->
+                        paragraph []
+                            [ text """No requirements defined. Click "New Requirement" to
                         get started."""
-                        ]
+                            ]
 
-                _ ->
-                    Requirement.requirementView <| Requirement.All model.requirements
-            )
-        , let
-            areRequirements =
-                List.isEmpty model.requirements
-                    |> not
+                    _ ->
+                        Requirement.requirementView <| Requirement.All model.requirements
+                )
+            , let
+                areRequirements =
+                    List.isEmpty model.requirements
+                        |> not
 
-            validName =
-                case model.name of
-                    Nothing ->
-                        False
+                validName =
+                    case model.name of
+                        Nothing ->
+                            False
 
-                    Just _ ->
-                        True
+                        Just _ ->
+                            True
 
-            validDescription =
-                case model.description of
-                    Nothing ->
-                        False
+                validDescription =
+                    case model.description of
+                        Nothing ->
+                            False
 
-                    Just _ ->
-                        True
+                        Just _ ->
+                            True
 
-            complete =
-                areRequirements && validName && validDescription
-          in
-          Buttons.conditionalButton
-            { clickMsg =
-                Just ClickedCreateSpecification
-            , label = text "Create Specification"
-            , isActive = complete
-            }
-        ]
+                complete =
+                    areRequirements && validName && validDescription
+              in
+              Buttons.conditionalButton
+                { clickMsg =
+                    Just ClickedCreateSpecification
+                , label = text "Create Specification"
+                , isActive = complete
+                }
+            ]
 
 
 addRequirementView :

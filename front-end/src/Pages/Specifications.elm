@@ -157,27 +157,28 @@ view model =
 
 bodyView : Model -> Element Msg
 bodyView model =
-    column
-        [ width fill, spacing 30 ]
-        (wrappedRow [ centerX, spacing 10 ]
-            [ paragraph []
-                [ Style.h1 <|
-                    text "Requirement Specifications"
+    el [ centerX, width <| maximum 800 <| fill ] <|
+        column
+            [ width fill, spacing 30 ]
+            (wrappedRow [ centerX, spacing 10 ]
+                [ paragraph []
+                    [ Style.h1 <|
+                        text "Requirement Specifications"
+                    ]
+                , Buttons.linkButton
+                    { route =
+                        Route.Specifications__New
+                    , label = text "New"
+                    }
                 ]
-            , Buttons.linkButton
-                { route =
-                    Route.Specifications__New
-                , label = text "New"
-                }
-            ]
-            :: (Dict.toList model.specifications
-                    |> List.map
-                        (\( k, v ) ->
-                            ( k, Specification.storedSpecificationToStub v )
-                        )
-                    |> List.map (specificationStubView model.mSelectedSpecification)
-               )
-        )
+                :: (Dict.toList model.specifications
+                        |> List.map
+                            (\( k, v ) ->
+                                ( k, Specification.storedSpecificationToStub v )
+                            )
+                        |> List.map (specificationStubView model.mSelectedSpecification)
+                   )
+            )
 
 
 specificationStubView :
