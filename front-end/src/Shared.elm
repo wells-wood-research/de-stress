@@ -15,12 +15,14 @@ port module Shared exposing
 
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
+import Csv.Decode exposing (errorToString)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
 import Element.Region as Region
 import FeatherIcons
+import Json.Decode as JDe
 import Shared.Design as Design
 import Shared.ReferenceSet as ReferenceSet
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
@@ -50,8 +52,22 @@ port setWebSocketConnectionStatus : (Value -> msg) -> Sub msg
 type alias Model =
     { url : Url
     , key : Key
+    , errors : List ErrorOverview
     , appState : AppState
     }
+
+
+type alias ErrorOverview =
+    { title : String
+    , details : String
+    , severity : Severity
+    }
+
+
+type Severity
+    = High
+    | Medium
+    | Low
 
 
 type AppState
@@ -178,6 +194,7 @@ init flags url key =
                 Just initialState ->
                     { url = url
                     , key = key
+                    , errors = []
                     , appState =
                         Running
                             { resourceUuid = resourceUuid
@@ -196,6 +213,7 @@ init flags url key =
                 Nothing ->
                     { url = url
                     , key = key
+                    , errors = []
                     , appState =
                         Running
                             { resourceUuid = resourceUuid
@@ -212,6 +230,7 @@ init flags url key =
         Err codecError ->
             { url = url
             , key = key
+            , errors = []
             , appState =
                 FailedToDecodeFlags codecError |> FailedToLaunch
             }
@@ -234,30 +253,42 @@ update msg model =
     case msg of
         SetWebSocketConnectionStatus value ->
             let
-                updatedConnectionStatus =
+                ( updatedConnectionStatus, mError ) =
                     case Codec.decodeValue Codec.bool value of
                         Ok bool ->
                             if bool then
-                                Connected
+                                ( Connected, Nothing )
 
                             else
-                                Disconnected
+                                ( Disconnected, Nothing )
 
-                        Err errString ->
-                            let
-                                _ =
-                                    Debug.log "Err" errString
-                            in
-                            Unknown
+                        Err errorValue ->
+                            ( Unknown
+                            , { title = "Could not determine server connection status"
+                              , details = errorValue |> JDe.errorToString
+                              }
+                                |> Just
+                            )
+
+                updatedModel =
+                    mapRunState
+                        (\runState ->
+                            { runState
+                                | webSocketConnectionStatus =
+                                    updatedConnectionStatus
+                            }
+                        )
+                        model
             in
-            ( mapRunState
-                (\runState ->
-                    { runState
-                        | webSocketConnectionStatus =
-                            updatedConnectionStatus
-                    }
-                )
-                model
+            ( { updatedModel
+                | errors =
+                    case mError of
+                        Just error ->
+                            error :: updatedModel.errors
+
+                        Nothing ->
+                            updatedModel.errors
+              }
             , Cmd.none
             )
 
