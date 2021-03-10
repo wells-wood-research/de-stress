@@ -430,6 +430,7 @@ allErrorsView : (Msg -> msg) -> List Error -> Element msg
 allErrorsView toMsg errors =
     column
         [ padding 10
+        , spacing 10
         , htmlAttribute <| HAtt.style "position" "fixed"
         ]
         (List.indexedMap (errorView toMsg) errors)

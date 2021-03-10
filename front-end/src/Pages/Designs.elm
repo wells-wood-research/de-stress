@@ -9,7 +9,6 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
-import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import FeatherIcons
@@ -22,6 +21,7 @@ import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design exposing (Design)
 import Shared.Editable as Editable
+import Shared.Error as Error
 import Shared.Folds as Folds
 import Shared.Metrics as Metrics exposing (DesignMetrics)
 import Shared.Plots as Plots exposing (ColumnData)
@@ -67,7 +67,7 @@ port setSpecificationForDesign : (Value -> msg) -> Sub msg
 type alias Model =
     { mResourceUuid : Maybe ResourceUuid
     , loadingState : DesignLoadingState
-    , loadErrors : List String
+    , pageErrors : List Error.Error
     , designs : Dict String Design.StoredDesign
     , mSelectedSpecification : Maybe Specification
 
@@ -113,7 +113,7 @@ init shared _ =
         model =
             { mResourceUuid = mResourceUuid
             , loadingState = Free
-            , loadErrors = []
+            , pageErrors = []
             , designs = designDict
             , mSelectedSpecification = Nothing
 
@@ -154,11 +154,11 @@ type Msg
     = StructuresRequested
     | StructureFilesSelected File (List File)
     | StructureLoaded String String
-    | ClearErrors
     | GotSpecification Value
     | DeleteDesign String Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
+    | ClearPageErrors
     | ToggleSectionVisibility HideableSection
     | SelectedDesign String Bool
     | UpdateTagString String
@@ -187,11 +187,6 @@ type FilterTagsOption
     = AddOrRemove String
     | RemoveAll
     | AddAll
-
-
-
--- DropDowns
--- | OverviewOptionDropDownMsg (DropDown.Msg String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -240,42 +235,54 @@ update msg model =
             case ( model.mResourceUuid, rStructuralData ) of
                 ( Nothing, _ ) ->
                     ( { model
-                        | loadErrors =
-                            ("Could not generate UUID, please try refreshing your "
-                                ++ "browser. If this issue persists, please report it. "
-                                ++ "See the front page for information on contacting "
-                                ++ "the authors."
-                            )
-                                :: model.loadErrors
+                        | pageErrors =
+                            { title = "Could not generate UUID"
+                            , details =
+                                """Please try refreshing your browser. If this issue
+                                persists, please report it. See the front page for
+                                information on reporting bugs.
+                                """
+                            , severity = Error.High
+                            }
+                                :: model.pageErrors
                         , loadingState = loadingState
                       }
-                    , Cmd.none
+                    , clearPageErrorsCmd
                     )
 
                 ( _, Err (Biomolecules.PdbParseError errorString) ) ->
                     ( { model
-                        | loadErrors =
-                            ("Failed to parse PDB file "
-                                ++ name
-                                ++ ":\n\t"
-                                ++ errorString
-                            )
-                                :: model.loadErrors
+                        | pageErrors =
+                            { title = "Failed to parse PDB file"
+                            , details =
+                                name
+                                    ++ ":\n\t"
+                                    ++ errorString
+                            , severity = Error.Low
+                            }
+                                :: model.pageErrors
                         , loadingState = loadingState
                       }
-                    , Cmd.none
+                    , clearPageErrorsCmd
                     )
 
                 ( _, Err (Biomolecules.HttpError _) ) ->
                     ( { model
-                        | loadErrors =
-                            ("Something weird happened while loading "
-                                ++ name
-                            )
-                                :: model.loadErrors
+                        | pageErrors =
+                            { title = "Failed to load file from server"
+                            , details =
+                                "Something weird happened while loading "
+                                    ++ name
+                                    ++ """ Please try refreshing your browser. If this
+                                 issue persists, please report it. See the front page
+                                 for information on reporting bugs.
+                                 """
+                            , severity = Error.Low
+                            }
+                                :: model.pageErrors
                         , loadingState = loadingState
                       }
-                    , Cmd.none
+                    , clearPageErrorsCmd
                     )
 
                 ( Just resourceUuid, Ok _ ) ->
@@ -328,11 +335,6 @@ update msg model =
                         , requestMetricsCmd
                         ]
                     )
-
-        ClearErrors ->
-            ( { model | loadErrors = [] }
-            , Cmd.none
-            )
 
         GotSpecification specificationValue ->
             let
@@ -415,6 +417,9 @@ update msg model =
                 model.navKey
                 (Route.Designs__Uuid_String { uuid = uuid })
             )
+
+        ClearPageErrors ->
+            ( { model | pageErrors = [] }, Cmd.none )
 
         ToggleSectionVisibility section ->
             let
@@ -544,20 +549,29 @@ update msg model =
                             }
             in
             ( { model
-                | loadErrors =
+                | pageErrors =
                     if List.isEmpty noDataDesigns then
-                        model.loadErrors
+                        model.pageErrors
 
                     else
-                        (noDataDesigns
-                            |> List.intersperse ", "
-                            |> String.concat
-                            |> (++) "The following designs do not have metrics available:"
-                        )
-                            :: model.loadErrors
+                        { title = "Unable to generate design metrics"
+                        , details =
+                            noDataDesigns
+                                |> List.intersperse ", "
+                                |> String.concat
+                                |> (++) "The following designs do not have metrics available:"
+                        , severity = Error.Low
+                        }
+                            :: model.pageErrors
               }
-            , createFile csvString
+            , Cmd.batch [ createFile csvString, clearPageErrorsCmd ]
             )
+
+
+clearPageErrorsCmd : Cmd Msg
+clearPageErrorsCmd =
+    Task.succeed ClearPageErrors
+        |> Task.perform identity
 
 
 designStubCSVEncoder : Design.DesignStub -> List ( String, String )
@@ -749,6 +763,13 @@ structureRequested =
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
+    let
+        updatedShard =
+            { shared
+                | errors =
+                    model.pageErrors ++ shared.errors
+            }
+    in
     case model.mResourceUuid of
         Just resourceUuid ->
             Shared.mapRunState
@@ -759,10 +780,10 @@ save model shared =
                         , saveStateRequested = True
                     }
                 )
-                shared
+                updatedShard
 
         Nothing ->
-            shared
+            updatedShard
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
@@ -782,15 +803,18 @@ load shared model =
 
         Nothing ->
             ( { model
-                | loadErrors =
-                    ("Something has went wrong and the application has failed to "
-                        ++ "initialise. Please try refreshing your broswer. If this "
-                        ++ "error persists, please submit a bug report. See the front "
-                        ++ "page for information on how to contact the authors."
-                    )
-                        :: model.loadErrors
+                | pageErrors =
+                    { title = "Failed to launch application"
+                    , details =
+                        """Something has went wrong and the application has failed to
+                        initialise. Please try refreshing your browser. If this error
+                        persists, please submit a bug report. See the front page for
+                        information on how to contact the authors."""
+                    , severity = Error.High
+                    }
+                        :: model.pageErrors
               }
-            , Cmd.none
+            , clearPageErrorsCmd
             )
 
 
@@ -917,11 +941,6 @@ bodyView model =
                         }
                     ]
                 ]
-            , if List.isEmpty model.loadErrors then
-                none
-
-              else
-                errorsView model.loadErrors
             , el [ width fill ] <|
                 if List.isEmpty designCardData then
                     el [ centerX ] (text "Click \"Load\" to add models.")
@@ -1007,21 +1026,6 @@ allTagsView { tags, filterTags } =
             , text "|"
             ]
         |> wrappedRow [ spacing 10 ]
-
-
-errorsView : List String -> Element Msg
-errorsView errorStrings =
-    column [ padding 10, spacing 10 ] <|
-        paragraph [ Font.bold ]
-            [ text "One or more errors occurred while loading your files: "
-            ]
-            :: List.map (\es -> paragraph [] [ text <| "- " ++ es ]) errorStrings
-            ++ [ Buttons.alwaysActiveButton
-                    { label = text "Clear Errors"
-                    , clickMsg = ClearErrors
-                    , pressed = False
-                    }
-               ]
 
 
 type alias DesignCardData =
@@ -1323,25 +1327,6 @@ selectedCommandsView selectedUuids tagString =
 -- {{{ Overview Plots
 
 
-defaultPlotableOption : ( String, DesignMetrics -> Float )
-defaultPlotableOption =
-    ( "Packing Density", .packingDensity )
-
-
-plotableMetrics : Dict String (DesignMetrics -> Float)
-plotableMetrics =
-    [ defaultPlotableOption
-    , ( "Hydrophobic Fitness"
-      , .hydrophobicFitness
-            >> Maybe.withDefault (0 / 0)
-            >> abs
-      )
-    , ( "Isoelectric Point", .isoelectricPoint )
-    , ( "Mass", .mass )
-    ]
-        |> Dict.fromList
-
-
 overviewPlots : Element msg
 overviewPlots =
     column
@@ -1364,35 +1349,6 @@ overviewPlots =
                 |> html
             )
         ]
-
-
-
--- overviewPlots :
---     DropDown.Model String
---     -> List DesignCardData
---     -> Element Msg
--- overviewPlots ({ selected } as dropDownModel) designCardData =
---     let
---         getDataFn =
---             Dict.get selected plotableMetrics
---                 |> Maybe.withDefault (Tuple.second defaultPlotableOption)
---     in
---     column [ spacing 10, fill |> maximum 500 |> height, width fill ]
---         [ Style.h2 <| text "Overview"
---         , el [ width <| maximum 300 <| fill ]
---             (DropDown.view text (Dict.keys plotableMetrics) dropDownModel
---                 |> map OverviewOptionDropDownMsg
---             )
---         , List.indexedMap Tuple.pair designCardData
---             |> List.reverse
---             |> List.filterMap (makeColumnData getDataFn)
---             |> List.sortBy .value
---             |> List.reverse
---             |> MetricPlots.metricOverview
---                 ShowDesignDetails
---                 selected
---             |> html
---         ]
 
 
 makeColumnData :
