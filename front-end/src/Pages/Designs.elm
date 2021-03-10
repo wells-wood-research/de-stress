@@ -234,56 +234,44 @@ update msg model =
             in
             case ( model.mResourceUuid, rStructuralData ) of
                 ( Nothing, _ ) ->
-                    ( { model
-                        | pageErrors =
-                            { title = "Could not generate UUID"
-                            , details =
-                                """Please try refreshing your browser. If this issue
+                    Error.updateWithError
+                        ClearPageErrors
+                        { model | loadingState = loadingState }
+                        { title = "Could not generate UUID"
+                        , details =
+                            """Please try refreshing your browser. If this issue
                                 persists, please report it. See the front page for
                                 information on reporting bugs.
                                 """
-                            , severity = Error.High
-                            }
-                                :: model.pageErrors
-                        , loadingState = loadingState
-                      }
-                    , clearPageErrorsCmd
-                    )
+                        , severity = Error.High
+                        }
 
                 ( _, Err (Biomolecules.PdbParseError errorString) ) ->
-                    ( { model
-                        | pageErrors =
-                            { title = "Failed to parse PDB file"
-                            , details =
-                                name
-                                    ++ ":\n\t"
-                                    ++ errorString
-                            , severity = Error.Low
-                            }
-                                :: model.pageErrors
-                        , loadingState = loadingState
-                      }
-                    , clearPageErrorsCmd
-                    )
+                    Error.updateWithError
+                        ClearPageErrors
+                        { model | loadingState = loadingState }
+                        { title = "Failed to parse PDB file"
+                        , details =
+                            name
+                                ++ ":\n\t"
+                                ++ errorString
+                        , severity = Error.Low
+                        }
 
                 ( _, Err (Biomolecules.HttpError _) ) ->
-                    ( { model
-                        | pageErrors =
-                            { title = "Failed to load file from server"
-                            , details =
-                                "Something weird happened while loading "
-                                    ++ name
-                                    ++ """ Please try refreshing your browser. If this
-                                 issue persists, please report it. See the front page
-                                 for information on reporting bugs.
-                                 """
-                            , severity = Error.Low
-                            }
-                                :: model.pageErrors
-                        , loadingState = loadingState
-                      }
-                    , clearPageErrorsCmd
-                    )
+                    Error.updateWithError
+                        ClearPageErrors
+                        { model | loadingState = loadingState }
+                        { title = "Failed to load file from server"
+                        , details =
+                            "Something weird happened while loading "
+                                ++ name
+                                ++ """ Please try refreshing your browser. If this
+                             issue persists, please report it. See the front page
+                             for information on reporting bugs.
+                             """
+                        , severity = Error.Low
+                        }
 
                 ( Just resourceUuid, Ok _ ) ->
                     -- Currently this is only checking to see if the file is valid PDB
@@ -547,31 +535,30 @@ update msg model =
                                     designStubCSVEncoder
                             , fieldSeparator = ','
                             }
+
+                cmds =
+                    [ createFile csvString ]
             in
-            ( { model
-                | pageErrors =
-                    if List.isEmpty noDataDesigns then
-                        model.pageErrors
+            if List.isEmpty noDataDesigns then
+                ( model, Cmd.batch cmds )
 
-                    else
-                        { title = "Unable to generate design metrics"
-                        , details =
-                            noDataDesigns
-                                |> List.intersperse ", "
-                                |> String.concat
-                                |> (++) "The following designs do not have metrics available:"
-                        , severity = Error.Low
-                        }
-                            :: model.pageErrors
-              }
-            , Cmd.batch [ createFile csvString, clearPageErrorsCmd ]
-            )
-
-
-clearPageErrorsCmd : Cmd Msg
-clearPageErrorsCmd =
-    Task.succeed ClearPageErrors
-        |> Task.perform identity
+            else
+                Error.updateWithError
+                    ClearPageErrors
+                    model
+                    { title = "Metrics not available"
+                    , details =
+                        noDataDesigns
+                            |> List.intersperse ", "
+                            |> String.concat
+                            |> (++)
+                                """The following designs do not have metrics
+                                    available, so will not be included in the data
+                                    export:
+                                    """
+                    , severity = Error.Low
+                    }
+                    |> Tuple.mapSecond (\c -> c :: cmds |> Cmd.batch)
 
 
 designStubCSVEncoder : Design.DesignStub -> List ( String, String )
@@ -764,11 +751,8 @@ structureRequested =
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
     let
-        updatedShard =
-            { shared
-                | errors =
-                    model.pageErrors ++ shared.errors
-            }
+        updatedShared =
+            Error.updateSharedModelErrors model shared
     in
     case model.mResourceUuid of
         Just resourceUuid ->
@@ -780,10 +764,10 @@ save model shared =
                         , saveStateRequested = True
                     }
                 )
-                updatedShard
+                updatedShared
 
         Nothing ->
-            updatedShard
+            updatedShared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
@@ -802,20 +786,17 @@ load shared model =
             )
 
         Nothing ->
-            ( { model
-                | pageErrors =
-                    { title = "Failed to launch application"
-                    , details =
-                        """Something has went wrong and the application has failed to
+            Error.updateWithError
+                ClearPageErrors
+                model
+                { title = "Failed to launch application"
+                , details =
+                    """Something has went wrong and the application has failed to
                         initialise. Please try refreshing your browser. If this error
                         persists, please submit a bug report. See the front page for
                         information on how to contact the authors."""
-                    , severity = Error.High
-                    }
-                        :: model.pageErrors
-              }
-            , clearPageErrorsCmd
-            )
+                , severity = Error.High
+                }
 
 
 makeOverViewSpecCmd : Model -> Cmd Msg

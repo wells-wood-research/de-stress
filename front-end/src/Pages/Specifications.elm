@@ -6,12 +6,12 @@ import Element.Background as Background
 import Element.Border as Border
 import Shared
 import Shared.Buttons as Buttons
-import Shared.Specification as Specification exposing (Specification)
+import Shared.Specification as Specification
 import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
-import Spa.Url as Url exposing (Url)
+import Spa.Url exposing (Url)
 
 
 page : Page Params Model Msg
@@ -135,7 +135,7 @@ load shared model =
             )
 
         Nothing ->
-            Debug.todo "Should I deal with this or leave to the shared view?"
+            ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg

@@ -11,6 +11,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Shared
 import Shared.Buttons as Buttons
+import Shared.Error as Error
 import Shared.Requirement as Requirement
     exposing
         ( Requirement
@@ -21,9 +22,9 @@ import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification
 import Shared.Style as Style
 import Spa.Document exposing (Document)
-import Spa.Generated.Route as Route exposing (Route)
+import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
-import Spa.Url as Url exposing (Url)
+import Spa.Url exposing (Url)
 import Utils.Route exposing (navigate)
 
 
@@ -50,7 +51,7 @@ type alias Model =
     , name : Maybe String
     , description : Maybe String
     , mode : Mode
-    , errors : List String
+    , pageErrors : List Error.Error
     , navKey : Nav.Key
     }
 
@@ -63,7 +64,7 @@ defaultModel navKey =
     , name = Nothing
     , description = Nothing
     , mode = View
-    , errors = []
+    , pageErrors = []
     , navKey = navKey
     }
 
@@ -355,6 +356,7 @@ type Msg
     | UpdatedNewRequirement (Maybe (NewRequirement NewRequirementData))
     | ClickedAddRequirement
     | ClickedCreateSpecification
+    | ClearPageErrors
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -412,36 +414,37 @@ update msg model =
                             )
 
                         Err errorString ->
-                            ( { model
-                                | mode = addMode
-                                , errors = errorString :: model.errors
-                              }
-                            , Cmd.none
-                            )
+                            Error.updateWithError
+                                ClearPageErrors
+                                { model | mode = addMode }
+                                { title = "Failed to add requirement"
+                                , details = errorString
+                                , severity = Error.Low
+                                }
 
                 Add Nothing ->
-                    ( { model
-                        | mode = View
-                        , errors =
-                            ("The add button should not have been visible as a new "
-                                ++ "requirement was not defined."
-                            )
-                                :: model.errors
-                      }
-                    , Cmd.none
-                    )
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "failed to add requirement"
+                        , details =
+                            """The add button should not have been visible as a new
+                            requirement was not defined.
+                            """
+                        , severity = Error.Low
+                        }
 
                 View ->
-                    ( { model
-                        | mode = View
-                        , errors =
-                            ("The add button should not have been visible as the app "
-                                ++ "was in view mode."
-                            )
-                                :: model.errors
-                      }
-                    , Cmd.none
-                    )
+                    Error.updateWithError
+                        ClearPageErrors
+                        { model | mode = View }
+                        { title = "failed to add requirement"
+                        , details =
+                            """The add button should not have been visible as the app
+                            was in view mode.
+                            """
+                        , severity = Error.Low
+                        }
 
         ClickedCreateSpecification ->
             case model.mResourceUuid of
@@ -489,11 +492,30 @@ update msg model =
                     )
 
                 Nothing ->
-                    Debug.todo "Should be able to get to this point."
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "Failed to create specification"
+                        , details =
+                            """Failed to create a new specification set. Try refreshing
+                            your browser to fix this, or if it persists, report it as a
+                            bug.  See the home page for details on how to do this.
+                            """
+                        , severity = Error.Medium
+                        }
+
+        ClearPageErrors ->
+            ( { model | pageErrors = [] }
+            , Cmd.none
+            )
 
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
+    let
+        updatedShared =
+            Error.updateSharedModelErrors model shared
+    in
     case model.mResourceUuid of
         Just resourceUuid ->
             Shared.mapRunState
@@ -504,10 +526,10 @@ save model shared =
                         , saveStateRequested = True
                     }
                 )
-                shared
+                updatedShared
 
         Nothing ->
-            shared
+            updatedShared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
@@ -579,7 +601,7 @@ bodyView model =
                         }
 
                 Add mNewRequirement ->
-                    addRequirementView model.errors mNewRequirement
+                    addRequirementView mNewRequirement
             , el []
                 (case model.requirements of
                     [] ->
@@ -625,10 +647,9 @@ bodyView model =
 
 
 addRequirementView :
-    List String
-    -> Maybe (NewRequirement NewRequirementData)
+    Maybe (NewRequirement NewRequirementData)
     -> Element Msg
-addRequirementView errors mNewRequirement =
+addRequirementView mNewRequirement =
     let
         ( requirementComplete, requirementView ) =
             newRequirementView UpdatedNewRequirement mNewRequirement
@@ -641,20 +662,7 @@ addRequirementView errors mNewRequirement =
                , Border.color Style.colorPalette.c1
                ]
         )
-        [ case errors of
-            [] ->
-                none
-
-            _ ->
-                column [ spacing 10 ]
-                    ([ el [ Font.bold ] (text "Errors")
-                     , text <|
-                        "It looks like something went wrong while defining "
-                            ++ "your specification."
-                     ]
-                        ++ List.map text errors
-                    )
-        , requirementView
+        [ requirementView
         , row
             [ spacing 10 ]
             [ Buttons.conditionalButton
@@ -1196,47 +1204,47 @@ valueUnitTypeView { msgConstructor, labels } =
     )
 
 
-valueRelationshipFloatInputView :
-    { msgConstructor : Msg
-    , inputTextMsg : String -> Msg
-    , maybeString : Maybe String
-    , labels : List (Element Msg)
-    }
-    -> ( Bool, Element Msg )
-valueRelationshipFloatInputView { msgConstructor, inputTextMsg, maybeString, labels } =
-    let
-        ( floatString, completionStatus ) =
-            case maybeString of
-                Just string ->
-                    ( string, True )
 
-                Nothing ->
-                    ( "", False )
-    in
-    ( completionStatus
-    , row [ spacing 10 ]
-        (labels
-            ++ [ row [ spacing 5 ]
-                    [ Input.text
-                        Style.textInputStyle
-                        { onChange =
-                            inputTextMsg
-                        , text = floatString
-                        , placeholder = Nothing
-                        , label =
-                            Input.labelAbove []
-                                (el [ Font.bold ] <| text "Value")
-                        }
-                    , el [ alignBottom ] <|
-                        Buttons.conditionalButton
-                            { label = text "Ok"
-                            , clickMsg = Just msgConstructor
-                            , isActive = completionStatus
-                            }
-                    ]
-               ]
-        )
-    )
+-- valueRelationshipFloatInputView :
+--     { msgConstructor : Msg
+--     , inputTextMsg : String -> Msg
+--     , maybeString : Maybe String
+--     , labels : List (Element Msg)
+--     }
+--     -> ( Bool, Element Msg )
+-- valueRelationshipFloatInputView { msgConstructor, inputTextMsg, maybeString, labels } =
+--     let
+--         ( floatString, completionStatus ) =
+--             case maybeString of
+--                 Just string ->
+--                     ( string, True )
+--                 Nothing ->
+--                     ( "", False )
+--     in
+--     ( completionStatus
+--     , row [ spacing 10 ]
+--         (labels
+--             ++ [ row [ spacing 5 ]
+--                     [ Input.text
+--                         Style.textInputStyle
+--                         { onChange =
+--                             inputTextMsg
+--                         , text = floatString
+--                         , placeholder = Nothing
+--                         , label =
+--                             Input.labelAbove []
+--                                 (el [ Font.bold ] <| text "Value")
+--                         }
+--                     , el [ alignBottom ] <|
+--                         Buttons.conditionalButton
+--                             { label = text "Ok"
+--                             , clickMsg = Just msgConstructor
+--                             , isActive = completionStatus
+--                             }
+--                     ]
+--                ]
+--         )
+--     )
 
 
 valueFloatInputView :
