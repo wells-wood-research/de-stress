@@ -19,11 +19,15 @@ import Csv.Decode exposing (errorToString)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
+import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Region as Region
 import FeatherIcons
+import Html.Attributes as HAtt
 import Json.Decode as JDe
 import Shared.Design as Design
+import Shared.Error as Error exposing (Error)
 import Shared.ReferenceSet as ReferenceSet
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification
@@ -52,22 +56,9 @@ port setWebSocketConnectionStatus : (Value -> msg) -> Sub msg
 type alias Model =
     { url : Url
     , key : Key
-    , errors : List ErrorOverview
+    , errors : List Error
     , appState : AppState
     }
-
-
-type alias ErrorOverview =
-    { title : String
-    , details : String
-    , severity : Severity
-    }
-
-
-type Severity
-    = High
-    | Medium
-    | Low
 
 
 type AppState
@@ -246,6 +237,7 @@ init flags url key =
 type Msg
     = SetWebSocketConnectionStatus Value
     | WebSocketIncoming Value
+    | DismissError Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -266,6 +258,7 @@ update msg model =
                             ( Unknown
                             , { title = "Could not determine server connection status"
                               , details = errorValue |> JDe.errorToString
+                              , severity = Error.Low
                               }
                                 |> Just
                             )
@@ -333,14 +326,52 @@ update msg model =
                     )
 
                 Ok WebSockets.CommunicationError ->
-                    Debug.todo "Deal with this!"
+                    ( { model
+                        | errors =
+                            { title = "Error when connecting to server"
+                            , details =
+                                """An error occurred when communicating with the server.
+                                Please try refreshing your browser and check your
+                                connection to the internet. If this problem persists,
+                                please submit a bug report, see the home page for
+                                details on how to do that.
+                                """
+                            , severity = Error.Medium
+                            }
+                                :: model.errors
+                      }
+                    , Cmd.none
+                    )
 
                 Err errString ->
-                    let
-                        _ =
-                            Debug.log "WebSocket Incoming Error (Shared.elm:278):" errString
-                    in
-                    ( model, Cmd.none )
+                    ( { model
+                        | errors =
+                            { title = "Unexpected response from server"
+                            , details =
+                                """The server sent a response that I did not expect.
+                                Please try refreshing your browser. If this problem
+                                persists, please submit a bug report, see the home page
+                                for details on how to do that. Please paste the
+                                following information into the bug report:
+
+
+                                """ ++ JDe.errorToString errString
+                            , severity = Error.Medium
+                            }
+                                :: model.errors
+                      }
+                    , Cmd.none
+                    )
+
+        DismissError index ->
+            ( { model
+                | errors =
+                    List.indexedMap Tuple.pair model.errors
+                        |> List.filter (\( i, _ ) -> i /= index)
+                        |> List.map Tuple.second
+              }
+            , Cmd.none
+            )
 
 
 subscriptions : Model -> Sub Msg
@@ -360,7 +391,7 @@ view :
     { page : Document msg, toMsg : Msg -> msg }
     -> Model
     -> Document msg
-view { page } model =
+view { page, toMsg } model =
     { title = page.title
     , body =
         [ column
@@ -370,6 +401,10 @@ view { page } model =
                 [ Font.typeface "Roboto"
                 , Font.sansSerif
                 ]
+            , allErrorsView
+                toMsg
+                model.errors
+                |> inFront
             ]
             [ case model.appState of
                 FailedToLaunch _ ->
@@ -389,6 +424,40 @@ view { page } model =
             ]
         ]
     }
+
+
+allErrorsView : (Msg -> msg) -> List Error -> Element msg
+allErrorsView toMsg errors =
+    column
+        [ padding 10
+        , htmlAttribute <| HAtt.style "position" "fixed"
+        ]
+        (List.indexedMap (errorView toMsg) errors)
+
+
+errorView : (Msg -> msg) -> Int -> Error -> Element msg
+errorView toMsg index { title, details } =
+    column
+        [ padding 10
+        , spacing 10
+        , width <| px 300
+        , Background.color Style.colorPalette.c2
+        , Border.rounded 5
+        , Font.size 16
+        ]
+        [ row
+            [ width fill ]
+            [ paragraph [ Font.bold ] [ text title ]
+            , FeatherIcons.x
+                |> Style.featherIconToElmUi
+                |> el
+                    [ alignRight
+                    , pointer
+                    , Events.onClick <| toMsg <| DismissError index
+                    ]
+            ]
+        , paragraph [] [ text details ]
+        ]
 
 
 viewHeader : ConnectionStatus -> Maybe Route -> Element msg
