@@ -100,7 +100,7 @@ resolveRequirement mAggregateData metrics requirement =
                 Constant constantType ->
                     case constantType of
                         Method _ ->
-                            Debug.log "This should do something" True
+                            True
 
 
 resolveCompositionDeviation :
