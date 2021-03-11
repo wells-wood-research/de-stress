@@ -9,6 +9,7 @@ from destress_big_structure.big_structure_models import (
     BiolUnitModel,
     StateModel,
     ChainModel,
+    BudeFFResultsModel,
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
     RosettaResultsModel,
@@ -53,6 +54,15 @@ def create_biounit_entry(
 def create_state_entry(
     ampal_assembly: ampal.Assembly, state_number: int, biounit_entry: BiolUnitModel
 ) -> StateModel:
+    assert (
+        EVOEF2_BINARY_PATH
+    ), "EVOEF2_BINARY_PATH is not defined, check you `.env` file"
+    assert (
+        DFIRE2_FOLDER_PATH
+    ), "DFIRE2_FOLDER_PATH is not defined, check you `.env` file"
+    assert (
+        ROSETTA_BINARY_PATH
+    ), "ROSETTA_BINARY_PATH is not defined, check you `.env` file"
     # Generate raw metrics
     state_analytics = analysis.analyse_design(ampal_assembly)
     # Convert the DesignMetrics into a StateModel
@@ -79,12 +89,10 @@ def create_state_entry(
         if isinstance(chain, ampal.Polypeptide):
             create_chain_entry(chain, state_model)
 
+    create_budeff_results_entry(ampal_assembly, state_model)
     create_evoef2_results_entry(ampal_assembly, state_model, EVOEF2_BINARY_PATH)
-
     create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_FOLDER_PATH)
-
     create_rosetta_results_entry(ampal_assembly, state_model, ROSETTA_BINARY_PATH)
-
     return state_model
 
 
@@ -92,6 +100,16 @@ def create_chain_entry(chain: ampal.Polypeptide, state_model: StateModel) -> Cha
     chain_analytics = analysis.analyse_chain(chain)
     chain_model = ChainModel(chain_label=chain.id, state=state_model, **chain_analytics)
     return chain_model
+
+
+def create_budeff_results_entry(
+    ampal_assembly: ampal.Assembly, state_model: StateModel
+) -> BudeFFResultsModel:
+    budeff_results = analysis.run_bude_ff(ampal_assembly)
+    budeff_results_model = BudeFFResultsModel(
+        state=state_model, **budeff_results.__dict__
+    )
+    return budeff_results_model
 
 
 def create_evoef2_results_entry(

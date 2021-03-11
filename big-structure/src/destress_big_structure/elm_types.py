@@ -26,6 +26,15 @@ class SequenceInfo:
     dssp_assignment: str
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass()
+class BudeFFOutput:
+    total_energy: Optional[float]
+    steric: Optional[float]
+    desolvation: Optional[float]
+    charge: Optional[float]
+
+
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class EvoEF2Output:
@@ -230,6 +239,7 @@ class DesignMetrics:
     mass: float
     num_of_residues: int
     packing_density: float
+    budeFF_results: BudeFFOutput
     evoEF2_results: EvoEF2Output
     dfire2_results: DFIRE2Output
     rosetta_results: RosettaOutput
@@ -354,10 +364,7 @@ class ClientWebsocketIncoming:
                 "tag": "ReceivedMetricsJob",
                 "args": [server_job.to_dict()],
             },
-            communicationerror=lambda: {
-                "tag": "CommunicationError",
-                "args": [],
-            },
+            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
         )
 
     def to_json(self) -> str:

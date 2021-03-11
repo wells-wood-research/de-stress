@@ -42,6 +42,7 @@ type alias DesignMetrics =
     , mass : Float
     , numOfResidues : Int
     , packingDensity : Float
+    , budeFFResults : BudeFFResults
     , evoEF2Results : EvoEF2Results
     , dfire2Results : DFIRE2Results
     , rosettaResults : RosettaResults
@@ -69,6 +70,7 @@ desMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.field "budeFFResults" .budeFFResults budeFFResultsCodec
         |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
         |> Codec.field "dfire2Results" .dfire2Results dfire2ResultsCodec
         |> Codec.field "rosettaResults" .rosettaResults rosettaResultsCodec
@@ -86,6 +88,29 @@ sequenceInfoCodec =
     Codec.object SequenceInfo
         |> Codec.field "sequence" .sequence Codec.string
         |> Codec.field "dsspAssignment" .dsspAssignment Codec.string
+        |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ BudeFFResults
+
+
+type alias BudeFFResults =
+    { totalEnergy : Maybe Float
+    , steric : Maybe Float
+    , desolvation : Maybe Float
+    , charge : Maybe Float
+    }
+
+
+budeFFResultsCodec : Codec BudeFFResults
+budeFFResultsCodec =
+    Codec.object BudeFFResults
+        |> Codec.field "totalEnergy" .totalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "steric" .steric (Codec.maybe Codec.float)
+        |> Codec.field "desolvation" .desolvation (Codec.maybe Codec.float)
+        |> Codec.field "charge" .charge (Codec.maybe Codec.float)
         |> Codec.buildObject
 
 
