@@ -7,6 +7,7 @@ from .big_structure_models import (
     BiolUnitModel,
     StateModel,
     ChainModel,
+    BudeFFResultsModel,
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
     RosettaResultsModel,
@@ -33,6 +34,11 @@ class State(SQLAlchemyObjectType):
 class Chain(SQLAlchemyObjectType):
     class Meta:
         model = ChainModel
+
+
+class BudeFFResults(SQLAlchemyObjectType):
+    class Meta:
+        model = BudeFFResultsModel
 
 
 class EvoEF2Results(SQLAlchemyObjectType):
@@ -214,6 +220,22 @@ class Query(graphene.ObjectType):
     def resolve_chain_count(self, info):
         query = Chain.get_query(info)
         return query.count()
+
+    all_budeff_results = graphene.NonNull(
+        graphene.List(graphene.NonNull(BudeFFResults), required=True),
+        description=(
+            "Gets all bude ff results records. Accepts the argument `first`, which "
+            "allows you to limit the number of results."
+        ),
+        first=graphene.Int(),
+    )
+
+    def resolve_all_budeff_results(self, info, **args):
+        query = BudeFFResults.get_query(info)
+        first = args.get("first")
+        if first:
+            return query.limit(first).all()
+        return query.all()
 
     all_evoef2_results = graphene.NonNull(
         graphene.List(graphene.NonNull(EvoEF2Results), required=True),

@@ -580,6 +580,28 @@ designStubCSVEncoder designStub =
                              , String.fromFloat metrics.packingDensity
                              )
 
+                           -- BUDE FF
+                           , ( "budeff: total"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.totalEnergy
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "budeff: steric"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.steric
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "budeff: desolvation"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.desolvation
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "budeff: charge"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.charge
+                                |> Maybe.withDefault "NaN"
+                             )
+
                            -- EvoEF2
                            , ( "evoef2: total"
                              , Maybe.map String.fromFloat

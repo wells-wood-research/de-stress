@@ -7,15 +7,19 @@ import subprocess
 import tempfile
 import re
 import json
+import warnings
 
 from bs4 import BeautifulSoup
 import ampal
+import budeff
+import budeff.force_field
 import isambard.evaluation as ev
 import numpy as np
 import requests
 
 from .elm_types import (
     DesignMetrics,
+    BudeFFOutput,
     EvoEF2Output,
     DFIRE2Output,
     RosettaOutput,
@@ -26,6 +30,10 @@ from destress_big_structure.settings import (
     DFIRE2_FOLDER_PATH,
     ROSETTA_BINARY_PATH,
 )
+
+# We're suppressing warnings about atoms not being parameterised in BUDE FF
+# I'm not reporting this as the user should look into BUDE FF to understand how it works
+warnings.simplefilter("ignore", budeff.force_field.NotParameterisedWarning)
 
 # {{{ Input Validation
 
@@ -98,6 +106,7 @@ def convert_string_to_float(input_string: str) -> Optional[float]:
         Output float if the conversion is successful. None if the conversion has failed.
     """
 
+    output_float: Optional[float]
     try:
         output_float = float(input_string)
     except ValueError:
@@ -212,7 +221,7 @@ class JpredSubmission:
 
 
 # }}}
-# {{{ DesignMetrics
+# {{{ Analyse Design
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
@@ -226,6 +235,15 @@ def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
 
 
 def analyse_design(design: ampal.Assembly) -> DesignMetrics:
+    assert (
+        EVOEF2_BINARY_PATH
+    ), "EVOEF2_BINARY_PATH is not defined, check you `.env` file"
+    assert (
+        DFIRE2_FOLDER_PATH
+    ), "DFIRE2_FOLDER_PATH is not defined, check you `.env` file"
+    assert (
+        ROSETTA_BINARY_PATH
+    ), "ROSETTA_BINARY_PATH is not defined, check you `.env` file"
     ev.tag_dssp_data(design)
     sequence_info = {
         chain.id: SequenceInfo(
@@ -256,6 +274,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         num_of_residues=num_of_residues,
         mass=mass,
         packing_density=design_mean_packing_density(design),
+        budeFF_results=run_bude_ff(design),
         evoEF2_results=run_evoef2(design.pdb, EVOEF2_BINARY_PATH),
         dfire2_results=run_dfire2(design.pdb, DFIRE2_FOLDER_PATH),
         rosetta_results=run_rosetta(design.pdb, ROSETTA_BINARY_PATH),
@@ -263,6 +282,8 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     return design_metrics
 
 
+# }}}
+# {{{ DesignMetrics
 def design_hydrophobic_fitness(design: ampal.Assembly) -> Optional[float]:
     try:
         hydrophobic_fitness = ev.calculate_hydrophobic_fitness(design)
@@ -302,6 +323,28 @@ def analyse_chain(chain: ampal.Polymer) -> Dict:
 
 def chain_sequence(chain: ampal.Polypeptide) -> str:
     return chain.sequence
+
+
+# }}}
+# {{{ BUDE FF
+
+
+def run_bude_ff(ampal_assembly: ampal.Assembly) -> BudeFFOutput:
+    """Calculates the BUDE FF internal energy for the design."""
+    try:
+        budeff_score = budeff.get_internal_energy(ampal_assembly)
+        budeff_output = BudeFFOutput(
+            total_energy=budeff_score.total_energy,
+            steric=budeff_score.steric,
+            desolvation=budeff_score.desolvation,
+            charge=budeff_score.charge,
+        )
+    except KeyError:
+        # Contains an unknown atom
+        budeff_output = BudeFFOutput(
+            total_energy=None, steric=None, desolvation=None, charge=None,
+        )
+    return budeff_output
 
 
 # }}}
@@ -553,7 +596,7 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
 # {{{ RosettaOutput
 
 
-def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
+def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
     """Defining a function to run the Rosetta energy function on an input PDB file,
        parse the output file and return a RosettaOutput object.
 
