@@ -331,13 +331,19 @@ def chain_sequence(chain: ampal.Polypeptide) -> str:
 
 def run_bude_ff(ampal_assembly: ampal.Assembly) -> BudeFFOutput:
     """Calculates the BUDE FF internal energy for the design."""
-    budeff_score = budeff.get_internal_energy(ampal_assembly)
-    budeff_output = BudeFFOutput(
-        total_energy=budeff_score.total_energy,
-        steric=budeff_score.steric,
-        desolvation=budeff_score.desolvation,
-        charge=budeff_score.charge,
-    )
+    try:
+        budeff_score = budeff.get_internal_energy(ampal_assembly)
+        budeff_output = BudeFFOutput(
+            total_energy=budeff_score.total_energy,
+            steric=budeff_score.steric,
+            desolvation=budeff_score.desolvation,
+            charge=budeff_score.charge,
+        )
+    except KeyError:
+        # Contains an unknown atom
+        budeff_output = BudeFFOutput(
+            total_energy=None, steric=None, desolvation=None, charge=None,
+        )
     return budeff_output
 
 

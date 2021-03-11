@@ -29,10 +29,10 @@ class SequenceInfo:
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass()
 class BudeFFOutput:
-    total_energy: float
-    steric: float
-    desolvation: float
-    charge: float
+    total_energy: Optional[float]
+    steric: Optional[float]
+    desolvation: Optional[float]
+    charge: Optional[float]
 
 
 @dataclass_json()  # letter_case=LetterCase.CAMEL)

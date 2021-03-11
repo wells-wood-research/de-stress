@@ -113,10 +113,10 @@ class BudeFFResultsModel(BigStructureBase):  # type: ignore
     id = Column(Integer, primary_key=True)
 
     # BudeFF Output fields
-    total_energy = Column(Float, nullable=False)
-    steric = Column(Float, nullable=False)
-    desolvation = Column(Float, nullable=False)
-    charge = Column(Float, nullable=False)
+    total_energy = Column(Float, nullable=True)
+    steric = Column(Float, nullable=True)
+    desolvation = Column(Float, nullable=True)
+    charge = Column(Float, nullable=True)
 
     # Parent
     state_id = Column(Integer, ForeignKey("state.id"))

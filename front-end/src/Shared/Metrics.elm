@@ -97,20 +97,20 @@ sequenceInfoCodec =
 
 
 type alias BudeFFResults =
-    { totalEnergy : Float
-    , steric : Float
-    , desolvation : Float
-    , charge : Float
+    { totalEnergy : Maybe Float
+    , steric : Maybe Float
+    , desolvation : Maybe Float
+    , charge : Maybe Float
     }
 
 
 budeFFResultsCodec : Codec BudeFFResults
 budeFFResultsCodec =
     Codec.object BudeFFResults
-        |> Codec.field "totalEnergy" .totalEnergy Codec.float
-        |> Codec.field "steric" .steric Codec.float
-        |> Codec.field "desolvation" .desolvation Codec.float
-        |> Codec.field "charge" .charge Codec.float
+        |> Codec.field "totalEnergy" .totalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "steric" .steric (Codec.maybe Codec.float)
+        |> Codec.field "desolvation" .desolvation (Codec.maybe Codec.float)
+        |> Codec.field "charge" .charge (Codec.maybe Codec.float)
         |> Codec.buildObject
 
 

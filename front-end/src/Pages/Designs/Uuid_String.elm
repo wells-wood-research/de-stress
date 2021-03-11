@@ -882,13 +882,13 @@ budeFFResultsTableView metrics hoverInfoOption =
             , centerX
             ]
             [ el (Tooltips.budeFFTotalEnergyHoverBox hoverInfoOption ChangeHoverInfo) <|
-                createTableFloatColumn (Just metrics.budeFFResults.totalEnergy) "Total Energy"
+                createTableFloatColumn metrics.budeFFResults.totalEnergy "Total Energy"
             , el (Tooltips.budeFFStericHoverBox hoverInfoOption ChangeHoverInfo) <|
-                createTableFloatColumn (Just metrics.budeFFResults.steric) "Steric"
+                createTableFloatColumn metrics.budeFFResults.steric "Steric"
             , el (Tooltips.budeFFDesolvationHoverBox hoverInfoOption ChangeHoverInfo) <|
-                createTableFloatColumn (Just metrics.budeFFResults.desolvation) "Desolvation"
+                createTableFloatColumn metrics.budeFFResults.desolvation "Desolvation"
             , el (Tooltips.budeFFChargeHoverBox hoverInfoOption ChangeHoverInfo) <|
-                createTableFloatColumn (Just metrics.budeFFResults.charge) "Charge"
+                createTableFloatColumn metrics.budeFFResults.charge "Charge"
             ]
         ]
 
