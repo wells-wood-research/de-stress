@@ -728,12 +728,6 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
                 )
             , paragraph [] [ text ("Structure file: " ++ fileName) ]
             ]
-        , row [ spacing 10 ]
-            [ Buttons.linkButton
-                { label = text "Back"
-                , route = Route.DeStress__Designs
-                }
-            ]
         , sectionColumn
             [ Style.h2 <| text "Structure"
             , el [ height <| px 400, width fill, padding 5, Border.width 1 ]
