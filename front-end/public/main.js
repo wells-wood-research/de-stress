@@ -1,9 +1,6 @@
 import { saveAs } from "file-saver-es";
 import { createStore, clear, del, get, set } from "idb-keyval";
-import { NGLViewer } from "./ngl-web-component";
 import embed from "vega-embed";
-
-customElements.define("ngl-viewer", NGLViewer);
 
 // {{{ storage
 
