@@ -10,12 +10,9 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
-import Element.Keyed as Keyed
 import FeatherIcons
 import File exposing (File)
 import File.Select as FileSelect
-import Html
-import Html.Attributes as HAtt
 import Set
 import Shared
 import Shared.Buttons as Buttons
@@ -23,8 +20,7 @@ import Shared.Design as Design exposing (Design)
 import Shared.Editable as Editable
 import Shared.Error as Error
 import Shared.Folds as Folds
-import Shared.Metrics as Metrics exposing (DesignMetrics)
-import Shared.Plots as Plots exposing (ColumnData)
+import Shared.Metrics as Metrics
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification exposing (Specification)
 import Shared.Style as Style
@@ -80,7 +76,6 @@ type alias Model =
     , filterTags : Set.Set String
     , displaySettings :
         { controlPanel : Bool
-        , overviewPlots : Bool
         }
     }
 
@@ -124,7 +119,7 @@ init shared _ =
             , selectedUuids = Set.empty
             , tagString = ""
             , filterTags = Set.empty
-            , displaySettings = { controlPanel = False, overviewPlots = False }
+            , displaySettings = { controlPanel = False }
             }
     in
     ( model
@@ -169,16 +164,12 @@ type Msg
 
 
 type HideableSection
-    = OverviewPlots
-    | ControlPanel
+    = ControlPanel
 
 
 hideableSectionToString : HideableSection -> String
 hideableSectionToString hideableSection =
     case hideableSection of
-        OverviewPlots ->
-            "Overview Plots"
-
         ControlPanel ->
             "Control Panel"
 
@@ -355,10 +346,7 @@ update msg model =
                         { model | designs = Dict.remove uuidString model.designs }
                 in
                 ( updatedModel
-                , Cmd.batch
-                    [ Design.deleteDesign { uuidString = uuidString }
-                    , makeOverViewSpecCmd model
-                    ]
+                , Design.deleteDesign { uuidString = uuidString }
                 )
 
             else
@@ -388,10 +376,7 @@ update msg model =
                         }
                 in
                 ( updatedModel
-                , Cmd.batch
-                    [ Design.deleteAllDesigns ()
-                    , makeOverViewSpecCmd updatedModel
-                    ]
+                , Design.deleteAllDesigns ()
                 )
 
             else
@@ -418,12 +403,6 @@ update msg model =
                     { model
                         | displaySettings =
                             case section of
-                                OverviewPlots ->
-                                    { displaySettings
-                                        | overviewPlots =
-                                            not displaySettings.overviewPlots
-                                    }
-
                                 ControlPanel ->
                                     { displaySettings
                                         | controlPanel =
@@ -432,12 +411,7 @@ update msg model =
                     }
             in
             ( newModel
-            , case ( section, newModel.displaySettings.overviewPlots ) of
-                ( OverviewPlots, True ) ->
-                    makeOverViewSpecCmd model
-
-                _ ->
-                    Cmd.none
+            , Cmd.none
             )
 
         SelectedDesign uuid selected ->
@@ -782,7 +756,7 @@ load shared model =
                     }
             in
             ( updatedModel
-            , makeOverViewSpecCmd updatedModel
+            , Cmd.none
             )
 
         Nothing ->
@@ -797,54 +771,6 @@ load shared model =
                         information on how to contact the authors."""
                 , severity = Error.High
                 }
-
-
-makeOverViewSpecCmd : Model -> Cmd Msg
-makeOverViewSpecCmd model =
-    if Dict.isEmpty model.designs then
-        Cmd.none
-
-    else
-        { plotId = "overview"
-        , spec =
-            Metrics.overviewSpec
-                "Hydrophobic Fitness"
-                (model.designs
-                    |> Dict.toList
-                    |> List.map
-                        (\( k, v ) ->
-                            ( k, Design.storedDesignToStub v )
-                        )
-                    |> List.map
-                        (createDesignCardData
-                            Nothing
-                            -- (runState.mSelectedReferenceSet
-                            --     |> Maybe.andThen
-                            --         (\k -> Dict.get k runState.referenceSets)
-                            --     |> Maybe.map
-                            --         (ReferenceSet.storedReferenceSetToStub
-                            --             >> ReferenceSet.getParamsForStub
-                            --             >> .aggregateData
-                            --         )
-                            -- )
-                            model.mSelectedSpecification
-                            model.selectedUuids
-                        )
-                    |> List.indexedMap Tuple.pair
-                    |> List.reverse
-                    |> List.filterMap
-                        (makeColumnData <|
-                            .hydrophobicFitness
-                                >> Maybe.withDefault (0 / 0)
-                                >> abs
-                        )
-                    |> List.sortBy .value
-                    |> List.reverse
-                    |> List.map (\{ name, value } -> ( name, value ))
-                    |> Dict.fromList
-                )
-        }
-            |> Plots.vegaPlot
 
 
 subscriptions : Model -> Sub Msg
@@ -930,12 +856,6 @@ bodyView model =
                     column
                         [ spacing 10, width fill ]
                         [ Folds.sectionFoldView
-                            { foldVisible = model.displaySettings.overviewPlots
-                            , title = hideableSectionToString OverviewPlots
-                            , toggleMsg = ToggleSectionVisibility OverviewPlots
-                            , contentView = overviewPlots
-                            }
-                        , Folds.sectionFoldView
                             { foldVisible = model.displaySettings.controlPanel
                             , title = hideableSectionToString ControlPanel
                             , toggleMsg = ToggleSectionVisibility ControlPanel
@@ -964,7 +884,14 @@ controlPanel model =
             getAllTags model.designs
     in
     column [ padding 10, spacing 10 ]
-        [ Style.h3 <| text "Export Design Data"
+        [ Style.h3 <| text "All Designs Overview"
+        , wrappedRow []
+            [ Buttons.linkButton
+                { label = text "Show Overview"
+                , route = Route.Designs__Overview
+                }
+            ]
+        , Style.h3 <| text "Export Design Data"
         , wrappedRow []
             [ Buttons.conditionalButton
                 { label = text "Export All"
@@ -1305,52 +1232,6 @@ selectedCommandsView selectedUuids tagString =
 
 
 
--- {{{ Overview Plots
-
-
-overviewPlots : Element msg
-overviewPlots =
-    column
-        [ width fill ]
-        [ Keyed.el [ centerX ]
-            ( "overview"
-            , Html.div
-                [ HAtt.id "overview"
-                , HAtt.style "width" "100%"
-                ]
-                [ Html.div
-                    [ HAtt.height 200
-                    , HAtt.style "height" "200px"
-                    , HAtt.style "width" "100%"
-                    , HAtt.style "border-radius" "5px"
-                    , HAtt.style "background-color" "#d3d3d3"
-                    ]
-                    []
-                ]
-                |> html
-            )
-        ]
-
-
-makeColumnData :
-    (DesignMetrics -> Float)
-    -> ( Int, DesignCardData )
-    -> Maybe ColumnData
-makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification } ) =
-    WebSockets.getDesignMetrics designStub.metricsJobStatus
-        |> Maybe.map
-            (\metrics ->
-                { index = toFloat index
-                , name = designStub.name
-                , uuidString = uuidString
-                , value = getDataFn metrics
-                , mMeetsSpecification = mMeetsSpecification
-                }
-            )
-
-
-
--- }}}
 -- }}}
 -- {{{ Utils
 

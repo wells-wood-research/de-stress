@@ -268,7 +268,7 @@ app.ports.outgoing.subscribe((action) => {
 app.ports.vegaPlot.subscribe((plotDetails) => {
   window.requestAnimationFrame(() => {
     embed("#" + plotDetails.plotId, plotDetails.spec, {
-      actions: false,
+      actions: true,
     }).catch(console.warn);
   });
 });
