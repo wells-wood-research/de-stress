@@ -1,9 +1,16 @@
 const path = require("path");
 
 module.exports = {
-  entry: "./public/main.js",
+  mode: "production",
+  optimization: {
+    usedExports: true,
+  },
+  entry: {
+    main: "./public/main.js",
+    nglComponent: "./public/ngl-web-component",
+  },
   output: {
-    filename: "bundle.js",
+    filename: "[name].bundle.js",
     path: path.resolve(__dirname, "public/dist"),
   },
 };
