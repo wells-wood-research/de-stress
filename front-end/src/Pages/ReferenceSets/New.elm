@@ -1,7 +1,5 @@
 module Pages.ReferenceSets.New exposing (Model, Msg, Params, page)
 
-import BigStructure.Object.State as State
-import BigStructure.Query as Query
 import Browser.Navigation as Nav
 import Codec
 import Dict exposing (Dict)
@@ -9,13 +7,12 @@ import Element exposing (..)
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
-import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import RemoteData
 import Set exposing (Set)
 import Shared
 import Shared.Buttons as Buttons
+import Shared.Error as Error
 import Shared.Metrics as Metrics
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSetRemoteData)
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
@@ -48,6 +45,7 @@ type alias Model =
     , newReferenceSet : NewReferenceSet
     , referenceSets : Dict String ReferenceSet.StoredReferenceSet
     , navKey : Nav.Key
+    , pageErrors : List Error.Error
     }
 
 
@@ -123,6 +121,7 @@ init shared _ =
               , newReferenceSet = NewHighResBiolUnit RemoteData.NotAsked
               , referenceSets = runState.referenceSets
               , navKey = shared.key
+              , pageErrors = []
               }
             , Cmd.none
             )
@@ -132,6 +131,7 @@ init shared _ =
               , newReferenceSet = NewHighResBiolUnit RemoteData.NotAsked
               , referenceSets = Dict.empty
               , navKey = shared.key
+              , pageErrors = []
               }
             , Cmd.none
             )
@@ -151,6 +151,7 @@ type Msg
     | UpdatedPdbCodes NewPdbCodeListParams String
     | ClickedDownloadPreferredSubset
     | GotPreferredSubsetData ReferenceSetRemoteData
+    | ClearPageErrors
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -294,8 +295,20 @@ update msg model =
                         GotPreferredSubsetData
                     )
 
-                _ ->
-                    Debug.todo "Catch this"
+                NewHighResBiolUnit _ ->
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "Unexpected reference set type"
+                        , details =
+                            """Failed to create a new reference set. The type of
+                                reference set you're creating shouldn't have allowed you
+                                to click this button!  Try refreshing your browser to
+                                fix this, or if it persists, report it as a bug.  See
+                                the home page for details on how to do this.
+                            """
+                        , severity = Error.Medium
+                        }
 
         GotPreferredSubsetData remoteData ->
             case ( model.newReferenceSet, model.mResourceUuid, remoteData ) of
@@ -344,11 +357,30 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Deal with this"
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "Failed to create reference set"
+                        , details =
+                            """Failed to create a new reference set. Try refreshing your
+                            browser to fix this, or if it persists, report it as a bug.
+                            See the home page for details on how to do this.
+                            """
+                        , severity = Error.Medium
+                        }
+
+        ClearPageErrors ->
+            ( { model | pageErrors = [] }
+            , Cmd.none
+            )
 
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
+    let
+        updatedShared =
+            Error.updateSharedModelErrors model shared
+    in
     case model.mResourceUuid of
         Just resourceUuid ->
             Shared.mapRunState
@@ -359,10 +391,10 @@ save model shared =
                         , saveStateRequested = True
                     }
                 )
-                shared
+                updatedShared
 
         Nothing ->
-            shared
+            updatedShared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )

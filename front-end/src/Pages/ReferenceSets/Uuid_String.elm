@@ -55,7 +55,8 @@ type alias Model =
 
 
 type PageState
-    = LoadingNoStub String
+    = FailedToStart
+    | LoadingNoStub String
     | LoadingWithStub String ReferenceSetStub
     | RefSetNotFound String
     | RefSet String ReferenceSet
@@ -70,6 +71,9 @@ mapPageState :
     -> PageState
 mapPageState refSetFn focus =
     case focus of
+        FailedToStart ->
+            focus
+
         LoadingNoStub _ ->
             focus
 
@@ -124,7 +128,12 @@ init shared { params } =
             )
 
         Nothing ->
-            Debug.todo "Should this be dealt with here?"
+            ( { key = shared.key
+              , pageState = FailedToStart
+              , displaySettings = { pdbCodes = False }
+              }
+            , Cmd.none
+            )
 
 
 
@@ -265,6 +274,16 @@ bodyView : Model -> Element Msg
 bodyView model =
     el [ centerX, width (fill |> maximum 900) ] <|
         case model.pageState of
+            FailedToStart ->
+                paragraph []
+                    [ text
+                        """Page failed to launch, you should never be able to see this
+                        screen, but here you are! Please try refreshing your browser and
+                        if the problem persists, please report this bug. You can find
+                        details of how to report a bug on the home page.
+                        """
+                    ]
+
             LoadingNoStub uuidString ->
                 el [] ("Loading reference set (id: " ++ uuidString ++ ")..." |> text)
 
