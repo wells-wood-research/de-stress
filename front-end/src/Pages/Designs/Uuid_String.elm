@@ -745,6 +745,7 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
+                        , budeFFResultsTableView designMetrics hoverInfoOption
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
                         , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
@@ -866,6 +867,29 @@ sequenceInfoView ( chainId, sequenceInfo ) =
             , Font.size 14
             ]
             (List.map aaView zippedSequenceInfo)
+        ]
+
+
+budeFFResultsTableView :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> Element Msg
+budeFFResultsTableView metrics hoverInfoOption =
+    sectionColumn
+        [ Style.h3 <| text "BUDE Force Field Results"
+        , wrappedRow
+            [ spacing 5
+            , centerX
+            ]
+            [ el (Tooltips.budeFFTotalEnergyHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn (Just metrics.budeFFResults.totalEnergy) "Total Energy"
+            , el (Tooltips.budeFFStericHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn (Just metrics.budeFFResults.steric) "Steric"
+            , el (Tooltips.budeFFDesolvationHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn (Just metrics.budeFFResults.desolvation) "Desolvation"
+            , el (Tooltips.budeFFChargeHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn (Just metrics.budeFFResults.charge) "Charge"
+            ]
         ]
 
 

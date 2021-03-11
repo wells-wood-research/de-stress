@@ -1,5 +1,9 @@
 module Shared.Tooltips exposing
     ( HoverInfoOption(..)
+    , budeFFChargeHoverBox
+    , budeFFDesolvationHoverBox
+    , budeFFStericHoverBox
+    , budeFFTotalEnergyHoverBox
     , dfire2TotalHoverBox
     , evoEF2InterDDesolvHHoverBox
     , evoEF2InterDDesolvPHoverBox
@@ -95,12 +99,15 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import FeatherIcons
 import Shared.Style as Style
 
 
 type HoverInfoOption
-    = EvoEF2Total
+    = BudeFFTotalEnergy
+    | BudeFFSteric
+    | BudeFFDesolvation
+    | BudeFFCharge
+    | EvoEF2Total
     | EvoEF2RefTotal
     | EvoEF2IntaRTotal
     | EvoEF2InterSTotal
@@ -242,7 +249,63 @@ hoverInfoView { title, info, mouseEnterMsg, hoverInfoOption, changeMsg } =
 
 
 
--- {{ EvoEF2 Summary Tooltips
+-- {{{ BUDE FF Tooltips
+
+
+budeFFTotalEnergyHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFTotalEnergyHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Total Energy"
+        , info = """This value is the total BUDE force field energy. It is the sum of
+                 the steric, desolvation and charge components.
+                 """
+        , mouseEnterMsg = BudeFFTotalEnergy
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+budeFFStericHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFStericHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Steric Energy"
+        , info = """This value is the steric component of the BUDE force field energy.
+                 It is calculated with a simplified Leonard-Jones potential. It is
+                 softer than the steric component of many other force fields.
+                 """
+        , mouseEnterMsg = BudeFFSteric
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+budeFFDesolvationHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFDesolvationHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Desolvation Energy"
+        , info = """This value is the desolvation component of the BUDE force field energy.
+                 """
+        , mouseEnterMsg = BudeFFDesolvation
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+budeFFChargeHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFChargeHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Charge Energy"
+        , info = """This value is the charge component of the BUDE force field energy.
+                 """
+        , mouseEnterMsg = BudeFFCharge
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+
+-- }}}
+-- {{{ EvoEF2 Summary Tooltips
 
 
 evoEF2SummaryTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -307,8 +370,8 @@ evoEF2SummaryInterDHoverBox option changeMsg =
 
 
 
--- }}
--- {{ EvoEF2 Reference Tooltips
+-- }}}
+-- {{{ EvoEF2 Reference Tooltips
 
 
 evoEF2RefALAHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -552,8 +615,8 @@ evoEF2RefTYRHoverBox option changeMsg =
 
 
 
---}}
---{{ EvoEF2 IntraR Tooltips
+-- }}}
+-- {{{ EvoEF2 IntraR Tooltips
 
 
 evoEF2IntraRVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -694,8 +757,8 @@ evoEF2IntraRHBSCBBPhiHoverBox option changeMsg =
 
 
 
---}}
---{{ EvoEF2 InterS Tooltips
+-- }}}
+-- {{{ EvoEF2 InterS Tooltips
 
 
 evoEF2InterSVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -894,8 +957,8 @@ evoEF2InterSHBSCSCPhiHoverBox option changeMsg =
 
 
 
---}}
--- {{ EvoEF2 InterD Tooltips
+-- }}}
+-- {{{ EvoEF2 InterD Tooltips
 
 
 evoEF2InterDVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -1094,8 +1157,8 @@ evoEF2InterDHBSCSCPhiHoverBox option changeMsg =
 
 
 
---}}
---{{ DFIRE2 Total Tooltip
+-- }}}
+-- {{{ DFIRE2 Total Tooltip
 
 
 dfire2TotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -1111,8 +1174,8 @@ dfire2TotalHoverBox option changeMsg =
 
 
 
---}}
---{{ Rosetta Tooltips
+-- }}}
+-- {{{ Rosetta Tooltips
 
 
 rosettaTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -1366,4 +1429,4 @@ rosettaTyroPenHoverBox option changeMsg =
 
 
 
---}}
+-- }}}
