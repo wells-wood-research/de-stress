@@ -17,6 +17,7 @@ import Shared
 import Shared.Buttons as Buttons
 import Shared.Design as Design
 import Shared.Editable as Editable exposing (Editable(..))
+import Shared.Error as Error
 import Shared.Folds as Folds
 import Shared.Metrics as Metrics
 import Shared.Plots as Plots
@@ -77,6 +78,7 @@ type alias Model =
     , evoEF2TableOption : EvoEF2TableOption
     , displaySettings : DisplaySettings
     , hoverInfoOption : Tooltips.HoverInfoOption
+    , pageErrors : List Error.Error
     }
 
 
@@ -193,6 +195,7 @@ init shared { params } =
                         }
                     , hoverInfoOption =
                         Tooltips.NoHoverInfo
+                    , pageErrors = []
                     }
             in
             ( model
@@ -228,6 +231,7 @@ init shared { params } =
                     }
               , hoverInfoOption =
                     Tooltips.NoHoverInfo
+              , pageErrors = []
               }
             , Cmd.none
             )
@@ -249,6 +253,7 @@ type Msg
     | SetEvoEF2TableOption EvoEF2TableOption
     | ToggleSectionVisibility HideableSection
     | ChangeHoverInfo Tooltips.HoverInfoOption
+    | ClearPageErrors
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -279,33 +284,44 @@ update msg model =
                     )
 
         SetSpecification { specValue } ->
-            ( { model
-                | mSelectedSpecification =
-                    case model.mSelectedSpecification of
-                        Just selectedSpec ->
-                            case Codec.decodeValue Specification.codec specValue of
-                                Ok specification ->
+            case model.mSelectedSpecification of
+                Just selectedSpec ->
+                    case Codec.decodeValue Specification.codec specValue of
+                        Ok specification ->
+                            ( { model
+                                | mSelectedSpecification =
                                     InMemory
                                         { uuidString =
                                             Stored.getUuid selectedSpec
                                         , data = specification
                                         }
                                         |> Just
+                              }
+                            , Cmd.none
+                            )
 
-                                Err _ ->
+                        Err _ ->
+                            ( { model
+                                | mSelectedSpecification =
                                     FailedToLoad
                                         { uuidString =
                                             Stored.getUuid selectedSpec
                                         }
                                         |> Just
+                              }
+                            , Cmd.none
+                            )
 
-                        Nothing ->
-                            Debug.log
-                                "A specification was set, but I was not expecting one."
-                                model.mSelectedSpecification
-              }
-            , Cmd.none
-            )
+                Nothing ->
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "Error setting specification"
+                        , details =
+                            """A specification was set, but I was not expecting
+                                one."""
+                        , severity = Error.Low
+                        }
 
         SetReferenceSet { refSetValue } ->
             case
@@ -350,9 +366,14 @@ update msg model =
                     )
 
                 ( Nothing, _ ) ->
-                    Debug.log
-                        "A reference set was set, but I was not expecting one."
-                        ( model, Cmd.none )
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "Error setting reference set"
+                        , details =
+                            """A reference set was set, but I was not expecting one."""
+                        , severity = Error.Low
+                        }
 
         ClickedNameEdit ->
             ( { model
@@ -419,8 +440,19 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.log "Should we report an error here?"
-                        ( model, Cmd.none )
+                    Error.updateWithError
+                        ClearPageErrors
+                        model
+                        { title = "Failed to rename design"
+                        , details =
+                            """I failed to rename this design as the page was not ready
+                            and things happened out of the expected order. Try
+                            refreshing your browser to fix this, or if it persists,
+                            report it as a bug. See the home page for details on how to
+                            do this.
+                            """
+                        , severity = Error.Low
+                        }
 
         SetEvoEF2TableOption option ->
             ( { model | evoEF2TableOption = option }
@@ -461,6 +493,9 @@ update msg model =
             , Cmd.none
             )
 
+        ClearPageErrors ->
+            ( { model | pageErrors = [] }, Cmd.none )
+
 
 plotCommands : Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
 plotCommands metrics referenceSet =
@@ -500,6 +535,10 @@ plotCommands metrics referenceSet =
 
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
+    let
+        updatedShared =
+            Error.updateSharedModelErrors model shared
+    in
     case model.pageState of
         Design design ->
             Shared.mapRunState
@@ -515,10 +554,10 @@ save model shared =
                                 runState.designs
                     }
                 )
-                shared
+                updatedShared
 
         _ ->
-            shared
+            updatedShared
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
@@ -555,7 +594,13 @@ sectionColumn =
 bodyView : Model -> Element Msg
 bodyView model =
     column [ centerX, width (fill |> maximum 800) ]
-        [ el [ centerX ] (Style.h1 <| text "Design Details")
+        [ wrappedRow [ spacing 10 ]
+            [ Style.h1 <| text "Design Details"
+            , Buttons.linkButton
+                { label = text "Back"
+                , route = Route.DeStress__Designs
+                }
+            ]
         , case model.pageState of
             AppNotRunning ->
                 sectionColumn
@@ -627,18 +672,16 @@ designDetailsView :
     -> DisplaySettings
     -> Tooltips.HoverInfoOption
     -> Element Msg
-designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOption displaySettings hoverInfoOption =
+designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displaySettings hoverInfoOption =
     let
-        { fileName, deleteStatus, metricsJobStatus } =
+        { fileName, metricsJobStatus } =
             design
     in
     column
         [ spacing 15, width fill ]
     <|
         [ sectionColumn
-            [ paragraph []
-                [ Style.h1 <| text "Design Details" ]
-            , row [ height fill, spacing 10 ]
+            [ row [ height fill, spacing 10 ]
                 (case design.name of
                     NotEditing currentName ->
                         [ paragraph [] [ Style.h2 <| text <| "Name: " ++ currentName ]
@@ -712,7 +755,7 @@ designDetailsView uuidString mSpecification mReferenceSet design evoEF2TableOpti
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
                         , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
                         , case mReferenceSet of
-                            Just refSet ->
+                            Just _ ->
                                 referenceSetComparisonView
 
                             Nothing ->
@@ -919,11 +962,16 @@ evoef2SummaryColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2SummaryColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
-    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
-    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
-    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
-    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
+    [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
+    , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
+    , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
+    , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
+    , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <|
+        createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
     ]
 
 
@@ -1248,6 +1296,7 @@ createTableColumn metricView metric metricName =
             paragraph [ centerY ] [ text metricName ]
         , el
             [ width fill
+            , height <| px 40
             , Border.solid
             , Border.widthEach { top = 0, bottom = 1, left = 1, right = 1 }
             ]
@@ -1282,7 +1331,7 @@ createTableFloatColumn =
                     onePlaceFloatText b
 
                 Nothing ->
-                    text "--"
+                    cell <| text "--"
         )
 
 
@@ -1414,7 +1463,7 @@ requirementView metrics requirement =
 
             Requirement.Not subRequirement ->
                 row (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
-                    [ Style.h3 <| el [ Font.bold ] (text <| "NOT")
+                    [ el [] <| Style.h3 <| el [ Font.bold ] (text <| "NOT")
                     , requirementView metrics subRequirement
                     ]
 

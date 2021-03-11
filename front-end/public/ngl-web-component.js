@@ -26,4 +26,4 @@ class NGLViewer extends HTMLElement {
   }
 }
 
-export { NGLViewer };
+customElements.define("ngl-viewer", NGLViewer);
