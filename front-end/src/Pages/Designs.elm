@@ -881,12 +881,14 @@ bodyView model =
                     column
                         [ spacing 10, width fill ]
                         [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
-                            List.map
+                            (List.map
                                 (columnViewModeSelector model.columnViewMode)
                                 [ DesignList
                                 , OverviewPlots
                                 , ControlPanel
                                 ]
+                                |> List.intersperse (text "|")
+                            )
                         , case model.columnViewMode of
                             DesignList ->
                                 column
@@ -911,44 +913,6 @@ bodyView model =
             ]
 
 
-controlPanel : Model -> Element Msg
-controlPanel model =
-    let
-        allTags =
-            getAllTags model.designs
-    in
-    column [ padding 10, spacing 10 ]
-        [ Style.h2 <| text "Export Design Data"
-        , wrappedRow []
-            [ Buttons.conditionalButton
-                { label = text "Export All"
-                , clickMsg = Just ExportAllDesignData
-                , isActive =
-                    case model.loadingState of
-                        LoadingFiles _ _ ->
-                            False
-
-                        Free ->
-                            True
-                }
-            ]
-        , Style.h2 <| text "Tags"
-        , if Set.isEmpty allTags then
-            paragraph []
-                [ text <|
-                    ("No designs are tagged, select designs in order to tag them. "
-                        ++ "This will help you keep your designs organised."
-                    )
-                ]
-
-          else
-            allTagsView
-                { tags = getAllTags model.designs
-                , filterTags = model.filterTags
-                }
-        ]
-
-
 columnViewModeSelector : ColumnViewMode -> ColumnViewMode -> Element Msg
 columnViewModeSelector current option =
     columnViewModeToString option
@@ -964,18 +928,8 @@ columnViewModeSelector current option =
             )
 
 
-allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
-allTagsView { tags, filterTags } =
-    tags
-        |> Set.toList
-        |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
-        |> (++)
-            [ text "Filter by Tag"
-            , filterNoneTag { filterTags = filterTags, allTags = tags }
-            , filterAllTag { filterTags = filterTags, allTags = tags }
-            , text "|"
-            ]
-        |> wrappedRow [ spacing 10 ]
+
+-- {{{ Design Cards
 
 
 type alias DesignCardData =
@@ -1186,6 +1140,68 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
         ]
 
 
+
+-- }}}
+-- {{{ Control Panel
+
+
+controlPanel : Model -> Element Msg
+controlPanel model =
+    let
+        allTags =
+            getAllTags model.designs
+    in
+    column [ padding 10, spacing 10 ]
+        [ Style.h2 <| text "Export Design Data"
+        , wrappedRow []
+            [ Buttons.conditionalButton
+                { label = text "Export All"
+                , clickMsg = Just ExportAllDesignData
+                , isActive =
+                    case model.loadingState of
+                        LoadingFiles _ _ ->
+                            False
+
+                        Free ->
+                            True
+                }
+            ]
+        , Style.h2 <| text "Tags"
+        , if Set.isEmpty allTags then
+            paragraph []
+                [ text <|
+                    ("No designs are tagged, select designs in order to tag them. "
+                        ++ "This will help you keep your designs organised."
+                    )
+                ]
+
+          else
+            allTagsView
+                { tags = getAllTags model.designs
+                , filterTags = model.filterTags
+                }
+        ]
+
+
+
+-- }}}
+-- {{{ Tags
+
+
+allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
+allTagsView { tags, filterTags } =
+    tags
+        |> Set.toList
+        |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
+        |> (++)
+            [ text "Filter by Tag"
+            , filterNoneTag { filterTags = filterTags, allTags = tags }
+            , filterAllTag { filterTags = filterTags, allTags = tags }
+            , text "|"
+            ]
+        |> wrappedRow [ spacing 10 ]
+
+
 filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
 filterNoneTag { filterTags } =
     el
@@ -1274,6 +1290,7 @@ selectedCommandsView selectedUuids tagString =
 
 
 
+-- }}}
 -- {{{ Overview Plots
 
 
