@@ -66,17 +66,13 @@ type alias Model =
     , pageErrors : List Error.Error
     , designs : Dict String Design.StoredDesign
     , mSelectedSpecification : Maybe Specification
-
-    -- , overviewOptionDropDown : DropDown.Model String
-    -- , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
     , selectedUuids : Set.Set String
     , tagString : String
     , filterTags : Set.Set String
-    , displaySettings :
-        { controlPanel : Bool
-        }
+    , displaySettings : { controlPanel : Bool }
+    , device : Device
     }
 
 
@@ -111,15 +107,13 @@ init shared _ =
             , pageErrors = []
             , designs = designDict
             , mSelectedSpecification = Nothing
-
-            --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
-            --, mOverviewInfo = Nothing
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
             , selectedUuids = Set.empty
             , tagString = ""
             , filterTags = Set.empty
             , displaySettings = { controlPanel = False }
+            , device = classifyDevice shared
             }
     in
     ( model
@@ -775,6 +769,7 @@ load shared model =
                     { model
                         | mResourceUuid = Just runState.resourceUuid
                         , designs = runState.designs
+                        , device = classifyDevice shared
                     }
             in
             ( updatedModel

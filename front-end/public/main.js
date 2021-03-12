@@ -59,9 +59,13 @@ function storageAvailable(type) {
 
 const storedState = localStorage.getItem(localStorageKey);
 const mInitialState = storedState ? JSON.parse(storedState) : null;
+const windowHeight = window.innerHeight;
+const windowWidth = window.innerWidth;
 const flags = {
   initialSeed: Math.floor(Math.random() * 0x0fffffff),
   mInitialState,
+  windowHeight,
+  windowWidth,
 };
 
 // }}}
