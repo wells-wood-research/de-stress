@@ -560,17 +560,17 @@ overviewSpec metricName overviewMetricDict =
     VL.toVegaLite
         [ data []
         , VL.spacing 2
-        , VL.bar
-            []
+        , VL.bar []
         , (VL.encoding
-            << VL.column
-                [ VL.fName "Designs"
-                , VL.fMType VL.Nominal
+            << VL.position VL.X
+                [ VL.pName "Designs"
+                , VL.pNominal
+                , VL.pSort [ VL.soByField metricName VL.opMedian, VL.soDescending ]
                 ]
             << VL.position VL.Y
                 [ VL.pName metricName
                 , VL.pMType VL.Quantitative
-                , VL.pAxis [ VL.axTitle metricName, VL.axGrid True ]
+                , VL.pAxis [ VL.axTitle metricName, VL.axGrid True, VL.axLabelAngle -50 ]
                 ]
           )
             []
