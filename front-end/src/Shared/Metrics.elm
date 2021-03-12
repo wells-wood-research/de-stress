@@ -15,7 +15,6 @@ module Shared.Metrics exposing
     , createCompositionSpec
     , createTorsionAngleSpec
     , desMetricsCodec
-    , overviewSpec
     , refSetMetricsCodec
     , torsionAngleStringToDict
     )
@@ -532,50 +531,6 @@ torsionAngleParser =
 
 -- }}}
 -- {{{ Plotting
-
-
-overviewSpec : String -> Dict String Float -> VL.Spec
-overviewSpec metricName overviewMetricDict =
-    let
-        data =
-            VL.dataFromColumns []
-                << VL.dataColumn
-                    "Designs"
-                    (VL.strs <|
-                        Dict.keys overviewMetricDict
-                    )
-                << VL.dataColumn
-                    metricName
-                    (VL.nums <|
-                        Dict.values overviewMetricDict
-                    )
-
-        config =
-            (VL.configure
-                << VL.configuration (VL.coView [ VL.vicoStroke <| Just "transparent" ])
-                << VL.configuration (VL.coAxis [ VL.axcoDomainWidth 1 ])
-            )
-                []
-    in
-    VL.toVegaLite
-        [ data []
-        , VL.spacing 2
-        , VL.bar []
-        , (VL.encoding
-            << VL.position VL.X
-                [ VL.pName "Designs"
-                , VL.pNominal
-                , VL.pSort [ VL.soByField metricName VL.opMedian, VL.soDescending ]
-                ]
-            << VL.position VL.Y
-                [ VL.pName metricName
-                , VL.pMType VL.Quantitative
-                , VL.pAxis [ VL.axTitle metricName, VL.axGrid True, VL.axLabelAngle -50 ]
-                ]
-          )
-            []
-        , config
-        ]
 
 
 createAllHistogramsSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec

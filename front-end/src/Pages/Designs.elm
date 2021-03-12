@@ -862,6 +862,10 @@ bodyView model =
                         , clickMsg = Just StructuresRequested
                         , isActive = isActive
                         }
+                    , Buttons.linkButton
+                        { label = text "Overview"
+                        , route = Route.Designs__Overview
+                        }
                     , Buttons.dangerousButton
                         { label = text "Delete All"
                         , confirmText = "Are you sure you want to delete ALL design?"
@@ -906,14 +910,7 @@ controlPanel model =
             getAllTags model.designs
     in
     column [ padding 10, spacing 10 ]
-        [ Style.h3 <| text "All Designs Overview"
-        , wrappedRow []
-            [ Buttons.linkButton
-                { label = text "Show Overview"
-                , route = Route.Designs__Overview
-                }
-            ]
-        , Style.h3 <| text "Export Design Data"
+        [ Style.h3 <| text "Export Design Data"
         , wrappedRow []
             [ Buttons.conditionalButton
                 { label = text "Export All"

@@ -491,11 +491,6 @@ viewHeader connStat currentRoute =
             ([ viewLink currentRoute ( text "Designs", Route.Designs )
              , viewLink currentRoute ( text "Reference Sets", Route.ReferenceSets )
              , viewLink currentRoute ( text "Specifications", Route.Specifications )
-             , viewLink currentRoute
-                ( FeatherIcons.settings
-                    |> Style.featherIconToElmUi
-                , Route.NotFound
-                )
              ]
                 |> List.intersperse (el [ centerY, Font.color Style.colorPalette.c4 ] <| text "|")
             )
