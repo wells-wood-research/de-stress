@@ -762,7 +762,7 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
                         , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
-                        , aggrescan3dResultsTableView designMetrics displaySettings
+                        , aggrescan3dResultsTableView designMetrics displaySettings hoverInfoOption
                         , case mReferenceSet of
                             Just _ ->
                                 referenceSetComparisonView
@@ -1218,8 +1218,9 @@ rosettaColumns metrics hoverInfoOption =
 aggrescan3dResultsTableView :
     Metrics.DesignMetrics
     -> DisplaySettings
+    -> Tooltips.HoverInfoOption
     -> Element Msg
-aggrescan3dResultsTableView metrics displaySettings =
+aggrescan3dResultsTableView metrics displaySettings hoverInfoOption =
     let
         logInfoBox =
             paragraph
@@ -1241,10 +1242,10 @@ aggrescan3dResultsTableView metrics displaySettings =
             [ spacing 5
             , centerX
             ]
-            [ createTableFloatColumn metrics.aggrescan3dResults.total_value "Total Score"
-            , createTableFloatColumn metrics.aggrescan3dResults.avg_value "Average Score"
-            , createTableFloatColumn metrics.aggrescan3dResults.min_value "Minimum Score"
-            , createTableFloatColumn metrics.aggrescan3dResults.max_value "Maximum Score"
+            [ el (Tooltips.agg3dTotalScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.total_value "Total Score"
+            , el (Tooltips.agg3dAvgScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.avg_value "Average Score"
+            , el (Tooltips.agg3dMinScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.min_value "Minimum Score"
+            , el (Tooltips.agg3dMaxScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.max_value "Maximum Score"
             ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.aggrescan3dLogInfo
