@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 import json
-from typing import Any, Dict, Generic, Optional, Tuple, TypeVar
+from typing import Any, Dict, Generic, Optional, Tuple, TypeVar, List
 
 from adt import adt, Case
 from dataclasses_json import dataclass_json, LetterCase
@@ -209,7 +209,8 @@ class RosettaOutput:
     def __repr__(self):
         return f"<RosettaOutput: Total Energy = {self.total_score}>"
 
-    # Defining the __eq__method to compare all the fields except the time_spent field
+    # Defining the __eq__method to compare all the fields except the
+    # log_info, error_info, return_code and time fields
     def __eq__(self, other):
         self_dict = self.__dict__
         other_dict = other.__dict__
@@ -223,6 +224,47 @@ class RosettaOutput:
             k: v
             for k, v in other_dict.items()
             if k not in ["log_info", "error_info", "return_code", "time"]
+        }
+
+        return self_dict_new == other_dict_new
+
+
+@dataclass_json()  # letter_case=LetterCase.CAMEL)
+@dataclass(eq=False)
+class Aggrescan3DOutput:
+    log_info: str
+    error_info: str
+    return_code: int
+    protein_list: Optional[str]
+    chain_list: Optional[str]
+    residue_number_list: Optional[str]
+    residue_name_list: Optional[str]
+    residue_score_list: Optional[str]
+    max_value: Optional[float]
+    avg_value: Optional[float]
+    min_value: Optional[float]
+    total_value: Optional[float]
+
+    # Redefining the __repr__ method to return the total and
+    # average scores from aggrescan3d
+    def __repr__(self):
+        return f"<Aggrescan3DOutput: Total Score = {self.total_value}, Average Score = {self.avg_value}>"
+
+    # Defining the __eq__method to compare all the fields except the log_info,
+    # error_info and return_code fields
+    def __eq__(self, other):
+        self_dict = self.__dict__
+        other_dict = other.__dict__
+
+        self_dict_new = {
+            k: v
+            for k, v in self_dict.items()
+            if k not in ["log_info", "error_info", "return_code"]
+        }
+        other_dict_new = {
+            k: v
+            for k, v in other_dict.items()
+            if k not in ["log_info", "error_info", "return_code"]
         }
 
         return self_dict_new == other_dict_new
@@ -243,6 +285,7 @@ class DesignMetrics:
     evoEF2_results: EvoEF2Output
     dfire2_results: DFIRE2Output
     rosetta_results: RosettaOutput
+    aggrescan3d_results: Aggrescan3DOutput
 
 
 # }}}
@@ -364,7 +407,10 @@ class ClientWebsocketIncoming:
                 "tag": "ReceivedMetricsJob",
                 "args": [server_job.to_dict()],
             },
-            communicationerror=lambda: {"tag": "CommunicationError", "args": [],},
+            communicationerror=lambda: {
+                "tag": "CommunicationError",
+                "args": [],
+            },
         )
 
     def to_json(self) -> str:
