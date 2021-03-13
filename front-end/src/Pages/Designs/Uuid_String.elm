@@ -112,12 +112,14 @@ type HideableSection
     = EvoEF2LogInfo
     | DFIRE2LogInfo
     | RosettaLogInfo
+    | Aggrescan3dLogInfo
 
 
 type alias DisplaySettings =
     { evoEF2LogInfo : Bool
     , dfire2LogInfo : Bool
     , rosettaLogInfo : Bool
+    , aggrescan3dLogInfo : Bool
     }
 
 
@@ -132,6 +134,9 @@ hideableSectionToString hideableSection =
 
         RosettaLogInfo ->
             "Rosetta Log Information"
+
+        Aggrescan3dLogInfo ->
+            "Aggrescan3D 2.0 Log Information"
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -192,6 +197,7 @@ init shared { params } =
                         { evoEF2LogInfo = False
                         , dfire2LogInfo = False
                         , rosettaLogInfo = False
+                        , aggrescan3dLogInfo = False
                         }
                     , hoverInfoOption =
                         Tooltips.NoHoverInfo
@@ -228,6 +234,7 @@ init shared { params } =
                     { evoEF2LogInfo = False
                     , dfire2LogInfo = False
                     , rosettaLogInfo = False
+                    , aggrescan3dLogInfo = False
                     }
               , hoverInfoOption =
                     Tooltips.NoHoverInfo
@@ -483,6 +490,12 @@ update msg model =
                             { displaySettings
                                 | rosettaLogInfo =
                                     not displaySettings.rosettaLogInfo
+                            }
+
+                        Aggrescan3dLogInfo ->
+                            { displaySettings
+                                | aggrescan3dLogInfo =
+                                    not displaySettings.aggrescan3dLogInfo
                             }
               }
             , Cmd.none
@@ -749,6 +762,7 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
                         , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
+                        , aggrescan3dResultsTableView designMetrics displaySettings
                         , case mReferenceSet of
                             Just _ ->
                                 referenceSetComparisonView
@@ -1199,6 +1213,46 @@ rosettaColumns metrics hoverInfoOption =
     , el (Tooltips.rosettaOpenProPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.pro_close "Open Proline Penalty"
     , el (Tooltips.rosettaTyroPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.yhh_planarity "Tyrosine χ3 Dihedral Angle Penalty"
     ]
+
+
+aggrescan3dResultsTableView :
+    Metrics.DesignMetrics
+    -> DisplaySettings
+    -> Element Msg
+aggrescan3dResultsTableView metrics displaySettings =
+    let
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , width fill
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text metrics.aggrescan3dResults.error_info
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <| text "Aggrescan3D 2.0 - Aggregation Propensity Results"
+        , wrappedRow
+            [ spacing 5
+            , centerX
+            ]
+            [ createTableFloatColumn metrics.aggrescan3dResults.total_value "Total Score"
+            , createTableFloatColumn metrics.aggrescan3dResults.avg_value "Average Score"
+            , createTableFloatColumn metrics.aggrescan3dResults.min_value "Minimum Score"
+            , createTableFloatColumn metrics.aggrescan3dResults.max_value "Maximum Score"
+            ]
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.aggrescan3dLogInfo
+            , title = hideableSectionToString Aggrescan3dLogInfo
+            , toggleMsg = ToggleSectionVisibility Aggrescan3dLogInfo
+            , contentView = logInfoBox
+            }
+        ]
 
 
 referenceSetComparisonView : Element msg
