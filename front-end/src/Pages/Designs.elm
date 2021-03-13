@@ -139,6 +139,14 @@ init shared _ =
             , device = classifyDevice shared
             , columnViewMode = DesignList
             }
+
+        plotCmd =
+            model.designs
+                |> Dict.toList
+                |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                |> Dict.fromList
+                |> makeOverViewSpec model.device
+                |> Plots.vegaPlot
     in
     ( model
     , Cmd.batch
@@ -153,6 +161,23 @@ init shared _ =
                         Cmd.none
 
             Nothing ->
+                Cmd.none
+        , case
+            ( model.columnViewMode
+            , model.device.class
+            , model.device.orientation
+            )
+          of
+            ( OverviewPlots, _, _ ) ->
+                plotCmd
+
+            ( _, Desktop, Landscape ) ->
+                plotCmd
+
+            ( _, BigDesktop, Landscape ) ->
+                plotCmd
+
+            _ ->
                 Cmd.none
         ]
     )
@@ -475,7 +500,7 @@ update msg model =
                         |> Dict.toList
                         |> List.map (Tuple.mapSecond Design.storedDesignToStub)
                         |> Dict.fromList
-                        |> makeOverViewSpec
+                        |> makeOverViewSpec model.device
                         |> Plots.vegaPlot
 
                 _ ->
@@ -779,9 +804,33 @@ load shared model =
                         , designs = runState.designs
                         , device = classifyDevice shared
                     }
+
+                plotCmd =
+                    updatedModel.designs
+                        |> Dict.toList
+                        |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                        |> Dict.fromList
+                        |> makeOverViewSpec updatedModel.device
+                        |> Plots.vegaPlot
             in
             ( updatedModel
-            , Cmd.none
+            , case
+                ( updatedModel.columnViewMode
+                , updatedModel.device.class
+                , updatedModel.device.orientation
+                )
+              of
+                ( OverviewPlots, _, _ ) ->
+                    plotCmd
+
+                ( _, Desktop, Landscape ) ->
+                    plotCmd
+
+                ( _, BigDesktop, Landscape ) ->
+                    plotCmd
+
+                _ ->
+                    Cmd.none
             )
 
         Nothing ->
@@ -841,7 +890,19 @@ bodyView model =
                         model.selectedUuids
                     )
     in
-    el [ centerX, width <| maximum 800 <| fill ] <|
+    el
+        [ centerX
+        , case ( model.device.class, model.device.orientation ) of
+            ( Desktop, Landscape ) ->
+                width <| maximum 1200 <| fill
+
+            ( BigDesktop, Landscape ) ->
+                width <| maximum 1200 <| fill
+
+            _ ->
+                width <| maximum 800 <| fill
+        ]
+    <|
         column [ spacing 15, width fill ]
             [ let
                 ( buttonLabel, isActive ) =
@@ -875,41 +936,19 @@ bodyView model =
                 ]
             , el [ width fill ] <|
                 if List.isEmpty designCardData then
-                    el [ centerX ] (text "Click \"Load\" to add models.")
+                    el [ centerX ] <|
+                        paragraph [] [ text "Click \"Load\" to add models." ]
 
                 else
-                    column
-                        [ spacing 10, width fill ]
-                        [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
-                            (List.map
-                                (columnViewModeSelector model.columnViewMode)
-                                [ DesignList
-                                , OverviewPlots
-                                , ControlPanel
-                                ]
-                                |> List.intersperse (text "|")
-                            )
-                        , case model.columnViewMode of
-                            DesignList ->
-                                column
-                                    [ spacing 15, width fill ]
-                                    [ if Set.isEmpty model.selectedUuids then
-                                        none
+                    case ( model.device.class, model.device.orientation ) of
+                        ( Desktop, Landscape ) ->
+                            doubleColumnView model designCardData
 
-                                      else
-                                        selectedCommandsView model.selectedUuids model.tagString
-                                    , designCardsView
-                                        model.filterTags
-                                        model.mSelectedSpecification
-                                        designCardData
-                                    ]
+                        ( BigDesktop, Landscape ) ->
+                            doubleColumnView model designCardData
 
-                            OverviewPlots ->
-                                overviewPlots
-
-                            ControlPanel ->
-                                controlPanel model
-                        ]
+                        _ ->
+                            singleColumnView model designCardData
             ]
 
 
@@ -926,6 +965,81 @@ columnViewModeSelector current option =
              )
                 ++ [ pointer ]
             )
+
+
+singleColumnView : Model -> List DesignCardData -> Element Msg
+singleColumnView model designCardData =
+    column
+        [ spacing 10, width fill ]
+        [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+            (List.map
+                (columnViewModeSelector model.columnViewMode)
+                [ DesignList
+                , OverviewPlots
+                , ControlPanel
+                ]
+                |> List.intersperse (text "|")
+            )
+        , case model.columnViewMode of
+            DesignList ->
+                column
+                    [ spacing 15, width fill ]
+                    [ if Set.isEmpty model.selectedUuids then
+                        none
+
+                      else
+                        selectedCommandsView model.selectedUuids model.tagString
+                    , designCardsView
+                        model.filterTags
+                        model.mSelectedSpecification
+                        designCardData
+                    ]
+
+            OverviewPlots ->
+                overviewPlots
+
+            ControlPanel ->
+                controlPanel model
+        ]
+
+
+doubleColumnView : Model -> List DesignCardData -> Element Msg
+doubleColumnView model designCardData =
+    row
+        [ width fill ]
+        [ column
+            [ alignTop, spacing 15, width <| fillPortion 1 ]
+            [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+                (List.map
+                    (columnViewModeSelector model.columnViewMode)
+                    [ DesignList
+                    , ControlPanel
+                    ]
+                    |> List.intersperse (text "|")
+                )
+            , case model.columnViewMode of
+                ControlPanel ->
+                    controlPanel model
+
+                _ ->
+                    column
+                        [ spacing 15, width fill ]
+                        [ if Set.isEmpty model.selectedUuids then
+                            none
+
+                          else
+                            selectedCommandsView model.selectedUuids model.tagString
+                        , designCardsView
+                            model.filterTags
+                            model.mSelectedSpecification
+                            designCardData
+                        ]
+            ]
+        , column [ alignTop, spacing 15, width <| fillPortion 2 ]
+            [ el [ centerX ] <| Style.h2 <| text "Overview Plots"
+            , overviewPlots
+            ]
+        ]
 
 
 
@@ -1321,11 +1435,12 @@ overviewPlots =
         ]
 
 
-makeOverViewSpec : Dict String Design.DesignStub -> { plotId : String, spec : VL.Spec }
-makeOverViewSpec designStubs =
+makeOverViewSpec : Device -> Dict String Design.DesignStub -> { plotId : String, spec : VL.Spec }
+makeOverViewSpec device designStubs =
     { plotId = "overview"
     , spec =
         overviewSpec
+            device
             (designStubs
                 |> Dict.toList
                 |> List.filterMap makePlotData
@@ -1387,8 +1502,8 @@ plotTuples =
     ]
 
 
-overviewSpec : List PlotData -> VL.Spec
-overviewSpec plotData =
+overviewSpec : Device -> List PlotData -> VL.Spec
+overviewSpec device plotData =
     let
         metricValueColumn ( label, valueFn, _ ) =
             VL.dataColumn
@@ -1457,14 +1572,33 @@ overviewSpec plotData =
             VL.transform
                 << VL.calculateAs "'/designs/' + datum.uuid" "url"
                 << VL.calculateAs "datum.name + datum.uuid" "unique name"
+
+        ( headTuples, tailTuples ) =
+            List.indexedMap Tuple.pair plotTuples
+                |> List.partition (\( n, _ ) -> n < (List.length plotTuples // 2))
+                |> (\( a, b ) -> ( List.map Tuple.second a, List.map Tuple.second b ))
     in
     VL.toVegaLite
         [ data []
         , VL.spacing 40
         , transform []
-        , VL.vConcat <|
-            List.map metricValueBarSpec plotTuples
         , config
+        , case ( device.class, device.orientation ) of
+            ( Phone, Portrait ) ->
+                VL.vConcat <|
+                    List.map metricValueBarSpec plotTuples
+
+            _ ->
+                VL.hConcat
+                    [ VL.asSpec
+                        [ VL.vConcat <|
+                            List.map metricValueBarSpec headTuples
+                        ]
+                    , VL.asSpec
+                        [ VL.vConcat <|
+                            List.map metricValueBarSpec tailTuples
+                        ]
+                    ]
         ]
 
 
