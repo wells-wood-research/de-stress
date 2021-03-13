@@ -24,6 +24,8 @@ def test_check_run_aggrescan3D_executes():
         pdb_string=pdb_string, aggrescan3d_script_path=AGGRESCAN3D_SCRIPT_PATH
     )
 
+    print(aggrescan3d_results.__dict__)
+
     # Testing the results encoding
     results_json_str = aggrescan3d_results.to_json()
     assert isinstance(results_json_str, str)
