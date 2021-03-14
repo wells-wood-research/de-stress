@@ -1525,7 +1525,7 @@ plotTuples =
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
     , ( "dFire Total Energy", .dfireTotalEnergy, VL.soAscending )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
-    , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soDescending )
+    , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soAscending )
     ]
 
 
