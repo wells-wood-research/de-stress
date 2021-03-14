@@ -31,7 +31,7 @@ import Codec exposing (Codec, Value)
 import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
 import RemoteData as RD exposing (RemoteData)
 import Set exposing (Set)
 import Shared.Buttons as Buttons
@@ -208,50 +208,52 @@ highResBiolMetricQuery : SelectionSet (List RefSetMetrics) RootQuery
 highResBiolMetricQuery =
     Query.preferredStates
         (\optionals -> { optionals | first = Absent })
-        (SelectionSet.map8 RefSetMetrics
-            (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
-                |> SelectionSet.map
-                    (\mmPdbCode ->
-                        case mmPdbCode of
-                            Just (Just pdbCode) ->
-                                pdbCode
+        (SelectionSet.succeed RefSetMetrics
+            |> with
+                (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                    |> SelectionSet.map
+                        (\mmPdbCode ->
+                            case mmPdbCode of
+                                Just (Just pdbCode) ->
+                                    pdbCode
 
-                            _ ->
-                                "Unknown PDB"
-                    )
-            )
-            (SelectionSet.map Metrics.compositionStringToDict State.composition)
-            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
-            State.hydrophobicFitness
-            State.isoelectricPoint
-            State.mass
-            State.numOfResidues
-            State.meanPackingDensity
+                                _ ->
+                                    "Unknown PDB"
+                        )
+                )
+            |> with (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            |> with (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            |> with State.hydrophobicFitness
+            |> with State.isoelectricPoint
+            |> with State.mass
+            |> with State.numOfResidues
+            |> with State.meanPackingDensity
         )
 
 
 preferredStatesSubsetQuery : Set String -> SelectionSet (List Metrics.RefSetMetrics) RootQuery
 preferredStatesSubsetQuery pdbCodeList =
     Query.preferredStatesSubset { codes = Set.toList pdbCodeList }
-        (SelectionSet.map8 Metrics.RefSetMetrics
-            (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
-                |> SelectionSet.map
-                    (\mmPdbCode ->
-                        case mmPdbCode of
-                            Just (Just pdbCode) ->
-                                pdbCode
+        (SelectionSet.succeed Metrics.RefSetMetrics
+            |> with
+                (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                    |> SelectionSet.map
+                        (\mmPdbCode ->
+                            case mmPdbCode of
+                                Just (Just pdbCode) ->
+                                    pdbCode
 
-                            _ ->
-                                "Unknown PDB"
-                    )
-            )
-            (SelectionSet.map Metrics.compositionStringToDict State.composition)
-            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
-            State.hydrophobicFitness
-            State.isoelectricPoint
-            State.mass
-            State.numOfResidues
-            State.meanPackingDensity
+                                _ ->
+                                    "Unknown PDB"
+                        )
+                )
+            |> with (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            |> with (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            |> with State.hydrophobicFitness
+            |> with State.isoelectricPoint
+            |> with State.mass
+            |> with State.numOfResidues
+            |> with State.meanPackingDensity
         )
 
 
