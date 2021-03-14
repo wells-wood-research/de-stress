@@ -11,6 +11,7 @@ from .big_structure_models import (
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
     RosettaResultsModel,
+    Aggrescan3DResultsModel,
 )
 from .design_models import DesignModel, DesignChainModel
 from destress_big_structure.design_models import designs_db_session
@@ -54,6 +55,11 @@ class DFIRE2Results(SQLAlchemyObjectType):
 class RosettaResults(SQLAlchemyObjectType):
     class Meta:
         model = RosettaResultsModel
+
+
+class Aggrescan3DResults(SQLAlchemyObjectType):
+    class Meta:
+        model = Aggrescan3DResultsModel
 
 
 class Query(graphene.ObjectType):
@@ -280,6 +286,22 @@ class Query(graphene.ObjectType):
 
     def resolve_all_rosetta_results(self, info, **args):
         query = RosettaResults.get_query(info)
+        first = args.get("first")
+        if first:
+            return query.limit(first).all()
+        return query.all()
+
+    all_aggrescan3d_results = graphene.NonNull(
+        graphene.List(graphene.NonNull(Aggrescan3DResults), required=True),
+        description=(
+            "Gets all aggrescan3d results records. Accepts the argument `first`, which "
+            "allows you to limit the number of results."
+        ),
+        first=graphene.Int(),
+    )
+
+    def resolve_all_aggrescan3d_results(self, info, **args):
+        query = Aggrescan3DResults.get_query(info)
         first = args.get("first")
         if first:
             return query.limit(first).all()
