@@ -13,6 +13,7 @@ from destress_big_structure.big_structure_models import (
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
     RosettaResultsModel,
+    Aggrescan3DResultsModel,
 )
 from destress_big_structure.design_models import (
     DesignModel,
@@ -20,7 +21,12 @@ from destress_big_structure.design_models import (
 )
 from destress_big_structure import analysis
 
-from .settings import EVOEF2_BINARY_PATH, DFIRE2_FOLDER_PATH, ROSETTA_BINARY_PATH
+from .settings import (
+    EVOEF2_BINARY_PATH,
+    DFIRE2_FOLDER_PATH,
+    ROSETTA_BINARY_PATH,
+    AGGRESCAN3D_SCRIPT_PATH,
+)
 
 
 def create_biounit_entry(
@@ -63,6 +69,9 @@ def create_state_entry(
     assert (
         ROSETTA_BINARY_PATH
     ), "ROSETTA_BINARY_PATH is not defined, check you `.env` file"
+    assert (
+        AGGRESCAN3D_SCRIPT_PATH
+    ), "AGGRESCAN3D_SCRIPT_PATH is not defined, check you `.env` file"
     # Generate raw metrics
     state_analytics = analysis.analyse_design(ampal_assembly)
     # Convert the DesignMetrics into a StateModel
@@ -93,6 +102,9 @@ def create_state_entry(
     create_evoef2_results_entry(ampal_assembly, state_model, EVOEF2_BINARY_PATH)
     create_dfire2_results_entry(ampal_assembly, state_model, DFIRE2_FOLDER_PATH)
     create_rosetta_results_entry(ampal_assembly, state_model, ROSETTA_BINARY_PATH)
+    create_aggrescan3d_results_entry(
+        ampal_assembly, state_model, AGGRESCAN3D_SCRIPT_PATH
+    )
     return state_model
 
 
@@ -143,3 +155,20 @@ def create_rosetta_results_entry(
     )
 
     return rosetta_results_model
+
+
+def create_aggrescan3d_results_entry(
+    ampal_assembly: ampal.Assembly,
+    state_model: StateModel,
+    aggrescan3d_script_path: str,
+) -> Aggrescan3DResultsModel:
+
+    aggrescan3d_results = analysis.run_aggrescan3d(
+        ampal_assembly.pdb, aggrescan3d_script_path
+    )
+
+    aggrescan3d_results_model = Aggrescan3DResultsModel(
+        state=state_model, **aggrescan3d_results.__dict__
+    )
+
+    return aggrescan3d_results_model

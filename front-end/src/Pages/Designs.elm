@@ -759,6 +759,28 @@ designStubCSVEncoder designStub =
                                 metrics.rosettaResults.yhh_planarity
                                 |> Maybe.withDefault "NaN"
                              )
+
+                           -- Aggrescan3D
+                           , ( "aggrescan3d: total_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.total_value
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "aggrescan3d: avg_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.avg_value
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "aggrescan3d: min_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.min_value
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "aggrescan3d: max_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.max_value
+                                |> Maybe.withDefault "NaN"
+                             )
                            ]
 
                 Nothing ->

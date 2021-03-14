@@ -1,5 +1,9 @@
 module Shared.Tooltips exposing
     ( HoverInfoOption(..)
+    , agg3dAvgScoreHoverBox
+    , agg3dMaxScoreHoverBox
+    , agg3dMinScoreHoverBox
+    , agg3dTotalScoreHoverBox
     , budeFFChargeHoverBox
     , budeFFDesolvationHoverBox
     , budeFFStericHoverBox
@@ -194,6 +198,10 @@ type HoverInfoOption
     | RosettaOmegaPen
     | RosettaOpenProPen
     | RosettaTyroPen
+    | Agg3dTotalScore
+    | Agg3dAvgScore
+    | Agg3dMinScore
+    | Agg3dMaxScore
     | NoHoverInfo
 
 
@@ -1423,6 +1431,61 @@ rosettaTyroPenHoverBox option changeMsg =
         , info = """This value is a sinusoidal penalty for non-planar tyrosine χ3 dihedral angle. 
                     In the Rosetta `score.sc` output file, this value is called `yhh_planarity`."""
         , mouseEnterMsg = RosettaTyroPen
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+
+-- }}}
+-- {{{ Aggrescan3d Tooltips
+
+
+agg3dTotalScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dTotalScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Total Score"
+        , info = """This value is a global indicator of the aggregation propensity/solubility of the protein structure. 
+                    It depends on the protein size. It allows assessing changes in solubility promoted by 
+                    amino acid substitutions in a particular protein structure. The more negative the value, 
+                    the highest the global solubility."""
+        , mouseEnterMsg = Agg3dTotalScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+agg3dAvgScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dAvgScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Average Score"
+        , info = """This value is a normalized indicator of the aggregation propensity/solubility of the protein structure. 
+                    Allows comparing the solubility of different protein structures. It also allows assessing 
+                    changes in solubility promoted by amino acid substitutions in a particular protein structure. 
+                    The more negative the value, the highest the normalized solubility."""
+        , mouseEnterMsg = Agg3dAvgScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+agg3dMinScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dMinScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Minimum Score"
+        , info = """This is the value of the most soluble residue in the structural context."""
+        , mouseEnterMsg = Agg3dMinScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+agg3dMaxScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dMaxScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Maximum Score"
+        , info = """This is the value of the most aggregation-prone residue in the structural context."""
+        , mouseEnterMsg = Agg3dMaxScore
         , hoverInfoOption = option
         , changeMsg = changeMsg
         }

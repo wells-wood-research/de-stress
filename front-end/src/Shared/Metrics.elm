@@ -1,5 +1,6 @@
 module Shared.Metrics exposing
     ( AggregateData
+    , Aggrescan3DResults
     , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
@@ -45,6 +46,7 @@ type alias DesignMetrics =
     , evoEF2Results : EvoEF2Results
     , dfire2Results : DFIRE2Results
     , rosettaResults : RosettaResults
+    , aggrescan3dResults : Aggrescan3DResults
     }
 
 
@@ -73,6 +75,7 @@ desMetricsCodec =
         |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
         |> Codec.field "dfire2Results" .dfire2Results dfire2ResultsCodec
         |> Codec.field "rosettaResults" .rosettaResults rosettaResultsCodec
+        |> Codec.field "aggrescan3dResults" .aggrescan3dResults aggrescan3DResultsCodec
         |> Codec.buildObject
 
 
@@ -355,6 +358,45 @@ rosettaResultsCodec =
         |> Codec.field "time" .time (Codec.maybe Codec.float)
         |> Codec.field "total_score" .total_score (Codec.maybe Codec.float)
         |> Codec.field "yhh_planarity" .yhh_planarity (Codec.maybe Codec.float)
+        |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ Aggrescan3DResults
+
+
+type alias Aggrescan3DResults =
+    { log_info : String
+    , error_info : String
+    , return_code : Int
+    , protein_list : Maybe String
+    , chain_list : Maybe String
+    , residue_number_list : Maybe String
+    , residue_name_list : Maybe String
+    , residue_score_list : Maybe String
+    , max_value : Maybe Float
+    , avg_value : Maybe Float
+    , min_value : Maybe Float
+    , total_value : Maybe Float
+    }
+
+
+aggrescan3DResultsCodec : Codec Aggrescan3DResults
+aggrescan3DResultsCodec =
+    Codec.object Aggrescan3DResults
+        |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "error_info" .error_info Codec.string
+        |> Codec.field "return_code" .return_code Codec.int
+        |> Codec.field "protein_list" .protein_list (Codec.maybe Codec.string)
+        |> Codec.field "chain_list" .chain_list (Codec.maybe Codec.string)
+        |> Codec.field "residue_number_list" .residue_number_list (Codec.maybe Codec.string)
+        |> Codec.field "residue_name_list" .residue_name_list (Codec.maybe Codec.string)
+        |> Codec.field "residue_score_list" .residue_score_list (Codec.maybe Codec.string)
+        |> Codec.field "max_value" .max_value (Codec.maybe Codec.float)
+        |> Codec.field "avg_value" .avg_value (Codec.maybe Codec.float)
+        |> Codec.field "min_value" .min_value (Codec.maybe Codec.float)
+        |> Codec.field "total_value" .total_value (Codec.maybe Codec.float)
         |> Codec.buildObject
 
 
