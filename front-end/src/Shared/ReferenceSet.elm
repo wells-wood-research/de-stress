@@ -23,7 +23,9 @@ port module Shared.ReferenceSet exposing
     , updateDeleteStatus
     )
 
+import BigStructure.Object as Object
 import BigStructure.Object.BiolUnit as BiolUnit
+import BigStructure.Object.BudeFFResults as BudeFFResults
 import BigStructure.Object.Pdb as Pdb
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
@@ -228,12 +230,15 @@ highResBiolMetricQuery =
             |> with State.mass
             |> with State.numOfResidues
             |> with State.meanPackingDensity
+            |> with budeffResultsSelectionSet
         )
 
 
 preferredStatesSubsetQuery : Set String -> SelectionSet (List Metrics.RefSetMetrics) RootQuery
 preferredStatesSubsetQuery pdbCodeList =
-    Query.preferredStatesSubset { codes = Set.toList pdbCodeList }
+    Query.preferredStatesSubset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
         (SelectionSet.succeed Metrics.RefSetMetrics
             |> with
                 (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
@@ -254,6 +259,28 @@ preferredStatesSubsetQuery pdbCodeList =
             |> with State.mass
             |> with State.numOfResidues
             |> with State.meanPackingDensity
+            |> with budeffResultsSelectionSet
+        )
+
+
+budeffResultsSelectionSet : SelectionSet (Maybe Metrics.BudeFFResults) Object.State
+budeffResultsSelectionSet =
+    SelectionSet.map4 (\a b c d -> Metrics.BudeFFResults a b c d |> Just)
+        (SelectionSet.map
+            (Maybe.andThen identity)
+            (State.budeffResults BudeFFResults.totalEnergy)
+        )
+        (SelectionSet.map
+            (Maybe.andThen identity)
+            (State.budeffResults BudeFFResults.steric)
+        )
+        (SelectionSet.map
+            (Maybe.andThen identity)
+            (State.budeffResults BudeFFResults.desolvation)
+        )
+        (SelectionSet.map
+            (Maybe.andThen identity)
+            (State.budeffResults BudeFFResults.charge)
         )
 
 

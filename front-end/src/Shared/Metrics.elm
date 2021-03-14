@@ -1,6 +1,7 @@
 module Shared.Metrics exposing
     ( AggregateData
     , Aggrescan3DResults
+    , BudeFFResults
     , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
@@ -414,6 +415,12 @@ type alias RefSetMetrics =
     , mass : Float
     , numOfResidues : Int
     , packingDensity : Float
+    , budeFFResults : Maybe BudeFFResults
+
+    -- , evoEF2Results : Maybe EvoEF2Results
+    -- , dfire2Results : Maybe DFIRE2Results
+    -- , rosettaResults : Maybe RosettaResults
+    -- , aggrescan3dResults : Maybe Aggrescan3DResults
     }
 
 
@@ -436,6 +443,19 @@ refSetMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.field "budeFFResults" .budeFFResults (Codec.maybe budeFFResultsCodec)
+        -- |> Codec.field "evoEF2Results" .evoEF2Results (Codec.maybe evoEF2ResultsCodec)
+        -- |> Codec.field "dfire2Results" .dfire2Results (Codec.maybe dfire2ResultsCodec)
+        -- |> Codec.field "rosettaResults"
+        --     .rosettaResults
+        --     (Codec.maybe
+        --         rosettaResultsCodec
+        --     )
+        -- |> Codec.field "aggrescan3dResults"
+        --     .aggrescan3dResults
+        --     (Codec.maybe
+        --         aggrescan3DResultsCodec
+        --     )
         |> Codec.buildObject
 
 

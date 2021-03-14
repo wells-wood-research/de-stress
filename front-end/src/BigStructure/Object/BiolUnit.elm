@@ -44,11 +44,15 @@ pdbId =
     Object.selectionForField "(Maybe Int)" "pdbId" [] (Decode.int |> Decode.nullable)
 
 
-pdb : SelectionSet decodesTo BigStructure.Object.Pdb -> SelectionSet (Maybe decodesTo) BigStructure.Object.BiolUnit
-pdb object_ =
-    Object.selectionForCompositeField "pdb" [] object_ (identity >> Decode.nullable)
+pdb :
+    SelectionSet decodesTo BigStructure.Object.Pdb
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.BiolUnit
+pdb object____ =
+    Object.selectionForCompositeField "pdb" [] object____ (identity >> Decode.nullable)
 
 
-states : SelectionSet decodesTo BigStructure.Object.State -> SelectionSet (Maybe (List (Maybe decodesTo))) BigStructure.Object.BiolUnit
-states object_ =
-    Object.selectionForCompositeField "states" [] object_ (identity >> Decode.nullable >> Decode.list >> Decode.nullable)
+states :
+    SelectionSet decodesTo BigStructure.Object.State
+    -> SelectionSet (Maybe (List (Maybe decodesTo))) BigStructure.Object.BiolUnit
+states object____ =
+    Object.selectionForCompositeField "states" [] object____ (identity >> Decode.nullable >> Decode.list >> Decode.nullable)
