@@ -1493,6 +1493,9 @@ makePlotData ( uuid, { name, metricsJobStatus } ) =
                 , rosettaTotalEnergy =
                     Maybe.withDefault (0 / 0)
                         metrics.rosettaResults.total_score
+                , aggrescan3dTotalValue =
+                    Maybe.withDefault (0 / 0)
+                        metrics.aggrescan3dResults.total_value
                 }
             )
 
@@ -1508,6 +1511,7 @@ type alias PlotData =
     , evoEFTotalEnergy : Float
     , dfireTotalEnergy : Float
     , rosettaTotalEnergy : Float
+    , aggrescan3dTotalValue : Float
     }
 
 
@@ -1521,6 +1525,7 @@ plotTuples =
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
     , ( "dFire Total Energy", .dfireTotalEnergy, VL.soAscending )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
+    , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soDescending )
     ]
 
 
