@@ -445,11 +445,13 @@ bodyView model =
                 |> Style.h1
                 |> el [ centerX ]
             , row [ centerX, spacing 15 ] <|
-                List.map
+                (List.map
                     (refSetTypeSelector model.newReferenceSet)
                     [ NewHighResBiolUnit RemoteData.NotAsked
                     , NewPdbCodeList defaultCodeListParams
                     ]
+                    |> List.intersperse (text "|")
+                )
             , case model.newReferenceSet of
                 NewHighResBiolUnit _ ->
                     newHighResBiolUnitsView
