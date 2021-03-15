@@ -158,7 +158,7 @@ update msg model =
             case Codec.decodeValue ReferenceSet.codec refSetValue of
                 Ok refSet ->
                     ( { model | pageState = RefSet uuidString refSet }
-                    , plotCommands refSet
+                    , plotCommands model.device refSet
                     )
 
                 Err _ ->
@@ -198,13 +198,14 @@ update msg model =
             )
 
 
-plotCommands : ReferenceSet -> Cmd msg
-plotCommands referenceSet =
+plotCommands : Device -> ReferenceSet -> Cmd msg
+plotCommands device referenceSet =
     Cmd.batch
         [ Plots.vegaPlot <|
             { plotId = "composition"
             , spec =
                 Metrics.createCompositionSpec
+                    device
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .aggregateData
@@ -215,6 +216,7 @@ plotCommands referenceSet =
             { plotId = "torsionAngles"
             , spec =
                 Metrics.createTorsionAngleSpec
+                    device
                     Nothing
                     (referenceSet
                         |> ReferenceSet.getGenericData
@@ -225,6 +227,7 @@ plotCommands referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
+                    device
                     []
                     (referenceSet
                         |> ReferenceSet.getGenericData
@@ -258,7 +261,12 @@ load shared model =
     ( { model
         | device = classifyDevice shared
       }
-    , Cmd.none
+    , case model.pageState of
+        RefSet _ refSet ->
+            plotCommands model.device refSet
+
+        _ ->
+            Cmd.none
     )
 
 

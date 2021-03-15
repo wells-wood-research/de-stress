@@ -658,8 +658,8 @@ histPlotTuples =
     ]
 
 
-createAllHistogramsSpec : List HistPlotData -> List HistPlotData -> VL.Spec
-createAllHistogramsSpec designHistPlotData refSetHistPlotData =
+createAllHistogramsSpec : Device -> List HistPlotData -> List HistPlotData -> VL.Spec
+createAllHistogramsSpec device designHistPlotData refSetHistPlotData =
     let
         refSetMetricValueColumn ( label, valueFn ) =
             VL.dataColumn
@@ -728,13 +728,36 @@ createAllHistogramsSpec designHistPlotData refSetHistPlotData =
                            )
                     )
                 ]
+
+        ( headTuples, tailTuples ) =
+            List.indexedMap Tuple.pair histPlotTuples
+                |> List.partition (\( n, _ ) -> n < (List.length histPlotTuples // 2))
+                |> (\( a, b ) -> ( List.map Tuple.second a, List.map Tuple.second b ))
     in
     VL.toVegaLite
         [ VL.spacing 40
-        , histPlotTuples
-            |> List.map Tuple.first
-            |> List.map histogramSpec
-            |> VL.vConcat
+        , case ( device.class, device.orientation ) of
+            ( Phone, Portrait ) ->
+                histPlotTuples
+                    |> List.map Tuple.first
+                    |> List.map histogramSpec
+                    |> VL.vConcat
+
+            _ ->
+                VL.hConcat
+                    [ VL.asSpec
+                        [ headTuples
+                            |> List.map Tuple.first
+                            |> List.map histogramSpec
+                            |> VL.vConcat
+                        ]
+                    , VL.asSpec
+                        [ tailTuples
+                            |> List.map Tuple.first
+                            |> List.map histogramSpec
+                            |> VL.vConcat
+                        ]
+                    ]
         ]
 
 
@@ -809,10 +832,11 @@ calculateMeanComposition compositionList =
 
 
 createCompositionSpec :
-    AggregateData
+    Device
+    -> AggregateData
     -> Maybe DesignMetrics
     -> VL.Spec
-createCompositionSpec aggregateData mDesignMetrics =
+createCompositionSpec device aggregateData mDesignMetrics =
     case mDesignMetrics of
         Just designMetrics ->
             let
@@ -821,6 +845,7 @@ createCompositionSpec aggregateData mDesignMetrics =
                         |> compositionDictWithDefaultValues
             in
             compositionSpec
+                device
                 (Just designComposition)
                 (Dict.toList aggregateData.meanComposition
                     |> List.map
@@ -830,6 +855,7 @@ createCompositionSpec aggregateData mDesignMetrics =
 
         Nothing ->
             compositionSpec
+                device
                 Nothing
                 (Dict.toList aggregateData.meanComposition
                     |> List.map
@@ -838,8 +864,8 @@ createCompositionSpec aggregateData mDesignMetrics =
                 )
 
 
-compositionSpec : Maybe (Dict String Float) -> Dict String Float -> VL.Spec
-compositionSpec mDesignCompositionDict pdbCompositionDict =
+compositionSpec : Device -> Maybe (Dict String Float) -> Dict String Float -> VL.Spec
+compositionSpec device mDesignCompositionDict pdbCompositionDict =
     let
         data =
             VL.dataFromColumns []
@@ -895,13 +921,16 @@ compositionSpec mDesignCompositionDict pdbCompositionDict =
     VL.toVegaLite
         [ data []
         , VL.spacing 2
+        , VL.width <|
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    200
+
+                _ ->
+                    400
         , VL.bar
             []
         , (VL.encoding
-            << VL.column
-                [ VL.fName "Amino Acids"
-                , VL.fMType VL.Nominal
-                ]
             << VL.position VL.Y
                 [ VL.pName "Proportion"
                 , VL.pAggregate VL.opSum
@@ -909,12 +938,17 @@ compositionSpec mDesignCompositionDict pdbCompositionDict =
                 , VL.pAxis [ VL.axTitle "Amino Acid Proportion", VL.axGrid True ]
                 ]
             << VL.position VL.X
-                [ VL.pName "Set"
+                [ VL.pName "Amino Acids"
                 , VL.pMType VL.Nominal
-                , VL.pAxis [ VL.axTitle "" ]
-                , VL.pScale [ VL.scRangeStep <| Just 12 ]
                 ]
-            << VL.color [ VL.mName "Set", VL.mMType VL.Nominal, VL.mLegend [] ]
+            << VL.color
+                [ VL.mName "Set"
+                , VL.mMType VL.Nominal
+                , VL.mLegend
+                    [ VL.leTitle "Set"
+                    , VL.leOrient VL.loBottom
+                    ]
+                ]
           )
             []
         , config
@@ -925,21 +959,23 @@ type alias TorsionAnglesDict =
     Dict String ( Float, Float, Float )
 
 
-createTorsionAngleSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
-createTorsionAngleSpec mDesignMetrics referenceSetMetricsList =
+createTorsionAngleSpec : Device -> Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
+createTorsionAngleSpec device mDesignMetrics referenceSetMetricsList =
     case mDesignMetrics of
         Just designMetrics ->
             fullTorsionAnglesSpec
+                device
                 designMetrics.torsionAngles
                 (List.map .torsionAngles referenceSetMetricsList)
 
         Nothing ->
             refSetTorsionAnglesSpec
+                device
                 (List.map .torsionAngles referenceSetMetricsList)
 
 
-fullTorsionAnglesSpec : TorsionAnglesDict -> List TorsionAnglesDict -> VL.Spec
-fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
+fullTorsionAnglesSpec : Device -> TorsionAnglesDict -> List TorsionAnglesDict -> VL.Spec
+fullTorsionAnglesSpec device designTorsionAngles pdbTorsionAnglesDicts =
     let
         designIds =
             Dict.keys designTorsionAngles
@@ -988,12 +1024,20 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                     , VL.seZoom
                         "wheel![event.shiftKey]"
                     ]
+
+        widthAndHeight =
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    200
+
+                _ ->
+                    400
     in
     VL.toVegaLite
         [ VL.vConcat
             [ VL.asSpec
-                [ VL.height 400
-                , VL.width 400
+                [ VL.height widthAndHeight
+                , VL.width widthAndHeight
                 , VL.layer
                     [ VL.asSpec
                         [ pdbData []
@@ -1001,20 +1045,23 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                         , (VL.encoding
                             << VL.position VL.X
                                 [ VL.pName "Phi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Phi" ]
                                 ]
                             << VL.position VL.Y
                                 [ VL.pName "Psi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Psi" ]
                                 ]
                             << VL.color
                                 [ VL.mAggregate VL.opCount
                                 , VL.mMType VL.Quantitative
-                                , VL.mLegend [ VL.leTitle "PDB Counts" ]
+                                , VL.mLegend
+                                    [ VL.leTitle "Count"
+                                    , VL.leOrient VL.loTop
+                                    ]
                                 ]
                           )
                             []
@@ -1040,11 +1087,13 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                     ]
                 ]
             , VL.asSpec
-                [ VL.width 400
+                [ VL.width widthAndHeight
                 , designData []
                 , sel []
                 , VL.tick
-                    [ VL.maTooltip VL.ttData ]
+                    [ VL.maTooltip VL.ttData
+                    , VL.maOpacity 0.2
+                    ]
                 , (VL.encoding
                     << VL.position VL.X
                         [ VL.pName "Omega"
@@ -1055,10 +1104,12 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                     []
                 ]
             , VL.asSpec
-                [ VL.width 400
+                [ VL.width widthAndHeight
                 , pdbData []
                 , sel []
-                , VL.tick []
+                , VL.tick
+                    [ VL.maOpacity 0.2
+                    ]
                 , (VL.encoding
                     << VL.position VL.X
                         [ VL.pName "Omega"
@@ -1072,8 +1123,8 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
         ]
 
 
-refSetTorsionAnglesSpec : List TorsionAnglesDict -> VL.Spec
-refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
+refSetTorsionAnglesSpec : Device -> List TorsionAnglesDict -> VL.Spec
+refSetTorsionAnglesSpec device pdbTorsionAnglesDicts =
     let
         ( pdbOms, pdbPhis, pdbPsis ) =
             List.map Dict.values pdbTorsionAnglesDicts
@@ -1100,12 +1151,20 @@ refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
                     , VL.seZoom
                         "wheel![event.shiftKey]"
                     ]
+
+        widthAndHeight =
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    200
+
+                _ ->
+                    400
     in
     VL.toVegaLite
         [ VL.vConcat
             [ VL.asSpec
-                [ VL.height 400
-                , VL.width 400
+                [ VL.height widthAndHeight
+                , VL.width widthAndHeight
                 , VL.layer
                     [ VL.asSpec
                         [ pdbData []
@@ -1113,20 +1172,23 @@ refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
                         , (VL.encoding
                             << VL.position VL.X
                                 [ VL.pName "Phi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Phi" ]
                                 ]
                             << VL.position VL.Y
                                 [ VL.pName "Psi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Psi" ]
                                 ]
                             << VL.color
                                 [ VL.mAggregate VL.opCount
                                 , VL.mMType VL.Quantitative
-                                , VL.mLegend [ VL.leTitle "PDB Counts" ]
+                                , VL.mLegend
+                                    [ VL.leTitle "Count"
+                                    , VL.leOrient VL.loTop
+                                    ]
                                 ]
                           )
                             []
@@ -1134,10 +1196,12 @@ refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
                     ]
                 ]
             , VL.asSpec
-                [ VL.width 400
+                [ VL.width widthAndHeight
                 , pdbData []
                 , sel []
-                , VL.tick []
+                , VL.tick
+                    [ VL.maOpacity 0.2
+                    ]
                 , (VL.encoding
                     << VL.position VL.X
                         [ VL.pName "Omega"

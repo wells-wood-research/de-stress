@@ -79,6 +79,7 @@ type alias Model =
     , displaySettings : DisplaySettings
     , hoverInfoOption : Tooltips.HoverInfoOption
     , pageErrors : List Error.Error
+    , device : Device
     }
 
 
@@ -202,6 +203,7 @@ init shared { params } =
                     , hoverInfoOption =
                         Tooltips.NoHoverInfo
                     , pageErrors = []
+                    , device = classifyDevice shared
                     }
             in
             ( model
@@ -239,6 +241,7 @@ init shared { params } =
               , hoverInfoOption =
                     Tooltips.NoHoverInfo
               , pageErrors = []
+              , device = classifyDevice shared
               }
             , Cmd.none
             )
@@ -278,7 +281,7 @@ update msg model =
                             )
                           of
                             ( Just referenceSet, Just metrics ) ->
-                                plotCommands metrics referenceSet
+                                plotCommands model.device metrics referenceSet
 
                             _ ->
                                 Cmd.none
@@ -350,7 +353,7 @@ update msg model =
                         Design design ->
                             case WebSockets.getDesignMetrics design.metricsJobStatus of
                                 Just metrics ->
-                                    plotCommands metrics referenceSet
+                                    plotCommands model.device metrics referenceSet
 
                                 Nothing ->
                                     Cmd.none
@@ -510,13 +513,14 @@ update msg model =
             ( { model | pageErrors = [] }, Cmd.none )
 
 
-plotCommands : Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
-plotCommands metrics referenceSet =
+plotCommands : Device -> Metrics.DesignMetrics -> ReferenceSet -> Cmd msg
+plotCommands device metrics referenceSet =
     Cmd.batch
         [ Plots.vegaPlot <|
             { plotId = "composition"
             , spec =
                 Metrics.createCompositionSpec
+                    device
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .aggregateData
@@ -527,6 +531,7 @@ plotCommands metrics referenceSet =
             { plotId = "torsionAngles"
             , spec =
                 Metrics.createTorsionAngleSpec
+                    device
                     (Just metrics)
                     (referenceSet
                         |> ReferenceSet.getGenericData
@@ -537,6 +542,7 @@ plotCommands metrics referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
+                    device
                     [ Metrics.makeHistPlotData
                         { hydrophobicFitness = metrics.hydrophobicFitness
                         , isoelectricPoint = metrics.isoelectricPoint
@@ -586,8 +592,27 @@ save model shared =
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
-load _ model =
-    ( model, Cmd.none )
+load shared model =
+    ( { model
+        | device = classifyDevice shared
+      }
+    , case model.pageState of
+        Design design ->
+            case
+                ( model.mSelectedReferenceSet
+                    |> Maybe.andThen Stored.getData
+                , WebSockets.getDesignMetrics design.metricsJobStatus
+                )
+            of
+                ( Just referenceSet, Just metrics ) ->
+                    plotCommands model.device metrics referenceSet
+
+                _ ->
+                    Cmd.none
+
+        _ ->
+            Cmd.none
+    )
 
 
 subscriptions : Model -> Sub Msg
@@ -941,7 +966,9 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings hoverInfoOption
                     ]
                     { onChange = SetEvoEF2TableOption
                     , selected = Just evoEF2TableOption
-                    , label = Input.labelAbove [] (text "Select the table view for the EvoEF2 results")
+                    , label =
+                        Input.labelAbove []
+                            (paragraph [] [ text "Select the table view for the EvoEF2 results" ])
                     , options =
                         [ Input.option Summary (text (evoEF2TableOptionToString Summary))
                         , Input.option Reference (text (evoEF2TableOptionToString Reference))
@@ -1372,7 +1399,7 @@ createTableColumn metricView metric metricName =
         [ el
             [ padding 5
             , height <| px 80
-            , width <| px 150
+            , width <| px 125
             , Background.color Style.colorPalette.c1
             , Font.center
             , Font.color Style.colorPalette.white
