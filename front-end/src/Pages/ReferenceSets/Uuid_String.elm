@@ -51,6 +51,7 @@ type alias Model =
     { key : Nav.Key
     , pageState : PageState
     , displaySettings : DisplaySettings
+    , device : Device
     }
 
 
@@ -117,12 +118,14 @@ init shared { params } =
                     { key = shared.key
                     , pageState = LoadingWithStub params.uuid stub
                     , displaySettings = { pdbCodes = False }
+                    , device = classifyDevice shared
                     }
 
                 Nothing ->
                     { key = shared.key
                     , pageState = LoadingNoStub params.uuid
                     , displaySettings = { pdbCodes = False }
+                    , device = classifyDevice shared
                     }
             , ReferenceSet.getReferenceSetForRefSetDetails { uuidString = params.uuid }
             )
@@ -131,6 +134,7 @@ init shared { params } =
             ( { key = shared.key
               , pageState = FailedToStart
               , displaySettings = { pdbCodes = False }
+              , device = classifyDevice shared
               }
             , Cmd.none
             )
@@ -249,8 +253,12 @@ save model shared =
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
-load _ model =
-    ( model, Cmd.none )
+load shared model =
+    ( { model
+        | device = classifyDevice shared
+      }
+    , Cmd.none
+    )
 
 
 subscriptions : Model -> Sub Msg
