@@ -1509,88 +1509,88 @@ requirementView metrics requirement =
                     Requirement.Value valueType ->
                         let
                             typeString =
-                                "Value:"
+                                "Value: "
 
                             requirementString =
                                 case valueType of
                                     Requirement.IsoelectricPoint order value ->
                                         typeString
-                                            ++ "IsoelectricPoint:"
+                                            ++ "Isoelectric Point: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.HydrophobicFitness order value ->
                                         typeString
-                                            ++ "HydrophobicFitness:"
+                                            ++ "Hydrophobic Fitness: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.MeanPackingDensity order value ->
                                         typeString
-                                            ++ "MeanPackingDensity:"
+                                            ++ "Mean Packing Density: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.SequenceContains string ->
                                         typeString
-                                            ++ "SequenceContains:"
+                                            ++ "Sequence Contains: "
                                             ++ string
 
                                     Requirement.CompositionDeviation unitType value ->
                                         typeString
-                                            ++ "CompositionDeviation:"
+                                            ++ "Composition Deviation: "
                                             ++ Requirement.stringFromUnitType unitType
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.BUDEFFTotal order value ->
                                         typeString
-                                            ++ "BUDEFFTotalEnergy:"
+                                            ++ "BUDEFF Total Energy: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.EvoEF2Total order value ->
                                         typeString
-                                            ++ "EvoEF2TotalEnergy:"
+                                            ++ "EvoEF2 Total Energy: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.DFIRE2Total order value ->
                                         typeString
-                                            ++ "DFIRE2TotalEnergy:"
+                                            ++ "DFIRE2 Total Energy: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.RosettaTotal order value ->
                                         typeString
-                                            ++ "RosettaTotalEnergy:"
+                                            ++ "Rosetta Total Energy: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
 
                                     Requirement.Agg3DTotal order value ->
                                         typeString
-                                            ++ "Agg3DTotalScore:"
+                                            ++ "Agg3D Total Score: "
                                             ++ Requirement.stringFromOrder
                                                 order
-                                            ++ ":"
+                                            ++ ": "
                                             ++ String.fromFloat value
                         in
                         el (Style.defaultBorder ++ [ padding 10, width fill ])
-                            (text <| requirementString)
+                            (paragraph [] [ text <| requirementString ])
 
             Requirement.Not subRequirement ->
                 row (Style.defaultBorder ++ [ padding 10, spacing 10, width fill ])
