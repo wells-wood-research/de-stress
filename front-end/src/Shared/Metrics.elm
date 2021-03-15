@@ -418,9 +418,8 @@ type alias RefSetMetrics =
     , budeFFResults : Maybe BudeFFResults
     , evoEF2Results : Maybe EvoEF2Results
     , dfire2Results : Maybe DFIRE2Results
-
-    -- , rosettaResults : Maybe RosettaResults
-    -- , aggrescan3dResults : Maybe Aggrescan3DResults
+    , rosettaResults : Maybe RosettaResults
+    , aggrescan3dResults : Maybe Aggrescan3DResults
     }
 
 
@@ -446,16 +445,16 @@ refSetMetricsCodec =
         |> Codec.field "budeFFResults" .budeFFResults (Codec.maybe budeFFResultsCodec)
         |> Codec.field "evoEF2Results" .evoEF2Results (Codec.maybe evoEF2ResultsCodec)
         |> Codec.field "dfire2Results" .dfire2Results (Codec.maybe dfire2ResultsCodec)
-        -- |> Codec.field "rosettaResults"
-        --     .rosettaResults
-        --     (Codec.maybe
-        --         rosettaResultsCodec
-        --     )
-        -- |> Codec.field "aggrescan3dResults"
-        --     .aggrescan3dResults
-        --     (Codec.maybe
-        --         aggrescan3DResultsCodec
-        --     )
+        |> Codec.field "rosettaResults"
+            .rosettaResults
+            (Codec.maybe
+                rosettaResultsCodec
+            )
+        |> Codec.field "aggrescan3dResults"
+            .aggrescan3dResults
+            (Codec.maybe
+                aggrescan3DResultsCodec
+            )
         |> Codec.buildObject
 
 

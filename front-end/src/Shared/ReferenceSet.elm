@@ -24,11 +24,13 @@ port module Shared.ReferenceSet exposing
     )
 
 import BigStructure.Object as Object
+import BigStructure.Object.Aggrescan3DResults as Aggrescan3DResults
 import BigStructure.Object.BiolUnit as BiolUnit
 import BigStructure.Object.BudeFFResults as BudeFFResults
 import BigStructure.Object.DFIRE2Results as DFIRE2Results
 import BigStructure.Object.EvoEF2Results as EvoEF2Results
 import BigStructure.Object.Pdb as Pdb
+import BigStructure.Object.RosettaResults as RosettaResults
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
 import Codec exposing (Codec, Value)
@@ -235,6 +237,8 @@ highResBiolMetricQuery =
             |> with budeffResultsSelectionSet
             |> with evoef2ResultsSelectionSet
             |> with dfire2ResultsSelectionSet
+            |> with rosettaResultsSelectionSet
+            |> with aggrescan3dResultsSelectionSet
         )
 
 
@@ -266,6 +270,8 @@ preferredStatesSubsetQuery pdbCodeList =
             |> with budeffResultsSelectionSet
             |> with evoef2ResultsSelectionSet
             |> with dfire2ResultsSelectionSet
+            |> with rosettaResultsSelectionSet
+            |> with aggrescan3dResultsSelectionSet
         )
 
 
@@ -400,6 +406,77 @@ dfire2ResultsSelectionSet =
                     )
                 )
             |> with (unwrapMSS (State.dfire2Results DFIRE2Results.total))
+        )
+
+
+rosettaResultsSelectionSet : SelectionSet (Maybe Metrics.RosettaResults) Object.State
+rosettaResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.RosettaResults
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.rosettaResults RosettaResults.logInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.rosettaResults RosettaResults.errorInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.rosettaResults RosettaResults.returnCode)
+                )
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.dslfFa13))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faAtr))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faDun))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faElec))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faIntraRep))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faIntraSolXover4))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faRep))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faSol))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondBbSc))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondLrBb))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondSc))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondSrBb))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.linearChainbreak))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.lkBallWtd))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.omega))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.overlapChainbreak))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.pAaPp))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.proClose))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.ramaPrepro))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.ref))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.score))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.time))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.totalScore))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.yhhPlanarity))
+        )
+
+
+aggrescan3dResultsSelectionSet : SelectionSet (Maybe Metrics.Aggrescan3DResults) Object.State
+aggrescan3dResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.Aggrescan3DResults
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.aggrescan3dResults Aggrescan3DResults.logInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.aggrescan3dResults Aggrescan3DResults.errorInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.aggrescan3dResults Aggrescan3DResults.returnCode)
+                )
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.proteinList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.chainList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.residueNumberList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.residueNameList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.residueScoreList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.maxValue))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.avgValue))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.minValue))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.totalValue))
         )
 
 
