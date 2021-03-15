@@ -78,6 +78,7 @@ type alias Model =
     , filterTags : Set.Set String
     , device : Device
     , columnViewMode : ColumnViewMode
+    , maxFilesInUploads : Int
     , maxResiduesInStructure : Int
     }
 
@@ -139,6 +140,7 @@ init shared _ =
             , filterTags = Set.empty
             , device = classifyDevice shared
             , columnViewMode = DesignList
+            , maxFilesInUploads = 30
             , maxResiduesInStructure = 500
             }
 
@@ -222,18 +224,46 @@ update msg model =
 
         StructureFilesSelected first rest ->
             let
+                cappedRest =
+                    List.take (model.maxFilesInUploads - 1) rest
+
                 loadedDesigns =
-                    List.length rest
+                    List.length cappedRest
                         |> (+) 1
+
+                ( updatedModel, cmd ) =
+                    if List.length rest > List.length cappedRest then
+                        Error.updateWithError
+                            ClearPageErrors
+                            { model | loadingState = LoadingFiles loadedDesigns 0 }
+                            { title = "Number of files exceeds limit"
+                            , details =
+                                """The maximum number of files that can be loaded at one
+                                time is """
+                                    ++ String.fromInt model.maxFilesInUploads
+                                    ++ """. The first """
+                                    ++ String.fromInt model.maxFilesInUploads
+                                    ++ """ files will be loaded. Please load the rest in
+                                    batches. This cap is in place to ensure server
+                                    stability and a good user experience.
+                                    """
+                            , severity = Error.Low
+                            }
+
+                    else
+                        ( { model | loadingState = LoadingFiles loadedDesigns 0 }
+                        , Cmd.none
+                        )
             in
-            ( { model | loadingState = LoadingFiles loadedDesigns 0 }
+            ( updatedModel
             , Cmd.batch <|
-                List.map
-                    (\file ->
-                        Task.perform (StructureLoaded <| File.name file)
-                            (File.toString file)
-                    )
-                    (first :: rest)
+                cmd
+                    :: List.map
+                        (\file ->
+                            Task.perform (StructureLoaded <| File.name file)
+                                (File.toString file)
+                        )
+                        (first :: cappedRest)
             )
 
         StructureLoaded name contents ->
