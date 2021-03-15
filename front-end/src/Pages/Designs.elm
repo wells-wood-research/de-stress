@@ -78,6 +78,7 @@ type alias Model =
     , filterTags : Set.Set String
     , device : Device
     , columnViewMode : ColumnViewMode
+    , maxResiduesInStructure : Int
     }
 
 
@@ -138,6 +139,7 @@ init shared _ =
             , filterTags = Set.empty
             , device = classifyDevice shared
             , columnViewMode = DesignList
+            , maxResiduesInStructure = 500
             }
 
         plotCmd =
@@ -296,56 +298,84 @@ update msg model =
                         , severity = Error.Low
                         }
 
-                ( Just resourceUuid, Ok _ ) ->
-                    -- Currently this is only checking to see if the file is valid PDB
-                    let
-                        { uuidString, nextResourceUuid } =
-                            ResourceUuid.toString
-                                resourceUuid
-
-                        pdbString =
-                            contents
-                                |> String.lines
-                                |> List.filter (String.startsWith "ATOM")
-                                |> String.join "\n"
-
-                        ( jobStatus, requestMetricsCmd ) =
-                            WebSockets.prepareMetricsJob
-                                { uuidString = uuidString, pdbString = pdbString }
-
-                        design : Design
-                        design =
-                            { name =
-                                String.split "." name
-                                    |> List.head
-                                    |> Maybe.withDefault name
-                                    |> Editable.NotEditing
-                            , fileName = name
-                            , pdbString = pdbString
-                            , deleteStatus = Buttons.initDangerStatus
-                            , metricsJobStatus = jobStatus
-                            , mMeetsActiveSpecification = Nothing
-                            , tags = Set.empty
-                            }
-                    in
-                    ( { model
-                        | mResourceUuid = Just nextResourceUuid
-                        , loadingState = loadingState
-                        , designs =
-                            Dict.insert uuidString
-                                (Design.createDesignStub design
-                                    |> Design.storeDesignStubLocally
+                ( Just resourceUuid, Ok biomol ) ->
+                    if
+                        (Biomolecules.residues biomol.atoms
+                            |> List.filter
+                                (\{ residueName } ->
+                                    String.toUpper
+                                        residueName
+                                        /= "HOH"
                                 )
-                                model.designs
-                      }
-                    , Cmd.batch
-                        [ Design.storeDesign
-                            { uuidString = uuidString
-                            , design = design |> Codec.encoder Design.codec
+                            |> List.length
+                        )
+                            > model.maxResiduesInStructure
+                    then
+                        Error.updateWithError
+                            ClearPageErrors
+                            { model | loadingState = loadingState }
+                            { title = "Structure exceeds size limit"
+                            , details =
+                                "A file ("
+                                    ++ name
+                                    ++ """) exceeds the maximum number of residues
+                                    allowed in the application ("""
+                                    ++ String.fromInt model.maxResiduesInStructure
+                                    ++ """). This cap is in place to ensure server
+                                    stability and a good user experience.
+                                    """
+                            , severity = Error.Low
                             }
-                        , requestMetricsCmd
-                        ]
-                    )
+
+                    else
+                        let
+                            { uuidString, nextResourceUuid } =
+                                ResourceUuid.toString
+                                    resourceUuid
+
+                            pdbString =
+                                contents
+                                    |> String.lines
+                                    |> List.filter (String.startsWith "ATOM")
+                                    |> String.join "\n"
+
+                            ( jobStatus, requestMetricsCmd ) =
+                                WebSockets.prepareMetricsJob
+                                    { uuidString = uuidString, pdbString = pdbString }
+
+                            design : Design
+                            design =
+                                { name =
+                                    String.split "." name
+                                        |> List.head
+                                        |> Maybe.withDefault name
+                                        |> Editable.NotEditing
+                                , fileName = name
+                                , pdbString = pdbString
+                                , deleteStatus = Buttons.initDangerStatus
+                                , metricsJobStatus = jobStatus
+                                , mMeetsActiveSpecification = Nothing
+                                , tags = Set.empty
+                                }
+                        in
+                        ( { model
+                            | mResourceUuid = Just nextResourceUuid
+                            , loadingState = loadingState
+                            , designs =
+                                Dict.insert uuidString
+                                    (Design.createDesignStub design
+                                        |> Design.storeDesignStubLocally
+                                    )
+                                    model.designs
+                          }
+                        , Cmd.batch
+                            [ Design.storeDesign
+                                { uuidString = uuidString
+                                , design = design |> Codec.encoder Design.codec
+                                }
+                            , requestMetricsCmd
+                            ]
+                        )
 
         GotSpecification specificationValue ->
             let
