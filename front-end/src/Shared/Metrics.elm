@@ -417,8 +417,8 @@ type alias RefSetMetrics =
     , packingDensity : Float
     , budeFFResults : Maybe BudeFFResults
     , evoEF2Results : Maybe EvoEF2Results
+    , dfire2Results : Maybe DFIRE2Results
 
-    -- , dfire2Results : Maybe DFIRE2Results
     -- , rosettaResults : Maybe RosettaResults
     -- , aggrescan3dResults : Maybe Aggrescan3DResults
     }
@@ -445,7 +445,7 @@ refSetMetricsCodec =
         |> Codec.field "packingDensity" .packingDensity Codec.float
         |> Codec.field "budeFFResults" .budeFFResults (Codec.maybe budeFFResultsCodec)
         |> Codec.field "evoEF2Results" .evoEF2Results (Codec.maybe evoEF2ResultsCodec)
-        -- |> Codec.field "dfire2Results" .dfire2Results (Codec.maybe dfire2ResultsCodec)
+        |> Codec.field "dfire2Results" .dfire2Results (Codec.maybe dfire2ResultsCodec)
         -- |> Codec.field "rosettaResults"
         --     .rosettaResults
         --     (Codec.maybe

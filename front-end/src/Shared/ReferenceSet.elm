@@ -26,6 +26,7 @@ port module Shared.ReferenceSet exposing
 import BigStructure.Object as Object
 import BigStructure.Object.BiolUnit as BiolUnit
 import BigStructure.Object.BudeFFResults as BudeFFResults
+import BigStructure.Object.DFIRE2Results as DFIRE2Results
 import BigStructure.Object.EvoEF2Results as EvoEF2Results
 import BigStructure.Object.Pdb as Pdb
 import BigStructure.Object.State as State
@@ -233,6 +234,7 @@ highResBiolMetricQuery =
             |> with State.meanPackingDensity
             |> with budeffResultsSelectionSet
             |> with evoef2ResultsSelectionSet
+            |> with dfire2ResultsSelectionSet
         )
 
 
@@ -263,6 +265,7 @@ preferredStatesSubsetQuery pdbCodeList =
             |> with State.meanPackingDensity
             |> with budeffResultsSelectionSet
             |> with evoef2ResultsSelectionSet
+            |> with dfire2ResultsSelectionSet
         )
 
 
@@ -371,6 +374,32 @@ evoef2ResultsSelectionSet =
             |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRTotal))
             |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSTotal))
             |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDTotal))
+        )
+
+
+dfire2ResultsSelectionSet : SelectionSet (Maybe Metrics.DFIRE2Results) Object.State
+dfire2ResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.DFIRE2Results
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.dfire2Results
+                        DFIRE2Results.logInfo
+                    )
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.dfire2Results
+                        DFIRE2Results.errorInfo
+                    )
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.dfire2Results
+                        DFIRE2Results.returnCode
+                    )
+                )
+            |> with (unwrapMSS (State.dfire2Results DFIRE2Results.total))
         )
 
 
