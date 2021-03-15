@@ -1530,6 +1530,46 @@ requirementView metrics requirement =
                                             ++ Requirement.stringFromUnitType unitType
                                             ++ ":"
                                             ++ String.fromFloat value
+
+                                    Requirement.BUDEFFTotal order value ->
+                                        typeString
+                                            ++ "BUDEFFTotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.EvoEF2Total order value ->
+                                        typeString
+                                            ++ "EvoEF2TotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.DFIRE2Total order value ->
+                                        typeString
+                                            ++ "DFIRE2TotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.RosettaTotal order value ->
+                                        typeString
+                                            ++ "RosettaTotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.Agg3DTotal order value ->
+                                        typeString
+                                            ++ "Agg3DTotalScore:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
                         in
                         el (Style.defaultBorder ++ [ padding 10, width fill ])
                             (text <| requirementString)
