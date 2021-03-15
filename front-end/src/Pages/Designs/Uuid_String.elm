@@ -537,10 +537,22 @@ plotCommands metrics referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
-                    (Just metrics)
+                    [ Metrics.makeHistPlotData
+                        { hydrophobicFitness = metrics.hydrophobicFitness
+                        , isoelectricPoint = metrics.isoelectricPoint
+                        , numOfResidues = metrics.numOfResidues
+                        , packingDensity = metrics.packingDensity
+                        , budeFFResults = Just metrics.budeFFResults
+                        , evoEF2Results = Just metrics.evoEF2Results
+                        , dfire2Results = Just metrics.dfire2Results
+                        , rosettaResults = Just metrics.rosettaResults
+                        , aggrescan3dResults = Just metrics.aggrescan3dResults
+                        }
+                    ]
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
+                        |> List.map Metrics.makeHistPlotData
                     )
             }
         ]

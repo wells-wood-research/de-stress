@@ -1520,7 +1520,7 @@ plotTuples =
     [ ( "Hydrophobic Fitness", .hydrophobicFitness, VL.soAscending )
     , ( "Isoelectric Point", .isoelectricPoint, VL.soDescending )
     , ( "Number of Residues", .numberOfResidues, VL.soDescending )
-    , ( "Packing Density", .packingDensity, VL.soDescending )
+    , ( "Mean Packing Density", .packingDensity, VL.soDescending )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy, VL.soAscending )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
     , ( "dFire Total Energy", .dfireTotalEnergy, VL.soAscending )

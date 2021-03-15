@@ -225,10 +225,11 @@ plotCommands referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
-                    Nothing
+                    []
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
+                        |> List.map Metrics.makeHistPlotData
                     )
             }
         ]

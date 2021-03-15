@@ -17,6 +17,7 @@ module Shared.Metrics exposing
     , createCompositionSpec
     , createTorsionAngleSpec
     , desMetricsCodec
+    , makeHistPlotData
     , refSetMetricsCodec
     , torsionAngleStringToDict
     )
@@ -594,113 +595,146 @@ torsionAngleParser =
 -- {{{ Plotting
 
 
-createAllHistogramsSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
-createAllHistogramsSpec mDesignMetrics pdbMetricsList =
-    case List.filter (\a -> a.hydrophobicFitness /= Nothing) pdbMetricsList of
-        [] ->
-            VL.toVegaLite []
-
-        firstPdb :: remainingPdb ->
-            let
-                pdbData =
-                    (List.map metricDataRow remainingPdb
-                        |> List.foldl (>>) (metricDataRow firstPdb)
-                    )
-                        >> VL.dataFromRows []
-
-                mDesignData =
-                    Maybe.map
-                        (\designMetrics ->
-                            (metricDataRow designMetrics
-                                >> VL.dataFromRows []
-                            )
-                                []
-                        )
-                        mDesignMetrics
-            in
-            [ VL.asSpec
-                [ List.map
-                    (histogramSpec (pdbData []) mDesignData)
-                    [ "Hydrophobic Fitness"
-                    , "Isoelectric Point"
-                    ]
-                    |> VL.hConcat
-                ]
-            , VL.asSpec
-                [ List.map
-                    (histogramSpec (pdbData []) mDesignData)
-                    [ "Mean Packing Density"
-                    , "# Residues"
-                    ]
-                    |> VL.hConcat
-                ]
-            ]
-                |> VL.vConcat
-                |> List.singleton
-                |> VL.toVegaLite
+type alias HistPlotData =
+    { hydrophobicFitness : Float
+    , isoelectricPoint : Float
+    , numberOfResidues : Float
+    , packingDensity : Float
+    , budeFFTotalEnergy : Float
+    , evoEFTotalEnergy : Float
+    , dfireTotalEnergy : Float
+    , rosettaTotalEnergy : Float
+    , aggrescan3dTotalValue : Float
+    }
 
 
-metricDataRow :
+makeHistPlotData :
     { a
         | hydrophobicFitness : Maybe Float
         , isoelectricPoint : Float
         , numOfResidues : Int
         , packingDensity : Float
+        , budeFFResults : Maybe BudeFFResults
+        , evoEF2Results : Maybe EvoEF2Results
+        , dfire2Results : Maybe DFIRE2Results
+        , rosettaResults : Maybe RosettaResults
+        , aggrescan3dResults : Maybe Aggrescan3DResults
     }
-    -> (List VL.DataRow -> List VL.DataRow)
-metricDataRow { hydrophobicFitness, isoelectricPoint, numOfResidues, packingDensity } =
-    VL.dataRow
-        [ ( "Hydrophobic Fitness", VL.num <| Maybe.withDefault 666 hydrophobicFitness )
-        , ( "Isoelectric Point", VL.num isoelectricPoint )
-        , ( "# Residues", VL.num <| toFloat numOfResidues )
-        , ( "Mean Packing Density", VL.num packingDensity )
-        ]
+    -> HistPlotData
+makeHistPlotData metrics =
+    { hydrophobicFitness = Maybe.withDefault (0 / 0) metrics.hydrophobicFitness
+    , isoelectricPoint = metrics.isoelectricPoint
+    , numberOfResidues = metrics.numOfResidues |> toFloat
+    , packingDensity = metrics.packingDensity
+    , budeFFTotalEnergy =
+        Maybe.andThen .totalEnergy metrics.budeFFResults
+            |> Maybe.withDefault (0 / 0)
+    , evoEFTotalEnergy =
+        Maybe.andThen .total metrics.evoEF2Results
+            |> Maybe.withDefault (0 / 0)
+    , dfireTotalEnergy =
+        Maybe.andThen .total metrics.dfire2Results
+            |> Maybe.withDefault (0 / 0)
+    , rosettaTotalEnergy =
+        Maybe.andThen .total_score metrics.rosettaResults
+            |> Maybe.withDefault (0 / 0)
+    , aggrescan3dTotalValue =
+        Maybe.andThen .total_value metrics.aggrescan3dResults
+            |> Maybe.withDefault (0 / 0)
+    }
 
 
-histogramSpec : VL.Data -> Maybe VL.Data -> String -> VL.Spec
-histogramSpec pdbData mDesignData fieldName =
-    VL.asSpec
-        [ VL.height 225
-        , VL.width 225
-        , VL.layer
-            ([ VL.asSpec
-                [ pdbData
-                , VL.bar []
-                , (VL.encoding
-                    << VL.position VL.X
-                        [ VL.pName fieldName
-                        , VL.pBin [ VL.biBase 10, VL.biDivide [ 4, 2 ] ]
-                        , VL.pMType VL.Quantitative
-                        , VL.pAxis [ VL.axTitle fieldName ]
-                        ]
-                    << VL.position VL.Y
-                        [ VL.pAggregate VL.opCount
-                        , VL.pMType VL.Quantitative
-                        ]
-                  )
-                    []
-                ]
-             ]
-                ++ (case mDesignData of
-                        Just designData ->
-                            [ VL.asSpec
-                                [ designData
-                                , VL.rule [ VL.maSize 3 ]
-                                , (VL.encoding
-                                    << VL.position VL.X
-                                        [ VL.pName fieldName
-                                        , VL.pMType VL.Quantitative
-                                        , VL.pAxis [ VL.axTitle "" ]
-                                        ]
-                                  )
-                                    []
-                                ]
-                            ]
+histPlotTuples : List ( String, HistPlotData -> Float )
+histPlotTuples =
+    [ ( "Hydrophobic Fitness", .hydrophobicFitness )
+    , ( "Isoelectric Point", .isoelectricPoint )
+    , ( "Number of Residues", .numberOfResidues )
+    , ( "Mean Packing Density", .packingDensity )
+    , ( "BUDE FF Total Energy", .budeFFTotalEnergy )
+    , ( "EvoEF2 Total Energy", .evoEFTotalEnergy )
+    , ( "dFire Total Energy", .dfireTotalEnergy )
+    , ( "Rosetta Total Energy", .rosettaTotalEnergy )
+    , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue )
+    ]
 
-                        Nothing ->
-                            []
+
+createAllHistogramsSpec : List HistPlotData -> List HistPlotData -> VL.Spec
+createAllHistogramsSpec designHistPlotData refSetHistPlotData =
+    let
+        refSetMetricValueColumn ( label, valueFn ) =
+            VL.dataColumn
+                label
+                (VL.nums <|
+                    List.map valueFn refSetHistPlotData
+                )
+
+        designMetricValueColumn ( label, valueFn ) =
+            VL.dataColumn
+                ("design_" ++ label)
+                (VL.nums <|
+                    List.map valueFn designHistPlotData
+                )
+
+        refSetData =
+            VL.dataFromColumns []
+                << (List.map refSetMetricValueColumn histPlotTuples
+                        |> List.foldr (<<) identity
                    )
-            )
+
+        designSetData =
+            VL.dataFromColumns []
+                << (List.map designMetricValueColumn histPlotTuples
+                        |> List.foldr (<<) identity
+                   )
+
+        histogramSpec label =
+            VL.asSpec
+                [ VL.width 200
+                , VL.layer
+                    (VL.asSpec
+                        [ VL.bar []
+                        , refSetData []
+                        , (VL.encoding
+                            << VL.position VL.X
+                                [ VL.pName label
+                                , VL.pBin [ VL.biBase 10, VL.biDivide [ 4, 2 ] ]
+                                , VL.pMType VL.Quantitative
+                                , VL.pAxis [ VL.axTitle label ]
+                                ]
+                            << VL.position VL.Y
+                                [ VL.pAggregate VL.opCount
+                                , VL.pMType VL.Quantitative
+                                ]
+                          )
+                            []
+                        ]
+                        :: (if List.isEmpty designHistPlotData then
+                                []
+
+                            else
+                                [ VL.asSpec
+                                    [ VL.rule [ VL.maSize 3 ]
+                                    , designSetData []
+                                    , (VL.encoding
+                                        << VL.position VL.X
+                                            [ VL.pName ("design_" ++ label)
+                                            , VL.pMType VL.Quantitative
+                                            , VL.pAxis [ VL.axTitle "" ]
+                                            ]
+                                      )
+                                        []
+                                    ]
+                                ]
+                           )
+                    )
+                ]
+    in
+    VL.toVegaLite
+        [ VL.spacing 40
+        , histPlotTuples
+            |> List.map Tuple.first
+            |> List.map histogramSpec
+            |> VL.vConcat
         ]
 
 
