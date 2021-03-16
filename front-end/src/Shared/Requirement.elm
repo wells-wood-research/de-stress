@@ -21,6 +21,7 @@ import Element.Font as Font
 import FeatherIcons
 import Shared.Metrics as Metrics exposing (DesignMetrics)
 import Shared.Style as Style
+import Shared.Tooltips exposing (HoverInfoOption(..))
 
 
 
@@ -96,6 +97,46 @@ resolveRequirement mAggregateData metrics requirement =
 
                                 Nothing ->
                                     True
+
+                        BUDEFFTotal order value ->
+                            case metrics.budeFFResults.totalEnergy of
+                                Nothing ->
+                                    False
+
+                                Just budetot ->
+                                    compare budetot value == order
+
+                        EvoEF2Total order value ->
+                            case metrics.evoEF2Results.total of
+                                Nothing ->
+                                    False
+
+                                Just evoef2tot ->
+                                    compare evoef2tot value == order
+
+                        DFIRE2Total order value ->
+                            case metrics.dfire2Results.total of
+                                Nothing ->
+                                    False
+
+                                Just dfire2tot ->
+                                    compare dfire2tot value == order
+
+                        RosettaTotal order value ->
+                            case metrics.rosettaResults.total_score of
+                                Nothing ->
+                                    False
+
+                                Just rostot ->
+                                    compare rostot value == order
+
+                        Agg3DTotal order value ->
+                            case metrics.aggrescan3dResults.total_value of
+                                Nothing ->
+                                    False
+
+                                Just agg3dtot ->
+                                    compare agg3dtot value == order
 
                 Constant constantType ->
                     case constantType of
@@ -356,6 +397,46 @@ dataToString requirementData =
                         ++ ": "
                         ++ String.fromFloat value
 
+                BUDEFFTotal order value ->
+                    typeString
+                        ++ "BUDEFF Total Energy: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                EvoEF2Total order value ->
+                    typeString
+                        ++ "EvoEF2 Total Energy: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                DFIRE2Total order value ->
+                    typeString
+                        ++ "DFIRE2 Total Energy: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                RosettaTotal order value ->
+                    typeString
+                        ++ "Rosetta Total Energy: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
+                Agg3DTotal order value ->
+                    typeString
+                        ++ "Aggrescan3D Total Score: "
+                        ++ stringFromOrder
+                            order
+                        ++ ": "
+                        ++ String.fromFloat value
+
 
 requirementDataTypeCodec : Codec RequirementData
 requirementDataTypeCodec =
@@ -416,12 +497,17 @@ type ValueType
     | MeanPackingDensity Order Float
     | SequenceContains String
     | CompositionDeviation UnitType Float
+    | BUDEFFTotal Order Float
+    | EvoEF2Total Order Float
+    | DFIRE2Total Order Float
+    | RosettaTotal Order Float
+    | Agg3DTotal Order Float
 
 
 valueTypeCodec : Codec ValueType
 valueTypeCodec =
     Codec.custom
-        (\fisoelectric fhfitness fmpdensity fseqcontains fcompdeviation value ->
+        (\fisoelectric fhfitness fmpdensity fseqcontains fcompdeviation fbudefftotal fevoef2total fdfire2total frosettatotal fagg3dtotal value ->
             case value of
                 IsoelectricPoint order float ->
                     fisoelectric order float
@@ -437,12 +523,32 @@ valueTypeCodec =
 
                 CompositionDeviation unitType float ->
                     fcompdeviation unitType float
+
+                BUDEFFTotal order float ->
+                    fbudefftotal order float
+
+                EvoEF2Total order float ->
+                    fevoef2total order float
+
+                DFIRE2Total order float ->
+                    fdfire2total order float
+
+                RosettaTotal order float ->
+                    frosettatotal order float
+
+                Agg3DTotal order float ->
+                    fagg3dtotal order float
         )
         |> Codec.variant2 "IsoelectricPoint" IsoelectricPoint orderCodec Codec.float
         |> Codec.variant2 "HydrophobicFitness" HydrophobicFitness orderCodec Codec.float
         |> Codec.variant2 "MeanPackingDensity" MeanPackingDensity orderCodec Codec.float
         |> Codec.variant1 "SequenceContains" SequenceContains Codec.string
         |> Codec.variant2 "CompositionDeviation" CompositionDeviation unitTypeCodec Codec.float
+        |> Codec.variant2 "BUDEFFTotal" BUDEFFTotal orderCodec Codec.float
+        |> Codec.variant2 "EvoEF2Total" EvoEF2Total orderCodec Codec.float
+        |> Codec.variant2 "DFIRE2Total" DFIRE2Total orderCodec Codec.float
+        |> Codec.variant2 "RosettaTotal" RosettaTotal orderCodec Codec.float
+        |> Codec.variant2 "Agg3DTotal" Agg3DTotal orderCodec Codec.float
         |> Codec.buildCustom
 
 

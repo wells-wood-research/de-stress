@@ -112,12 +112,14 @@ type HideableSection
     = EvoEF2LogInfo
     | DFIRE2LogInfo
     | RosettaLogInfo
+    | Aggrescan3dLogInfo
 
 
 type alias DisplaySettings =
     { evoEF2LogInfo : Bool
     , dfire2LogInfo : Bool
     , rosettaLogInfo : Bool
+    , aggrescan3dLogInfo : Bool
     }
 
 
@@ -132,6 +134,9 @@ hideableSectionToString hideableSection =
 
         RosettaLogInfo ->
             "Rosetta Log Information"
+
+        Aggrescan3dLogInfo ->
+            "Aggrescan3D 2.0 Log Information"
 
 
 evoEF2TableOptionToString : EvoEF2TableOption -> String
@@ -192,6 +197,7 @@ init shared { params } =
                         { evoEF2LogInfo = False
                         , dfire2LogInfo = False
                         , rosettaLogInfo = False
+                        , aggrescan3dLogInfo = False
                         }
                     , hoverInfoOption =
                         Tooltips.NoHoverInfo
@@ -228,6 +234,7 @@ init shared { params } =
                     { evoEF2LogInfo = False
                     , dfire2LogInfo = False
                     , rosettaLogInfo = False
+                    , aggrescan3dLogInfo = False
                     }
               , hoverInfoOption =
                     Tooltips.NoHoverInfo
@@ -483,6 +490,12 @@ update msg model =
                             { displaySettings
                                 | rosettaLogInfo =
                                     not displaySettings.rosettaLogInfo
+                            }
+
+                        Aggrescan3dLogInfo ->
+                            { displaySettings
+                                | aggrescan3dLogInfo =
+                                    not displaySettings.aggrescan3dLogInfo
                             }
               }
             , Cmd.none
@@ -745,9 +758,11 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
                         [ basicMetrics designMetrics
+                        , budeFFResultsTableView designMetrics hoverInfoOption
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
                         , rosettaResultsTableView designMetrics displaySettings hoverInfoOption
+                        , aggrescan3dResultsTableView designMetrics displaySettings hoverInfoOption
                         , case mReferenceSet of
                             Just _ ->
                                 referenceSetComparisonView
@@ -788,34 +803,13 @@ metricsOverview metrics =
     column [ spacing 10, width fill ]
         [ Style.h2 <| text "Metrics"
         , wrappedRow
-            [ spacing 5 ]
-            [ createTableColumn
-                (\mHF ->
-                    case mHF of
-                        Just hf ->
-                            onePlaceFloatText hf
-
-                        Nothing ->
-                            text "--"
-                )
-                metrics.hydrophobicFitness
-                "Hydrophobic Fitness"
-            , createTableColumn
-                onePlaceFloatText
-                metrics.isoelectricPoint
-                "pI"
-            , createTableColumn
-                intText
-                metrics.numOfResidues
-                "# of Residues"
-            , createTableColumn
-                onePlaceFloatText
-                metrics.mass
-                "Mass (Da)"
-            , createTableColumn
-                onePlaceFloatText
-                metrics.packingDensity
-                "Mean Packing Density"
+            [ spacing 5
+            ]
+            [ createTableFloatColumn metrics.hydrophobicFitness 0 "Hydrophobic Fitness"
+            , createTableColumn cell (roundFloatText metrics.isoelectricPoint 0) "pI"
+            , createTableColumn cell (intText metrics.numOfResidues) "# of Residues"
+            , createTableColumn cell (roundFloatText metrics.mass 0) "Mass (Da)"
+            , createTableColumn cell (roundFloatText metrics.packingDensity 0) "Mean Packing Density"
             ]
         ]
 
@@ -866,6 +860,29 @@ sequenceInfoView ( chainId, sequenceInfo ) =
             , Font.size 14
             ]
             (List.map aaView zippedSequenceInfo)
+        ]
+
+
+budeFFResultsTableView :
+    Metrics.DesignMetrics
+    -> Tooltips.HoverInfoOption
+    -> Element Msg
+budeFFResultsTableView metrics hoverInfoOption =
+    sectionColumn
+        [ Style.h3 <| text "BUDE Force Field Results"
+        , wrappedRow
+            [ spacing 5
+            , centerX
+            ]
+            [ el (Tooltips.budeFFTotalEnergyHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn metrics.budeFFResults.totalEnergy 0 "Total Energy"
+            , el (Tooltips.budeFFStericHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn metrics.budeFFResults.steric 0 "Steric"
+            , el (Tooltips.budeFFDesolvationHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn metrics.budeFFResults.desolvation 0 "Desolvation"
+            , el (Tooltips.budeFFChargeHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn metrics.budeFFResults.charge 0 "Charge"
+            ]
         ]
 
 
@@ -957,15 +974,15 @@ evoef2SummaryColumns :
     -> List (Element Msg)
 evoef2SummaryColumns metrics hoverInfoOption =
     [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <|
-        createTableFloatColumn metrics.evoEF2Results.total "Total EvoEF2"
+        createTableFloatColumn metrics.evoEF2Results.total 0 "Total EvoEF2"
     , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <|
-        createTableFloatColumn metrics.evoEF2Results.ref_total "Reference"
+        createTableFloatColumn metrics.evoEF2Results.ref_total 0 "Reference"
     , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <|
-        createTableFloatColumn metrics.evoEF2Results.intraR_total "Intra Residue"
+        createTableFloatColumn metrics.evoEF2Results.intraR_total 0 "Intra Residue"
     , el (Tooltips.evoEF2SummaryInterSHoverBox hoverInfoOption ChangeHoverInfo) <|
-        createTableFloatColumn metrics.evoEF2Results.interS_total "Inter Residue - Same Chain"
+        createTableFloatColumn metrics.evoEF2Results.interS_total 0 "Inter Residue - Same Chain"
     , el (Tooltips.evoEF2SummaryInterDHoverBox hoverInfoOption ChangeHoverInfo) <|
-        createTableFloatColumn metrics.evoEF2Results.interD_total "Inter Residue - Different Chains"
+        createTableFloatColumn metrics.evoEF2Results.interD_total 0 "Inter Residue - Different Chains"
     ]
 
 
@@ -974,26 +991,26 @@ evoef2RefColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2RefColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2RefALAHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ALA "ALA"
-    , el (Tooltips.evoEF2RefARGHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ARG "ARG"
-    , el (Tooltips.evoEF2RefASNHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ASN "ASN"
-    , el (Tooltips.evoEF2RefASPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ASP "ASP"
-    , el (Tooltips.evoEF2RefCYSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_CYS "CYS"
-    , el (Tooltips.evoEF2RefGLNHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLN "GLN"
-    , el (Tooltips.evoEF2RefGLUHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLU "GLU"
-    , el (Tooltips.evoEF2RefGLYHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLY "GLY"
-    , el (Tooltips.evoEF2RefHISHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_HIS "HIS"
-    , el (Tooltips.evoEF2RefILEHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ILE "ILE"
-    , el (Tooltips.evoEF2RefLEUHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_LEU "LEU"
-    , el (Tooltips.evoEF2RefLYSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_LYS "LYS"
-    , el (Tooltips.evoEF2RefMETHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_MET "MET"
-    , el (Tooltips.evoEF2RefPHEHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_PHE "PHE"
-    , el (Tooltips.evoEF2RefPROHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_PRO "PRO"
-    , el (Tooltips.evoEF2RefSERHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_SER "SER"
-    , el (Tooltips.evoEF2RefTHRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_THR "THR"
-    , el (Tooltips.evoEF2RefTRPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_TRP "TRP"
-    , el (Tooltips.evoEF2RefTYRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_TYR "TYR"
-    , el (Tooltips.evoEF2RefVALHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_VAL "VAL"
+    [ el (Tooltips.evoEF2RefALAHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ALA 0 "ALA"
+    , el (Tooltips.evoEF2RefARGHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ARG 0 "ARG"
+    , el (Tooltips.evoEF2RefASNHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ASN 0 "ASN"
+    , el (Tooltips.evoEF2RefASPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ASP 0 "ASP"
+    , el (Tooltips.evoEF2RefCYSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_CYS 0 "CYS"
+    , el (Tooltips.evoEF2RefGLNHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLN 0 "GLN"
+    , el (Tooltips.evoEF2RefGLUHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLU 0 "GLU"
+    , el (Tooltips.evoEF2RefGLYHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_GLY 0 "GLY"
+    , el (Tooltips.evoEF2RefHISHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_HIS 0 "HIS"
+    , el (Tooltips.evoEF2RefILEHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_ILE 0 "ILE"
+    , el (Tooltips.evoEF2RefLEUHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_LEU 0 "LEU"
+    , el (Tooltips.evoEF2RefLYSHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_LYS 0 "LYS"
+    , el (Tooltips.evoEF2RefMETHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_MET 0 "MET"
+    , el (Tooltips.evoEF2RefPHEHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_PHE 0 "PHE"
+    , el (Tooltips.evoEF2RefPROHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_PRO 0 "PRO"
+    , el (Tooltips.evoEF2RefSERHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_SER 0 "SER"
+    , el (Tooltips.evoEF2RefTHRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_THR 0 "THR"
+    , el (Tooltips.evoEF2RefTRPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_TRP 0 "TRP"
+    , el (Tooltips.evoEF2RefTYRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_TYR 0 "TYR"
+    , el (Tooltips.evoEF2RefVALHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.reference_VAL 0 "VAL"
     ]
 
 
@@ -1002,17 +1019,17 @@ evoef2IntraRColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2IntraRColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2IntraRVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt "VDW Attractive"
-    , el (Tooltips.evoEF2IntraRVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep "VDW Repulsive"
-    , el (Tooltips.evoEF2IntraRElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_electr "Electrostatics"
-    , el (Tooltips.evoEF2IntraRDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvP "Desolvation Polar"
-    , el (Tooltips.evoEF2IntraRDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvH "Desolvation Non Polar"
-    , el (Tooltips.evoEF2IntraRAAPropHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.aapropensity "Amino Acid Propensity"
-    , el (Tooltips.evoEF2IntraRRamaHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ramachandran "Ramachandran"
-    , el (Tooltips.evoEF2IntraRDunbrackHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.dunbrack "Dunbrack Rotamer"
-    , el (Tooltips.evoEF2IntraRHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis "HB Sidechain Backbone Distance"
-    , el (Tooltips.evoEF2IntraRHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the "HB Sidechain Backbone Theta"
-    , el (Tooltips.evoEF2IntraRHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi "HB Sidechain Backbone Phi"
+    [ el (Tooltips.evoEF2IntraRVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwatt 0 "VDW Attractive"
+    , el (Tooltips.evoEF2IntraRVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_vdwrep 0 "VDW Repulsive"
+    , el (Tooltips.evoEF2IntraRElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_electr 0 "Electrostatics"
+    , el (Tooltips.evoEF2IntraRDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvP 0 "Desolvation Polar"
+    , el (Tooltips.evoEF2IntraRDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_deslvH 0 "Desolvation Non Polar"
+    , el (Tooltips.evoEF2IntraRAAPropHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.aapropensity 0 "Amino Acid Propensity"
+    , el (Tooltips.evoEF2IntraRRamaHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.ramachandran 0 "Ramachandran"
+    , el (Tooltips.evoEF2IntraRDunbrackHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.dunbrack 0 "Dunbrack Rotamer"
+    , el (Tooltips.evoEF2IntraRHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_dis 0 "HB Sidechain Backbone Distance"
+    , el (Tooltips.evoEF2IntraRHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_the 0 "HB Sidechain Backbone Theta"
+    , el (Tooltips.evoEF2IntraRHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.intraR_hbscbb_phi 0 "HB Sidechain Backbone Phi"
     ]
 
 
@@ -1021,21 +1038,21 @@ evoef2InterSColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2InterSColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2InterSVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_vdwatt "VDW Attractive"
-    , el (Tooltips.evoEF2InterSVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_vdwrep "VDW Repulsive"
-    , el (Tooltips.evoEF2InterSElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_electr "Electrostatics"
-    , el (Tooltips.evoEF2InterSDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_deslvP "Desolvation Polar"
-    , el (Tooltips.evoEF2InterSDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_deslvH "Desolvation Non Polar"
-    , el (Tooltips.evoEF2InterSSSbondHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_ssbond "Disulfide Bonding"
-    , el (Tooltips.evoEF2InterSHBBBBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis "HB Backbone Backbone Distance"
-    , el (Tooltips.evoEF2InterSHBBBBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the "HB Backbone Backbone Theta"
-    , el (Tooltips.evoEF2InterSHBBBBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi "HB Backbone Backbone Phi"
-    , el (Tooltips.evoEF2InterSHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis "HB Sidechain Backbone Distance"
-    , el (Tooltips.evoEF2InterSHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the "HB Sidechain Backbone Theta"
-    , el (Tooltips.evoEF2InterSHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi "HB Sidechain Backbone Phi"
-    , el (Tooltips.evoEF2InterSHBSCSCDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis "HB Sidechain Sidechain Distance"
-    , el (Tooltips.evoEF2InterSHBSCSCTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the "HB Sidechain Sidechain Theta"
-    , el (Tooltips.evoEF2InterSHBSCSCPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi "HB Sidechain Sidechain Phi"
+    [ el (Tooltips.evoEF2InterSVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_vdwatt 0 "VDW Attractive"
+    , el (Tooltips.evoEF2InterSVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_vdwrep 0 "VDW Repulsive"
+    , el (Tooltips.evoEF2InterSElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_electr 0 "Electrostatics"
+    , el (Tooltips.evoEF2InterSDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_deslvP 0 "Desolvation Polar"
+    , el (Tooltips.evoEF2InterSDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_deslvH 0 "Desolvation Non Polar"
+    , el (Tooltips.evoEF2InterSSSbondHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_ssbond 0 "Disulfide Bonding"
+    , el (Tooltips.evoEF2InterSHBBBBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_dis 0 "HB Backbone Backbone Distance"
+    , el (Tooltips.evoEF2InterSHBBBBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_the 0 "HB Backbone Backbone Theta"
+    , el (Tooltips.evoEF2InterSHBBBBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbbbbb_phi 0 "HB Backbone Backbone Phi"
+    , el (Tooltips.evoEF2InterSHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_dis 0 "HB Sidechain Backbone Distance"
+    , el (Tooltips.evoEF2InterSHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_the 0 "HB Sidechain Backbone Theta"
+    , el (Tooltips.evoEF2InterSHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscbb_phi 0 "HB Sidechain Backbone Phi"
+    , el (Tooltips.evoEF2InterSHBSCSCDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_dis 0 "HB Sidechain Sidechain Distance"
+    , el (Tooltips.evoEF2InterSHBSCSCTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_the 0 "HB Sidechain Sidechain Theta"
+    , el (Tooltips.evoEF2InterSHBSCSCPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interS_hbscsc_phi 0 "HB Sidechain Sidechain Phi"
     ]
 
 
@@ -1044,21 +1061,21 @@ evoef2InterDColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 evoef2InterDColumns metrics hoverInfoOption =
-    [ el (Tooltips.evoEF2InterDVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_vdwatt "VDW Attractive"
-    , el (Tooltips.evoEF2InterDVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_vdwrep "VDW Repulsive"
-    , el (Tooltips.evoEF2InterDElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_electr "Electrostatics"
-    , el (Tooltips.evoEF2InterDDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_deslvP "Desolvation Polar"
-    , el (Tooltips.evoEF2InterDDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_deslvH "Desolvation Non Polar"
-    , el (Tooltips.evoEF2InterDSSbondHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_ssbond "Disulfide Bonding"
-    , el (Tooltips.evoEF2InterDHBBBBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis "HB Backbone Backbone Distance"
-    , el (Tooltips.evoEF2InterDHBBBBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the "HB Backbone Backbone Theta"
-    , el (Tooltips.evoEF2InterDHBBBBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi "HB Backbone Backbone Phi"
-    , el (Tooltips.evoEF2InterDHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis "HB Sidechain Backbone Distance"
-    , el (Tooltips.evoEF2InterDHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the "HB Sidechain Backbone Theta"
-    , el (Tooltips.evoEF2InterDHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi "HB Sidechain Backbone Phi"
-    , el (Tooltips.evoEF2InterDHBSCSCDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis "HB Sidechain Sidechain Distance"
-    , el (Tooltips.evoEF2InterDHBSCSCTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the "HB Sidechain Sidechain Theta"
-    , el (Tooltips.evoEF2InterDHBSCSCPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi "HB Sidechain Sidechain Phi"
+    [ el (Tooltips.evoEF2InterDVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_vdwatt 0 "VDW Attractive"
+    , el (Tooltips.evoEF2InterDVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_vdwrep 0 "VDW Repulsive"
+    , el (Tooltips.evoEF2InterDElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_electr 0 "Electrostatics"
+    , el (Tooltips.evoEF2InterDDesolvPHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_deslvP 0 "Desolvation Polar"
+    , el (Tooltips.evoEF2InterDDesolvHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_deslvH 0 "Desolvation Non Polar"
+    , el (Tooltips.evoEF2InterDSSbondHHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_ssbond 0 "Disulfide Bonding"
+    , el (Tooltips.evoEF2InterDHBBBBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_dis 0 "HB Backbone Backbone Distance"
+    , el (Tooltips.evoEF2InterDHBBBBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_the 0 "HB Backbone Backbone Theta"
+    , el (Tooltips.evoEF2InterDHBBBBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbbbbb_phi 0 "HB Backbone Backbone Phi"
+    , el (Tooltips.evoEF2InterDHBSCBBDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_dis 0 "HB Sidechain Backbone Distance"
+    , el (Tooltips.evoEF2InterDHBSCBBTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_the 0 "HB Sidechain Backbone Theta"
+    , el (Tooltips.evoEF2InterDHBSCBBPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscbb_phi 0 "HB Sidechain Backbone Phi"
+    , el (Tooltips.evoEF2InterDHBSCSCDisHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_dis 0 "HB Sidechain Sidechain Distance"
+    , el (Tooltips.evoEF2InterDHBSCSCTheHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_the 0 "HB Sidechain Sidechain Theta"
+    , el (Tooltips.evoEF2InterDHBSCSCPhiHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.evoEF2Results.interD_hbscsc_phi 0 "HB Sidechain Sidechain Phi"
     ]
 
 
@@ -1102,7 +1119,7 @@ dfire2ResultsView metrics displaySettings hoverInfoOption =
             [ spacing 5
             , centerX
             ]
-            [ el (Tooltips.dfire2TotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.dfire2Results.total "Total DFIRE2" ]
+            [ el (Tooltips.dfire2TotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.dfire2Results.total 0 "Total DFIRE2" ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
             , title = hideableSectionToString DFIRE2LogInfo
@@ -1154,27 +1171,68 @@ rosettaColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 rosettaColumns metrics hoverInfoOption =
-    [ el (Tooltips.rosettaTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.total_score "Total Rosetta"
-    , el (Tooltips.rosettaReferenceHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.ref "Reference"
-    , el (Tooltips.rosettaVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_atr "VDW Attractive"
-    , el (Tooltips.rosettaVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_rep "VDW Repulsive"
-    , el (Tooltips.rosettaVDWRepIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_intra_rep "VDW Repulsive Intra Residue"
-    , el (Tooltips.rosettaElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_elec "Electrostatics"
-    , el (Tooltips.rosettaSolvIsoHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_sol "Solvation Isotropic"
-    , el (Tooltips.rosettaSolvAnisoHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.lk_ball_wtd "Solvation Anisotropic Polar Atoms"
-    , el (Tooltips.rosettaSolvIsoIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 "Solvation Isotropic Intra Residue"
-    , el (Tooltips.rosettaHBLRBBHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_lr_bb "HB Long Range Backbone"
-    , el (Tooltips.rosettaHBSRBBHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_sr_bb "HB Short Range Backbone"
-    , el (Tooltips.rosettaHBBBSCHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_bb_sc "HB Backbone Sidechain"
-    , el (Tooltips.rosettaHBSCSCHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_sc "HB Sidechain Sidechain"
-    , el (Tooltips.rosettaSSbondHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.dslf_fa13 "Disulfide Bridges"
-    , el (Tooltips.rosettaRamaHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.rama_prepro "Backbone Torsion Preference"
-    , el (Tooltips.rosettaAAPropHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.p_aa_pp "Amino Acid Propensity"
-    , el (Tooltips.rosettaDunbrackHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_dun "Dunbrack Rotamer"
-    , el (Tooltips.rosettaOmegaPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.omega "Omega Penalty"
-    , el (Tooltips.rosettaOpenProPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.pro_close "Open Proline Penalty"
-    , el (Tooltips.rosettaTyroPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.yhh_planarity "Tyrosine χ3 Dihedral Angle Penalty"
+    [ el (Tooltips.rosettaTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.total_score 0 "Total Rosetta"
+    , el (Tooltips.rosettaReferenceHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.ref 0 "Reference"
+    , el (Tooltips.rosettaVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_atr 0 "VDW Attractive"
+    , el (Tooltips.rosettaVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_rep 0 "VDW Repulsive"
+    , el (Tooltips.rosettaVDWRepIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_intra_rep 0 "VDW Repulsive Intra Residue"
+    , el (Tooltips.rosettaElecHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_elec 0 "Electrostatics"
+    , el (Tooltips.rosettaSolvIsoHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_sol 0 "Solvation Isotropic"
+    , el (Tooltips.rosettaSolvAnisoHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.lk_ball_wtd 0 "Solvation Anisotropic Polar Atoms"
+    , el (Tooltips.rosettaSolvIsoIntraRHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_intra_sol_xover4 0 "Solvation Isotropic Intra Residue"
+    , el (Tooltips.rosettaHBLRBBHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_lr_bb 0 "HB Long Range Backbone"
+    , el (Tooltips.rosettaHBSRBBHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_sr_bb 0 "HB Short Range Backbone"
+    , el (Tooltips.rosettaHBBBSCHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_bb_sc 0 "HB Backbone Sidechain"
+    , el (Tooltips.rosettaHBSCSCHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.hbond_sc 0 "HB Sidechain Sidechain"
+    , el (Tooltips.rosettaSSbondHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.dslf_fa13 0 "Disulfide Bridges"
+    , el (Tooltips.rosettaRamaHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.rama_prepro 0 "Backbone Torsion Preference"
+    , el (Tooltips.rosettaAAPropHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.p_aa_pp 0 "Amino Acid Propensity"
+    , el (Tooltips.rosettaDunbrackHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_dun 0 "Dunbrack Rotamer"
+    , el (Tooltips.rosettaOmegaPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.omega 0 "Omega Penalty"
+    , el (Tooltips.rosettaOpenProPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.pro_close 0 "Open Proline Penalty"
+    , el (Tooltips.rosettaTyroPenHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.yhh_planarity 0 "Tyrosine χ3 Dihedral Angle Penalty"
     ]
+
+
+aggrescan3dResultsTableView :
+    Metrics.DesignMetrics
+    -> DisplaySettings
+    -> Tooltips.HoverInfoOption
+    -> Element Msg
+aggrescan3dResultsTableView metrics displaySettings hoverInfoOption =
+    let
+        logInfoBox =
+            paragraph
+                [ spacing 20
+                , padding 20
+                , width fill
+                , Font.family
+                    [ Font.typeface "Roboto Mono"
+                    , Font.monospace
+                    ]
+                , Font.size 10
+                ]
+                [ text metrics.aggrescan3dResults.error_info
+                ]
+    in
+    sectionColumn
+        [ Style.h3 <| text "Aggrescan3D 2.0 - Aggregation Propensity Results"
+        , wrappedRow
+            [ spacing 5
+            , centerX
+            ]
+            [ el (Tooltips.agg3dTotalScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.total_value 2 "Total Score"
+            , el (Tooltips.agg3dAvgScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.avg_value 2 "Average Score"
+            , el (Tooltips.agg3dMinScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.min_value 2 "Minimum Score"
+            , el (Tooltips.agg3dMaxScoreHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.aggrescan3dResults.max_value 2 "Maximum Score"
+            ]
+        , Folds.sectionFoldView
+            { foldVisible = displaySettings.aggrescan3dLogInfo
+            , title = hideableSectionToString Aggrescan3dLogInfo
+            , toggleMsg = ToggleSectionVisibility Aggrescan3dLogInfo
+            , contentView = logInfoBox
+            }
+        ]
 
 
 referenceSetComparisonView : Element msg
@@ -1305,33 +1363,28 @@ cell =
 
 
 intText : Int -> Element msg
-intText =
-    String.fromInt >> text >> (\a -> cell a)
+intText value =
+    text (String.fromInt value)
 
 
-onePlaceFloatText : Float -> Element msg
-onePlaceFloatText =
-    Round.round 0
-        >> text
-        >> (\a -> cell a)
+roundFloatText : Float -> Int -> Element msg
+roundFloatText value digits =
+    text (Round.round digits value)
 
 
-createTableFloatColumn : Maybe Float -> String -> Element msg
-createTableFloatColumn =
-    createTableColumn
-        (\a ->
-            case a of
-                Just b ->
-                    onePlaceFloatText b
+createTableFloatColumn : Maybe Float -> Int -> String -> Element msg
+createTableFloatColumn value digits colName =
+    case value of
+        Just a ->
+            createTableColumn cell (roundFloatText a digits) colName
 
-                Nothing ->
-                    cell <| text "--"
-        )
+        Nothing ->
+            createTableColumn cell (text "--") colName
 
 
 
--- }}}
--- {{{ specificationView
+--- }}}
+--- {{{ specificationView
 
 
 specificationView : Metrics.DesignMetrics -> Specification -> Element msg
@@ -1353,6 +1406,11 @@ specificationView metrics { name, description, requirements } =
             , requirementView metrics requirements
             ]
         ]
+
+
+
+--- }}}
+--- {{{ requirementView
 
 
 requirementView :
@@ -1449,6 +1507,46 @@ requirementView metrics requirement =
                                         typeString
                                             ++ "CompositionDeviation:"
                                             ++ Requirement.stringFromUnitType unitType
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.BUDEFFTotal order value ->
+                                        typeString
+                                            ++ "BUDEFFTotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.EvoEF2Total order value ->
+                                        typeString
+                                            ++ "EvoEF2TotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.DFIRE2Total order value ->
+                                        typeString
+                                            ++ "DFIRE2TotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.RosettaTotal order value ->
+                                        typeString
+                                            ++ "RosettaTotalEnergy:"
+                                            ++ Requirement.stringFromOrder
+                                                order
+                                            ++ ":"
+                                            ++ String.fromFloat value
+
+                                    Requirement.Agg3DTotal order value ->
+                                        typeString
+                                            ++ "Agg3DTotalScore:"
+                                            ++ Requirement.stringFromOrder
+                                                order
                                             ++ ":"
                                             ++ String.fromFloat value
                         in

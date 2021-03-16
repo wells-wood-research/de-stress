@@ -1,5 +1,6 @@
 module Shared.Metrics exposing
     ( AggregateData
+    , Aggrescan3DResults
     , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
@@ -15,7 +16,6 @@ module Shared.Metrics exposing
     , createCompositionSpec
     , createTorsionAngleSpec
     , desMetricsCodec
-    , overviewSpec
     , refSetMetricsCodec
     , torsionAngleStringToDict
     )
@@ -42,9 +42,11 @@ type alias DesignMetrics =
     , mass : Float
     , numOfResidues : Int
     , packingDensity : Float
+    , budeFFResults : BudeFFResults
     , evoEF2Results : EvoEF2Results
     , dfire2Results : DFIRE2Results
     , rosettaResults : RosettaResults
+    , aggrescan3dResults : Aggrescan3DResults
     }
 
 
@@ -69,9 +71,11 @@ desMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.field "budeFFResults" .budeFFResults budeFFResultsCodec
         |> Codec.field "evoEF2Results" .evoEF2Results evoEF2ResultsCodec
         |> Codec.field "dfire2Results" .dfire2Results dfire2ResultsCodec
         |> Codec.field "rosettaResults" .rosettaResults rosettaResultsCodec
+        |> Codec.field "aggrescan3dResults" .aggrescan3dResults aggrescan3DResultsCodec
         |> Codec.buildObject
 
 
@@ -86,6 +90,29 @@ sequenceInfoCodec =
     Codec.object SequenceInfo
         |> Codec.field "sequence" .sequence Codec.string
         |> Codec.field "dsspAssignment" .dsspAssignment Codec.string
+        |> Codec.buildObject
+
+
+
+-- }}}
+-- {{{ BudeFFResults
+
+
+type alias BudeFFResults =
+    { totalEnergy : Maybe Float
+    , steric : Maybe Float
+    , desolvation : Maybe Float
+    , charge : Maybe Float
+    }
+
+
+budeFFResultsCodec : Codec BudeFFResults
+budeFFResultsCodec =
+    Codec.object BudeFFResults
+        |> Codec.field "totalEnergy" .totalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "steric" .steric (Codec.maybe Codec.float)
+        |> Codec.field "desolvation" .desolvation (Codec.maybe Codec.float)
+        |> Codec.field "charge" .charge (Codec.maybe Codec.float)
         |> Codec.buildObject
 
 
@@ -336,6 +363,45 @@ rosettaResultsCodec =
 
 
 -- }}}
+-- {{{ Aggrescan3DResults
+
+
+type alias Aggrescan3DResults =
+    { log_info : String
+    , error_info : String
+    , return_code : Int
+    , protein_list : Maybe String
+    , chain_list : Maybe String
+    , residue_number_list : Maybe String
+    , residue_name_list : Maybe String
+    , residue_score_list : Maybe String
+    , max_value : Maybe Float
+    , avg_value : Maybe Float
+    , min_value : Maybe Float
+    , total_value : Maybe Float
+    }
+
+
+aggrescan3DResultsCodec : Codec Aggrescan3DResults
+aggrescan3DResultsCodec =
+    Codec.object Aggrescan3DResults
+        |> Codec.field "log_info" .log_info Codec.string
+        |> Codec.field "error_info" .error_info Codec.string
+        |> Codec.field "return_code" .return_code Codec.int
+        |> Codec.field "protein_list" .protein_list (Codec.maybe Codec.string)
+        |> Codec.field "chain_list" .chain_list (Codec.maybe Codec.string)
+        |> Codec.field "residue_number_list" .residue_number_list (Codec.maybe Codec.string)
+        |> Codec.field "residue_name_list" .residue_name_list (Codec.maybe Codec.string)
+        |> Codec.field "residue_score_list" .residue_score_list (Codec.maybe Codec.string)
+        |> Codec.field "max_value" .max_value (Codec.maybe Codec.float)
+        |> Codec.field "avg_value" .avg_value (Codec.maybe Codec.float)
+        |> Codec.field "min_value" .min_value (Codec.maybe Codec.float)
+        |> Codec.field "total_value" .total_value (Codec.maybe Codec.float)
+        |> Codec.buildObject
+
+
+
+-- }}}
 -- {{{ RefSetMetrics
 
 
@@ -507,50 +573,6 @@ torsionAngleParser =
 
 -- }}}
 -- {{{ Plotting
-
-
-overviewSpec : String -> Dict String Float -> VL.Spec
-overviewSpec metricName overviewMetricDict =
-    let
-        data =
-            VL.dataFromColumns []
-                << VL.dataColumn
-                    "Designs"
-                    (VL.strs <|
-                        Dict.keys overviewMetricDict
-                    )
-                << VL.dataColumn
-                    metricName
-                    (VL.nums <|
-                        Dict.values overviewMetricDict
-                    )
-
-        config =
-            (VL.configure
-                << VL.configuration (VL.coView [ VL.vicoStroke <| Just "transparent" ])
-                << VL.configuration (VL.coAxis [ VL.axcoDomainWidth 1 ])
-            )
-                []
-    in
-    VL.toVegaLite
-        [ data []
-        , VL.spacing 2
-        , VL.bar
-            []
-        , (VL.encoding
-            << VL.column
-                [ VL.fName "Designs"
-                , VL.fMType VL.Nominal
-                ]
-            << VL.position VL.Y
-                [ VL.pName metricName
-                , VL.pMType VL.Quantitative
-                , VL.pAxis [ VL.axTitle metricName, VL.axGrid True ]
-                ]
-          )
-            []
-        , config
-        ]
 
 
 createAllHistogramsSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec

@@ -13,6 +13,7 @@ port module Shared exposing
     , view
     )
 
+import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
 import Csv.Decode exposing (errorToString)
@@ -57,6 +58,8 @@ type alias Model =
     { url : Url
     , key : Key
     , errors : List Error
+    , height : Int
+    , width : Int
     , appState : AppState
     }
 
@@ -160,6 +163,8 @@ type alias InitialData =
             , referenceSets : Dict String ReferenceSet.StoredReferenceSet
             , mSelectedReferenceSet : Maybe String
             }
+    , windowHeight : Int
+    , windowWidth : Int
     }
 
 
@@ -170,13 +175,15 @@ flagsCodec =
         |> Codec.field "mInitialState"
             .mInitialState
             (storedRunStateCodec |> Codec.maybe)
+        |> Codec.field "windowHeight" .windowHeight Codec.int
+        |> Codec.field "windowWidth" .windowWidth Codec.int
         |> Codec.buildObject
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     ( case Codec.decodeValue flagsCodec flags of
-        Ok { initialSeed, mInitialState } ->
+        Ok { initialSeed, mInitialState, windowHeight, windowWidth } ->
             let
                 resourceUuid =
                     ResourceUuid.createInitialUuid initialSeed
@@ -186,6 +193,8 @@ init flags url key =
                     { url = url
                     , key = key
                     , errors = []
+                    , width = windowWidth
+                    , height = windowHeight
                     , appState =
                         Running
                             { resourceUuid = resourceUuid
@@ -205,6 +214,8 @@ init flags url key =
                     { url = url
                     , key = key
                     , errors = []
+                    , width = windowWidth
+                    , height = windowHeight
                     , appState =
                         Running
                             { resourceUuid = resourceUuid
@@ -222,6 +233,8 @@ init flags url key =
             { url = url
             , key = key
             , errors = []
+            , width = 0
+            , height = 0
             , appState =
                 FailedToDecodeFlags codecError |> FailedToLaunch
             }
@@ -238,6 +251,7 @@ type Msg
     = SetWebSocketConnectionStatus Value
     | WebSocketIncoming Value
     | DismissError Int
+    | PageDimensionsChanged Int Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -373,12 +387,21 @@ update msg model =
             , Cmd.none
             )
 
+        PageDimensionsChanged width height ->
+            ( { model
+                | width = width
+                , height = height
+              }
+            , Cmd.none
+            )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ setWebSocketConnectionStatus SetWebSocketConnectionStatus
         , WebSockets.incoming WebSocketIncoming
+        , Browser.Events.onResize PageDimensionsChanged
         ]
 
 
@@ -491,11 +514,6 @@ viewHeader connStat currentRoute =
             ([ viewLink currentRoute ( text "Designs", Route.DeStress__Designs )
              , viewLink currentRoute ( text "Reference Sets", Route.DeStress__ReferenceSets )
              , viewLink currentRoute ( text "Specifications", Route.DeStress__Specifications )
-             , viewLink currentRoute
-                ( FeatherIcons.settings
-                    |> Style.featherIconToElmUi
-                , Route.NotFound
-                )
              ]
                 |> List.intersperse (el [ centerY, Font.color Style.colorPalette.c4 ] <| text "|")
             )

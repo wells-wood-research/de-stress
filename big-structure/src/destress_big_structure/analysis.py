@@ -7,25 +7,36 @@ import subprocess
 import tempfile
 import re
 import json
+import csv
+import warnings
 
 from bs4 import BeautifulSoup
 import ampal
+import budeff
+import budeff.force_field
 import isambard.evaluation as ev
 import numpy as np
 import requests
 
 from .elm_types import (
     DesignMetrics,
+    BudeFFOutput,
     EvoEF2Output,
     DFIRE2Output,
     RosettaOutput,
+    Aggrescan3DOutput,
     SequenceInfo,
 )
 from destress_big_structure.settings import (
     EVOEF2_BINARY_PATH,
     DFIRE2_FOLDER_PATH,
     ROSETTA_BINARY_PATH,
+    AGGRESCAN3D_SCRIPT_PATH,
 )
+
+# We're suppressing warnings about atoms not being parameterised in BUDE FF
+# I'm not reporting this as the user should look into BUDE FF to understand how it works
+warnings.simplefilter("ignore", budeff.force_field.NotParameterisedWarning)
 
 # {{{ Input Validation
 
@@ -98,6 +109,7 @@ def convert_string_to_float(input_string: str) -> Optional[float]:
         Output float if the conversion is successful. None if the conversion has failed.
     """
 
+    output_float: Optional[float]
     try:
         output_float = float(input_string)
     except ValueError:
@@ -212,7 +224,7 @@ class JpredSubmission:
 
 
 # }}}
-# {{{ DesignMetrics
+# {{{ Analyse Design
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
@@ -226,6 +238,15 @@ def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
 
 
 def analyse_design(design: ampal.Assembly) -> DesignMetrics:
+    assert (
+        EVOEF2_BINARY_PATH
+    ), "EVOEF2_BINARY_PATH is not defined, check you `.env` file"
+    assert (
+        DFIRE2_FOLDER_PATH
+    ), "DFIRE2_FOLDER_PATH is not defined, check you `.env` file"
+    assert (
+        ROSETTA_BINARY_PATH
+    ), "ROSETTA_BINARY_PATH is not defined, check you `.env` file"
     ev.tag_dssp_data(design)
     sequence_info = {
         chain.id: SequenceInfo(
@@ -256,13 +277,17 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         num_of_residues=num_of_residues,
         mass=mass,
         packing_density=design_mean_packing_density(design),
+        budeFF_results=run_bude_ff(design),
         evoEF2_results=run_evoef2(design.pdb, EVOEF2_BINARY_PATH),
         dfire2_results=run_dfire2(design.pdb, DFIRE2_FOLDER_PATH),
         rosetta_results=run_rosetta(design.pdb, ROSETTA_BINARY_PATH),
+        aggrescan3d_results=run_aggrescan3d(design.pdb, AGGRESCAN3D_SCRIPT_PATH),
     )
     return design_metrics
 
 
+# }}}
+# {{{ DesignMetrics
 def design_hydrophobic_fitness(design: ampal.Assembly) -> Optional[float]:
     try:
         hydrophobic_fitness = ev.calculate_hydrophobic_fitness(design)
@@ -302,6 +327,31 @@ def analyse_chain(chain: ampal.Polymer) -> Dict:
 
 def chain_sequence(chain: ampal.Polypeptide) -> str:
     return chain.sequence
+
+
+# }}}
+# {{{ BUDE FF
+
+
+def run_bude_ff(ampal_assembly: ampal.Assembly) -> BudeFFOutput:
+    """Calculates the BUDE FF internal energy for the design."""
+    try:
+        budeff_score = budeff.get_internal_energy(ampal_assembly)
+        budeff_output = BudeFFOutput(
+            total_energy=budeff_score.total_energy,
+            steric=budeff_score.steric,
+            desolvation=budeff_score.desolvation,
+            charge=budeff_score.charge,
+        )
+    except KeyError:
+        # Contains an unknown atom
+        budeff_output = BudeFFOutput(
+            total_energy=None,
+            steric=None,
+            desolvation=None,
+            charge=None,
+        )
+    return budeff_output
 
 
 # }}}
@@ -553,7 +603,7 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
 # {{{ RosettaOutput
 
 
-def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
+def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
     """Defining a function to run the Rosetta energy function on an input PDB file,
        parse the output file and return a RosettaOutput object.
 
@@ -671,6 +721,179 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> str:
 
     # Returning the output
     return rosetta_output
+
+
+# }}}
+# # {{{ Aggrescan3DOutput
+
+
+def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3DOutput:
+    """Defining a function to run the aggrescan3D function on an input PDB file,
+       parse the output file and return a Aggrescan3DOutput object.
+
+    Notes
+    -----
+    Reference: Kuriata, A., Iglesias, V., Kurcinski, M., Ventura, S., & Kmiecik, S. (2019).
+               Aggrescan3D standalone package for structure-based prediction of protein
+               aggregation properties. Bioinformatics, 35(19), 3834–3835.
+               https://doi.org/10.1093/bioinformatics/btz143
+
+    Parameters
+    ----------
+    pdb_file_path: str
+        File path for the PDB file.
+    aggrescan3d_script_path: str
+        Folder path for the Aggrescan3D function.
+
+    Returns
+    -------
+    aggrescan3D_output: Aggrescan3DOutput
+        Aggrescan3DOutput object which contains the log and error information from the
+        Aggrescan3D run and the function output.
+    """
+
+    # Creating a list of the energy value fields
+    aggrescan3d_field_list = [
+        "protein_list",
+        "chain_list",
+        "residue_number_list",
+        "residue_name_list",
+        "residue_score_list",
+        "max_value",
+        "avg_value",
+        "min_value",
+        "total_value",
+    ]
+
+    # Creating a dictionary of all these set to None
+    # which we will return if aggrescan3d returns any
+    # errors
+    aggrescan3d_none_dict = dict(
+        zip(aggrescan3d_field_list, [None] * len(aggrescan3d_field_list))
+    )
+
+    starting_directory = pathlib.Path.cwd()
+    with tempfile.TemporaryDirectory() as tmp:
+
+        # Changing the working directory to the temporary folder so that Aggrescan3D
+        # does not create files in the users working directory
+        os.chdir(tmp)
+
+        with tempfile.NamedTemporaryFile(mode="w") as pdb:
+
+            # Writing the pdb string to a temp file as the input for Aggrescan3D
+            pdb.write(pdb_string)
+
+            # Creating bash command
+            cmd = [
+                "python2",
+                aggrescan3d_script_path,
+                pdb.name,
+            ]
+
+            # Using subprocess to run this command and capturing the output
+            aggrescan3D_stdout = subprocess.run(cmd, capture_output=True)
+
+        try:
+            aggrescan3D_stdout.check_returncode()
+
+            try:
+                assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
+                    "output/A3D.csv"
+                )
+
+                # Firstly getting the summary aggrescan3d score values
+                # from a json file
+                with open("output/tmp/folded_stats") as json_file:
+                    aggrescan3d_summary = json.load(json_file)["All"]
+
+                # Now getting the residue level aggrescan3d score values
+                # from a csv file
+                with open("output/A3D.csv") as csv_file:
+
+                    # Reading csv file
+                    csv_reader = csv.reader(csv_file, delimiter=",")
+
+                    # Initialising lists to capture the output
+                    protein_list = []
+                    chain_list = []
+                    residue_number_list = []
+                    residue_name_list = []
+                    residue_score_list = []
+
+                    # Looping through each row in the csv file and appending to
+                    # the lists that were initialised above
+                    line_count = 0
+                    for row in csv_reader:
+                        if line_count > 0:
+                            protein_list.append(row[0])
+                            chain_list.append(row[1])
+                            residue_number_list.append(row[2])
+                            residue_name_list.append(row[3])
+                            residue_score_list.append(row[4])
+                        line_count += 1
+
+                    # Converting to floats and then back to strings.
+                    # This is to ensure the values are floats but they
+                    # need to be strings to be inserted into the sql table
+                    residue_score_list = list(
+                        map(convert_string_to_float, residue_score_list)
+                    )
+                    residue_score_list = list(map(str, residue_score_list))
+
+                    # Converting these lists into strings so that they can be inputted into
+                    # the sql database
+                    protein_list = ";".join(protein_list)
+                    chain_list = ";".join(chain_list)
+                    residue_number_list = ";".join(residue_number_list)
+                    residue_name_list = ";".join(residue_name_list)
+                    residue_score_list = ";".join(residue_score_list)
+
+                    # Creating a dictionary of these lists
+                    aggrescan3d_residue = {
+                        "protein_list": protein_list,
+                        "chain_list": chain_list,
+                        "residue_number_list": residue_number_list,
+                        "residue_name_list": residue_name_list,
+                        "residue_score_list": residue_score_list,
+                    }
+
+                    # Combining the two dictionaries
+                    aggrescan3d_results = {**aggrescan3d_summary, **aggrescan3d_residue}
+
+            except AssertionError:
+
+                # Setting all the aggrescan3d_results to None
+                aggrescan3d_results = aggrescan3d_none_dict
+
+        except subprocess.CalledProcessError:
+
+            # Setting all the aggrescan3d_results to None
+            aggrescan3d_results = aggrescan3d_none_dict
+
+    # Extracting the log information
+    log_info = aggrescan3D_stdout.stdout.decode()
+
+    # Extracting error information and the return code
+    error_info = aggrescan3D_stdout.stderr.decode()
+    return_code = aggrescan3D_stdout.returncode
+
+    # There should be 9 aggrescan3d_results fields
+    assert len(aggrescan3d_results) == 9
+
+    # Creating an Aggrescan3DOutput object by unpacking the output dictionary
+    aggrescan3d_output = Aggrescan3DOutput(
+        log_info=log_info,
+        error_info=error_info,
+        return_code=return_code,
+        **aggrescan3d_results,
+    )
+
+    # Change back to starting directory
+    os.chdir(starting_directory)
+
+    # Returning the output
+    return aggrescan3d_output
 
 
 # }}}

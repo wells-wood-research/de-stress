@@ -15,6 +15,11 @@ ENV PYTHONFAULTHANDLER=1 \
 # System deps:
 RUN pip install "poetry==$POETRY_VERSION"
 
+# Installing aggrescan3D
+RUN wget https://bootstrap.pypa.io/pip/2.7/get-pip.py \
+    && python2 get-pip.py \ 
+    && pip2 install Aggrescan3D
+
 # Copy only requirements to cache them in docker layer
 COPY ./poetry.lock ./pyproject.toml /app/
 

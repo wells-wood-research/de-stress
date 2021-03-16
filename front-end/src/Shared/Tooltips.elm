@@ -1,5 +1,13 @@
 module Shared.Tooltips exposing
     ( HoverInfoOption(..)
+    , agg3dAvgScoreHoverBox
+    , agg3dMaxScoreHoverBox
+    , agg3dMinScoreHoverBox
+    , agg3dTotalScoreHoverBox
+    , budeFFChargeHoverBox
+    , budeFFDesolvationHoverBox
+    , budeFFStericHoverBox
+    , budeFFTotalEnergyHoverBox
     , dfire2TotalHoverBox
     , evoEF2InterDDesolvHHoverBox
     , evoEF2InterDDesolvPHoverBox
@@ -95,12 +103,15 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import FeatherIcons
 import Shared.Style as Style
 
 
 type HoverInfoOption
-    = EvoEF2Total
+    = BudeFFTotalEnergy
+    | BudeFFSteric
+    | BudeFFDesolvation
+    | BudeFFCharge
+    | EvoEF2Total
     | EvoEF2RefTotal
     | EvoEF2IntaRTotal
     | EvoEF2InterSTotal
@@ -187,6 +198,10 @@ type HoverInfoOption
     | RosettaOmegaPen
     | RosettaOpenProPen
     | RosettaTyroPen
+    | Agg3dTotalScore
+    | Agg3dAvgScore
+    | Agg3dMinScore
+    | Agg3dMaxScore
     | NoHoverInfo
 
 
@@ -242,7 +257,63 @@ hoverInfoView { title, info, mouseEnterMsg, hoverInfoOption, changeMsg } =
 
 
 
--- {{ EvoEF2 Summary Tooltips
+-- {{{ BUDE FF Tooltips
+
+
+budeFFTotalEnergyHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFTotalEnergyHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Total Energy"
+        , info = """This value is the total BUDE force field energy. It is the sum of
+                 the steric, desolvation and charge components.
+                 """
+        , mouseEnterMsg = BudeFFTotalEnergy
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+budeFFStericHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFStericHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Steric Energy"
+        , info = """This value is the steric component of the BUDE force field energy.
+                 It is calculated with a simplified Leonard-Jones potential. It is
+                 softer than the steric component of many other force fields.
+                 """
+        , mouseEnterMsg = BudeFFSteric
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+budeFFDesolvationHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFDesolvationHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Desolvation Energy"
+        , info = """This value is the desolvation component of the BUDE force field energy.
+                 """
+        , mouseEnterMsg = BudeFFDesolvation
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+budeFFChargeHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+budeFFChargeHoverBox option changeMsg =
+    hoverInfoView
+        { title = "BUDE FF Charge Energy"
+        , info = """This value is the charge component of the BUDE force field energy.
+                 """
+        , mouseEnterMsg = BudeFFCharge
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+
+-- }}}
+-- {{{ EvoEF2 Summary Tooltips
 
 
 evoEF2SummaryTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -307,8 +378,8 @@ evoEF2SummaryInterDHoverBox option changeMsg =
 
 
 
--- }}
--- {{ EvoEF2 Reference Tooltips
+-- }}}
+-- {{{ EvoEF2 Reference Tooltips
 
 
 evoEF2RefALAHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -552,8 +623,8 @@ evoEF2RefTYRHoverBox option changeMsg =
 
 
 
---}}
---{{ EvoEF2 IntraR Tooltips
+-- }}}
+-- {{{ EvoEF2 IntraR Tooltips
 
 
 evoEF2IntraRVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -694,8 +765,8 @@ evoEF2IntraRHBSCBBPhiHoverBox option changeMsg =
 
 
 
---}}
---{{ EvoEF2 InterS Tooltips
+-- }}}
+-- {{{ EvoEF2 InterS Tooltips
 
 
 evoEF2InterSVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -894,8 +965,8 @@ evoEF2InterSHBSCSCPhiHoverBox option changeMsg =
 
 
 
---}}
--- {{ EvoEF2 InterD Tooltips
+-- }}}
+-- {{{ EvoEF2 InterD Tooltips
 
 
 evoEF2InterDVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -1094,8 +1165,8 @@ evoEF2InterDHBSCSCPhiHoverBox option changeMsg =
 
 
 
---}}
---{{ DFIRE2 Total Tooltip
+-- }}}
+-- {{{ DFIRE2 Total Tooltip
 
 
 dfire2TotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -1111,8 +1182,8 @@ dfire2TotalHoverBox option changeMsg =
 
 
 
---}}
---{{ Rosetta Tooltips
+-- }}}
+-- {{{ Rosetta Tooltips
 
 
 rosettaTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
@@ -1366,4 +1437,59 @@ rosettaTyroPenHoverBox option changeMsg =
 
 
 
---}}
+-- }}}
+-- {{{ Aggrescan3d Tooltips
+
+
+agg3dTotalScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dTotalScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Total Score"
+        , info = """This value is a global indicator of the aggregation propensity/solubility of the protein structure. 
+                    It depends on the protein size. It allows assessing changes in solubility promoted by 
+                    amino acid substitutions in a particular protein structure. The more negative the value, 
+                    the highest the global solubility."""
+        , mouseEnterMsg = Agg3dTotalScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+agg3dAvgScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dAvgScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Average Score"
+        , info = """This value is a normalized indicator of the aggregation propensity/solubility of the protein structure. 
+                    Allows comparing the solubility of different protein structures. It also allows assessing 
+                    changes in solubility promoted by amino acid substitutions in a particular protein structure. 
+                    The more negative the value, the highest the normalized solubility."""
+        , mouseEnterMsg = Agg3dAvgScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+agg3dMinScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dMinScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Minimum Score"
+        , info = """This is the value of the most soluble residue in the structural context."""
+        , mouseEnterMsg = Agg3dMinScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+agg3dMaxScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+agg3dMaxScoreHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Maximum Score"
+        , info = """This is the value of the most aggregation-prone residue in the structural context."""
+        , mouseEnterMsg = Agg3dMaxScore
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+
+-- }}}

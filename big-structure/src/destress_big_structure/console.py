@@ -1,5 +1,7 @@
 from datetime import datetime
 import gzip as gz
+import os
+import multiprocessing as mp
 from pathlib import Path
 import random
 import re
@@ -19,6 +21,8 @@ from destress_big_structure.big_structure_models import (
 )
 import destress_big_structure.create_entry as create_entry
 
+ProcPdbResult = tp.Union[tp.Tuple[str, PdbModel], tp.Tuple[str, str]]
+
 
 def dev_run():
     app.run()
@@ -26,7 +30,9 @@ def dev_run():
 
 @click.command()
 @click.argument("path_to_data", type=click.Path(exists=True))
-@click.option("--take", default=-1, help="Number of entries to process.")
+@click.option(
+    "--take", default=-1, help="Number of entries to process (to nearest 100)."
+)
 @click.option(
     "--shuffle/--no-shuffle",
     default=False,
@@ -35,9 +41,14 @@ def dev_run():
         "to make testing databases."
     ),
 )
-def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool):
+@click.option(
+    "--processes",
+    default=1,
+    help=("Sets the number of processes used to process structure files."),
+)
+def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool, processes: int):
     """Creates the full database for the DeStrES Big Structure application."""
-    data_dir = Path(path_to_data)
+    data_dir = Path(path_to_data).resolve()
     pdb_data = data_dir / "pdb"
     assert pdb_data.exists(), f"Can't find `pdb` folder in `{data_dir}`."
     biounit_data = data_dir / "biounit"
@@ -54,38 +65,52 @@ def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool):
 
     taken = 0
     failed: tp.Dict[str, str] = {}
-    for pdb_path in pdb_paths:
-        try:
-            pdb_model = process_pdb(pdb_path, biounit_data, xml_data)
-        except AssertionError as e:
-            failed[str(pdb_path)] = str(e)
-            continue
-        big_structure_db_session.add_all([pdb_model])
-        big_structure_db_session.commit()
-        print(f"Added {pdb_path}.")
-        taken += 1
-        if taken == take:
-            break
+    BATCH_SIZE = 100
+    with mp.Pool(processes) as process_pool:
+        for path_batch in [
+            pdb_paths[x : x + BATCH_SIZE] for x in range(0, len(pdb_paths), BATCH_SIZE)
+        ]:
+            batch_results = process_pool.map(
+                process_pdb,
+                [(pdb_path, biounit_data, xml_data) for pdb_path in path_batch],
+            )
+            pdb_models = []
+            for result in batch_results:
+                if isinstance(result[1], PdbModel):
+                    pdb_models.append(result)
+                else:
+                    failed[result[0]] = result[1]
+            big_structure_db_session.add_all(pdb_model[1] for pdb_model in pdb_models)
+            big_structure_db_session.commit()
+            for added_path, _ in pdb_models:
+                taken += 1
+                print(f"Added {added_path}.")
+            if taken == take:
+                break
     for (k, v) in failed.items():
         print(f"----\n{k}\n{v}\n")
 
 
-def process_pdb(pdb_path: Path, biounit_data: Path, xml_data: Path) -> PdbModel:
-    pdb_code = pdb_path.name[3:7]
-    biounit_paths = list((biounit_data / pdb_code[1:3]).glob(f"{pdb_code}.pdb*.gz"))
-    xml_path = xml_data / pdb_code[1:3] / f"{pdb_code}-noatom.xml.gz"
-    assert biounit_paths, f"No biological units found for {pdb_code}."
-    assert xml_path.exists(), f"No PDBML file found for {pdb_code}."
-    pdb_information = get_pdb_information(xml_path)
-    pdb_model = PdbModel(
-        pdb_code=pdb_code,
-        deposition_date=datetime.strptime(
-            pdb_information["deposition_date"], "%Y-%m-%d"
-        ).date(),
-        method=pdb_information["method"],
-    )
-    _ = process_biounits(pdb_path, biounit_paths, pdb_model)
-    return pdb_model
+def process_pdb(input_arguments: tp.Tuple[Path, Path, Path]) -> ProcPdbResult:
+    pdb_path, biounit_data, xml_data = input_arguments
+    try:
+        pdb_code = pdb_path.name[3:7]
+        biounit_paths = list((biounit_data / pdb_code[1:3]).glob(f"{pdb_code}.pdb*.gz"))
+        xml_path = xml_data / pdb_code[1:3] / f"{pdb_code}-noatom.xml.gz"
+        assert biounit_paths, f"No biological units found for {pdb_code}."
+        assert xml_path.exists(), f"No PDBML file found for {pdb_code}."
+        pdb_information = get_pdb_information(xml_path)
+        pdb_model = PdbModel(
+            pdb_code=pdb_code,
+            deposition_date=datetime.strptime(
+                pdb_information["deposition_date"], "%Y-%m-%d"
+            ).date(),
+            method=pdb_information["method"],
+        )
+        _ = process_biounits(pdb_path, biounit_paths, pdb_model)
+        return (str(pdb_path), pdb_model)
+    except Exception as e:
+        return (str(pdb_path), str(e))
 
 
 def get_pdb_information(xml_path: Path) -> tp.Dict[str, str]:

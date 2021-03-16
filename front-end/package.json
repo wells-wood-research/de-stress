@@ -15,7 +15,8 @@
     "build:elm-spa": "elm-spa build .",
     "dev:elm": "elm-live src/Main.elm -u -d public -- --debug --output=public/dist/elm.compiled.js",
     "dev:elm-spa": "chokidar src/Pages -c \"elm-spa build .\"",
-    "bundle": "webpack"
+    "bundle": "webpack",
+    "build_graphql": "elm-graphql http://127.0.0.1:8181/graphql --base BigStructure --output src/"
   },
   "keywords": [],
   "author": "",

@@ -7,9 +7,11 @@ from .big_structure_models import (
     BiolUnitModel,
     StateModel,
     ChainModel,
+    BudeFFResultsModel,
     EvoEF2ResultsModel,
     DFIRE2ResultsModel,
     RosettaResultsModel,
+    Aggrescan3DResultsModel,
 )
 from .design_models import DesignModel, DesignChainModel
 from destress_big_structure.design_models import designs_db_session
@@ -35,6 +37,11 @@ class Chain(SQLAlchemyObjectType):
         model = ChainModel
 
 
+class BudeFFResults(SQLAlchemyObjectType):
+    class Meta:
+        model = BudeFFResultsModel
+
+
 class EvoEF2Results(SQLAlchemyObjectType):
     class Meta:
         model = EvoEF2ResultsModel
@@ -48,6 +55,11 @@ class DFIRE2Results(SQLAlchemyObjectType):
 class RosettaResults(SQLAlchemyObjectType):
     class Meta:
         model = RosettaResultsModel
+
+
+class Aggrescan3DResults(SQLAlchemyObjectType):
+    class Meta:
+        model = Aggrescan3DResultsModel
 
 
 class Query(graphene.ObjectType):
@@ -215,6 +227,22 @@ class Query(graphene.ObjectType):
         query = Chain.get_query(info)
         return query.count()
 
+    all_budeff_results = graphene.NonNull(
+        graphene.List(graphene.NonNull(BudeFFResults), required=True),
+        description=(
+            "Gets all bude ff results records. Accepts the argument `first`, which "
+            "allows you to limit the number of results."
+        ),
+        first=graphene.Int(),
+    )
+
+    def resolve_all_budeff_results(self, info, **args):
+        query = BudeFFResults.get_query(info)
+        first = args.get("first")
+        if first:
+            return query.limit(first).all()
+        return query.all()
+
     all_evoef2_results = graphene.NonNull(
         graphene.List(graphene.NonNull(EvoEF2Results), required=True),
         description=(
@@ -258,6 +286,22 @@ class Query(graphene.ObjectType):
 
     def resolve_all_rosetta_results(self, info, **args):
         query = RosettaResults.get_query(info)
+        first = args.get("first")
+        if first:
+            return query.limit(first).all()
+        return query.all()
+
+    all_aggrescan3d_results = graphene.NonNull(
+        graphene.List(graphene.NonNull(Aggrescan3DResults), required=True),
+        description=(
+            "Gets all aggrescan3d results records. Accepts the argument `first`, which "
+            "allows you to limit the number of results."
+        ),
+        first=graphene.Int(),
+    )
+
+    def resolve_all_aggrescan3d_results(self, info, **args):
+        query = Aggrescan3DResults.get_query(info)
         first = args.get("first")
         if first:
             return query.limit(first).all()

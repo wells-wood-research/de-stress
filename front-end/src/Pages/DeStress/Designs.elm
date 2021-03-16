@@ -9,6 +9,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import FeatherIcons
@@ -22,9 +23,8 @@ import Shared.Buttons as Buttons
 import Shared.Design as Design exposing (Design)
 import Shared.Editable as Editable
 import Shared.Error as Error
-import Shared.Folds as Folds
-import Shared.Metrics as Metrics exposing (DesignMetrics)
-import Shared.Plots as Plots exposing (ColumnData)
+import Shared.Metrics as Metrics
+import Shared.Plots as Plots
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification exposing (Specification)
 import Shared.Style as Style
@@ -35,6 +35,7 @@ import Spa.Page as Page exposing (Page)
 import Spa.Url exposing (Url)
 import Task
 import Utils.Route exposing (navigate)
+import VegaLite as VL
 
 
 page : Page Params Model Msg
@@ -70,24 +71,38 @@ type alias Model =
     , pageErrors : List Error.Error
     , designs : Dict String Design.StoredDesign
     , mSelectedSpecification : Maybe Specification
-
-    -- , overviewOptionDropDown : DropDown.Model String
-    -- , mOverviewInfo : Maybe MetricPlots.ColumnData
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
     , selectedUuids : Set.Set String
     , tagString : String
     , filterTags : Set.Set String
-    , displaySettings :
-        { controlPanel : Bool
-        , overviewPlots : Bool
-        }
+    , device : Device
+    , columnViewMode : ColumnViewMode
     }
 
 
 type DesignLoadingState
     = LoadingFiles Int Int
     | Free
+
+
+type ColumnViewMode
+    = DesignList
+    | OverviewPlots
+    | ControlPanel
+
+
+columnViewModeToString : ColumnViewMode -> String
+columnViewModeToString viewMode =
+    case viewMode of
+        DesignList ->
+            "Design List"
+
+        OverviewPlots ->
+            "Overview Plots"
+
+        ControlPanel ->
+            "Control Panel"
 
 
 
@@ -116,16 +131,22 @@ init shared _ =
             , pageErrors = []
             , designs = designDict
             , mSelectedSpecification = Nothing
-
-            --, overviewOptionDropDown = DropDown.init <| Tuple.first defaultPlotableOption
-            --, mOverviewInfo = Nothing
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
             , selectedUuids = Set.empty
             , tagString = ""
             , filterTags = Set.empty
-            , displaySettings = { controlPanel = False, overviewPlots = False }
+            , device = classifyDevice shared
+            , columnViewMode = DesignList
             }
+
+        plotCmd =
+            model.designs
+                |> Dict.toList
+                |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                |> Dict.fromList
+                |> makeOverViewSpec model.device
+                |> Plots.vegaPlot
     in
     ( model
     , Cmd.batch
@@ -140,6 +161,23 @@ init shared _ =
                         Cmd.none
 
             Nothing ->
+                Cmd.none
+        , case
+            ( model.columnViewMode
+            , model.device.class
+            , model.device.orientation
+            )
+          of
+            ( OverviewPlots, _, _ ) ->
+                plotCmd
+
+            ( _, Desktop, Landscape ) ->
+                plotCmd
+
+            ( _, BigDesktop, Landscape ) ->
+                plotCmd
+
+            _ ->
                 Cmd.none
         ]
     )
@@ -159,28 +197,13 @@ type Msg
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
     | ClearPageErrors
-    | ToggleSectionVisibility HideableSection
     | SelectedDesign String Bool
     | UpdateTagString String
     | AddTags (Set.Set String) String
     | CancelSelection
     | UpdateFilterTags FilterTagsOption
+    | ChangeColumnViewMode ColumnViewMode
     | ExportAllDesignData
-
-
-type HideableSection
-    = OverviewPlots
-    | ControlPanel
-
-
-hideableSectionToString : HideableSection -> String
-hideableSectionToString hideableSection =
-    case hideableSection of
-        OverviewPlots ->
-            "Overview Plots"
-
-        ControlPanel ->
-            "Control Panel"
 
 
 type FilterTagsOption
@@ -355,10 +378,7 @@ update msg model =
                         { model | designs = Dict.remove uuidString model.designs }
                 in
                 ( updatedModel
-                , Cmd.batch
-                    [ Design.deleteDesign { uuidString = uuidString }
-                    , makeOverViewSpecCmd model
-                    ]
+                , Design.deleteDesign { uuidString = uuidString }
                 )
 
             else
@@ -388,10 +408,7 @@ update msg model =
                         }
                 in
                 ( updatedModel
-                , Cmd.batch
-                    [ Design.deleteAllDesigns ()
-                    , makeOverViewSpecCmd updatedModel
-                    ]
+                , Design.deleteAllDesigns ()
                 )
 
             else
@@ -408,37 +425,6 @@ update msg model =
 
         ClearPageErrors ->
             ( { model | pageErrors = [] }, Cmd.none )
-
-        ToggleSectionVisibility section ->
-            let
-                displaySettings =
-                    model.displaySettings
-
-                newModel =
-                    { model
-                        | displaySettings =
-                            case section of
-                                OverviewPlots ->
-                                    { displaySettings
-                                        | overviewPlots =
-                                            not displaySettings.overviewPlots
-                                    }
-
-                                ControlPanel ->
-                                    { displaySettings
-                                        | controlPanel =
-                                            not displaySettings.controlPanel
-                                    }
-                    }
-            in
-            ( newModel
-            , case ( section, newModel.displaySettings.overviewPlots ) of
-                ( OverviewPlots, True ) ->
-                    makeOverViewSpecCmd model
-
-                _ ->
-                    Cmd.none
-            )
 
         SelectedDesign uuid selected ->
             ( if selected then
@@ -504,6 +490,21 @@ update msg model =
                             getAllTags model.designs
               }
             , Cmd.none
+            )
+
+        ChangeColumnViewMode newMode ->
+            ( { model | columnViewMode = newMode }
+            , case newMode of
+                OverviewPlots ->
+                    model.designs
+                        |> Dict.toList
+                        |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                        |> Dict.fromList
+                        |> makeOverViewSpec model.device
+                        |> Plots.vegaPlot
+
+                _ ->
+                    Cmd.none
             )
 
         ExportAllDesignData ->
@@ -604,6 +605,28 @@ designStubCSVEncoder designStub =
                              )
                            , ( "packing density"
                              , String.fromFloat metrics.packingDensity
+                             )
+
+                           -- BUDE FF
+                           , ( "budeff: total"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.totalEnergy
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "budeff: steric"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.steric
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "budeff: desolvation"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.desolvation
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "budeff: charge"
+                             , Maybe.map String.fromFloat
+                                metrics.budeFFResults.charge
+                                |> Maybe.withDefault "NaN"
                              )
 
                            -- EvoEF2
@@ -736,6 +759,28 @@ designStubCSVEncoder designStub =
                                 metrics.rosettaResults.yhh_planarity
                                 |> Maybe.withDefault "NaN"
                              )
+
+                           -- Aggrescan3D
+                           , ( "aggrescan3d: total_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.total_value
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "aggrescan3d: avg_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.avg_value
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "aggrescan3d: min_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.min_value
+                                |> Maybe.withDefault "NaN"
+                             )
+                           , ( "aggrescan3d: max_value"
+                             , Maybe.map String.fromFloat
+                                metrics.aggrescan3dResults.max_value
+                                |> Maybe.withDefault "NaN"
+                             )
                            ]
 
                 Nothing ->
@@ -779,10 +824,35 @@ load shared model =
                     { model
                         | mResourceUuid = Just runState.resourceUuid
                         , designs = runState.designs
+                        , device = classifyDevice shared
                     }
+
+                plotCmd =
+                    updatedModel.designs
+                        |> Dict.toList
+                        |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                        |> Dict.fromList
+                        |> makeOverViewSpec updatedModel.device
+                        |> Plots.vegaPlot
             in
             ( updatedModel
-            , makeOverViewSpecCmd updatedModel
+            , case
+                ( updatedModel.columnViewMode
+                , updatedModel.device.class
+                , updatedModel.device.orientation
+                )
+              of
+                ( OverviewPlots, _, _ ) ->
+                    plotCmd
+
+                ( _, Desktop, Landscape ) ->
+                    plotCmd
+
+                ( _, BigDesktop, Landscape ) ->
+                    plotCmd
+
+                _ ->
+                    Cmd.none
             )
 
         Nothing ->
@@ -797,54 +867,6 @@ load shared model =
                         information on how to contact the authors."""
                 , severity = Error.High
                 }
-
-
-makeOverViewSpecCmd : Model -> Cmd Msg
-makeOverViewSpecCmd model =
-    if Dict.isEmpty model.designs then
-        Cmd.none
-
-    else
-        { plotId = "overview"
-        , spec =
-            Metrics.overviewSpec
-                "Hydrophobic Fitness"
-                (model.designs
-                    |> Dict.toList
-                    |> List.map
-                        (\( k, v ) ->
-                            ( k, Design.storedDesignToStub v )
-                        )
-                    |> List.map
-                        (createDesignCardData
-                            Nothing
-                            -- (runState.mSelectedReferenceSet
-                            --     |> Maybe.andThen
-                            --         (\k -> Dict.get k runState.referenceSets)
-                            --     |> Maybe.map
-                            --         (ReferenceSet.storedReferenceSetToStub
-                            --             >> ReferenceSet.getParamsForStub
-                            --             >> .aggregateData
-                            --         )
-                            -- )
-                            model.mSelectedSpecification
-                            model.selectedUuids
-                        )
-                    |> List.indexedMap Tuple.pair
-                    |> List.reverse
-                    |> List.filterMap
-                        (makeColumnData <|
-                            .hydrophobicFitness
-                                >> Maybe.withDefault (0 / 0)
-                                >> abs
-                        )
-                    |> List.sortBy .value
-                    |> List.reverse
-                    |> List.map (\{ name, value } -> ( name, value ))
-                    |> Dict.fromList
-                )
-        }
-            |> Plots.vegaPlot
 
 
 subscriptions : Model -> Sub Msg
@@ -890,7 +912,19 @@ bodyView model =
                         model.selectedUuids
                     )
     in
-    el [ centerX, width <| maximum 800 <| fill ] <|
+    el
+        [ centerX
+        , case ( model.device.class, model.device.orientation ) of
+            ( Desktop, Landscape ) ->
+                width <| maximum 1200 <| fill
+
+            ( BigDesktop, Landscape ) ->
+                width <| maximum 1200 <| fill
+
+            _ ->
+                width <| maximum 800 <| fill
+        ]
+    <|
         column [ spacing 15, width fill ]
             [ let
                 ( buttonLabel, isActive ) =
@@ -924,89 +958,114 @@ bodyView model =
                 ]
             , el [ width fill ] <|
                 if List.isEmpty designCardData then
-                    el [ centerX ] (text "Click \"Load\" to add models.")
+                    el [ centerX ] <|
+                        paragraph [] [ text "Click \"Load\" to add models." ]
 
                 else
+                    case ( model.device.class, model.device.orientation ) of
+                        ( Desktop, Landscape ) ->
+                            doubleColumnView model designCardData
+
+                        ( BigDesktop, Landscape ) ->
+                            doubleColumnView model designCardData
+
+                        _ ->
+                            singleColumnView model designCardData
+            ]
+
+
+columnViewModeSelector : ColumnViewMode -> ColumnViewMode -> Element Msg
+columnViewModeSelector current option =
+    columnViewModeToString option
+        |> text
+        |> el
+            ((if current == option then
+                [ Font.underline ]
+
+              else
+                [ Events.onClick <| ChangeColumnViewMode option ]
+             )
+                ++ [ pointer ]
+            )
+
+
+singleColumnView : Model -> List DesignCardData -> Element Msg
+singleColumnView model designCardData =
+    column
+        [ spacing 10, width fill ]
+        [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+            (List.map
+                (columnViewModeSelector model.columnViewMode)
+                [ DesignList
+                , OverviewPlots
+                , ControlPanel
+                ]
+                |> List.intersperse (text "|")
+            )
+        , case model.columnViewMode of
+            DesignList ->
+                column
+                    [ spacing 15, width fill ]
+                    [ if Set.isEmpty model.selectedUuids then
+                        none
+
+                      else
+                        selectedCommandsView model.selectedUuids model.tagString
+                    , designCardsView
+                        model.filterTags
+                        model.mSelectedSpecification
+                        designCardData
+                    ]
+
+            OverviewPlots ->
+                overviewPlots
+
+            ControlPanel ->
+                controlPanel model
+        ]
+
+
+doubleColumnView : Model -> List DesignCardData -> Element Msg
+doubleColumnView model designCardData =
+    row
+        [ width fill ]
+        [ column
+            [ alignTop, spacing 15, width <| fillPortion 1 ]
+            [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+                (List.map
+                    (columnViewModeSelector model.columnViewMode)
+                    [ DesignList
+                    , ControlPanel
+                    ]
+                    |> List.intersperse (text "|")
+                )
+            , case model.columnViewMode of
+                ControlPanel ->
+                    controlPanel model
+
+                _ ->
                     column
-                        [ spacing 10, width fill ]
-                        [ Folds.sectionFoldView
-                            { foldVisible = model.displaySettings.overviewPlots
-                            , title = hideableSectionToString OverviewPlots
-                            , toggleMsg = ToggleSectionVisibility OverviewPlots
-                            , contentView = overviewPlots
-                            }
-                        , Folds.sectionFoldView
-                            { foldVisible = model.displaySettings.controlPanel
-                            , title = hideableSectionToString ControlPanel
-                            , toggleMsg = ToggleSectionVisibility ControlPanel
-                            , contentView = controlPanel model
-                            }
-                        , if Set.isEmpty model.selectedUuids then
+                        [ spacing 15, width fill ]
+                        [ if Set.isEmpty model.selectedUuids then
                             none
 
                           else
                             selectedCommandsView model.selectedUuids model.tagString
-
-                        -- model.overviewOptionDropDown
-                        -- designCardData
                         , designCardsView
                             model.filterTags
                             model.mSelectedSpecification
                             designCardData
                         ]
             ]
-
-
-controlPanel : Model -> Element Msg
-controlPanel model =
-    let
-        allTags =
-            getAllTags model.designs
-    in
-    column [ padding 10, spacing 10 ]
-        [ Style.h3 <| text "Export Design Data"
-        , wrappedRow []
-            [ Buttons.conditionalButton
-                { label = text "Export All"
-                , clickMsg = Just ExportAllDesignData
-                , isActive =
-                    case model.loadingState of
-                        LoadingFiles _ _ ->
-                            False
-
-                        Free ->
-                            True
-                }
+        , column [ alignTop, spacing 15, width <| fillPortion 2 ]
+            [ el [ centerX ] <| Style.h2 <| text "Overview Plots"
+            , overviewPlots
             ]
-        , Style.h3 <| text "Tags"
-        , if Set.isEmpty allTags then
-            paragraph []
-                [ text <|
-                    ("No designs are tagged, select designs in order to tag them. "
-                        ++ "This will help you keep your designs organised."
-                    )
-                ]
-
-          else
-            allTagsView
-                { tags = getAllTags model.designs
-                , filterTags = model.filterTags
-                }
         ]
 
 
-allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
-allTagsView { tags, filterTags } =
-    tags
-        |> Set.toList
-        |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
-        |> (++)
-            [ text "Filter by Tag"
-            , filterNoneTag { filterTags = filterTags, allTags = tags }
-            , filterAllTag { filterTags = filterTags, allTags = tags }
-            , text "|"
-            ]
-        |> wrappedRow [ spacing 10 ]
+
+-- {{{ Design Cards
 
 
 type alias DesignCardData =
@@ -1217,6 +1276,68 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
         ]
 
 
+
+-- }}}
+-- {{{ Control Panel
+
+
+controlPanel : Model -> Element Msg
+controlPanel model =
+    let
+        allTags =
+            getAllTags model.designs
+    in
+    column [ padding 10, spacing 10 ]
+        [ Style.h2 <| text "Export Design Data"
+        , wrappedRow []
+            [ Buttons.conditionalButton
+                { label = text "Export All"
+                , clickMsg = Just ExportAllDesignData
+                , isActive =
+                    case model.loadingState of
+                        LoadingFiles _ _ ->
+                            False
+
+                        Free ->
+                            True
+                }
+            ]
+        , Style.h2 <| text "Tags"
+        , if Set.isEmpty allTags then
+            paragraph []
+                [ text <|
+                    ("No designs are tagged, select designs in order to tag them. "
+                        ++ "This will help you keep your designs organised."
+                    )
+                ]
+
+          else
+            allTagsView
+                { tags = getAllTags model.designs
+                , filterTags = model.filterTags
+                }
+        ]
+
+
+
+-- }}}
+-- {{{ Tags
+
+
+allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
+allTagsView { tags, filterTags } =
+    tags
+        |> Set.toList
+        |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
+        |> (++)
+            [ text "Filter by Tag"
+            , filterNoneTag { filterTags = filterTags, allTags = tags }
+            , filterAllTag { filterTags = filterTags, allTags = tags }
+            , text "|"
+            ]
+        |> wrappedRow [ spacing 10 ]
+
+
 filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
 filterNoneTag { filterTags } =
     el
@@ -1305,22 +1426,26 @@ selectedCommandsView selectedUuids tagString =
 
 
 
+-- }}}
 -- {{{ Overview Plots
 
 
 overviewPlots : Element msg
 overviewPlots =
     column
-        [ width fill ]
-        [ Keyed.el [ centerX ]
+        [ spacing 10, width fill ]
+        [ el [ centerX ] <|
+            paragraph []
+                [ text "(Click on the bars to see design details.)"
+                ]
+        , Keyed.el [ centerX ]
             ( "overview"
             , Html.div
                 [ HAtt.id "overview"
                 , HAtt.style "width" "100%"
                 ]
                 [ Html.div
-                    [ HAtt.height 200
-                    , HAtt.style "height" "200px"
+                    [ HAtt.style "height" "200px"
                     , HAtt.style "width" "100%"
                     , HAtt.style "border-radius" "5px"
                     , HAtt.style "background-color" "#d3d3d3"
@@ -1332,21 +1457,176 @@ overviewPlots =
         ]
 
 
-makeColumnData :
-    (DesignMetrics -> Float)
-    -> ( Int, DesignCardData )
-    -> Maybe ColumnData
-makeColumnData getDataFn ( index, { uuidString, designStub, mMeetsSpecification } ) =
-    WebSockets.getDesignMetrics designStub.metricsJobStatus
+makeOverViewSpec : Device -> Dict String Design.DesignStub -> { plotId : String, spec : VL.Spec }
+makeOverViewSpec device designStubs =
+    { plotId = "overview"
+    , spec =
+        overviewSpec
+            device
+            (designStubs
+                |> Dict.toList
+                |> List.filterMap makePlotData
+            )
+    }
+
+
+makePlotData : ( String, Design.DesignStub ) -> Maybe PlotData
+makePlotData ( uuid, { name, metricsJobStatus } ) =
+    WebSockets.getDesignMetrics metricsJobStatus
         |> Maybe.map
             (\metrics ->
-                { index = toFloat index
-                , name = designStub.name
-                , uuidString = uuidString
-                , value = getDataFn metrics
-                , mMeetsSpecification = mMeetsSpecification
+                { uuid = uuid
+                , name = name
+                , hydrophobicFitness = Maybe.withDefault (0 / 0) metrics.hydrophobicFitness
+                , isoelectricPoint = metrics.isoelectricPoint
+                , numberOfResidues = metrics.numOfResidues |> toFloat
+                , packingDensity = metrics.packingDensity
+                , budeFFTotalEnergy =
+                    Maybe.withDefault (0 / 0)
+                        metrics.budeFFResults.totalEnergy
+                , evoEFTotalEnergy =
+                    Maybe.withDefault (0 / 0)
+                        metrics.evoEF2Results.total
+                , dfireTotalEnergy =
+                    Maybe.withDefault (0 / 0)
+                        metrics.dfire2Results.total
+                , rosettaTotalEnergy =
+                    Maybe.withDefault (0 / 0)
+                        metrics.rosettaResults.total_score
+                , aggrescan3dTotalValue =
+                    Maybe.withDefault (0 / 0)
+                        metrics.aggrescan3dResults.total_value
                 }
             )
+
+
+type alias PlotData =
+    { uuid : String
+    , name : String
+    , hydrophobicFitness : Float
+    , isoelectricPoint : Float
+    , numberOfResidues : Float
+    , packingDensity : Float
+    , budeFFTotalEnergy : Float
+    , evoEFTotalEnergy : Float
+    , dfireTotalEnergy : Float
+    , rosettaTotalEnergy : Float
+    , aggrescan3dTotalValue : Float
+    }
+
+
+plotTuples : List ( String, PlotData -> Float, VL.SortProperty )
+plotTuples =
+    [ ( "Hydrophobic Fitness", .hydrophobicFitness, VL.soAscending )
+    , ( "Isoelectric Point", .isoelectricPoint, VL.soDescending )
+    , ( "Number of Residues", .numberOfResidues, VL.soDescending )
+    , ( "Packing Density", .packingDensity, VL.soDescending )
+    , ( "BUDE FF Total Energy", .budeFFTotalEnergy, VL.soAscending )
+    , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
+    , ( "dFire Total Energy", .dfireTotalEnergy, VL.soAscending )
+    , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
+    , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soAscending )
+    ]
+
+
+overviewSpec : Device -> List PlotData -> VL.Spec
+overviewSpec device plotData =
+    let
+        metricValueColumn ( label, valueFn, _ ) =
+            VL.dataColumn
+                label
+                (VL.nums <|
+                    List.map valueFn plotData
+                )
+
+        metricValueBarSpec ( label, _, sortProp ) =
+            VL.asSpec
+                [ VL.bar []
+                , VL.title (label ++ "\nfor All Designs") []
+                , VL.width 200
+                , (VL.encoding
+                    << VL.position VL.Y
+                        [ VL.pName "Design Name"
+                        , VL.pNominal
+                        , VL.pSort
+                            [ VL.soByField label VL.opMax
+                            , sortProp
+                            ]
+                        , VL.pAxis
+                            [ VL.axLabelExpr
+                                "split(datum.label, '@@@')[0]"
+                            ]
+                        ]
+                    << VL.position VL.X
+                        [ VL.pName label
+                        , VL.pMType VL.Quantitative
+                        , VL.pAxis [ VL.axTitle label, VL.axGrid True ]
+                        ]
+                    << VL.hyperlink
+                        [ VL.hName "url"
+                        , VL.hNominal
+                        ]
+                  )
+                    []
+                ]
+
+        dataColumns =
+            List.map metricValueColumn plotTuples
+                |> List.foldr (<<) identity
+
+        data =
+            VL.dataFromColumns []
+                << VL.dataColumn
+                    "Design Name"
+                    (VL.strs <|
+                        List.map (\{ name, uuid } -> name ++ "@@@" ++ uuid) plotData
+                    )
+                << VL.dataColumn
+                    "uuid"
+                    (VL.strs <|
+                        List.map .uuid plotData
+                    )
+                << dataColumns
+
+        config =
+            (VL.configure
+                << VL.configuration (VL.coView [ VL.vicoStroke <| Just "transparent" ])
+                << VL.configuration (VL.coAxis [ VL.axcoDomainWidth 1 ])
+            )
+                []
+
+        transform =
+            VL.transform
+                << VL.calculateAs "'/designs/' + datum.uuid" "url"
+                << VL.calculateAs "datum.name + datum.uuid" "unique name"
+
+        ( headTuples, tailTuples ) =
+            List.indexedMap Tuple.pair plotTuples
+                |> List.partition (\( n, _ ) -> n < (List.length plotTuples // 2))
+                |> (\( a, b ) -> ( List.map Tuple.second a, List.map Tuple.second b ))
+    in
+    VL.toVegaLite
+        [ data []
+        , VL.spacing 40
+        , transform []
+        , config
+        , case ( device.class, device.orientation ) of
+            ( Phone, Portrait ) ->
+                VL.vConcat <|
+                    List.map metricValueBarSpec plotTuples
+
+            _ ->
+                VL.hConcat
+                    [ VL.asSpec
+                        [ VL.vConcat <|
+                            List.map metricValueBarSpec headTuples
+                        ]
+                    , VL.asSpec
+                        [ VL.vConcat <|
+                            List.map metricValueBarSpec tailTuples
+                        ]
+                    ]
+        ]
 
 
 
