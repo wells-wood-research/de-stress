@@ -2,7 +2,7 @@
 -- https://github.com/dillonkearns/elm-graphql
 
 
-module BigStructure.Object.Chain exposing (..)
+module BigStructure.Object.DFIRE2Results exposing (..)
 
 import BigStructure.InputObject
 import BigStructure.Interface
@@ -19,28 +19,38 @@ import Graphql.SelectionSet exposing (SelectionSet)
 import Json.Decode as Decode
 
 
-id : SelectionSet BigStructure.ScalarCodecs.Id BigStructure.Object.Chain
+id : SelectionSet BigStructure.ScalarCodecs.Id BigStructure.Object.DFIRE2Results
 id =
     Object.selectionForField "ScalarCodecs.Id" "id" [] (BigStructure.ScalarCodecs.codecs |> BigStructure.Scalar.unwrapCodecs |> .codecId |> .decoder)
 
 
-chainLabel : SelectionSet String BigStructure.Object.Chain
-chainLabel =
-    Object.selectionForField "String" "chainLabel" [] Decode.string
+logInfo : SelectionSet String BigStructure.Object.DFIRE2Results
+logInfo =
+    Object.selectionForField "String" "logInfo" [] Decode.string
 
 
-sequence : SelectionSet String BigStructure.Object.Chain
-sequence =
-    Object.selectionForField "String" "sequence" [] Decode.string
+errorInfo : SelectionSet String BigStructure.Object.DFIRE2Results
+errorInfo =
+    Object.selectionForField "String" "errorInfo" [] Decode.string
 
 
-stateId : SelectionSet (Maybe Int) BigStructure.Object.Chain
+returnCode : SelectionSet Int BigStructure.Object.DFIRE2Results
+returnCode =
+    Object.selectionForField "Int" "returnCode" [] Decode.int
+
+
+total : SelectionSet (Maybe Float) BigStructure.Object.DFIRE2Results
+total =
+    Object.selectionForField "(Maybe Float)" "total" [] (Decode.float |> Decode.nullable)
+
+
+stateId : SelectionSet (Maybe Int) BigStructure.Object.DFIRE2Results
 stateId =
     Object.selectionForField "(Maybe Int)" "stateId" [] (Decode.int |> Decode.nullable)
 
 
 state :
     SelectionSet decodesTo BigStructure.Object.State
-    -> SelectionSet (Maybe decodesTo) BigStructure.Object.Chain
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.DFIRE2Results
 state object____ =
     Object.selectionForCompositeField "state" [] object____ (identity >> Decode.nullable)

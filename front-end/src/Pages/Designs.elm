@@ -78,6 +78,8 @@ type alias Model =
     , filterTags : Set.Set String
     , device : Device
     , columnViewMode : ColumnViewMode
+    , maxFilesInUploads : Int
+    , maxResiduesInStructure : Int
     }
 
 
@@ -138,6 +140,8 @@ init shared _ =
             , filterTags = Set.empty
             , device = classifyDevice shared
             , columnViewMode = DesignList
+            , maxFilesInUploads = 30
+            , maxResiduesInStructure = 500
             }
 
         plotCmd =
@@ -220,18 +224,46 @@ update msg model =
 
         StructureFilesSelected first rest ->
             let
+                cappedRest =
+                    List.take (model.maxFilesInUploads - 1) rest
+
                 loadedDesigns =
-                    List.length rest
+                    List.length cappedRest
                         |> (+) 1
+
+                ( updatedModel, cmd ) =
+                    if List.length rest > List.length cappedRest then
+                        Error.updateWithError
+                            ClearPageErrors
+                            { model | loadingState = LoadingFiles loadedDesigns 0 }
+                            { title = "Number of files exceeds limit"
+                            , details =
+                                """The maximum number of files that can be loaded at one
+                                time is """
+                                    ++ String.fromInt model.maxFilesInUploads
+                                    ++ """. The first """
+                                    ++ String.fromInt model.maxFilesInUploads
+                                    ++ """ files will be loaded. Please load the rest in
+                                    batches. This cap is in place to ensure server
+                                    stability and a good user experience.
+                                    """
+                            , severity = Error.Low
+                            }
+
+                    else
+                        ( { model | loadingState = LoadingFiles loadedDesigns 0 }
+                        , Cmd.none
+                        )
             in
-            ( { model | loadingState = LoadingFiles loadedDesigns 0 }
+            ( updatedModel
             , Cmd.batch <|
-                List.map
-                    (\file ->
-                        Task.perform (StructureLoaded <| File.name file)
-                            (File.toString file)
-                    )
-                    (first :: rest)
+                cmd
+                    :: List.map
+                        (\file ->
+                            Task.perform (StructureLoaded <| File.name file)
+                                (File.toString file)
+                        )
+                        (first :: cappedRest)
             )
 
         StructureLoaded name contents ->
@@ -296,56 +328,84 @@ update msg model =
                         , severity = Error.Low
                         }
 
-                ( Just resourceUuid, Ok _ ) ->
-                    -- Currently this is only checking to see if the file is valid PDB
-                    let
-                        { uuidString, nextResourceUuid } =
-                            ResourceUuid.toString
-                                resourceUuid
-
-                        pdbString =
-                            contents
-                                |> String.lines
-                                |> List.filter (String.startsWith "ATOM")
-                                |> String.join "\n"
-
-                        ( jobStatus, requestMetricsCmd ) =
-                            WebSockets.prepareMetricsJob
-                                { uuidString = uuidString, pdbString = pdbString }
-
-                        design : Design
-                        design =
-                            { name =
-                                String.split "." name
-                                    |> List.head
-                                    |> Maybe.withDefault name
-                                    |> Editable.NotEditing
-                            , fileName = name
-                            , pdbString = pdbString
-                            , deleteStatus = Buttons.initDangerStatus
-                            , metricsJobStatus = jobStatus
-                            , mMeetsActiveSpecification = Nothing
-                            , tags = Set.empty
-                            }
-                    in
-                    ( { model
-                        | mResourceUuid = Just nextResourceUuid
-                        , loadingState = loadingState
-                        , designs =
-                            Dict.insert uuidString
-                                (Design.createDesignStub design
-                                    |> Design.storeDesignStubLocally
+                ( Just resourceUuid, Ok biomol ) ->
+                    if
+                        (Biomolecules.residues biomol.atoms
+                            |> List.filter
+                                (\{ residueName } ->
+                                    String.toUpper
+                                        residueName
+                                        /= "HOH"
                                 )
-                                model.designs
-                      }
-                    , Cmd.batch
-                        [ Design.storeDesign
-                            { uuidString = uuidString
-                            , design = design |> Codec.encoder Design.codec
+                            |> List.length
+                        )
+                            > model.maxResiduesInStructure
+                    then
+                        Error.updateWithError
+                            ClearPageErrors
+                            { model | loadingState = loadingState }
+                            { title = "Structure exceeds size limit"
+                            , details =
+                                "A file ("
+                                    ++ name
+                                    ++ """) exceeds the maximum number of residues
+                                    allowed in the application ("""
+                                    ++ String.fromInt model.maxResiduesInStructure
+                                    ++ """). This cap is in place to ensure server
+                                    stability and a good user experience.
+                                    """
+                            , severity = Error.Low
                             }
-                        , requestMetricsCmd
-                        ]
-                    )
+
+                    else
+                        let
+                            { uuidString, nextResourceUuid } =
+                                ResourceUuid.toString
+                                    resourceUuid
+
+                            pdbString =
+                                contents
+                                    |> String.lines
+                                    |> List.filter (String.startsWith "ATOM")
+                                    |> String.join "\n"
+
+                            ( jobStatus, requestMetricsCmd ) =
+                                WebSockets.prepareMetricsJob
+                                    { uuidString = uuidString, pdbString = pdbString }
+
+                            design : Design
+                            design =
+                                { name =
+                                    String.split "." name
+                                        |> List.head
+                                        |> Maybe.withDefault name
+                                        |> Editable.NotEditing
+                                , fileName = name
+                                , pdbString = pdbString
+                                , deleteStatus = Buttons.initDangerStatus
+                                , metricsJobStatus = jobStatus
+                                , mMeetsActiveSpecification = Nothing
+                                , tags = Set.empty
+                                }
+                        in
+                        ( { model
+                            | mResourceUuid = Just nextResourceUuid
+                            , loadingState = loadingState
+                            , designs =
+                                Dict.insert uuidString
+                                    (Design.createDesignStub design
+                                        |> Design.storeDesignStubLocally
+                                    )
+                                    model.designs
+                          }
+                        , Cmd.batch
+                            [ Design.storeDesign
+                                { uuidString = uuidString
+                                , design = design |> Codec.encoder Design.codec
+                                }
+                            , requestMetricsCmd
+                            ]
+                        )
 
         GotSpecification specificationValue ->
             let
@@ -1405,7 +1465,7 @@ selectedCommandsView selectedUuids tagString =
             , placeholder =
                 Just
                     (Input.placeholder [] <|
-                        text "Enter new tags (comma separated)..."
+                        text "tag1, tag2..."
                     )
             , label = Input.labelLeft [] <| text "Tags"
             }
@@ -1520,10 +1580,10 @@ plotTuples =
     [ ( "Hydrophobic Fitness", .hydrophobicFitness, VL.soAscending )
     , ( "Isoelectric Point", .isoelectricPoint, VL.soDescending )
     , ( "Number of Residues", .numberOfResidues, VL.soDescending )
-    , ( "Packing Density", .packingDensity, VL.soDescending )
+    , ( "Mean Packing Density", .packingDensity, VL.soDescending )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy, VL.soAscending )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
-    , ( "dFire Total Energy", .dfireTotalEnergy, VL.soAscending )
+    , ( "dFire2 Total Energy", .dfireTotalEnergy, VL.soAscending )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
     , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soAscending )
     ]
