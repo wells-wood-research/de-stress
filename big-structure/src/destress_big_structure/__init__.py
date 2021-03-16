@@ -34,7 +34,7 @@ app.debug = True
 
 # Job queue setup, the worker runs in the `rq_worker` container
 REDIS_CONNECTION = redis.Redis("redis", 6379)
-JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION)
+JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION, default_timeout=30)
 
 # {{{ ServerJobManager
 
@@ -123,6 +123,8 @@ class ServerJobManager:
             elif current_status == "failed":
                 self.status = ServerJobStatus.FAILED(
                     f"The job failed to run:\n\n{self._rq_job_handle.exc_info}"
+                    if self._rq_job_handle.exc_info
+                    else f"The job failed to run:\n\nThe job timed out."
                 )
             else:
                 self.status = ServerJobStatus.FAILED("Unknown RQ job state.")
