@@ -5,28 +5,36 @@
 module BigStructure.Object exposing (..)
 
 
+type Aggrescan3DResults
+    = Aggrescan3DResults
+
+
 type BiolUnit
     = BiolUnit
+
+
+type BudeFFResults
+    = BudeFFResults
 
 
 type Chain
     = Chain
 
 
-type CreateDesign
-    = CreateDesign
+type DFIRE2Results
+    = DFIRE2Results
 
 
-type Design
-    = Design
-
-
-type DesignChain
-    = DesignChain
+type EvoEF2Results
+    = EvoEF2Results
 
 
 type Pdb
     = Pdb
+
+
+type RosettaResults
+    = RosettaResults
 
 
 type State

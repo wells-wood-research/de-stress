@@ -1465,7 +1465,7 @@ selectedCommandsView selectedUuids tagString =
             , placeholder =
                 Just
                     (Input.placeholder [] <|
-                        text "Enter new tags (comma separated)..."
+                        text "tag1, tag2..."
                     )
             , label = Input.labelLeft [] <| text "Tags"
             }
@@ -1580,10 +1580,10 @@ plotTuples =
     [ ( "Hydrophobic Fitness", .hydrophobicFitness, VL.soAscending )
     , ( "Isoelectric Point", .isoelectricPoint, VL.soDescending )
     , ( "Number of Residues", .numberOfResidues, VL.soDescending )
-    , ( "Packing Density", .packingDensity, VL.soDescending )
+    , ( "Mean Packing Density", .packingDensity, VL.soDescending )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy, VL.soAscending )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
-    , ( "dFire Total Energy", .dfireTotalEnergy, VL.soAscending )
+    , ( "dFire2 Total Energy", .dfireTotalEnergy, VL.soAscending )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
     , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soAscending )
     ]

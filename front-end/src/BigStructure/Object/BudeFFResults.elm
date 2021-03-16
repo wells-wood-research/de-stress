@@ -2,7 +2,7 @@
 -- https://github.com/dillonkearns/elm-graphql
 
 
-module BigStructure.Object.Chain exposing (..)
+module BigStructure.Object.BudeFFResults exposing (..)
 
 import BigStructure.InputObject
 import BigStructure.Interface
@@ -19,28 +19,38 @@ import Graphql.SelectionSet exposing (SelectionSet)
 import Json.Decode as Decode
 
 
-id : SelectionSet BigStructure.ScalarCodecs.Id BigStructure.Object.Chain
+id : SelectionSet BigStructure.ScalarCodecs.Id BigStructure.Object.BudeFFResults
 id =
     Object.selectionForField "ScalarCodecs.Id" "id" [] (BigStructure.ScalarCodecs.codecs |> BigStructure.Scalar.unwrapCodecs |> .codecId |> .decoder)
 
 
-chainLabel : SelectionSet String BigStructure.Object.Chain
-chainLabel =
-    Object.selectionForField "String" "chainLabel" [] Decode.string
+totalEnergy : SelectionSet (Maybe Float) BigStructure.Object.BudeFFResults
+totalEnergy =
+    Object.selectionForField "(Maybe Float)" "totalEnergy" [] (Decode.float |> Decode.nullable)
 
 
-sequence : SelectionSet String BigStructure.Object.Chain
-sequence =
-    Object.selectionForField "String" "sequence" [] Decode.string
+steric : SelectionSet (Maybe Float) BigStructure.Object.BudeFFResults
+steric =
+    Object.selectionForField "(Maybe Float)" "steric" [] (Decode.float |> Decode.nullable)
 
 
-stateId : SelectionSet (Maybe Int) BigStructure.Object.Chain
+desolvation : SelectionSet (Maybe Float) BigStructure.Object.BudeFFResults
+desolvation =
+    Object.selectionForField "(Maybe Float)" "desolvation" [] (Decode.float |> Decode.nullable)
+
+
+charge : SelectionSet (Maybe Float) BigStructure.Object.BudeFFResults
+charge =
+    Object.selectionForField "(Maybe Float)" "charge" [] (Decode.float |> Decode.nullable)
+
+
+stateId : SelectionSet (Maybe Int) BigStructure.Object.BudeFFResults
 stateId =
     Object.selectionForField "(Maybe Int)" "stateId" [] (Decode.int |> Decode.nullable)
 
 
 state :
     SelectionSet decodesTo BigStructure.Object.State
-    -> SelectionSet (Maybe decodesTo) BigStructure.Object.Chain
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.BudeFFResults
 state object____ =
     Object.selectionForCompositeField "state" [] object____ (identity >> Decode.nullable)
