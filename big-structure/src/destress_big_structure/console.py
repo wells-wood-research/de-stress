@@ -46,7 +46,20 @@ def dev_run():
     default=1,
     help=("Sets the number of processes used to process structure files."),
 )
-def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool, processes: int):
+@click.option(
+    "--first-bio-unit-only/--all-bio-units",
+    default=True,
+    help=(
+        "Restricts the database to only contain the first biological unit."
+    ),
+)
+def dbs_db_from_scratch(
+    path_to_data: str,
+    take: int, shuffle:
+    bool,
+    processes: int,
+    first_bio_unit_only: bool
+):
     """Creates the full database for the DeStrES Big Structure application."""
     data_dir = Path(path_to_data).resolve()
     pdb_data = data_dir / "pdb"
@@ -72,7 +85,9 @@ def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool, processes: 
         ]:
             batch_results = process_pool.map(
                 process_pdb,
-                [(pdb_path, biounit_data, xml_data) for pdb_path in path_batch],
+                [(pdb_path, biounit_data, xml_data, first_bio_unit_only)
+                 for pdb_path in path_batch
+                ],
             )
             pdb_models = []
             for result in batch_results:
@@ -91,11 +106,19 @@ def dbs_db_from_scratch(path_to_data: str, take: int, shuffle: bool, processes: 
         print(f"----\n{k}\n{v}\n")
 
 
-def process_pdb(input_arguments: tp.Tuple[Path, Path, Path]) -> ProcPdbResult:
-    pdb_path, biounit_data, xml_data = input_arguments
+def process_pdb(input_arguments: tp.Tuple[Path, Path, Path, bool]) -> ProcPdbResult:
+    pdb_path, biounit_data, xml_data, first_bio_unit_only = input_arguments
     try:
         pdb_code = pdb_path.name[3:7]
-        biounit_paths = list((biounit_data / pdb_code[1:3]).glob(f"{pdb_code}.pdb*.gz"))
+        if first_bio_unit_only:
+            biounit_paths = sorted(
+                list(
+                    (biounit_data / pdb_code[1:3]).glob(f"{pdb_code}.pdb*.gz")
+                    )
+                )[:1]
+        else:
+            biounit_paths = list((biounit_data / pdb_code[1:3]).glob(f"{pdb_code}.pdb*.gz"))
+
         xml_path = xml_data / pdb_code[1:3] / f"{pdb_code}-noatom.xml.gz"
         assert biounit_paths, f"No biological units found for {pdb_code}."
         assert xml_path.exists(), f"No PDBML file found for {pdb_code}."
