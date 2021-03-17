@@ -34,6 +34,8 @@ from destress_big_structure.settings import (
     AGGRESCAN3D_SCRIPT_PATH,
 )
 
+MAX_RUN_TIME = 10
+
 # We're suppressing warnings about atoms not being parameterised in BUDE FF
 # I'm not reporting this as the user should look into BUDE FF to understand how it works
 warnings.simplefilter("ignore", budeff.force_field.NotParameterisedWarning)
@@ -247,6 +249,9 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     assert (
         ROSETTA_BINARY_PATH
     ), "ROSETTA_BINARY_PATH is not defined, check you `.env` file"
+    assert (
+        AGGRESCAN3D_SCRIPT_PATH
+    ), "AGGRESCAN3D_SCRIPT_PATH is not defined, check you `.env` file"
     ev.tag_dssp_data(design)
     sequence_info = {
         chain.id: SequenceInfo(
@@ -346,10 +351,7 @@ def run_bude_ff(ampal_assembly: ampal.Assembly) -> BudeFFOutput:
     except KeyError:
         # Contains an unknown atom
         budeff_output = BudeFFOutput(
-            total_energy=None,
-            steric=None,
-            desolvation=None,
-            charge=None,
+            total_energy=None, steric=None, desolvation=None, charge=None,
         )
     return budeff_output
 
@@ -396,7 +398,7 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
         cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
 
         # Using subprocess to run this command and capturing the output
-        evoef2_stdout = subprocess.run(cmd, capture_output=True)
+        evoef2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
 
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
@@ -563,7 +565,7 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
         ]
 
         # Using subprocess to run this command and capturing the output
-        dfire2_stdout = subprocess.run(cmd, capture_output=True)
+        dfire2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
 
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
@@ -651,7 +653,9 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
             ]
 
             # Using subprocess to run this command and capturing the output
-            rosetta_stdout = subprocess.run(cmd, capture_output=True)
+            rosetta_stdout = subprocess.run(
+                cmd, capture_output=True, timeout=MAX_RUN_TIME
+            )
 
         try:
             rosetta_stdout.check_returncode()
@@ -792,7 +796,9 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
             ]
 
             # Using subprocess to run this command and capturing the output
-            aggrescan3D_stdout = subprocess.run(cmd, capture_output=True)
+            aggrescan3D_stdout = subprocess.run(
+                cmd, capture_output=True, timeout=MAX_RUN_TIME
+            )
 
         try:
             aggrescan3D_stdout.check_returncode()
