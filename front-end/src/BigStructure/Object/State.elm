@@ -74,11 +74,50 @@ biolUnitId =
     Object.selectionForField "(Maybe Int)" "biolUnitId" [] (Decode.int |> Decode.nullable)
 
 
-biolUnit : SelectionSet decodesTo BigStructure.Object.BiolUnit -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
-biolUnit object_ =
-    Object.selectionForCompositeField "biolUnit" [] object_ (identity >> Decode.nullable)
+biolUnit :
+    SelectionSet decodesTo BigStructure.Object.BiolUnit
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
+biolUnit object____ =
+    Object.selectionForCompositeField "biolUnit" [] object____ (identity >> Decode.nullable)
 
 
-chains : SelectionSet decodesTo BigStructure.Object.Chain -> SelectionSet (Maybe (List (Maybe decodesTo))) BigStructure.Object.State
-chains object_ =
-    Object.selectionForCompositeField "chains" [] object_ (identity >> Decode.nullable >> Decode.list >> Decode.nullable)
+budeffResults :
+    SelectionSet decodesTo BigStructure.Object.BudeFFResults
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
+budeffResults object____ =
+    Object.selectionForCompositeField "budeffResults" [] object____ (identity >> Decode.nullable)
+
+
+evoef2Results :
+    SelectionSet decodesTo BigStructure.Object.EvoEF2Results
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
+evoef2Results object____ =
+    Object.selectionForCompositeField "evoef2Results" [] object____ (identity >> Decode.nullable)
+
+
+dfire2Results :
+    SelectionSet decodesTo BigStructure.Object.DFIRE2Results
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
+dfire2Results object____ =
+    Object.selectionForCompositeField "dfire2Results" [] object____ (identity >> Decode.nullable)
+
+
+rosettaResults :
+    SelectionSet decodesTo BigStructure.Object.RosettaResults
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
+rosettaResults object____ =
+    Object.selectionForCompositeField "rosettaResults" [] object____ (identity >> Decode.nullable)
+
+
+aggrescan3dResults :
+    SelectionSet decodesTo BigStructure.Object.Aggrescan3DResults
+    -> SelectionSet (Maybe decodesTo) BigStructure.Object.State
+aggrescan3dResults object____ =
+    Object.selectionForCompositeField "aggrescan3dResults" [] object____ (identity >> Decode.nullable)
+
+
+chains :
+    SelectionSet decodesTo BigStructure.Object.Chain
+    -> SelectionSet (Maybe (List (Maybe decodesTo))) BigStructure.Object.State
+chains object____ =
+    Object.selectionForCompositeField "chains" [] object____ (identity >> Decode.nullable >> Decode.list >> Decode.nullable)

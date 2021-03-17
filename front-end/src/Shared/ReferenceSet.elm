@@ -23,15 +23,21 @@ port module Shared.ReferenceSet exposing
     , updateDeleteStatus
     )
 
+import BigStructure.Object as Object
+import BigStructure.Object.Aggrescan3DResults as Aggrescan3DResults
 import BigStructure.Object.BiolUnit as BiolUnit
+import BigStructure.Object.BudeFFResults as BudeFFResults
+import BigStructure.Object.DFIRE2Results as DFIRE2Results
+import BigStructure.Object.EvoEF2Results as EvoEF2Results
 import BigStructure.Object.Pdb as Pdb
+import BigStructure.Object.RosettaResults as RosettaResults
 import BigStructure.Object.State as State
 import BigStructure.Query as Query
 import Codec exposing (Codec, Value)
 import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
 import RemoteData as RD exposing (RemoteData)
 import Set exposing (Set)
 import Shared.Buttons as Buttons
@@ -209,50 +215,269 @@ highResBiolMetricQuery : SelectionSet (List RefSetMetrics) RootQuery
 highResBiolMetricQuery =
     Query.preferredStates
         (\optionals -> { optionals | first = Absent })
-        (SelectionSet.map8 RefSetMetrics
-            (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
-                |> SelectionSet.map
-                    (\mmPdbCode ->
-                        case mmPdbCode of
-                            Just (Just pdbCode) ->
-                                pdbCode
+        (SelectionSet.succeed RefSetMetrics
+            |> with
+                (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                    |> SelectionSet.map
+                        (\mmPdbCode ->
+                            case mmPdbCode of
+                                Just (Just pdbCode) ->
+                                    pdbCode
 
-                            _ ->
-                                "Unknown PDB"
-                    )
-            )
-            (SelectionSet.map Metrics.compositionStringToDict State.composition)
-            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
-            State.hydrophobicFitness
-            State.isoelectricPoint
-            State.mass
-            State.numOfResidues
-            State.meanPackingDensity
+                                _ ->
+                                    "Unknown PDB"
+                        )
+                )
+            |> with (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            |> with (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            |> with State.hydrophobicFitness
+            |> with State.isoelectricPoint
+            |> with State.mass
+            |> with State.numOfResidues
+            |> with State.meanPackingDensity
+            |> with budeffResultsSelectionSet
+            |> with evoef2ResultsSelectionSet
+            |> with dfire2ResultsSelectionSet
+            |> with rosettaResultsSelectionSet
+            |> with aggrescan3dResultsSelectionSet
         )
 
 
 preferredStatesSubsetQuery : Set String -> SelectionSet (List Metrics.RefSetMetrics) RootQuery
 preferredStatesSubsetQuery pdbCodeList =
-    Query.preferredStatesSubset { codes = Set.toList pdbCodeList }
-        (SelectionSet.map8 Metrics.RefSetMetrics
-            (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
-                |> SelectionSet.map
-                    (\mmPdbCode ->
-                        case mmPdbCode of
-                            Just (Just pdbCode) ->
-                                pdbCode
+    Query.preferredStatesSubset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed Metrics.RefSetMetrics
+            |> with
+                (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                    |> SelectionSet.map
+                        (\mmPdbCode ->
+                            case mmPdbCode of
+                                Just (Just pdbCode) ->
+                                    pdbCode
 
-                            _ ->
-                                "Unknown PDB"
+                                _ ->
+                                    "Unknown PDB"
+                        )
+                )
+            |> with (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            |> with (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            |> with State.hydrophobicFitness
+            |> with State.isoelectricPoint
+            |> with State.mass
+            |> with State.numOfResidues
+            |> with State.meanPackingDensity
+            |> with budeffResultsSelectionSet
+            |> with evoef2ResultsSelectionSet
+            |> with dfire2ResultsSelectionSet
+            |> with rosettaResultsSelectionSet
+            |> with aggrescan3dResultsSelectionSet
+        )
+
+
+unwrapMSS : SelectionSet (Maybe (Maybe b)) scope -> SelectionSet (Maybe b) scope
+unwrapMSS =
+    SelectionSet.map
+        (Maybe.andThen identity)
+
+
+budeffResultsSelectionSet : SelectionSet (Maybe Metrics.BudeFFResults) Object.State
+budeffResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.BudeFFResults
+            |> with (unwrapMSS (State.budeffResults BudeFFResults.totalEnergy))
+            |> with (unwrapMSS (State.budeffResults BudeFFResults.steric))
+            |> with (unwrapMSS (State.budeffResults BudeFFResults.desolvation))
+            |> with (unwrapMSS (State.budeffResults BudeFFResults.charge))
+        )
+
+
+evoef2ResultsSelectionSet : SelectionSet (Maybe Metrics.EvoEF2Results) Object.State
+evoef2ResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.EvoEF2Results
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.evoef2Results
+                        EvoEF2Results.logInfo
                     )
-            )
-            (SelectionSet.map Metrics.compositionStringToDict State.composition)
-            (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
-            State.hydrophobicFitness
-            State.isoelectricPoint
-            State.mass
-            State.numOfResidues
-            State.meanPackingDensity
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.evoef2Results
+                        EvoEF2Results.errorInfo
+                    )
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.evoef2Results
+                        EvoEF2Results.returnCode
+                    )
+                )
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceAla))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceCys))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceAsp))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceGlu))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referencePhe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceGly))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceHis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceIle))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceLys))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceLeu))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceMet))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceAsn))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referencePro))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceGln))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceArg))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceSer))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceThr))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceVal))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceTrp))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.referenceTyr))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRVdwatt))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRVdwrep))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRElectr))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRDeslvp))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRDeslvh))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRHbscbbDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRHbscbbThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRHbscbbPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.aapropensity))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.ramachandran))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.dunbrack))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSVdwatt))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSVdwrep))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSElectr))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSDeslvp))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSDeslvh))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSSsbond))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbbbbbDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbbbbbThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbbbbbPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbscbbDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbscbbThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbscbbPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbscscDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbscscThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSHbscscPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDVdwatt))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDVdwrep))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDElectr))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDDeslvp))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDDeslvh))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDSsbond))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbbbbbDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbbbbbThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbbbbbPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbscbbDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbscbbThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbscbbPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbscscDis))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbscscThe))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDHbscscPhi))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.total))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.refTotal))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.intraRTotal))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interSTotal))
+            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.interDTotal))
+        )
+
+
+dfire2ResultsSelectionSet : SelectionSet (Maybe Metrics.DFIRE2Results) Object.State
+dfire2ResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.DFIRE2Results
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.dfire2Results
+                        DFIRE2Results.logInfo
+                    )
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.dfire2Results
+                        DFIRE2Results.errorInfo
+                    )
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.dfire2Results
+                        DFIRE2Results.returnCode
+                    )
+                )
+            |> with (unwrapMSS (State.dfire2Results DFIRE2Results.total))
+        )
+
+
+rosettaResultsSelectionSet : SelectionSet (Maybe Metrics.RosettaResults) Object.State
+rosettaResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.RosettaResults
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.rosettaResults RosettaResults.logInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.rosettaResults RosettaResults.errorInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.rosettaResults RosettaResults.returnCode)
+                )
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.dslfFa13))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faAtr))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faDun))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faElec))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faIntraRep))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faIntraSolXover4))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faRep))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.faSol))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondBbSc))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondLrBb))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondSc))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.hbondSrBb))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.linearChainbreak))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.lkBallWtd))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.omega))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.overlapChainbreak))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.pAaPp))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.proClose))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.ramaPrepro))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.ref))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.score))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.time))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.totalScore))
+            |> with (unwrapMSS (State.rosettaResults RosettaResults.yhhPlanarity))
+        )
+
+
+aggrescan3dResultsSelectionSet : SelectionSet (Maybe Metrics.Aggrescan3DResults) Object.State
+aggrescan3dResultsSelectionSet =
+    SelectionSet.map Just
+        (SelectionSet.succeed Metrics.Aggrescan3DResults
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.aggrescan3dResults Aggrescan3DResults.logInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault "--")
+                    (State.aggrescan3dResults Aggrescan3DResults.errorInfo)
+                )
+            |> with
+                (SelectionSet.map (Maybe.withDefault -1)
+                    (State.aggrescan3dResults Aggrescan3DResults.returnCode)
+                )
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.proteinList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.chainList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.residueNumberList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.residueNameList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.residueScoreList))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.maxValue))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.avgValue))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.minValue))
+            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.totalValue))
         )
 
 

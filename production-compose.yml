@@ -26,3 +26,12 @@ services:
     command: rq worker --url redis://destress-redis:6379 --disable-job-desc-logging
   destress-redis:
     image: redis
+  destress-dashboard:
+    image: eoranged/rq-dashboard
+    environment:
+      - RQ_DASHBOARD_REDIS_URL=redis://redis:6379
+      - RQ_DASHBOARD_PORT=8182
+    depends_on:
+      - destress-redis
+    ports:
+      - "8182:8182"

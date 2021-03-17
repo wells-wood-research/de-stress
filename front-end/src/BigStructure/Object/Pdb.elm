@@ -39,6 +39,8 @@ method =
     Object.selectionForField "String" "method" [] Decode.string
 
 
-biolUnits : SelectionSet decodesTo BigStructure.Object.BiolUnit -> SelectionSet (Maybe (List (Maybe decodesTo))) BigStructure.Object.Pdb
-biolUnits object_ =
-    Object.selectionForCompositeField "biolUnits" [] object_ (identity >> Decode.nullable >> Decode.list >> Decode.nullable)
+biolUnits :
+    SelectionSet decodesTo BigStructure.Object.BiolUnit
+    -> SelectionSet (Maybe (List (Maybe decodesTo))) BigStructure.Object.Pdb
+biolUnits object____ =
+    Object.selectionForCompositeField "biolUnits" [] object____ (identity >> Decode.nullable >> Decode.list >> Decode.nullable)

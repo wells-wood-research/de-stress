@@ -1,6 +1,7 @@
 module Shared.Metrics exposing
     ( AggregateData
     , Aggrescan3DResults
+    , BudeFFResults
     , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
@@ -16,6 +17,7 @@ module Shared.Metrics exposing
     , createCompositionSpec
     , createTorsionAngleSpec
     , desMetricsCodec
+    , makeHistPlotData
     , refSetMetricsCodec
     , torsionAngleStringToDict
     )
@@ -414,6 +416,11 @@ type alias RefSetMetrics =
     , mass : Float
     , numOfResidues : Int
     , packingDensity : Float
+    , budeFFResults : Maybe BudeFFResults
+    , evoEF2Results : Maybe EvoEF2Results
+    , dfire2Results : Maybe DFIRE2Results
+    , rosettaResults : Maybe RosettaResults
+    , aggrescan3dResults : Maybe Aggrescan3DResults
     }
 
 
@@ -436,6 +443,19 @@ refSetMetricsCodec =
         |> Codec.field "mass" .mass Codec.float
         |> Codec.field "numOfResidues" .numOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
+        |> Codec.field "budeFFResults" .budeFFResults (Codec.maybe budeFFResultsCodec)
+        |> Codec.field "evoEF2Results" .evoEF2Results (Codec.maybe evoEF2ResultsCodec)
+        |> Codec.field "dfire2Results" .dfire2Results (Codec.maybe dfire2ResultsCodec)
+        |> Codec.field "rosettaResults"
+            .rosettaResults
+            (Codec.maybe
+                rosettaResultsCodec
+            )
+        |> Codec.field "aggrescan3dResults"
+            .aggrescan3dResults
+            (Codec.maybe
+                aggrescan3DResultsCodec
+            )
         |> Codec.buildObject
 
 
@@ -575,113 +595,169 @@ torsionAngleParser =
 -- {{{ Plotting
 
 
-createAllHistogramsSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
-createAllHistogramsSpec mDesignMetrics pdbMetricsList =
-    case List.filter (\a -> a.hydrophobicFitness /= Nothing) pdbMetricsList of
-        [] ->
-            VL.toVegaLite []
-
-        firstPdb :: remainingPdb ->
-            let
-                pdbData =
-                    (List.map metricDataRow remainingPdb
-                        |> List.foldl (>>) (metricDataRow firstPdb)
-                    )
-                        >> VL.dataFromRows []
-
-                mDesignData =
-                    Maybe.map
-                        (\designMetrics ->
-                            (metricDataRow designMetrics
-                                >> VL.dataFromRows []
-                            )
-                                []
-                        )
-                        mDesignMetrics
-            in
-            [ VL.asSpec
-                [ List.map
-                    (histogramSpec (pdbData []) mDesignData)
-                    [ "Hydrophobic Fitness"
-                    , "Isoelectric Point"
-                    ]
-                    |> VL.hConcat
-                ]
-            , VL.asSpec
-                [ List.map
-                    (histogramSpec (pdbData []) mDesignData)
-                    [ "Mean Packing Density"
-                    , "# Residues"
-                    ]
-                    |> VL.hConcat
-                ]
-            ]
-                |> VL.vConcat
-                |> List.singleton
-                |> VL.toVegaLite
+type alias HistPlotData =
+    { hydrophobicFitness : Float
+    , isoelectricPoint : Float
+    , numberOfResidues : Float
+    , packingDensity : Float
+    , budeFFTotalEnergy : Float
+    , evoEFTotalEnergy : Float
+    , dfireTotalEnergy : Float
+    , rosettaTotalEnergy : Float
+    , aggrescan3dTotalValue : Float
+    }
 
 
-metricDataRow :
+makeHistPlotData :
     { a
         | hydrophobicFitness : Maybe Float
         , isoelectricPoint : Float
         , numOfResidues : Int
         , packingDensity : Float
+        , budeFFResults : Maybe BudeFFResults
+        , evoEF2Results : Maybe EvoEF2Results
+        , dfire2Results : Maybe DFIRE2Results
+        , rosettaResults : Maybe RosettaResults
+        , aggrescan3dResults : Maybe Aggrescan3DResults
     }
-    -> (List VL.DataRow -> List VL.DataRow)
-metricDataRow { hydrophobicFitness, isoelectricPoint, numOfResidues, packingDensity } =
-    VL.dataRow
-        [ ( "Hydrophobic Fitness", VL.num <| Maybe.withDefault 666 hydrophobicFitness )
-        , ( "Isoelectric Point", VL.num isoelectricPoint )
-        , ( "# Residues", VL.num <| toFloat numOfResidues )
-        , ( "Mean Packing Density", VL.num packingDensity )
-        ]
+    -> HistPlotData
+makeHistPlotData metrics =
+    { hydrophobicFitness = Maybe.withDefault (0 / 0) metrics.hydrophobicFitness
+    , isoelectricPoint = metrics.isoelectricPoint
+    , numberOfResidues = metrics.numOfResidues |> toFloat
+    , packingDensity = metrics.packingDensity
+    , budeFFTotalEnergy =
+        Maybe.andThen .totalEnergy metrics.budeFFResults
+            |> Maybe.withDefault (0 / 0)
+    , evoEFTotalEnergy =
+        Maybe.andThen .total metrics.evoEF2Results
+            |> Maybe.withDefault (0 / 0)
+    , dfireTotalEnergy =
+        Maybe.andThen .total metrics.dfire2Results
+            |> Maybe.withDefault (0 / 0)
+    , rosettaTotalEnergy =
+        Maybe.andThen .total_score metrics.rosettaResults
+            |> Maybe.withDefault (0 / 0)
+    , aggrescan3dTotalValue =
+        Maybe.andThen .total_value metrics.aggrescan3dResults
+            |> Maybe.withDefault (0 / 0)
+    }
 
 
-histogramSpec : VL.Data -> Maybe VL.Data -> String -> VL.Spec
-histogramSpec pdbData mDesignData fieldName =
-    VL.asSpec
-        [ VL.height 225
-        , VL.width 225
-        , VL.layer
-            ([ VL.asSpec
-                [ pdbData
-                , VL.bar []
-                , (VL.encoding
-                    << VL.position VL.X
-                        [ VL.pName fieldName
-                        , VL.pBin [ VL.biBase 10, VL.biDivide [ 4, 2 ] ]
-                        , VL.pMType VL.Quantitative
-                        , VL.pAxis [ VL.axTitle fieldName ]
-                        ]
-                    << VL.position VL.Y
-                        [ VL.pAggregate VL.opCount
-                        , VL.pMType VL.Quantitative
-                        ]
-                  )
-                    []
-                ]
-             ]
-                ++ (case mDesignData of
-                        Just designData ->
-                            [ VL.asSpec
-                                [ designData
-                                , VL.rule [ VL.maSize 3 ]
-                                , (VL.encoding
-                                    << VL.position VL.X
-                                        [ VL.pName fieldName
-                                        , VL.pMType VL.Quantitative
-                                        , VL.pAxis [ VL.axTitle "" ]
-                                        ]
-                                  )
-                                    []
-                                ]
-                            ]
+histPlotTuples : List ( String, HistPlotData -> Float )
+histPlotTuples =
+    [ ( "Hydrophobic Fitness", .hydrophobicFitness )
+    , ( "Isoelectric Point", .isoelectricPoint )
+    , ( "Number of Residues", .numberOfResidues )
+    , ( "Mean Packing Density", .packingDensity )
+    , ( "BUDE FF Total Energy", .budeFFTotalEnergy )
+    , ( "EvoEF2 Total Energy", .evoEFTotalEnergy )
+    , ( "dFire2 Total Energy", .dfireTotalEnergy )
+    , ( "Rosetta Total Energy", .rosettaTotalEnergy )
+    , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue )
+    ]
 
-                        Nothing ->
-                            []
+
+createAllHistogramsSpec : Device -> List HistPlotData -> List HistPlotData -> VL.Spec
+createAllHistogramsSpec device designHistPlotData refSetHistPlotData =
+    let
+        refSetMetricValueColumn ( label, valueFn ) =
+            VL.dataColumn
+                label
+                (VL.nums <|
+                    List.map valueFn refSetHistPlotData
+                )
+
+        designMetricValueColumn ( label, valueFn ) =
+            VL.dataColumn
+                ("design_" ++ label)
+                (VL.nums <|
+                    List.map valueFn designHistPlotData
+                )
+
+        refSetData =
+            VL.dataFromColumns []
+                << (List.map refSetMetricValueColumn histPlotTuples
+                        |> List.foldr (<<) identity
                    )
-            )
+
+        designSetData =
+            VL.dataFromColumns []
+                << (List.map designMetricValueColumn histPlotTuples
+                        |> List.foldr (<<) identity
+                   )
+
+        histogramSpec label =
+            VL.asSpec
+                [ VL.width 200
+                , VL.layer
+                    (VL.asSpec
+                        [ VL.bar []
+                        , refSetData []
+                        , (VL.encoding
+                            << VL.position VL.X
+                                [ VL.pName label
+                                , VL.pBin [ VL.biBase 10, VL.biDivide [ 4, 2 ] ]
+                                , VL.pMType VL.Quantitative
+                                , VL.pAxis [ VL.axTitle label ]
+                                ]
+                            << VL.position VL.Y
+                                [ VL.pAggregate VL.opCount
+                                , VL.pMType VL.Quantitative
+                                ]
+                          )
+                            []
+                        ]
+                        :: (if List.isEmpty designHistPlotData then
+                                []
+
+                            else
+                                [ VL.asSpec
+                                    [ VL.rule [ VL.maSize 3 ]
+                                    , designSetData []
+                                    , (VL.encoding
+                                        << VL.position VL.X
+                                            [ VL.pName ("design_" ++ label)
+                                            , VL.pMType VL.Quantitative
+                                            , VL.pAxis [ VL.axTitle "" ]
+                                            ]
+                                      )
+                                        []
+                                    ]
+                                ]
+                           )
+                    )
+                ]
+
+        ( headTuples, tailTuples ) =
+            List.indexedMap Tuple.pair histPlotTuples
+                |> List.partition (\( n, _ ) -> n < (List.length histPlotTuples // 2))
+                |> (\( a, b ) -> ( List.map Tuple.second a, List.map Tuple.second b ))
+    in
+    VL.toVegaLite
+        [ VL.spacing 40
+        , case ( device.class, device.orientation ) of
+            ( Phone, Portrait ) ->
+                histPlotTuples
+                    |> List.map Tuple.first
+                    |> List.map histogramSpec
+                    |> VL.vConcat
+
+            _ ->
+                VL.hConcat
+                    [ VL.asSpec
+                        [ headTuples
+                            |> List.map Tuple.first
+                            |> List.map histogramSpec
+                            |> VL.vConcat
+                        ]
+                    , VL.asSpec
+                        [ tailTuples
+                            |> List.map Tuple.first
+                            |> List.map histogramSpec
+                            |> VL.vConcat
+                        ]
+                    ]
         ]
 
 
@@ -756,10 +832,11 @@ calculateMeanComposition compositionList =
 
 
 createCompositionSpec :
-    AggregateData
+    Device
+    -> AggregateData
     -> Maybe DesignMetrics
     -> VL.Spec
-createCompositionSpec aggregateData mDesignMetrics =
+createCompositionSpec device aggregateData mDesignMetrics =
     case mDesignMetrics of
         Just designMetrics ->
             let
@@ -768,6 +845,7 @@ createCompositionSpec aggregateData mDesignMetrics =
                         |> compositionDictWithDefaultValues
             in
             compositionSpec
+                device
                 (Just designComposition)
                 (Dict.toList aggregateData.meanComposition
                     |> List.map
@@ -777,6 +855,7 @@ createCompositionSpec aggregateData mDesignMetrics =
 
         Nothing ->
             compositionSpec
+                device
                 Nothing
                 (Dict.toList aggregateData.meanComposition
                     |> List.map
@@ -785,8 +864,8 @@ createCompositionSpec aggregateData mDesignMetrics =
                 )
 
 
-compositionSpec : Maybe (Dict String Float) -> Dict String Float -> VL.Spec
-compositionSpec mDesignCompositionDict pdbCompositionDict =
+compositionSpec : Device -> Maybe (Dict String Float) -> Dict String Float -> VL.Spec
+compositionSpec device mDesignCompositionDict pdbCompositionDict =
     let
         data =
             VL.dataFromColumns []
@@ -842,13 +921,16 @@ compositionSpec mDesignCompositionDict pdbCompositionDict =
     VL.toVegaLite
         [ data []
         , VL.spacing 2
+        , VL.width <|
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    200
+
+                _ ->
+                    400
         , VL.bar
             []
         , (VL.encoding
-            << VL.column
-                [ VL.fName "Amino Acids"
-                , VL.fMType VL.Nominal
-                ]
             << VL.position VL.Y
                 [ VL.pName "Proportion"
                 , VL.pAggregate VL.opSum
@@ -856,12 +938,17 @@ compositionSpec mDesignCompositionDict pdbCompositionDict =
                 , VL.pAxis [ VL.axTitle "Amino Acid Proportion", VL.axGrid True ]
                 ]
             << VL.position VL.X
-                [ VL.pName "Set"
+                [ VL.pName "Amino Acids"
                 , VL.pMType VL.Nominal
-                , VL.pAxis [ VL.axTitle "" ]
-                , VL.pScale [ VL.scRangeStep <| Just 12 ]
                 ]
-            << VL.color [ VL.mName "Set", VL.mMType VL.Nominal, VL.mLegend [] ]
+            << VL.color
+                [ VL.mName "Set"
+                , VL.mMType VL.Nominal
+                , VL.mLegend
+                    [ VL.leTitle "Set"
+                    , VL.leOrient VL.loBottom
+                    ]
+                ]
           )
             []
         , config
@@ -872,21 +959,23 @@ type alias TorsionAnglesDict =
     Dict String ( Float, Float, Float )
 
 
-createTorsionAngleSpec : Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
-createTorsionAngleSpec mDesignMetrics referenceSetMetricsList =
+createTorsionAngleSpec : Device -> Maybe DesignMetrics -> List RefSetMetrics -> VL.Spec
+createTorsionAngleSpec device mDesignMetrics referenceSetMetricsList =
     case mDesignMetrics of
         Just designMetrics ->
             fullTorsionAnglesSpec
+                device
                 designMetrics.torsionAngles
                 (List.map .torsionAngles referenceSetMetricsList)
 
         Nothing ->
             refSetTorsionAnglesSpec
+                device
                 (List.map .torsionAngles referenceSetMetricsList)
 
 
-fullTorsionAnglesSpec : TorsionAnglesDict -> List TorsionAnglesDict -> VL.Spec
-fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
+fullTorsionAnglesSpec : Device -> TorsionAnglesDict -> List TorsionAnglesDict -> VL.Spec
+fullTorsionAnglesSpec device designTorsionAngles pdbTorsionAnglesDicts =
     let
         designIds =
             Dict.keys designTorsionAngles
@@ -935,12 +1024,20 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                     , VL.seZoom
                         "wheel![event.shiftKey]"
                     ]
+
+        widthAndHeight =
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    200
+
+                _ ->
+                    400
     in
     VL.toVegaLite
         [ VL.vConcat
             [ VL.asSpec
-                [ VL.height 400
-                , VL.width 400
+                [ VL.height widthAndHeight
+                , VL.width widthAndHeight
                 , VL.layer
                     [ VL.asSpec
                         [ pdbData []
@@ -948,20 +1045,23 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                         , (VL.encoding
                             << VL.position VL.X
                                 [ VL.pName "Phi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Phi" ]
                                 ]
                             << VL.position VL.Y
                                 [ VL.pName "Psi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Psi" ]
                                 ]
                             << VL.color
                                 [ VL.mAggregate VL.opCount
                                 , VL.mMType VL.Quantitative
-                                , VL.mLegend [ VL.leTitle "PDB Counts" ]
+                                , VL.mLegend
+                                    [ VL.leTitle "Count"
+                                    , VL.leOrient VL.loTop
+                                    ]
                                 ]
                           )
                             []
@@ -987,11 +1087,13 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                     ]
                 ]
             , VL.asSpec
-                [ VL.width 400
+                [ VL.width widthAndHeight
                 , designData []
                 , sel []
                 , VL.tick
-                    [ VL.maTooltip VL.ttData ]
+                    [ VL.maTooltip VL.ttData
+                    , VL.maOpacity 0.2
+                    ]
                 , (VL.encoding
                     << VL.position VL.X
                         [ VL.pName "Omega"
@@ -1002,10 +1104,12 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
                     []
                 ]
             , VL.asSpec
-                [ VL.width 400
+                [ VL.width widthAndHeight
                 , pdbData []
                 , sel []
-                , VL.tick []
+                , VL.tick
+                    [ VL.maOpacity 0.2
+                    ]
                 , (VL.encoding
                     << VL.position VL.X
                         [ VL.pName "Omega"
@@ -1019,8 +1123,8 @@ fullTorsionAnglesSpec designTorsionAngles pdbTorsionAnglesDicts =
         ]
 
 
-refSetTorsionAnglesSpec : List TorsionAnglesDict -> VL.Spec
-refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
+refSetTorsionAnglesSpec : Device -> List TorsionAnglesDict -> VL.Spec
+refSetTorsionAnglesSpec device pdbTorsionAnglesDicts =
     let
         ( pdbOms, pdbPhis, pdbPsis ) =
             List.map Dict.values pdbTorsionAnglesDicts
@@ -1047,12 +1151,20 @@ refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
                     , VL.seZoom
                         "wheel![event.shiftKey]"
                     ]
+
+        widthAndHeight =
+            case ( device.class, device.orientation ) of
+                ( Phone, Portrait ) ->
+                    200
+
+                _ ->
+                    400
     in
     VL.toVegaLite
         [ VL.vConcat
             [ VL.asSpec
-                [ VL.height 400
-                , VL.width 400
+                [ VL.height widthAndHeight
+                , VL.width widthAndHeight
                 , VL.layer
                     [ VL.asSpec
                         [ pdbData []
@@ -1060,20 +1172,23 @@ refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
                         , (VL.encoding
                             << VL.position VL.X
                                 [ VL.pName "Phi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Phi" ]
                                 ]
                             << VL.position VL.Y
                                 [ VL.pName "Psi"
-                                , VL.pBin [ VL.biStep 4 ]
+                                , VL.pBin [ VL.biStep 9 ]
                                 , VL.pMType VL.Quantitative
                                 , VL.pAxis [ VL.axTitle "Psi" ]
                                 ]
                             << VL.color
                                 [ VL.mAggregate VL.opCount
                                 , VL.mMType VL.Quantitative
-                                , VL.mLegend [ VL.leTitle "PDB Counts" ]
+                                , VL.mLegend
+                                    [ VL.leTitle "Count"
+                                    , VL.leOrient VL.loTop
+                                    ]
                                 ]
                           )
                             []
@@ -1081,10 +1196,12 @@ refSetTorsionAnglesSpec pdbTorsionAnglesDicts =
                     ]
                 ]
             , VL.asSpec
-                [ VL.width 400
+                [ VL.width widthAndHeight
                 , pdbData []
                 , sel []
-                , VL.tick []
+                , VL.tick
+                    [ VL.maOpacity 0.2
+                    ]
                 , (VL.encoding
                     << VL.position VL.X
                         [ VL.pName "Omega"
