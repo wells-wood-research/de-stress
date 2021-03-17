@@ -386,20 +386,22 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
     """
 
     starting_directory = pathlib.Path.cwd()
-    with tempfile.NamedTemporaryFile(mode="w") as tmp:
-        # changing working dir so that EvoEF doesn't create files in the users cwd
-        temp_folder = pathlib.Path(tmp.name).parent
-        os.chdir(temp_folder)
+    try:
+        with tempfile.NamedTemporaryFile(mode="w") as tmp:
+            # changing working dir so that EvoEF doesn't create files in the users cwd
+            temp_folder = pathlib.Path(tmp.name).parent
+            os.chdir(temp_folder)
 
-        # writing the pdb string to a temp file as input for EvoEF
-        tmp.write(pdb_string)
+            # writing the pdb string to a temp file as input for EvoEF
+            tmp.write(pdb_string)
 
-        # Creating bash command
-        cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
+            # Creating bash command
+            cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
 
-        # Using subprocess to run this command and capturing the output
-        evoef2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
+            # Using subprocess to run this command and capturing the output
+            evoef2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
 
+    finally:
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
 
@@ -549,24 +551,25 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
     """
 
     starting_directory = pathlib.Path.cwd()
-    with tempfile.NamedTemporaryFile(mode="w") as tmp:
-        # Changing working dir so that dfire2 doesn't create files in the users cwd
-        temp_folder = pathlib.Path(tmp.name).parent
-        os.chdir(temp_folder)
+    try:
+        with tempfile.NamedTemporaryFile(mode="w") as tmp:
+            # Changing working dir so that dfire2 doesn't create files in the users cwd
+            temp_folder = pathlib.Path(tmp.name).parent
+            os.chdir(temp_folder)
 
-        # Writing the pdb string to a temp file as input for dfire2
-        tmp.write(pdb_string)
+            # Writing the pdb string to a temp file as input for dfire2
+            tmp.write(pdb_string)
 
-        # Creating bash command
-        cmd = [
-            dfire2_folder_path + "calene",
-            dfire2_folder_path + "dfire_pair.lib",
-            tmp.name,
-        ]
+            # Creating bash command
+            cmd = [
+                dfire2_folder_path + "calene",
+                dfire2_folder_path + "dfire_pair.lib",
+                tmp.name,
+            ]
 
-        # Using subprocess to run this command and capturing the output
-        dfire2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
-
+            # Using subprocess to run this command and capturing the output
+            dfire2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
+    finally:
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
 
@@ -632,78 +635,79 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
     """
 
     starting_directory = pathlib.Path.cwd()
-    with tempfile.TemporaryDirectory() as tmp:
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
 
-        # Changing working directory to the temporary folder so that Rosetta
-        # doesn't create files in the users working directory
-        os.chdir(tmp)
+            # Changing working directory to the temporary folder so that Rosetta
+            # doesn't create files in the users working directory
+            os.chdir(tmp)
 
-        with tempfile.NamedTemporaryFile(mode="w") as pdb:
+            with tempfile.NamedTemporaryFile(mode="w") as pdb:
 
-            # Writing the pdb string to a temp file as input for Rosetta
-            pdb.write(pdb_string)
+                # Writing the pdb string to a temp file as input for Rosetta
+                pdb.write(pdb_string)
 
-            # Creating bash command
-            cmd = [
-                rosetta_binary_path,
-                "-in:file:s",
-                pdb.name,
-                "-ignore_unrecognized_res",
-                "-scorefile_format json",
-            ]
+                # Creating bash command
+                cmd = [
+                    rosetta_binary_path,
+                    "-in:file:s",
+                    pdb.name,
+                    "-ignore_unrecognized_res",
+                    "-scorefile_format json",
+                ]
 
-            # Using subprocess to run this command and capturing the output
-            rosetta_stdout = subprocess.run(
-                cmd, capture_output=True, timeout=MAX_RUN_TIME
-            )
+                # Using subprocess to run this command and capturing the output
+                rosetta_stdout = subprocess.run(
+                    cmd, capture_output=True, timeout=MAX_RUN_TIME
+                )
 
-        try:
-            rosetta_stdout.check_returncode()
+            try:
+                rosetta_stdout.check_returncode()
 
-            # Opening the json file score.sc to get the energy values
-            with open("score.sc") as json_file:
-                energy_values = json.load(json_file)
+                # Opening the json file score.sc to get the energy values
+                with open("score.sc") as json_file:
+                    energy_values = json.load(json_file)
 
-                # Removing decoy key that is not needed
-                energy_values.pop("decoy", None)
+                    # Removing decoy key that is not needed
+                    energy_values.pop("decoy", None)
 
-        except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError:
 
-            # Creating a list of the energy value fields
-            energy_field_list = [
-                "dslf_fa13",
-                "fa_atr",
-                "fa_dun",
-                "fa_elec",
-                "fa_intra_rep",
-                "fa_intra_sol_xover4",
-                "fa_rep",
-                "fa_sol",
-                "hbond_bb_sc",
-                "hbond_lr_bb",
-                "hbond_sc",
-                "hbond_sr_bb",
-                "linear_chainbreak",
-                "lk_ball_wtd",
-                "omega",
-                "overlap_chainbreak",
-                "p_aa_pp",
-                "pro_close",
-                "rama_prepro",
-                "ref",
-                "score",
-                "time",
-                "total_score",
-                "yhh_planarity",
-            ]
+                # Creating a list of the energy value fields
+                energy_field_list = [
+                    "dslf_fa13",
+                    "fa_atr",
+                    "fa_dun",
+                    "fa_elec",
+                    "fa_intra_rep",
+                    "fa_intra_sol_xover4",
+                    "fa_rep",
+                    "fa_sol",
+                    "hbond_bb_sc",
+                    "hbond_lr_bb",
+                    "hbond_sc",
+                    "hbond_sr_bb",
+                    "linear_chainbreak",
+                    "lk_ball_wtd",
+                    "omega",
+                    "overlap_chainbreak",
+                    "p_aa_pp",
+                    "pro_close",
+                    "rama_prepro",
+                    "ref",
+                    "score",
+                    "time",
+                    "total_score",
+                    "yhh_planarity",
+                ]
 
-            # Setting all the energy values to None
-            energy_values = dict(
-                zip(energy_field_list, [None] * len(energy_field_list))
-            )
-
-    # Change back to starting directory
-    os.chdir(starting_directory)
+                # Setting all the energy values to None
+                energy_values = dict(
+                    zip(energy_field_list, [None] * len(energy_field_list))
+                )
+    finally:
+        # Change back to starting directory
+        os.chdir(starting_directory)
 
     # Extracting the log information
     log_info = rosetta_stdout.stdout.decode()
@@ -777,105 +781,109 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
     )
 
     starting_directory = pathlib.Path.cwd()
-    with tempfile.TemporaryDirectory() as tmp:
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
 
-        # Changing the working directory to the temporary folder so that Aggrescan3D
-        # does not create files in the users working directory
-        os.chdir(tmp)
+            # Changing the working directory to the temporary folder so that Aggrescan3D
+            # does not create files in the users working directory
+            os.chdir(tmp)
 
-        with tempfile.NamedTemporaryFile(mode="w") as pdb:
+            with tempfile.NamedTemporaryFile(mode="w") as pdb:
 
-            # Writing the pdb string to a temp file as the input for Aggrescan3D
-            pdb.write(pdb_string)
+                # Writing the pdb string to a temp file as the input for Aggrescan3D
+                pdb.write(pdb_string)
 
-            # Creating bash command
-            cmd = [
-                "python2",
-                aggrescan3d_script_path,
-                pdb.name,
-            ]
+                # Creating bash command
+                cmd = [
+                    "python2",
+                    aggrescan3d_script_path,
+                    pdb.name,
+                ]
 
-            # Using subprocess to run this command and capturing the output
-            aggrescan3D_stdout = subprocess.run(
-                cmd, capture_output=True, timeout=MAX_RUN_TIME
-            )
-
-        try:
-            aggrescan3D_stdout.check_returncode()
-
-            try:
-                assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
-                    "output/A3D.csv"
+                # Using subprocess to run this command and capturing the output
+                aggrescan3D_stdout = subprocess.run(
+                    cmd, capture_output=True, timeout=MAX_RUN_TIME
                 )
 
-                # Firstly getting the summary aggrescan3d score values
-                # from a json file
-                with open("output/tmp/folded_stats") as json_file:
-                    aggrescan3d_summary = json.load(json_file)["All"]
+            try:
+                aggrescan3D_stdout.check_returncode()
 
-                # Now getting the residue level aggrescan3d score values
-                # from a csv file
-                with open("output/A3D.csv") as csv_file:
-
-                    # Reading csv file
-                    csv_reader = csv.reader(csv_file, delimiter=",")
-
-                    # Initialising lists to capture the output
-                    protein_list = []
-                    chain_list = []
-                    residue_number_list = []
-                    residue_name_list = []
-                    residue_score_list = []
-
-                    # Looping through each row in the csv file and appending to
-                    # the lists that were initialised above
-                    line_count = 0
-                    for row in csv_reader:
-                        if line_count > 0:
-                            protein_list.append(row[0])
-                            chain_list.append(row[1])
-                            residue_number_list.append(row[2])
-                            residue_name_list.append(row[3])
-                            residue_score_list.append(row[4])
-                        line_count += 1
-
-                    # Converting to floats and then back to strings.
-                    # This is to ensure the values are floats but they
-                    # need to be strings to be inserted into the sql table
-                    residue_score_list = list(
-                        map(convert_string_to_float, residue_score_list)
+                try:
+                    assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
+                        "output/A3D.csv"
                     )
-                    residue_score_list = list(map(str, residue_score_list))
 
-                    # Converting these lists into strings so that they can be inputted into
-                    # the sql database
-                    protein_list = ";".join(protein_list)
-                    chain_list = ";".join(chain_list)
-                    residue_number_list = ";".join(residue_number_list)
-                    residue_name_list = ";".join(residue_name_list)
-                    residue_score_list = ";".join(residue_score_list)
+                    # Firstly getting the summary aggrescan3d score values
+                    # from a json file
+                    with open("output/tmp/folded_stats") as json_file:
+                        aggrescan3d_summary = json.load(json_file)["All"]
 
-                    # Creating a dictionary of these lists
-                    aggrescan3d_residue = {
-                        "protein_list": protein_list,
-                        "chain_list": chain_list,
-                        "residue_number_list": residue_number_list,
-                        "residue_name_list": residue_name_list,
-                        "residue_score_list": residue_score_list,
-                    }
+                    # Now getting the residue level aggrescan3d score values
+                    # from a csv file
+                    with open("output/A3D.csv") as csv_file:
 
-                    # Combining the two dictionaries
-                    aggrescan3d_results = {**aggrescan3d_summary, **aggrescan3d_residue}
+                        # Reading csv file
+                        csv_reader = csv.reader(csv_file, delimiter=",")
 
-            except AssertionError:
+                        # Initialising lists to capture the output
+                        protein_list = []
+                        chain_list = []
+                        residue_number_list = []
+                        residue_name_list = []
+                        residue_score_list = []
+
+                        # Looping through each row in the csv file and appending to
+                        # the lists that were initialised above
+                        line_count = 0
+                        for row in csv_reader:
+                            if line_count > 0:
+                                protein_list.append(row[0])
+                                chain_list.append(row[1])
+                                residue_number_list.append(row[2])
+                                residue_name_list.append(row[3])
+                                residue_score_list.append(row[4])
+                            line_count += 1
+
+                        # Converting to floats and then back to strings.
+                        # This is to ensure the values are floats but they
+                        # need to be strings to be inserted into the sql table
+                        residue_score_list = list(
+                            map(convert_string_to_float, residue_score_list)
+                        )
+                        residue_score_list = list(map(str, residue_score_list))
+
+                        # Converting these lists into strings so that they can be inputted into
+                        # the sql database
+                        protein_list = ";".join(protein_list)
+                        chain_list = ";".join(chain_list)
+                        residue_number_list = ";".join(residue_number_list)
+                        residue_name_list = ";".join(residue_name_list)
+                        residue_score_list = ";".join(residue_score_list)
+
+                        # Creating a dictionary of these lists
+                        aggrescan3d_residue = {
+                            "protein_list": protein_list,
+                            "chain_list": chain_list,
+                            "residue_number_list": residue_number_list,
+                            "residue_name_list": residue_name_list,
+                            "residue_score_list": residue_score_list,
+                        }
+
+                        # Combining the two dictionaries
+                        aggrescan3d_results = {**aggrescan3d_summary, **aggrescan3d_residue}
+
+                except AssertionError:
+
+                    # Setting all the aggrescan3d_results to None
+                    aggrescan3d_results = aggrescan3d_none_dict
+
+            except subprocess.CalledProcessError:
 
                 # Setting all the aggrescan3d_results to None
                 aggrescan3d_results = aggrescan3d_none_dict
-
-        except subprocess.CalledProcessError:
-
-            # Setting all the aggrescan3d_results to None
-            aggrescan3d_results = aggrescan3d_none_dict
+    finally:
+        # Change back to starting directory
+        os.chdir(starting_directory)
 
     # Extracting the log information
     log_info = aggrescan3D_stdout.stdout.decode()
@@ -895,8 +903,6 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
         **aggrescan3d_results,
     )
 
-    # Change back to starting directory
-    os.chdir(starting_directory)
 
     # Returning the output
     return aggrescan3d_output
