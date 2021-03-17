@@ -83,7 +83,9 @@ def dbs_db_from_scratch(
     # Filter pdb files to be processed
     if pdb_list:
         with open(pdb_list, "r") as inf:
-            pdb_white_list = [pdb_code.strip() for pdb_code in inf.read().split()]
+            pdb_white_list = [
+                pdb_code.strip().lower() for pdb_code in inf.read().split()
+            ]
         pdb_paths = [path for path in all_pdb_paths if path.name[3:7] in pdb_white_list]
         print(f"Excluded {len(all_pdb_paths)-len(pdb_paths)} pdb files.")
         print(f"Processing {len(pdb_paths)} pdb files...")
