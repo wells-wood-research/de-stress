@@ -213,7 +213,10 @@ highResBiolUnits =
 highResBiolMetricQuery : SelectionSet (List RefSetMetrics) RootQuery
 highResBiolMetricQuery =
     Query.preferredStates
-        (\optionals -> { optionals | first = Absent })
+        (\optionals -> { optionals | stateNumber = Absent })
+        { count = 100
+        , page = 1
+        }
         (SelectionSet.succeed RefSetMetrics
             |> with
                 (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
