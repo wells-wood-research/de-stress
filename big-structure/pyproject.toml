@@ -15,7 +15,7 @@ click = "^7.0"
 beautifulsoup4 = "^4.7"
 lxml = "^4.3"
 flask-cors = "^3.0"
-isambard = { git = "https://github.com/isambard-uob/isambard.git", tag = "v2.3.0" }
+isambard = "^2.3"
 flask_sockets = "^0.2.1"
 gunicorn = "^20.0.4"
 algebraic-data-types = "^0.1.3"
