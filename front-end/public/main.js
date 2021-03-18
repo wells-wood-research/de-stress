@@ -59,9 +59,13 @@ function storageAvailable(type) {
 
 const storedState = localStorage.getItem(localStorageKey);
 const mInitialState = storedState ? JSON.parse(storedState) : null;
+const windowHeight = window.innerHeight;
+const windowWidth = window.innerWidth;
 const flags = {
   initialSeed: Math.floor(Math.random() * 0x0fffffff),
   mInitialState,
+  windowHeight,
+  windowWidth,
 };
 
 // }}}
@@ -268,7 +272,7 @@ app.ports.outgoing.subscribe((action) => {
 app.ports.vegaPlot.subscribe((plotDetails) => {
   window.requestAnimationFrame(() => {
     embed("#" + plotDetails.plotId, plotDetails.spec, {
-      actions: false,
+      actions: true,
     }).catch(console.warn);
   });
 });

@@ -51,6 +51,7 @@ type alias Model =
     { key : Nav.Key
     , pageState : PageState
     , displaySettings : DisplaySettings
+    , device : Device
     }
 
 
@@ -117,12 +118,14 @@ init shared { params } =
                     { key = shared.key
                     , pageState = LoadingWithStub params.uuid stub
                     , displaySettings = { pdbCodes = False }
+                    , device = classifyDevice shared
                     }
 
                 Nothing ->
                     { key = shared.key
                     , pageState = LoadingNoStub params.uuid
                     , displaySettings = { pdbCodes = False }
+                    , device = classifyDevice shared
                     }
             , ReferenceSet.getReferenceSetForRefSetDetails { uuidString = params.uuid }
             )
@@ -131,6 +134,7 @@ init shared { params } =
             ( { key = shared.key
               , pageState = FailedToStart
               , displaySettings = { pdbCodes = False }
+              , device = classifyDevice shared
               }
             , Cmd.none
             )
@@ -154,7 +158,7 @@ update msg model =
             case Codec.decodeValue ReferenceSet.codec refSetValue of
                 Ok refSet ->
                     ( { model | pageState = RefSet uuidString refSet }
-                    , plotCommands refSet
+                    , plotCommands model.device refSet
                     )
 
                 Err _ ->
@@ -194,13 +198,14 @@ update msg model =
             )
 
 
-plotCommands : ReferenceSet -> Cmd msg
-plotCommands referenceSet =
+plotCommands : Device -> ReferenceSet -> Cmd msg
+plotCommands device referenceSet =
     Cmd.batch
         [ Plots.vegaPlot <|
             { plotId = "composition"
             , spec =
                 Metrics.createCompositionSpec
+                    device
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .aggregateData
@@ -211,6 +216,7 @@ plotCommands referenceSet =
             { plotId = "torsionAngles"
             , spec =
                 Metrics.createTorsionAngleSpec
+                    device
                     Nothing
                     (referenceSet
                         |> ReferenceSet.getGenericData
@@ -221,10 +227,12 @@ plotCommands referenceSet =
             { plotId = "metricsHistograms"
             , spec =
                 Metrics.createAllHistogramsSpec
-                    Nothing
+                    device
+                    []
                     (referenceSet
                         |> ReferenceSet.getGenericData
                         |> .metrics
+                        |> List.map Metrics.makeHistPlotData
                     )
             }
         ]
@@ -249,8 +257,17 @@ save model shared =
 
 
 load : Shared.Model -> Model -> ( Model, Cmd Msg )
-load _ model =
-    ( model, Cmd.none )
+load shared model =
+    ( { model
+        | device = classifyDevice shared
+      }
+    , case model.pageState of
+        RefSet _ refSet ->
+            plotCommands model.device refSet
+
+        _ ->
+            Cmd.none
+    )
 
 
 subscriptions : Model -> Sub Msg

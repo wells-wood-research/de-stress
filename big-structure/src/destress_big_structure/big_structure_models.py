@@ -76,9 +76,11 @@ class StateModel(BigStructureBase):  # type: ignore
     biol_unit = relationship("BiolUnitModel", back_populates="states")
 
     # Children
+    budeff_results = relationship("BudeFFResultsModel", uselist=False)
     evoef2_results = relationship("EvoEF2ResultsModel", uselist=False)
     dfire2_results = relationship("DFIRE2ResultsModel", uselist=False)
     rosetta_results = relationship("RosettaResultsModel", uselist=False)
+    aggrescan3d_results = relationship("Aggrescan3DResultsModel", uselist=False)
     chains = relationship("ChainModel")
 
     def __repr__(self):
@@ -105,6 +107,24 @@ class ChainModel(BigStructureBase):  # type: ignore
             f"biol_unit={self.state.biol_unit.biol_unit_number} "
             f"state={self.state.state_number}, chain={self.chain_label}>"
         )
+
+
+class BudeFFResultsModel(BigStructureBase):  # type: ignore
+    __tablename__ = "budeff_results"
+    id = Column(Integer, primary_key=True)
+
+    # BudeFF Output fields
+    total_energy = Column(Float, nullable=True)
+    steric = Column(Float, nullable=True)
+    desolvation = Column(Float, nullable=True)
+    charge = Column(Float, nullable=True)
+
+    # Parent
+    state_id = Column(Integer, ForeignKey("state.id"))
+    state = relationship("StateModel", back_populates="budeff_results")
+
+    def __repr__(self):
+        return f"<BudeFFResultsModel: Total Energy = {self.total_energy}>"
 
 
 class EvoEF2ResultsModel(BigStructureBase):  # type: ignore
@@ -248,3 +268,29 @@ class RosettaResultsModel(BigStructureBase):  # type: ignore
 
     def __repr__(self):
         return f"<RosettaOutput: Total Energy = {self.total_score}>"
+
+
+class Aggrescan3DResultsModel(BigStructureBase):  # type: ignore
+    __tablename__ = "aggrescan3d_results"
+    id = Column(Integer, primary_key=True)
+
+    # Aggrescan3D Output fields
+    log_info = Column(String, nullable=False)
+    error_info = Column(String, nullable=False)
+    return_code = Column(Integer, nullable=False)
+    protein_list = Column(String, nullable=True)
+    chain_list = Column(String, nullable=True)
+    residue_number_list = Column(String, nullable=True)
+    residue_name_list = Column(String, nullable=True)
+    residue_score_list = Column(String, nullable=True)
+    max_value = Column(Float, nullable=True)
+    avg_value = Column(Float, nullable=True)
+    min_value = Column(Float, nullable=True)
+    total_value = Column(Float, nullable=True)
+
+    # Parent
+    state_id = Column(Integer, ForeignKey("state.id"))
+    state = relationship("StateModel", back_populates="aggrescan3d_results")
+
+    def __repr__(self):
+        return f"<Aggrescan3DOutput: Total Score = {self.total_value}, Average Score = {self.avg_value}>"

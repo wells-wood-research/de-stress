@@ -17,6 +17,7 @@ import Shared.Requirement as Requirement
         ( Requirement
         , RequirementData
         , UnitType(..)
+        , ValueType(..)
         )
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification
@@ -134,6 +135,21 @@ stringFromValueType valueType =
         CompositionDeviation _ _ ->
             "Composition Deviation"
 
+        BUDEFFTotal _ _ ->
+            "BUDEFF Total Energy"
+
+        EvoEF2Total _ _ ->
+            "EvoEF2 Total Energy"
+
+        DFIRE2Total _ _ ->
+            "DFIRE2 Total Energy"
+
+        RosettaTotal _ _ ->
+            "Rosetta Total Energy"
+
+        Agg3DTotal _ _ ->
+            "Aggrescan3D Total Score"
+
 
 
 -- Consider unifying to use relative value to replace order definition
@@ -145,6 +161,11 @@ type ValueType
     | MeanPackingDensity (Maybe Order) (Maybe String)
     | SequenceContains (Maybe String)
     | CompositionDeviation (Maybe UnitType) (Maybe String)
+    | BUDEFFTotal (Maybe Order) (Maybe String)
+    | EvoEF2Total (Maybe Order) (Maybe String)
+    | DFIRE2Total (Maybe Order) (Maybe String)
+    | RosettaTotal (Maybe Order) (Maybe String)
+    | Agg3DTotal (Maybe Order) (Maybe String)
 
 
 stringFromNewRequirement : NewRequirement NewRequirementData -> String
@@ -283,6 +304,81 @@ newRequirementToRequirement newRequirement =
 
                                 CompositionDeviation _ _ ->
                                     Err "Composition deviation value was not fully defined."
+
+                                BUDEFFTotal (Just order) (Just value) ->
+                                    case String.toFloat value of
+                                        Just floatValue ->
+                                            Requirement.BUDEFFTotal order floatValue
+                                                |> valueConstructor
+                                                |> Ok
+
+                                        Nothing ->
+                                            Err <|
+                                                "The value you've provided for BUDEFF Total Energy"
+                                                    ++ "is not a number."
+
+                                BUDEFFTotal _ _ ->
+                                    Err "BUDEFF Total Energy value was not fully defined."
+
+                                EvoEF2Total (Just order) (Just value) ->
+                                    case String.toFloat value of
+                                        Just floatValue ->
+                                            Requirement.EvoEF2Total order floatValue
+                                                |> valueConstructor
+                                                |> Ok
+
+                                        Nothing ->
+                                            Err <|
+                                                "The value you've provided for EvoEF2 Total Energy"
+                                                    ++ "is not a number."
+
+                                EvoEF2Total _ _ ->
+                                    Err "EvoEF2 Total Energy value was not fully defined."
+
+                                DFIRE2Total (Just order) (Just value) ->
+                                    case String.toFloat value of
+                                        Just floatValue ->
+                                            Requirement.DFIRE2Total order floatValue
+                                                |> valueConstructor
+                                                |> Ok
+
+                                        Nothing ->
+                                            Err <|
+                                                "The value you've provided for DFIRE2 Total Energy"
+                                                    ++ "is not a number."
+
+                                DFIRE2Total _ _ ->
+                                    Err "DFIRE2 Total Energy value was not fully defined."
+
+                                RosettaTotal (Just order) (Just value) ->
+                                    case String.toFloat value of
+                                        Just floatValue ->
+                                            Requirement.RosettaTotal order floatValue
+                                                |> valueConstructor
+                                                |> Ok
+
+                                        Nothing ->
+                                            Err <|
+                                                "The value you've provided for Rosetta Total Energy"
+                                                    ++ "is not a number."
+
+                                RosettaTotal _ _ ->
+                                    Err "Rosetta Total Energy value was not fully defined."
+
+                                Agg3DTotal (Just order) (Just value) ->
+                                    case String.toFloat value of
+                                        Just floatValue ->
+                                            Requirement.Agg3DTotal order floatValue
+                                                |> valueConstructor
+                                                |> Ok
+
+                                        Nothing ->
+                                            Err <|
+                                                "The value you've provided for Aggrescan3D Total Score"
+                                                    ++ "is not a number."
+
+                                Agg3DTotal _ _ ->
+                                    Err "Aggrescan3D Total Score value was not fully defined."
 
         Not mNewSubRequirement ->
             case mNewSubRequirement of
@@ -770,6 +866,11 @@ newRequirementView msgConstructor mNewRequirement =
                                         , MeanPackingDensity Nothing Nothing
                                         , SequenceContains Nothing
                                         , CompositionDeviation Nothing Nothing
+                                        , BUDEFFTotal Nothing Nothing
+                                        , EvoEF2Total Nothing Nothing
+                                        , DFIRE2Total Nothing Nothing
+                                        , RosettaTotal Nothing Nothing
+                                        , Agg3DTotal Nothing Nothing
                                         ]
                                     }
                                 ]
@@ -1135,6 +1236,186 @@ valueTypeView msgConstructor valueType =
                 "Something went wrong while defining your value, hit "
                     ++ "cancel and start again."
             )
+
+        BUDEFFTotal Nothing Nothing ->
+            valueOrderView
+                { msgConstructor =
+                    \order ->
+                        BUDEFFTotal (Just order) Nothing
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
+                }
+
+        BUDEFFTotal Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        BUDEFFTotal (Just order) mValue ->
+            valueFloatInputView
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
+                        order
+                        (BUDEFFTotal Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> BUDEFFTotal (Just order)
+                            |> valueConstructor
+                }
+
+        EvoEF2Total Nothing Nothing ->
+            valueOrderView
+                { msgConstructor =
+                    \order ->
+                        EvoEF2Total (Just order) Nothing
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
+                }
+
+        EvoEF2Total Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        EvoEF2Total (Just order) mValue ->
+            valueFloatInputView
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
+                        order
+                        (EvoEF2Total Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> EvoEF2Total (Just order)
+                            |> valueConstructor
+                }
+
+        DFIRE2Total Nothing Nothing ->
+            valueOrderView
+                { msgConstructor =
+                    \order ->
+                        DFIRE2Total (Just order) Nothing
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
+                }
+
+        DFIRE2Total Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        DFIRE2Total (Just order) mValue ->
+            valueFloatInputView
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
+                        order
+                        (DFIRE2Total Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> DFIRE2Total (Just order)
+                            |> valueConstructor
+                }
+
+        RosettaTotal Nothing Nothing ->
+            valueOrderView
+                { msgConstructor =
+                    \order ->
+                        RosettaTotal (Just order) Nothing
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
+                }
+
+        RosettaTotal Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        RosettaTotal (Just order) mValue ->
+            valueFloatInputView
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
+                        order
+                        (RosettaTotal Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> RosettaTotal (Just order)
+                            |> valueConstructor
+                }
+
+        Agg3DTotal Nothing Nothing ->
+            valueOrderView
+                { msgConstructor =
+                    \order ->
+                        Agg3DTotal (Just order) Nothing
+                            |> valueConstructor
+                , valueLabel = valueLabel
+                , valueTypeLabel = valueTypeLabel
+                }
+
+        Agg3DTotal Nothing (Just _) ->
+            ( False
+            , text <|
+                "Something went wrong while defining your value, hit "
+                    ++ "cancel and start again."
+            )
+
+        Agg3DTotal (Just order) mValue ->
+            valueFloatInputView
+                { mValue = mValue
+                , labels =
+                    [ valueLabel
+                    , valueTypeLabel
+                    , orderLabel
+                        order
+                        (Agg3DTotal Nothing Nothing
+                            |> valueConstructor
+                        )
+                    ]
+                , msgConstructor =
+                    \s ->
+                        Just s
+                            |> Agg3DTotal (Just order)
+                            |> valueConstructor
+                }
 
 
 optionsView :
