@@ -231,6 +231,8 @@ class JpredSubmission:
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
     ampal_assembly = ampal.load_pdb(pdb_string, path=False)
+    # relabel everything to remove annoying insertion codes!
+    ampal_assembly.relabel_all()
     if isinstance(ampal_assembly, ampal.AmpalContainer):
         ampal_assembly = ampal_assembly[0]
     if not ampal_assembly._molecules:
@@ -396,10 +398,16 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
             tmp.write(pdb_string)
 
             # Creating bash command
-            cmd = [evoef2_binary_path, "--command=ComputeStability", "--pdb=" + tmp.name]
+            cmd = [
+                evoef2_binary_path,
+                "--command=ComputeStability",
+                "--pdb=" + tmp.name,
+            ]
 
             # Using subprocess to run this command and capturing the output
-            evoef2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
+            evoef2_stdout = subprocess.run(
+                cmd, capture_output=True, timeout=MAX_RUN_TIME
+            )
 
     finally:
         # Change back to starting directory before checking return code
@@ -568,7 +576,9 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
             ]
 
             # Using subprocess to run this command and capturing the output
-            dfire2_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
+            dfire2_stdout = subprocess.run(
+                cmd, capture_output=True, timeout=MAX_RUN_TIME
+            )
     finally:
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
@@ -870,7 +880,10 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                         }
 
                         # Combining the two dictionaries
-                        aggrescan3d_results = {**aggrescan3d_summary, **aggrescan3d_residue}
+                        aggrescan3d_results = {
+                            **aggrescan3d_summary,
+                            **aggrescan3d_residue,
+                        }
 
                 except AssertionError:
 
@@ -902,7 +915,6 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
         return_code=return_code,
         **aggrescan3d_results,
     )
-
 
     # Returning the output
     return aggrescan3d_output

@@ -23,7 +23,7 @@ import destress_big_structure.create_entry as create_entry
 
 ProcPdbResult = tp.Union[tp.Tuple[str, PdbModel], tp.Tuple[str, str]]
 
-BATCH_SIZE = 100  # files will be processed in batches of 100
+BATCH_SIZE = 1000  # files will be processed in batches of 1000
 
 
 def dev_run():
