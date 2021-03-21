@@ -546,13 +546,14 @@ plotCommands device metrics referenceSet =
                     [ Metrics.makeHistPlotData
                         { hydrophobicFitness = metrics.hydrophobicFitness
                         , isoelectricPoint = metrics.isoelectricPoint
-                        , numOfResidues = metrics.numOfResidues
+                        , mass = metrics.mass
+                        , numberOfResidues = metrics.numOfResidues
                         , packingDensity = metrics.packingDensity
-                        , budeFFResults = Just metrics.budeFFResults
-                        , evoEF2Results = Just metrics.evoEF2Results
-                        , dfire2Results = Just metrics.dfire2Results
-                        , rosettaResults = Just metrics.rosettaResults
-                        , aggrescan3dResults = Just metrics.aggrescan3dResults
+                        , budeFFTotalEnergy = metrics.budeFFResults.totalEnergy
+                        , evoEFTotalEnergy = metrics.evoEF2Results.total
+                        , dfireTotalEnergy = metrics.dfire2Results.total
+                        , rosettaTotalEnergy = metrics.rosettaResults.total_score
+                        , aggrescan3dTotalValue = metrics.aggrescan3dResults.total_value
                         }
                     ]
                     (referenceSet

@@ -212,9 +212,19 @@ update msg model =
                     )
 
                 _ ->
-                    ( { model | newReferenceSet = NewHighResBiolUnit remoteData }
-                    , Cmd.none
-                    )
+                    Error.updateWithError
+                        ClearPageErrors
+                        { model | newReferenceSet = NewHighResBiolUnit remoteData }
+                        { title = "Failed to create reference set"
+                        , details =
+                            """Failed to create a new reference set. It looks like we
+                            had trouble downloading the data from the server. Check your
+                            internet connection and refresh your browser. If this
+                            problem persists, report it as a bug. See the home page for
+                            details on how to do this.
+                            """
+                        , severity = Error.Medium
+                        }
 
         -- Preferred State Subset
         UpdatedName params name ->
@@ -438,7 +448,13 @@ bodyView model =
         ]
     <|
         if isDownloadingData model.newReferenceSet then
-            [ text "Downloading metric data..." ]
+            [ paragraph []
+                [ text
+                    """Downloading metric data and building reference set. This could
+                    take some time (up to a minute).
+                    """
+                ]
+            ]
 
         else
             [ text "Create New Reference Set"
