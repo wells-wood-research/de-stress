@@ -85,6 +85,7 @@ class Aggrescan3DResults(SQLAlchemyObjectType):
 
 
 class Query(graphene.ObjectType):
+    # {{{ PDBS
     all_pdbs = graphene.NonNull(
         graphene.List(graphene.NonNull(Pdb), required=True),
         description=("Gets all PDB records."),
@@ -114,6 +115,8 @@ class Query(graphene.ObjectType):
         query = Pdb.get_query(info)
         return query.count()
 
+    # }}}
+    # {{{ BIOUNITS
     all_biol_units = graphene.NonNull(
         graphene.List(
             graphene.NonNull(BiolUnit),
@@ -167,6 +170,8 @@ class Query(graphene.ObjectType):
         query = BiolUnit.get_query(info)
         return query.count()
 
+    # }}}
+    # {{{ STATES
     all_states = graphene.NonNull(
         graphene.List(graphene.NonNull(State), required=True),
         description=("Gets all states."),
@@ -253,6 +258,8 @@ class Query(graphene.ObjectType):
         query = State.get_query(info)
         return query.count()
 
+    # }}}
+    # {{{ CHAINS
     all_chains = graphene.NonNull(
         graphene.List(graphene.NonNull(Chain), required=True),
         description=("Gets all chains."),
@@ -282,6 +289,8 @@ class Query(graphene.ObjectType):
         query = Chain.get_query(info)
         return query.count()
 
+    # }}}
+    # {{{ BUDE RESULTS
     all_budeff_results = graphene.NonNull(
         graphene.List(graphene.NonNull(BudeFFResults), required=True),
         description=("Gets all bude ff results records."),
@@ -303,6 +312,41 @@ class Query(graphene.ObjectType):
         input_page = args.get("page")
         return paginate(query, input_count, input_page).all()
 
+    preferred_bude_subset = graphene.NonNull(
+        graphene.List(graphene.NonNull(BudeFFResults), required=True),
+        description=(
+            "Gets BUDE results for preferred biological unit state records. It "
+            "requires the `codes` parameter, which is a list of PDB codes to create "
+            "the subset."
+        ),
+        codes=graphene.List(
+            graphene.NonNull(graphene.String),
+            required=True,
+            description="A list of PDB codes to be retrieved. Length capped at 1000.",
+        ),
+        state_number=graphene.Int(
+            description="The state number that is preferred. Default = 0"
+        ),
+    )
+
+    def resolve_preferred_bude_subset(self, info, **args):
+        codes = args.get("codes")
+        if len(codes) > 1000:
+            codes = codes[:1000]
+        state_number = args.get("state_number", 0)
+        query = (
+            BudeFFResults.get_query(info)
+            .join(StateModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
+            .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
+            .filter(PdbModel.pdb_code.in_(codes))
+        )
+        return query.all()
+
+    # }}}
+    # {{{ EVOEF2 RESULTS
     all_evoef2_results = graphene.NonNull(
         graphene.List(graphene.NonNull(EvoEF2Results), required=True),
         description=("Gets all evoef2 results records."),
@@ -324,6 +368,41 @@ class Query(graphene.ObjectType):
         input_page = args.get("page")
         return paginate(query, input_count, input_page).all()
 
+    preferred_evoef2_subset = graphene.NonNull(
+        graphene.List(graphene.NonNull(EvoEF2Results), required=True),
+        description=(
+            "Gets EvoEF2 results for preferred biological unit state records. It "
+            "requires the `codes` parameter, which is a list of PDB codes to create "
+            "the subset."
+        ),
+        codes=graphene.List(
+            graphene.NonNull(graphene.String),
+            required=True,
+            description="A list of PDB codes to be retrieved. Length capped at 1000.",
+        ),
+        state_number=graphene.Int(
+            description="The state number that is preferred. Default = 0"
+        ),
+    )
+
+    def resolve_preferred_evoef2_subset(self, info, **args):
+        codes = args.get("codes")
+        if len(codes) > 1000:
+            codes = codes[:1000]
+        state_number = args.get("state_number", 0)
+        query = (
+            EvoEF2Results.get_query(info)
+            .join(StateModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
+            .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
+            .filter(PdbModel.pdb_code.in_(codes))
+        )
+        return query.all()
+
+    # }}}
+    # {{{ DFIRE2 RESULTS
     all_dfire2_results = graphene.NonNull(
         graphene.List(graphene.NonNull(DFIRE2Results), required=True),
         description=("Gets all dfire2 results records."),
@@ -345,6 +424,41 @@ class Query(graphene.ObjectType):
         input_page = args.get("page")
         return paginate(query, input_count, input_page).all()
 
+    preferred_dfire2_subset = graphene.NonNull(
+        graphene.List(graphene.NonNull(DFIRE2Results), required=True),
+        description=(
+            "Gets DFIRE2 results for preferred biological unit state records. It "
+            "requires the `codes` parameter, which is a list of PDB codes to create "
+            "the subset."
+        ),
+        codes=graphene.List(
+            graphene.NonNull(graphene.String),
+            required=True,
+            description="A list of PDB codes to be retrieved. Length capped at 1000.",
+        ),
+        state_number=graphene.Int(
+            description="The state number that is preferred. Default = 0"
+        ),
+    )
+
+    def resolve_preferred_dfire2_subset(self, info, **args):
+        codes = args.get("codes")
+        if len(codes) > 1000:
+            codes = codes[:1000]
+        state_number = args.get("state_number", 0)
+        query = (
+            DFIRE2Results.get_query(info)
+            .join(StateModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
+            .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
+            .filter(PdbModel.pdb_code.in_(codes))
+        )
+        return query.all()
+
+    # }}}
+    # {{{ ROSETTA RESULTS
     all_rosetta_results = graphene.NonNull(
         graphene.List(graphene.NonNull(RosettaResults), required=True),
         description=("Gets all rosetta results records."),
@@ -366,6 +480,41 @@ class Query(graphene.ObjectType):
         input_page = args.get("page")
         return paginate(query, input_count, input_page).all()
 
+    preferred_rosetta_subset = graphene.NonNull(
+        graphene.List(graphene.NonNull(RosettaResults), required=True),
+        description=(
+            "Gets Rosetta results for preferred biological unit state records. It "
+            "requires the `codes` parameter, which is a list of PDB codes to create "
+            "the subset."
+        ),
+        codes=graphene.List(
+            graphene.NonNull(graphene.String),
+            required=True,
+            description="A list of PDB codes to be retrieved. Length capped at 1000.",
+        ),
+        state_number=graphene.Int(
+            description="The state number that is preferred. Default = 0"
+        ),
+    )
+
+    def resolve_preferred_rosetta_subset(self, info, **args):
+        codes = args.get("codes")
+        if len(codes) > 1000:
+            codes = codes[:1000]
+        state_number = args.get("state_number", 0)
+        query = (
+            RosettaResults.get_query(info)
+            .join(StateModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
+            .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
+            .filter(PdbModel.pdb_code.in_(codes))
+        )
+        return query.all()
+
+    # }}}
+    # {{{ AGGRESCAN RESULTS
     all_aggrescan3d_results = graphene.NonNull(
         graphene.List(graphene.NonNull(Aggrescan3DResults), required=True),
         description=("Gets all aggrescan3d results records."),
@@ -386,6 +535,41 @@ class Query(graphene.ObjectType):
         input_count = args.get("count")
         input_page = args.get("page")
         return paginate(query, input_count, input_page).all()
+
+    preferred_aggrescan3d_subset = graphene.NonNull(
+        graphene.List(graphene.NonNull(Aggrescan3DResults), required=True),
+        description=(
+            "Gets Aggrescan3D results for preferred biological unit state records. It "
+            "requires the `codes` parameter, which is a list of PDB codes to create "
+            "the subset."
+        ),
+        codes=graphene.List(
+            graphene.NonNull(graphene.String),
+            required=True,
+            description="A list of PDB codes to be retrieved. Length capped at 1000.",
+        ),
+        state_number=graphene.Int(
+            description="The state number that is preferred. Default = 0"
+        ),
+    )
+
+    def resolve_preferred_aggrescan3d_subset(self, info, **args):
+        codes = args.get("codes")
+        if len(codes) > 1000:
+            codes = codes[:1000]
+        state_number = args.get("state_number", 0)
+        query = (
+            Aggrescan3DResults.get_query(info)
+            .join(StateModel)
+            .join(BiolUnitModel)
+            .join(PdbModel)
+            .filter(BiolUnitModel.is_preferred_biol_unit)
+            .filter(StateModel.state_number == state_number)
+            .filter(PdbModel.pdb_code.in_(codes))
+        )
+        return query.all()
+
+    # }}}
 
 
 schema = graphene.Schema(query=Query)
