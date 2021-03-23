@@ -1,18 +1,14 @@
 port module Shared.ReferenceSet exposing
-    ( ReferenceSet(..)
+    ( ReferenceSet
     , ReferenceSetRemoteData
-    , ReferenceSetStub(..)
+    , ReferenceSetStub
     , StoredReferenceSet
     , codec
     , createReferenceSetStub
     , deleteReferenceSet
-    , getGenericData
-    , getParamsForStub
     , getReferenceSetForDesignDetails
     , getReferenceSetForRefSetDetails
-    , highResBiolUnits
     , mapStoredReferenceSet
-    , mapStubParams
     , preferredStatesSubsetQuery
     , queryToCmd
     , referenceSetStubCodec
@@ -20,7 +16,6 @@ port module Shared.ReferenceSet exposing
     , storeReferenceSetStubLocally
     , storedReferenceSetCodec
     , storedReferenceSetToStub
-    , updateDeleteStatus
     )
 
 import BigStructure.Object.Aggrescan3DResults as Aggrescan3DResults
@@ -64,19 +59,7 @@ port deleteReferenceSet : { uuidString : String } -> Cmd msg
 -- {{{ ReferenceSet
 
 
-type ReferenceSet
-    = HighResBiolUnit HighResBiolUnitParams
-    | PdbCodeList PdbCodeListParams
-
-
-type alias HighResBiolUnitParams =
-    { metrics : List RefSetMetrics
-    , aggregateData : Metrics.AggregateData
-    , deleteStatus : Buttons.DangerStatus
-    }
-
-
-type alias PdbCodeListParams =
+type alias ReferenceSet =
     { name : String
     , description : String
     , pdbCodeList : Set String
@@ -86,75 +69,9 @@ type alias PdbCodeListParams =
     }
 
 
-type alias GenericData =
-    { name : String
-    , description : String
-    , metrics : List RefSetMetrics
-    , aggregateData : Metrics.AggregateData
-    , deleteStatus : Buttons.DangerStatus
-    }
-
-
-getGenericData : ReferenceSet -> GenericData
-getGenericData referenceSet =
-    case referenceSet of
-        HighResBiolUnit { metrics, aggregateData, deleteStatus } ->
-            { name = highResBiolUnits.name
-            , description = highResBiolUnits.description
-            , metrics = metrics
-            , aggregateData = aggregateData
-            , deleteStatus = deleteStatus
-            }
-
-        PdbCodeList { name, description, metrics, aggregateData, deleteStatus } ->
-            { name = name
-            , description = description
-            , metrics = metrics
-            , aggregateData = aggregateData
-            , deleteStatus = deleteStatus
-            }
-
-
-updateDeleteStatus : Buttons.DangerStatus -> ReferenceSet -> ReferenceSet
-updateDeleteStatus dangerStatus referenceSet =
-    case referenceSet of
-        HighResBiolUnit params ->
-            HighResBiolUnit { params | deleteStatus = dangerStatus }
-
-        PdbCodeList params ->
-            PdbCodeList { params | deleteStatus = dangerStatus }
-
-
 codec : Codec ReferenceSet
 codec =
-    Codec.custom
-        (\fhighResBiol fpdbCodeList value ->
-            case value of
-                HighResBiolUnit params ->
-                    fhighResBiol params
-
-                PdbCodeList params ->
-                    fpdbCodeList params
-        )
-        |> Codec.variant1 "HighResBiolUnit" HighResBiolUnit highResBiolUnitsParamsCodec
-        |> Codec.variant1 "PdbCodeList" PdbCodeList pdbCodeListParamsCodec
-        |> Codec.buildCustom
-
-
-highResBiolUnitsParamsCodec : Codec HighResBiolUnitParams
-highResBiolUnitsParamsCodec =
-    Codec.object HighResBiolUnitParams
-        |> Codec.field "metrics" .metrics (Codec.list Metrics.refSetMetricsCodec)
-        |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
-        |> Codec.field "deleteStatus"
-            .deleteStatus
-            (Codec.constant Buttons.initDangerStatus)
-        |> Codec.buildObject
-
-
-pdbCodeListParamsCodec : Codec PdbCodeListParams
-pdbCodeListParamsCodec =
-    Codec.object PdbCodeListParams
+    Codec.object ReferenceSet
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
         |> Codec.field "pdbCodeList" .pdbCodeList (Codec.set Codec.string)
@@ -182,67 +99,12 @@ queryToCmd :
 queryToCmd query msgConstructor =
     query
         |> Graphql.Http.queryRequest "http://127.0.0.1:8181/graphql"
-        |> Graphql.Http.withTimeout 60000
         |> Graphql.Http.send (RD.fromResult >> msgConstructor)
 
 
 
 -- }}}
 -- {{{ Default Reference Sets
-
-
-type alias DefaultReferenceSet =
-    { id : String
-    , name : String
-    , description : String
-    , query : SelectionSet (List RefSetMetrics) RootQuery
-    }
-
-
-highResBiolUnits : DefaultReferenceSet
-highResBiolUnits =
-    { id = "high-res-biol-units"
-    , name = "High Res Biol Units"
-    , description =
-        """A set of high-resolution, non-redundant protein structures. Uses the
-        preferred biological unit as defined by PDBe."""
-    , query = highResBiolMetricQuery
-    }
-
-
-highResBiolMetricQuery : SelectionSet (List RefSetMetrics) RootQuery
-highResBiolMetricQuery =
-    Query.preferredStates
-        (\optionals -> { optionals | stateNumber = Absent })
-        { count = 300
-        , page = 1
-        }
-        (SelectionSet.succeed RefSetMetrics
-            |> with
-                (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
-                    |> SelectionSet.map
-                        (\mmPdbCode ->
-                            case mmPdbCode of
-                                Just (Just pdbCode) ->
-                                    pdbCode
-
-                                _ ->
-                                    "Unknown PDB"
-                        )
-                )
-            |> with (SelectionSet.map Metrics.compositionStringToDict State.composition)
-            |> with (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
-            |> with State.hydrophobicFitness
-            |> with State.isoelectricPoint
-            |> with State.mass
-            |> with State.numOfResidues
-            |> with State.meanPackingDensity
-            |> with (unwrapMSS (State.budeffResults BudeFFResults.totalEnergy))
-            |> with (unwrapMSS (State.evoef2Results EvoEF2Results.total))
-            |> with (unwrapMSS (State.dfire2Results DFIRE2Results.total))
-            |> with (unwrapMSS (State.rosettaResults RosettaResults.totalScore))
-            |> with (unwrapMSS (State.aggrescan3dResults Aggrescan3DResults.totalValue))
-        )
 
 
 preferredStatesSubsetQuery : Set String -> SelectionSet (List Metrics.RefSetMetrics) RootQuery
@@ -289,12 +151,7 @@ unwrapMSS =
 -- {{{ ReferenceSetStub
 
 
-type ReferenceSetStub
-    = HighResBiolUnitStub StubParams
-    | PdbCodeListStub StubParams
-
-
-type alias StubParams =
+type alias ReferenceSetStub =
     { name : String
     , description : String
     , aggregateData : Metrics.AggregateData
@@ -302,39 +159,9 @@ type alias StubParams =
     }
 
 
-mapStubParams : (StubParams -> StubParams) -> ReferenceSetStub -> ReferenceSetStub
-mapStubParams fn stub =
-    case stub of
-        HighResBiolUnitStub params ->
-            fn params
-                |> HighResBiolUnitStub
-
-        PdbCodeListStub params ->
-            fn params
-                |> PdbCodeListStub
-
-
 referenceSetStubCodec : Codec ReferenceSetStub
 referenceSetStubCodec =
-    Codec.custom
-        (\fhighResBiol fpdbCodeList value ->
-            case value of
-                HighResBiolUnitStub params ->
-                    fhighResBiol params
-
-                PdbCodeListStub params ->
-                    fpdbCodeList params
-        )
-        |> Codec.variant1 "HighResBiolUnitStub"
-            HighResBiolUnitStub
-            stubParamsCodec
-        |> Codec.variant1 "PdbCodeListStub" PdbCodeListStub stubParamsCodec
-        |> Codec.buildCustom
-
-
-stubParamsCodec : Codec StubParams
-stubParamsCodec =
-    Codec.object StubParams
+    Codec.object ReferenceSetStub
         |> Codec.field "name" .name Codec.string
         |> Codec.field "description" .description Codec.string
         |> Codec.field "aggregateData" .aggregateData Metrics.aggregateDataCodec
@@ -345,38 +172,13 @@ stubParamsCodec =
 
 
 createReferenceSetStub : ReferenceSet -> ReferenceSetStub
-createReferenceSetStub referenceSet =
-    case referenceSet of
-        HighResBiolUnit { deleteStatus, aggregateData } ->
-            HighResBiolUnitStub
-                { name = highResBiolUnits.name
-                , description = highResBiolUnits.description
-                , aggregateData = aggregateData
-                , deleteStatus = deleteStatus
-                }
-
-        PdbCodeList { name, description, aggregateData, deleteStatus } ->
-            PdbCodeListStub
-                { name = name
-                , description = description
-                , aggregateData = aggregateData
-                , deleteStatus =
-                    deleteStatus
-                }
-
-
-getParamsForStub : ReferenceSetStub -> StubParams
-getParamsForStub referenceSet =
-    case referenceSet of
-        HighResBiolUnitStub { deleteStatus, aggregateData } ->
-            { name = highResBiolUnits.name
-            , description = highResBiolUnits.description
-            , aggregateData = aggregateData
-            , deleteStatus = deleteStatus
-            }
-
-        PdbCodeListStub params ->
-            params
+createReferenceSetStub { name, description, aggregateData, deleteStatus } =
+    { name = name
+    , description = description
+    , aggregateData = aggregateData
+    , deleteStatus =
+        deleteStatus
+    }
 
 
 

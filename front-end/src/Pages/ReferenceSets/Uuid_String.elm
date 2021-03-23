@@ -180,7 +180,7 @@ update msg model =
                             (\{ uuidString, referenceSet } ->
                                 { uuidString = uuidString
                                 , referenceSet =
-                                    ReferenceSet.updateDeleteStatus dangerStatus referenceSet
+                                    { referenceSet | deleteStatus = dangerStatus }
                                 }
                             )
                             model.pageState
@@ -206,10 +206,7 @@ plotCommands device referenceSet =
             , spec =
                 Metrics.createCompositionSpec
                     device
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .aggregateData
-                    )
+                    referenceSet.aggregateData
                     Nothing
             }
         , Plots.vegaPlot <|
@@ -218,10 +215,7 @@ plotCommands device referenceSet =
                 Metrics.createTorsionAngleSpec
                     device
                     Nothing
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
-                    )
+                    referenceSet.metrics
             }
         , Plots.vegaPlot <|
             { plotId = "metricsHistograms"
@@ -229,9 +223,7 @@ plotCommands device referenceSet =
                 Metrics.createAllHistogramsSpec
                     device
                     []
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
+                    (referenceSet.metrics
                         |> List.map Metrics.makeHistPlotData
                     )
             }
@@ -306,7 +298,7 @@ bodyView model =
 
             LoadingWithStub uuidString stub ->
                 sectionColumn
-                    [ simpleDetails uuidString (stub |> ReferenceSet.getParamsForStub)
+                    [ simpleDetails uuidString stub
                     ]
 
             RefSetNotFound referenceSetUuid ->
@@ -317,7 +309,7 @@ bodyView model =
                     [ fullDetails
                         uuidString
                         model.displaySettings
-                        (referenceSet |> ReferenceSet.getGenericData)
+                        referenceSet
                     ]
 
             Deleted uuidString ->

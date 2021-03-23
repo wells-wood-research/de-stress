@@ -521,10 +521,7 @@ plotCommands device metrics referenceSet =
             , spec =
                 Metrics.createCompositionSpec
                     device
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .aggregateData
-                    )
+                    referenceSet.aggregateData
                     (Just metrics)
             }
         , Plots.vegaPlot <|
@@ -533,10 +530,7 @@ plotCommands device metrics referenceSet =
                 Metrics.createTorsionAngleSpec
                     device
                     (Just metrics)
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
-                    )
+                    referenceSet.metrics
             }
         , Plots.vegaPlot <|
             { plotId = "metricsHistograms"
@@ -556,9 +550,7 @@ plotCommands device metrics referenceSet =
                         , aggrescan3dTotalValue = metrics.aggrescan3dResults.total_value
                         }
                     ]
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
+                    (referenceSet.metrics
                         |> List.map Metrics.makeHistPlotData
                     )
             }

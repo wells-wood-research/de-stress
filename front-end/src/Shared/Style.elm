@@ -1,6 +1,7 @@
 module Shared.Style exposing (..)
 
 import Element exposing (..)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
@@ -41,7 +42,7 @@ pageWidths =
 
 
 
--- {{ HEADINGS
+-- {{{ HEADINGS
 
 
 h1 : Element msg -> Element msg
@@ -77,8 +78,8 @@ h3 content =
 
 
 
--- }}
--- {{ BORDERS
+-- }}}
+-- {{{ BORDERS
 
 
 defaultBorder : List (Attribute msg)
@@ -89,8 +90,8 @@ defaultBorder =
 
 
 
--- }}
--- {{ INPUT
+-- }}}
+-- {{{ INPUT
 
 
 textInputStyle : List (Attribute msg)
@@ -115,4 +116,65 @@ linkStyle =
 
 
 
--- }}
+-- }}}
+-- {{{ PROGRESS BAR
+
+
+progressBar : { max : Int, current : Int } -> Element msg
+progressBar { max, current } =
+    let
+        segmentView filled segmentNumber =
+            let
+                rounded =
+                    if segmentNumber == 0 then
+                        Border.roundEach
+                            { topLeft = 10
+                            , topRight = 0
+                            , bottomLeft = 10
+                            , bottomRight = 0
+                            }
+
+                    else if segmentNumber == max then
+                        Border.roundEach
+                            { topLeft = 0
+                            , topRight = 10
+                            , bottomLeft = 0
+                            , bottomRight = 10
+                            }
+
+                    else
+                        Border.roundEach
+                            { topLeft = 0
+                            , topRight = 0
+                            , bottomLeft = 0
+                            , bottomRight = 0
+                            }
+            in
+            if segmentNumber <= filled then
+                el
+                    [ height fill
+                    , width <| fillPortion 1
+                    , Background.color colorPalette.c1
+                    , rounded
+                    ]
+                    none
+
+            else
+                el
+                    [ height fill
+                    , width <| fillPortion 1
+                    , rounded
+                    ]
+                    none
+    in
+    row
+        ([ height <| px 20
+         , width fill
+         ]
+            ++ defaultBorder
+        )
+        (List.map (segmentView current) (List.range 0 max))
+
+
+
+-- }}}

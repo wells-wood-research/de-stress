@@ -11,7 +11,7 @@ import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
-import Spa.Url as Url exposing (Url)
+import Spa.Url exposing (Url)
 
 
 page : Page Params Model Msg
@@ -99,7 +99,6 @@ update msg model =
                                         dangerStatus
                                 }
                              )
-                                |> ReferenceSet.mapStubParams
                                 |> ReferenceSet.mapStoredReferenceSet
                                 |> Maybe.map
                             )
@@ -183,7 +182,7 @@ referenceSetStubView : Maybe String -> ( String, ReferenceSetStub ) -> Element M
 referenceSetStubView mSelectedReferenceSet ( uuidString, stub ) =
     let
         { name, description, deleteStatus } =
-            ReferenceSet.getParamsForStub stub
+            stub
     in
     column
         ([ padding 15
