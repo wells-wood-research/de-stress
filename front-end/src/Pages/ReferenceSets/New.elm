@@ -54,7 +54,7 @@ type alias Model =
 
 defaultBatchSize : Int
 defaultBatchSize =
-    50
+    20
 
 
 type PageState
@@ -595,79 +595,6 @@ defaultRefSetView defaultSet =
         ]
 
 
-progressBarView : NewReferenceSet -> Element msg
-progressBarView newRefSet =
-    let
-        numberRemaining =
-            newRefSet.currentBatch
-                ++ newRefSet.remaining
-                |> List.length
-                |> toFloat
-
-        total =
-            Set.size newRefSet.pdbCodes |> toFloat
-
-        filledSegments =
-            (total - numberRemaining)
-                / total
-                |> (*) 10
-                |> floor
-                |> (+) 1
-
-        segmentView filled segmentNumber =
-            let
-                rounded =
-                    case segmentNumber of
-                        1 ->
-                            Border.roundEach
-                                { topLeft = 10
-                                , topRight = 0
-                                , bottomLeft = 10
-                                , bottomRight = 0
-                                }
-
-                        11 ->
-                            Border.roundEach
-                                { topLeft = 0
-                                , topRight = 10
-                                , bottomLeft = 0
-                                , bottomRight = 10
-                                }
-
-                        _ ->
-                            Border.roundEach
-                                { topLeft = 0
-                                , topRight = 0
-                                , bottomLeft = 0
-                                , bottomRight = 0
-                                }
-            in
-            if segmentNumber <= filled then
-                el
-                    [ height fill
-                    , width <| fillPortion 1
-                    , Background.color Style.colorPalette.c1
-                    , rounded
-                    ]
-                    none
-
-            else
-                el
-                    [ height fill
-                    , width <| fillPortion 1
-                    , rounded
-                    ]
-                    none
-    in
-    row
-        ([ height <| px 20
-         , width fill
-         ]
-            ++ Style.defaultBorder
-        )
-        (List.map (segmentView filledSegments) (List.range 1 11))
-
-
 buildingProgressView : NewReferenceSet -> Element msg
 buildingProgressView newRefSet =
     column
@@ -675,7 +602,7 @@ buildingProgressView newRefSet =
         [ paragraph
             []
             [ text "Downloading reference set..." ]
-        , getBuildProgress 10 newRefSet
+        , getBuildProgress 100 newRefSet
             |> Style.progressBar
         ]
 
@@ -683,11 +610,11 @@ buildingProgressView newRefSet =
 completedBuildingView : NewReferenceSet -> Element msg
 completedBuildingView newRefSet =
     column
-        [ spacing 10, width fill ]
+        [ spacing 15, width fill ]
         ([ paragraph
             []
             [ text "Finished downloading data." ]
-         , getBuildProgress 10 newRefSet
+         , getBuildProgress 100 newRefSet
             |> Style.progressBar
          , paragraph
             []
