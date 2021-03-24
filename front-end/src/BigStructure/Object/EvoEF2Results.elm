@@ -139,44 +139,44 @@ referenceTyr =
     Object.selectionForField "(Maybe Float)" "referenceTyr" [] (Decode.float |> Decode.nullable)
 
 
-intraRVdwatt : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRVdwatt =
-    Object.selectionForField "(Maybe Float)" "intraRVdwatt" [] (Decode.float |> Decode.nullable)
+intrarVdwatt : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarVdwatt =
+    Object.selectionForField "(Maybe Float)" "intrarVdwatt" [] (Decode.float |> Decode.nullable)
 
 
-intraRVdwrep : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRVdwrep =
-    Object.selectionForField "(Maybe Float)" "intraRVdwrep" [] (Decode.float |> Decode.nullable)
+intrarVdwrep : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarVdwrep =
+    Object.selectionForField "(Maybe Float)" "intrarVdwrep" [] (Decode.float |> Decode.nullable)
 
 
-intraRElectr : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRElectr =
-    Object.selectionForField "(Maybe Float)" "intraRElectr" [] (Decode.float |> Decode.nullable)
+intrarElectr : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarElectr =
+    Object.selectionForField "(Maybe Float)" "intrarElectr" [] (Decode.float |> Decode.nullable)
 
 
-intraRDeslvp : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRDeslvp =
-    Object.selectionForField "(Maybe Float)" "intraRDeslvp" [] (Decode.float |> Decode.nullable)
+intrarDeslvp : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarDeslvp =
+    Object.selectionForField "(Maybe Float)" "intrarDeslvp" [] (Decode.float |> Decode.nullable)
 
 
-intraRDeslvh : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRDeslvh =
-    Object.selectionForField "(Maybe Float)" "intraRDeslvh" [] (Decode.float |> Decode.nullable)
+intrarDeslvh : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarDeslvh =
+    Object.selectionForField "(Maybe Float)" "intrarDeslvh" [] (Decode.float |> Decode.nullable)
 
 
-intraRHbscbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRHbscbbDis =
-    Object.selectionForField "(Maybe Float)" "intraRHbscbbDis" [] (Decode.float |> Decode.nullable)
+intrarHbscbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarHbscbbDis =
+    Object.selectionForField "(Maybe Float)" "intrarHbscbbDis" [] (Decode.float |> Decode.nullable)
 
 
-intraRHbscbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRHbscbbThe =
-    Object.selectionForField "(Maybe Float)" "intraRHbscbbThe" [] (Decode.float |> Decode.nullable)
+intrarHbscbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarHbscbbThe =
+    Object.selectionForField "(Maybe Float)" "intrarHbscbbThe" [] (Decode.float |> Decode.nullable)
 
 
-intraRHbscbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRHbscbbPhi =
-    Object.selectionForField "(Maybe Float)" "intraRHbscbbPhi" [] (Decode.float |> Decode.nullable)
+intrarHbscbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarHbscbbPhi =
+    Object.selectionForField "(Maybe Float)" "intrarHbscbbPhi" [] (Decode.float |> Decode.nullable)
 
 
 aapropensity : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
@@ -194,154 +194,154 @@ dunbrack =
     Object.selectionForField "(Maybe Float)" "dunbrack" [] (Decode.float |> Decode.nullable)
 
 
-interSVdwatt : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSVdwatt =
-    Object.selectionForField "(Maybe Float)" "interSVdwatt" [] (Decode.float |> Decode.nullable)
+intersVdwatt : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersVdwatt =
+    Object.selectionForField "(Maybe Float)" "intersVdwatt" [] (Decode.float |> Decode.nullable)
 
 
-interSVdwrep : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSVdwrep =
-    Object.selectionForField "(Maybe Float)" "interSVdwrep" [] (Decode.float |> Decode.nullable)
+intersVdwrep : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersVdwrep =
+    Object.selectionForField "(Maybe Float)" "intersVdwrep" [] (Decode.float |> Decode.nullable)
 
 
-interSElectr : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSElectr =
-    Object.selectionForField "(Maybe Float)" "interSElectr" [] (Decode.float |> Decode.nullable)
+intersElectr : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersElectr =
+    Object.selectionForField "(Maybe Float)" "intersElectr" [] (Decode.float |> Decode.nullable)
 
 
-interSDeslvp : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSDeslvp =
-    Object.selectionForField "(Maybe Float)" "interSDeslvp" [] (Decode.float |> Decode.nullable)
+intersDeslvp : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersDeslvp =
+    Object.selectionForField "(Maybe Float)" "intersDeslvp" [] (Decode.float |> Decode.nullable)
 
 
-interSDeslvh : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSDeslvh =
-    Object.selectionForField "(Maybe Float)" "interSDeslvh" [] (Decode.float |> Decode.nullable)
+intersDeslvh : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersDeslvh =
+    Object.selectionForField "(Maybe Float)" "intersDeslvh" [] (Decode.float |> Decode.nullable)
 
 
-interSSsbond : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSSsbond =
-    Object.selectionForField "(Maybe Float)" "interSSsbond" [] (Decode.float |> Decode.nullable)
+intersSsbond : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersSsbond =
+    Object.selectionForField "(Maybe Float)" "intersSsbond" [] (Decode.float |> Decode.nullable)
 
 
-interSHbbbbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbbbbbDis =
-    Object.selectionForField "(Maybe Float)" "interSHbbbbbDis" [] (Decode.float |> Decode.nullable)
+intersHbbbbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbbbbbDis =
+    Object.selectionForField "(Maybe Float)" "intersHbbbbbDis" [] (Decode.float |> Decode.nullable)
 
 
-interSHbbbbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbbbbbThe =
-    Object.selectionForField "(Maybe Float)" "interSHbbbbbThe" [] (Decode.float |> Decode.nullable)
+intersHbbbbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbbbbbThe =
+    Object.selectionForField "(Maybe Float)" "intersHbbbbbThe" [] (Decode.float |> Decode.nullable)
 
 
-interSHbbbbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbbbbbPhi =
-    Object.selectionForField "(Maybe Float)" "interSHbbbbbPhi" [] (Decode.float |> Decode.nullable)
+intersHbbbbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbbbbbPhi =
+    Object.selectionForField "(Maybe Float)" "intersHbbbbbPhi" [] (Decode.float |> Decode.nullable)
 
 
-interSHbscbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbscbbDis =
-    Object.selectionForField "(Maybe Float)" "interSHbscbbDis" [] (Decode.float |> Decode.nullable)
+intersHbscbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbscbbDis =
+    Object.selectionForField "(Maybe Float)" "intersHbscbbDis" [] (Decode.float |> Decode.nullable)
 
 
-interSHbscbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbscbbThe =
-    Object.selectionForField "(Maybe Float)" "interSHbscbbThe" [] (Decode.float |> Decode.nullable)
+intersHbscbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbscbbThe =
+    Object.selectionForField "(Maybe Float)" "intersHbscbbThe" [] (Decode.float |> Decode.nullable)
 
 
-interSHbscbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbscbbPhi =
-    Object.selectionForField "(Maybe Float)" "interSHbscbbPhi" [] (Decode.float |> Decode.nullable)
+intersHbscbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbscbbPhi =
+    Object.selectionForField "(Maybe Float)" "intersHbscbbPhi" [] (Decode.float |> Decode.nullable)
 
 
-interSHbscscDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbscscDis =
-    Object.selectionForField "(Maybe Float)" "interSHbscscDis" [] (Decode.float |> Decode.nullable)
+intersHbscscDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbscscDis =
+    Object.selectionForField "(Maybe Float)" "intersHbscscDis" [] (Decode.float |> Decode.nullable)
 
 
-interSHbscscThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbscscThe =
-    Object.selectionForField "(Maybe Float)" "interSHbscscThe" [] (Decode.float |> Decode.nullable)
+intersHbscscThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbscscThe =
+    Object.selectionForField "(Maybe Float)" "intersHbscscThe" [] (Decode.float |> Decode.nullable)
 
 
-interSHbscscPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSHbscscPhi =
-    Object.selectionForField "(Maybe Float)" "interSHbscscPhi" [] (Decode.float |> Decode.nullable)
+intersHbscscPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersHbscscPhi =
+    Object.selectionForField "(Maybe Float)" "intersHbscscPhi" [] (Decode.float |> Decode.nullable)
 
 
-interDVdwatt : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDVdwatt =
-    Object.selectionForField "(Maybe Float)" "interDVdwatt" [] (Decode.float |> Decode.nullable)
+interdVdwatt : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdVdwatt =
+    Object.selectionForField "(Maybe Float)" "interdVdwatt" [] (Decode.float |> Decode.nullable)
 
 
-interDVdwrep : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDVdwrep =
-    Object.selectionForField "(Maybe Float)" "interDVdwrep" [] (Decode.float |> Decode.nullable)
+interdVdwrep : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdVdwrep =
+    Object.selectionForField "(Maybe Float)" "interdVdwrep" [] (Decode.float |> Decode.nullable)
 
 
-interDElectr : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDElectr =
-    Object.selectionForField "(Maybe Float)" "interDElectr" [] (Decode.float |> Decode.nullable)
+interdElectr : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdElectr =
+    Object.selectionForField "(Maybe Float)" "interdElectr" [] (Decode.float |> Decode.nullable)
 
 
-interDDeslvp : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDDeslvp =
-    Object.selectionForField "(Maybe Float)" "interDDeslvp" [] (Decode.float |> Decode.nullable)
+interdDeslvp : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdDeslvp =
+    Object.selectionForField "(Maybe Float)" "interdDeslvp" [] (Decode.float |> Decode.nullable)
 
 
-interDDeslvh : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDDeslvh =
-    Object.selectionForField "(Maybe Float)" "interDDeslvh" [] (Decode.float |> Decode.nullable)
+interdDeslvh : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdDeslvh =
+    Object.selectionForField "(Maybe Float)" "interdDeslvh" [] (Decode.float |> Decode.nullable)
 
 
-interDSsbond : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDSsbond =
-    Object.selectionForField "(Maybe Float)" "interDSsbond" [] (Decode.float |> Decode.nullable)
+interdSsbond : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdSsbond =
+    Object.selectionForField "(Maybe Float)" "interdSsbond" [] (Decode.float |> Decode.nullable)
 
 
-interDHbbbbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbbbbbDis =
-    Object.selectionForField "(Maybe Float)" "interDHbbbbbDis" [] (Decode.float |> Decode.nullable)
+interdHbbbbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbbbbbDis =
+    Object.selectionForField "(Maybe Float)" "interdHbbbbbDis" [] (Decode.float |> Decode.nullable)
 
 
-interDHbbbbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbbbbbThe =
-    Object.selectionForField "(Maybe Float)" "interDHbbbbbThe" [] (Decode.float |> Decode.nullable)
+interdHbbbbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbbbbbThe =
+    Object.selectionForField "(Maybe Float)" "interdHbbbbbThe" [] (Decode.float |> Decode.nullable)
 
 
-interDHbbbbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbbbbbPhi =
-    Object.selectionForField "(Maybe Float)" "interDHbbbbbPhi" [] (Decode.float |> Decode.nullable)
+interdHbbbbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbbbbbPhi =
+    Object.selectionForField "(Maybe Float)" "interdHbbbbbPhi" [] (Decode.float |> Decode.nullable)
 
 
-interDHbscbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbscbbDis =
-    Object.selectionForField "(Maybe Float)" "interDHbscbbDis" [] (Decode.float |> Decode.nullable)
+interdHbscbbDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbscbbDis =
+    Object.selectionForField "(Maybe Float)" "interdHbscbbDis" [] (Decode.float |> Decode.nullable)
 
 
-interDHbscbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbscbbThe =
-    Object.selectionForField "(Maybe Float)" "interDHbscbbThe" [] (Decode.float |> Decode.nullable)
+interdHbscbbThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbscbbThe =
+    Object.selectionForField "(Maybe Float)" "interdHbscbbThe" [] (Decode.float |> Decode.nullable)
 
 
-interDHbscbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbscbbPhi =
-    Object.selectionForField "(Maybe Float)" "interDHbscbbPhi" [] (Decode.float |> Decode.nullable)
+interdHbscbbPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbscbbPhi =
+    Object.selectionForField "(Maybe Float)" "interdHbscbbPhi" [] (Decode.float |> Decode.nullable)
 
 
-interDHbscscDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbscscDis =
-    Object.selectionForField "(Maybe Float)" "interDHbscscDis" [] (Decode.float |> Decode.nullable)
+interdHbscscDis : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbscscDis =
+    Object.selectionForField "(Maybe Float)" "interdHbscscDis" [] (Decode.float |> Decode.nullable)
 
 
-interDHbscscThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbscscThe =
-    Object.selectionForField "(Maybe Float)" "interDHbscscThe" [] (Decode.float |> Decode.nullable)
+interdHbscscThe : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbscscThe =
+    Object.selectionForField "(Maybe Float)" "interdHbscscThe" [] (Decode.float |> Decode.nullable)
 
 
-interDHbscscPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDHbscscPhi =
-    Object.selectionForField "(Maybe Float)" "interDHbscscPhi" [] (Decode.float |> Decode.nullable)
+interdHbscscPhi : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdHbscscPhi =
+    Object.selectionForField "(Maybe Float)" "interdHbscscPhi" [] (Decode.float |> Decode.nullable)
 
 
 total : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
@@ -359,19 +359,19 @@ refTotal =
     Object.selectionForField "(Maybe Float)" "refTotal" [] (Decode.float |> Decode.nullable)
 
 
-intraRTotal : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-intraRTotal =
-    Object.selectionForField "(Maybe Float)" "intraRTotal" [] (Decode.float |> Decode.nullable)
+intrarTotal : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intrarTotal =
+    Object.selectionForField "(Maybe Float)" "intrarTotal" [] (Decode.float |> Decode.nullable)
 
 
-interSTotal : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interSTotal =
-    Object.selectionForField "(Maybe Float)" "interSTotal" [] (Decode.float |> Decode.nullable)
+intersTotal : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+intersTotal =
+    Object.selectionForField "(Maybe Float)" "intersTotal" [] (Decode.float |> Decode.nullable)
 
 
-interDTotal : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
-interDTotal =
-    Object.selectionForField "(Maybe Float)" "interDTotal" [] (Decode.float |> Decode.nullable)
+interdTotal : SelectionSet (Maybe Float) BigStructure.Object.EvoEF2Results
+interdTotal =
+    Object.selectionForField "(Maybe Float)" "interdTotal" [] (Decode.float |> Decode.nullable)
 
 
 stateId : SelectionSet (Maybe Int) BigStructure.Object.EvoEF2Results
