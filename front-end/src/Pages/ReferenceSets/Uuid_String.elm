@@ -4,6 +4,7 @@ import Browser.Navigation as Nav
 import Codec exposing (Value)
 import Dict
 import Element exposing (..)
+import Element.Font as Font
 import Element.Keyed as Keyed
 import Html
 import Html.Attributes as HAtt
@@ -299,6 +300,7 @@ bodyView model =
             LoadingWithStub uuidString stub ->
                 sectionColumn
                     [ simpleDetails uuidString stub
+                    , paragraph [ Font.bold ] [ text "Loading overview..." ]
                     ]
 
             RefSetNotFound referenceSetUuid ->
@@ -375,6 +377,15 @@ fullDetails uuidString displaySettings referenceSet =
         [ simpleDetails uuidString referenceSet
         , Style.h2 <|
             text "Overview"
+        , paragraph
+            []
+            [ text "This reference set contains "
+            , referenceSet.metrics
+                |> List.length
+                |> String.fromInt
+                |> text
+            , text " structures."
+            ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.pdbCodes
             , title = "PDB Codes"

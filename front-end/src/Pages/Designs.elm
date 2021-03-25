@@ -1223,6 +1223,27 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                             |> not
                 )
                 allDesignCardData
+
+        numOfRunning =
+            List.filter
+                (\{ designStub } ->
+                    WebSockets.isRunning designStub.metricsJobStatus
+                )
+                allDesignCardData
+                |> List.length
+
+        numOfDesigns =
+            List.length allDesignCardData
+
+        metricsProgress =
+            if numOfRunning == 0 then
+                none
+
+            else
+                Style.progressBar
+                    { max = numOfDesigns
+                    , current = numOfDesigns - numOfRunning
+                    }
     in
     case mSelectedSpecification of
         Just _ ->
@@ -1235,7 +1256,8 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                         }
             in
             column [ spacing 15, width fill ]
-                ([ Style.h2 <| text "Meets Specification"
+                ([ metricsProgress
+                 , Style.h2 <| text "Meets Specification"
                  , meetsSpecification
                     |> List.map designCardView
                     |> cardContainer
@@ -1257,9 +1279,12 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                 )
 
         Nothing ->
-            designCardData
-                |> List.map designCardView
-                |> cardContainer
+            cardContainer
+                (metricsProgress
+                    :: (designCardData
+                            |> List.map designCardView
+                       )
+                )
 
 
 designCardView :

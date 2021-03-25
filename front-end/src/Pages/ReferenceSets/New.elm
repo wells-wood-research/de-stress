@@ -78,6 +78,7 @@ type ConstructionMethod
 
 type DefaultReferenceSet
     = Top500
+    | Pisces
 
 
 type alias PdbCodeListModel =
@@ -325,6 +326,9 @@ constructionMethodToString constructionMethod =
                 Top500 ->
                     top500.name
 
+                Pisces ->
+                    pisces.name
+
         PdbCodeList _ ->
             "PDB Subset"
 
@@ -402,6 +406,9 @@ update msg model =
                             case refSet of
                                 Top500 ->
                                     top500
+
+                                Pisces ->
+                                    pisces
                     in
                     ( { model
                         | pageState =
@@ -907,6 +914,7 @@ bodyView model =
                         (List.map
                             (refSetTypeSelector currentChoice)
                             [ Default Top500
+                            , Default Pisces
                             ]
                             |> List.intersperse (text "|")
                         )
@@ -953,6 +961,9 @@ defaultRefSetView defaultSet =
             case defaultSet of
                 Top500 ->
                     top500
+
+                Pisces ->
+                    pisces
     in
     column [ width fill, spacing 30 ]
         [ paragraph []
@@ -1144,7 +1155,10 @@ basicMetricsQuery : Set String -> SelectionSet (List BasicMetrics) RootQuery
 basicMetricsQuery pdbCodeList =
     Query.preferredStatesSubset
         (\optionals -> { optionals | stateNumber = Absent })
-        { codes = Set.toList pdbCodeList }
+        { codes =
+            Set.toList pdbCodeList
+                |> List.map String.toLower
+        }
         (SelectionSet.succeed BasicMetrics
             |> with
                 (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
@@ -1188,7 +1202,10 @@ budeFFTotalQuery : Set String -> SelectionSet (List BudeFFTotal) RootQuery
 budeFFTotalQuery pdbCodeList =
     Query.preferredBudeSubset
         (\optionals -> { optionals | stateNumber = Absent })
-        { codes = Set.toList pdbCodeList }
+        { codes =
+            Set.toList pdbCodeList
+                |> List.map String.toLower
+        }
         (SelectionSet.succeed BudeFFTotal
             |> with
                 (SelectionSet.map (Maybe.withDefault "Unknown PDB")
@@ -1220,7 +1237,10 @@ evoEF2TotalQuery : Set String -> SelectionSet (List EvoEF2Total) RootQuery
 evoEF2TotalQuery pdbCodeList =
     Query.preferredEvoef2Subset
         (\optionals -> { optionals | stateNumber = Absent })
-        { codes = Set.toList pdbCodeList }
+        { codes =
+            Set.toList pdbCodeList
+                |> List.map String.toLower
+        }
         (SelectionSet.succeed EvoEF2Total
             |> with
                 (SelectionSet.map (Maybe.withDefault "Unknown PDB")
@@ -1252,7 +1272,10 @@ dfire2TotalQuery : Set String -> SelectionSet (List Dfire2Total) RootQuery
 dfire2TotalQuery pdbCodeList =
     Query.preferredDfire2Subset
         (\optionals -> { optionals | stateNumber = Absent })
-        { codes = Set.toList pdbCodeList }
+        { codes =
+            Set.toList pdbCodeList
+                |> List.map String.toLower
+        }
         (SelectionSet.succeed Dfire2Total
             |> with
                 (SelectionSet.map (Maybe.withDefault "Unknown PDB")
@@ -1284,7 +1307,10 @@ rosettaTotalQuery : Set String -> SelectionSet (List RosettaTotal) RootQuery
 rosettaTotalQuery pdbCodeList =
     Query.preferredRosettaSubset
         (\optionals -> { optionals | stateNumber = Absent })
-        { codes = Set.toList pdbCodeList }
+        { codes =
+            Set.toList pdbCodeList
+                |> List.map String.toLower
+        }
         (SelectionSet.succeed RosettaTotal
             |> with
                 (SelectionSet.map (Maybe.withDefault "Unknown PDB")
@@ -1316,7 +1342,10 @@ aggrescan3DTotalQuery : Set String -> SelectionSet (List Aggrescan3DTotal) RootQ
 aggrescan3DTotalQuery pdbCodeList =
     Query.preferredAggrescan3dSubset
         (\optionals -> { optionals | stateNumber = Absent })
-        { codes = Set.toList pdbCodeList }
+        { codes =
+            Set.toList pdbCodeList
+                |> List.map String.toLower
+        }
         (SelectionSet.succeed Aggrescan3DTotal
             |> with
                 (SelectionSet.map (Maybe.withDefault "Unknown PDB")
@@ -1375,6 +1404,57 @@ top500 =
         2ilk 2knt 2lis 2mcm 2mhr 2por 2pth 2pvb 2rn2 2sak 2sn3 2spc 2tgi 2tnf 2trx 3chb
         3chy 3cla 3cyr 3ebx 3eip 3ezm 3hts 3nul 3pte 3pvi 3pyp 3seb 3vub 451c 4eug 4lzt
         5cyt 5hpg 5nul 5p21 6cel 6gsv 7a3h 7atj 7fd1 7odc 7rsa 8abp 9wga
+        """
+            |> String.words
+            |> Set.fromList
+    , metricsRemoteData = initialMetricsRemoteData
+    }
+
+
+pisces : NewReferenceSet
+pisces =
+    { id = "pisces-subset"
+    , name = "Pisces Subset"
+    , description =
+        """A set of high-quality structures non-redundant structures defined by the
+        Dunbrack lab. These structures have an identity cutoff of 20%, a maximum
+        resolution of 1.6 Å and a minimum R-work of 25%.  Uses the preferred biological
+        unit as defined by PDBe.
+        """
+    , pdbCodes =
+        """
+        1a3c 1a62 1ah7 1aho 1amt 1atg 1bgf 1byi 1d5t 1dcs 1dg6 1dj0 1dk8 1dp7 1ds1 1e58
+        1elk 1euw 1ezg 1f1e 1f2t 1f46 1f86 1f9v 1g6x 1gci 1gkm 1gmx 1gp0 1gpp 1gv9 1gvp
+        1hdo 1hq1 1hxi 1hz4 1i1w 1i27 1i2t 1i4u 1ix9 1j0p 1j2j 1j34 1j3a 1j3w 1j98 1jb3
+        1jo0 1jov 1jx6 1jy2 1jyk 1k3x 1k5c 1k5n 1kt6 1kwf 1kyf 1l3k 1l9l 1lc0 1lc5 1lmi
+        1m4l 1m55 1m9z 1mc2 1mk0 1mkk 1mn8 1mnn 1nki 1nnx 1nu0 1nwz 1nxm 1nyc 1nz0 1nzj
+        1ow4 1oyg 1oz2 1p1x 1p5z 1p6o 1p9g 1p9i 1qg8 1qnr 1qow 1qv1 1qv9 1qw2 1r29 1r5m
+        1rju 1rk6 1rki 1rku 1rtq 1rtt 1rv9 1rxi 1sn9 1sqs 1svf 1sx5 1sz7 1szh 1t3y 1t5b
+        1tzp 1u07 1u7i 1u84 1ucd 1ucr 1ucs 1ugx 1v05 1v0w 1v6p 1vbw 1vd6 1ve4 1vh5 1vhn
+        1vyi 1vyk 1vyr 1vzm 1w0h 1w0n 1w4s 1w53 1wna 1wpa 1ws8 1wt6 1wvq 1wwi 1wy3 1wzd
+        1xg0 1xlq 1xmk 1xmt 1xqo 1xub 1y43 1y5h 1yu0 1z0w 1z2n 1z2u 1z67 1z6m 1z6n 1z70
+        1zva 1zzk 2a35 2a3n 2a6z 2aac 2abs 2agk 2b4h 2b97 2bay 2bbr 2bdr 2bf9 2bk9 2bkx
+        2cc6 2ccq 2ccv 2cg7 2ciu 2cjt 2cov 2cs7 2d1s 2d3d 2d5m 2ddx 2dej 2dho 2dko 2dlb
+        2egv 2ehp 2ehz 2end 2erf 2erl 2et1 2ex2 2fb6 2fba 2fcj 2fcl 2fco 2fcw 2fgq 2fhp
+        2fsq 2fup 2g3r 2g7o 2g7s 2g84 2gb4 2ggc 2gud 2guh 2gui 2guv 2gyq 2gzs 2h1v 2h30
+        2hw2 2hx0 2hx5 2i51 2i53 2i5u 2i5v 2ia1 2imf 2imq 2inw 2ip6 2it2 2iuw 2ixm 2iyv
+        2jek 2jfr 2jg0 2jku 2jli 2mcm 2nlv 2nml 2nw8 2nwf 2nwr 2nxv 2o1q 2o2x 2o5g 2o60
+        2ofk 2ofz 2ohw 2okf 2okt 2olm 2oln 2oml 2ozj 2ozt 2p0n 2p0s 2p14 2p17 2p4h 2p51
+        2pof 2pq7 2pq8 2pr7 2prv 2pxx 2pyq 2q1s 2qfe 2qgu 2qip 2qjl 2qjz 2ql8 2qlt 2qml
+        2qud 2qzc 2r01 2r0x 2r16 2r2z 2r31 2r4i 2rhf 2rhw 2ril 2rk9 2rkl 2rl8 2uyt 2uzc
+        2v8f 2v8i 2v9v 2vb1 2vc8 2vcl 2vez 2vfr 2vws 2vxn 2vzc 2w15 2w1j 2w1r 2w31 2w39
+        2wf7 2wfi 2wfw 2wh6 2wlv 2wnf 2wnk 2wnp 2x3m 2x46 2x49 2x4l 2x4w 2x5o 2x5x 2x5y
+        2xol 2xom 2xpw 2xqq 2xry 2xtp 2xw6 2xwv 2y9u 2yc3 2ydt 2yh5 2yln 2ymv 2yn0 2yve
+        2zdp 2zfd 2zhj 2znr 2zou 2zpm 2zpt 3a0s 3ach 3acx 3aia 3aj4 3aj7 3ajd 3aks 3alj
+        3b79 3b9w 3ba3 3bed 3bf7 3bgu 3bhq 3bhw 3bwh 3bwz 3by8 3c70 3c9a 3cbz 3ccd 3cec
+        3clm 3cov 3cp7 3ct5 3ct6 3ctz 3cuz 3cwr 3d7j 3d9n 3d9x 3db7 3dff 3dfg 3dgt 3dha
+        3e0x 3e48 3e4g 3e8o 3ef8 3ejf 3ejv 3eki 3f1l 3f2z 3f43 3f6y 3f7e 3fcn 3feg 3fgv
+        3fxa 3fym 3fyn 3g02 3g0k 3g21 3g36 3g91 3gkj 3gkr 3gne 3gnl 3gnz 3go5 3goc 3goe
+        3gy9 3h0n 3h3l 3h4o 3h4t 3h5j 3h6j 3h74 3hm4 3ho6 3hp7 3hpc 3hr6 3hs3 3hwu 3hx8
+        3ie7 3iez 3ife 3ifn 3iis 3imk 3ip0 3ip8 3iwf 3ix3 3jq0 3jrv 3jtz 3jum 3jxo 3jyo
+        3kgy 3kh1 3kkf 3kpe 3ktp 3kuv 3kwe 3kwr 3l9a 3laa 3lax 3ld7 3ldc 3lfk 3lfr 3lft
+        3lsn 3lti 3lw3 3lwx 3lyd 3m1x 3m3p 3m5q 3md7 3mdq 3mdu 3me7 3mea 3mil 3mjf 3mmh
+        3mxn 3mxz 3myx 3n01 
         """
             |> String.words
             |> Set.fromList
