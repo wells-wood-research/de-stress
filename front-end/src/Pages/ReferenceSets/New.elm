@@ -13,8 +13,6 @@ import Browser.Navigation as Nav
 import Codec
 import Dict exposing (Dict)
 import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
@@ -67,7 +65,11 @@ type alias Model =
 type PageState
     = ChoosingRefSetType ConstructionMethod
     | BuildingReferenceSet NewReferenceSet
-    | CompletedBuilding { failedCodes : Set String, referenceSet : ReferenceSet }
+    | CompletedBuilding
+        { uuidString : String
+        , failedCodes : Set String
+        , referenceSet : ReferenceSet
+        }
     | FailedToBuild String
 
 
@@ -87,7 +89,16 @@ type alias PdbCodeListModel =
     , rawPdbCodeListInput : String
     , pdbCodeList : Set String
     , malformedPdbCodes : Set String
-    , remoteData : ReferenceSetRemoteData
+    }
+
+
+codeListModelToNewRefSet : String -> PdbCodeListModel -> NewReferenceSet
+codeListModelToNewRefSet uuidString codeListModel =
+    { id = uuidString
+    , name = Maybe.withDefault "DEFAULT NAME" codeListModel.mName
+    , description = Maybe.withDefault "DEFAULT DESCRIPTION" codeListModel.mDescription
+    , pdbCodes = codeListModel.pdbCodeList
+    , metricsRemoteData = initialMetricsRemoteData
     }
 
 
@@ -98,7 +109,6 @@ defaultCodeListModel =
     , rawPdbCodeListInput = ""
     , pdbCodeList = Set.empty
     , malformedPdbCodes = Set.empty
-    , remoteData = Rd.NotAsked
     }
 
 
@@ -201,7 +211,8 @@ pageStateForCompletedDownload newRefSet metricsRemoteData =
     case mergedMetricsRemoteData of
         Rd.Success (Ok { failedCodes, metrics }) ->
             CompletedBuilding
-                { failedCodes = failedCodes
+                { uuidString = newRefSet.id
+                , failedCodes = failedCodes
                 , referenceSet =
                     { name = newRefSet.name
                     , description = newRefSet.description
@@ -330,7 +341,7 @@ constructionMethodToString constructionMethod =
                     pisces.name
 
         PdbCodeList _ ->
-            "PDB Subset"
+            "Custom"
 
 
 
@@ -373,6 +384,9 @@ init shared _ =
 
 type Msg
     = UpdatedConstructionMethod ConstructionMethod
+    | UpdatedName String
+    | UpdatedDescription String
+    | UpdatedPdbCodes String
     | ClickedDownloadRefSet
     | GotBasicMetrics BasicMetricsRemoteData
     | GotBudeFFMetrics BudeFFTotalRemoteData
@@ -380,11 +394,6 @@ type Msg
     | GotDfire2Metrics Dfire2TotalRemoteData
     | GotRosettaMetrics RosettaTotalRemoteData
     | GotAggrescan3DMetrics Aggrescan3DTotalRemoteData
-      -- | UpdatedName NewPdbCodeListParams String
-      -- | UpdatedDescription NewPdbCodeListParams String
-      -- | UpdatedPdbCodes NewPdbCodeListParams String
-      -- | ClickedDownloadPreferredSubset
-      -- | GotPreferredSubsetData ReferenceSetRemoteData
     | ClickedCreateReferenceSet
     | ClickedCancelCreate
     | ClearPageErrors
@@ -398,20 +407,110 @@ update msg model =
             , Cmd.none
             )
 
-        ClickedDownloadRefSet ->
+        UpdatedName name ->
             case model.pageState of
-                ChoosingRefSetType (Default refSet) ->
-                    let
-                        newRefSet =
-                            case refSet of
-                                Top500 ->
-                                    top500
+                ChoosingRefSetType (PdbCodeList codeListModel) ->
+                    if String.isEmpty name then
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    PdbCodeList
+                                        { codeListModel | mName = Nothing }
+                          }
+                        , Cmd.none
+                        )
 
-                                Pisces ->
-                                    pisces
+                    else
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    PdbCodeList
+                                        { codeListModel | mName = Just name }
+                          }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    updateWithUnexpectedStateError model
+
+        UpdatedDescription description ->
+            case model.pageState of
+                ChoosingRefSetType (PdbCodeList codeListModel) ->
+                    if String.isEmpty description then
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    PdbCodeList
+                                        { codeListModel | mDescription = Nothing }
+                          }
+                        , Cmd.none
+                        )
+
+                    else
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    PdbCodeList
+                                        { codeListModel | mDescription = Just description }
+                          }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    updateWithUnexpectedStateError model
+
+        UpdatedPdbCodes rawCodes ->
+            case model.pageState of
+                ChoosingRefSetType (PdbCodeList codeListModel) ->
+                    let
+                        isPdbCode str =
+                            (String.length str == 4)
+                                && (String.toList str
+                                        |> List.all Char.isAlphaNum
+                                   )
+
+                        ( good, malformed ) =
+                            String.words rawCodes
+                                |> Set.fromList
+                                |> Set.partition isPdbCode
                     in
                     ( { model
                         | pageState =
+                            ChoosingRefSetType <|
+                                PdbCodeList
+                                    { codeListModel
+                                        | rawPdbCodeListInput = rawCodes
+                                        , pdbCodeList = good
+                                        , malformedPdbCodes = malformed
+                                    }
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    updateWithUnexpectedStateError model
+
+        ClickedDownloadRefSet ->
+            case ( model.pageState, model.mResourceUuid ) of
+                ( ChoosingRefSetType refSetType, Just resourceUuid ) ->
+                    let
+                        { uuidString, nextResourceUuid } =
+                            ResourceUuid.toString resourceUuid
+
+                        newRefSet =
+                            case refSetType of
+                                Default Top500 ->
+                                    top500
+
+                                Default Pisces ->
+                                    pisces
+
+                                PdbCodeList codeListModel ->
+                                    codeListModelToNewRefSet uuidString codeListModel
+                    in
+                    ( { model
+                        | mResourceUuid = Just nextResourceUuid
+                        , pageState =
                             BuildingReferenceSet
                                 newRefSet
                       }
@@ -626,31 +725,11 @@ update msg model =
                 _ ->
                     updateWithUnexpectedStateError model
 
-        -- GotMetricsBatch _ ->
-        --     Error.updateWithError
-        --         ClearPageErrors
-        --         { model | pageState = ChoosingRefSetType (Default Top500) }
-        --         { title = "Failed to create reference set"
-        --         , details =
-        --             """Failed to create a new reference set. It looks like we
-        --             had trouble downloading the data from the server. Check your
-        --             internet connection and refresh your browser. If this
-        --             problem persists, report it as a bug. See the home page for
-        --             details on how to do this.
-        --             """
-        --         , severity = Error.Medium
-        --         }
         ClickedCreateReferenceSet ->
-            case ( model.pageState, model.mResourceUuid ) of
-                ( CompletedBuilding { referenceSet }, Just resourceUuid ) ->
-                    let
-                        { uuidString, nextResourceUuid } =
-                            ResourceUuid.toString
-                                resourceUuid
-                    in
+            case model.pageState of
+                CompletedBuilding { uuidString, referenceSet } ->
                     ( { model
                         | pageState = ChoosingRefSetType <| Default Top500
-                        , mResourceUuid = Just nextResourceUuid
                         , referenceSets =
                             Dict.insert
                                 uuidString
@@ -680,148 +759,6 @@ update msg model =
             , navigate model.navKey Route.ReferenceSets
             )
 
-        -- -- Preferred State Subset
-        -- UpdatedName params name ->
-        --     if String.isEmpty name then
-        --         ( { model
-        --             | newReferenceSet =
-        --                 { params | mName = Nothing }
-        --                     |> NewPdbCodeList
-        --           }
-        --         , Cmd.none
-        --         )
-        --     else
-        --         ( { model
-        --             | newReferenceSet =
-        --                 { params | mName = Just name }
-        --                     |> NewPdbCodeList
-        --           }
-        --         , Cmd.none
-        --         )
-        -- UpdatedDescription params description ->
-        --     if String.isEmpty description then
-        --         ( { model
-        --             | newReferenceSet =
-        --                 { params | mDescription = Nothing }
-        --                     |> NewPdbCodeList
-        --           }
-        --         , Cmd.none
-        --         )
-        --     else
-        --         ( { model
-        --             | newReferenceSet =
-        --                 { params | mDescription = Just description }
-        --                     |> NewPdbCodeList
-        --           }
-        --         , Cmd.none
-        --         )
-        -- UpdatedPdbCodes params rawCodes ->
-        --     let
-        --         isPdbCode str =
-        --             (String.length str == 4)
-        --                 && (String.toList str
-        --                         |> List.all Char.isAlphaNum
-        --                    )
-        --         ( good, malformed ) =
-        --             String.words rawCodes
-        --                 |> Set.fromList
-        --                 |> Set.partition isPdbCode
-        --     in
-        --     ( { model
-        --         | newReferenceSet =
-        --             { params
-        --                 | rawPdbCodeListInput = rawCodes
-        --                 , pdbCodeList = good
-        --                 , malformedPdbCodes = malformed
-        --             }
-        --                 |> NewPdbCodeList
-        --       }
-        --     , Cmd.none
-        --     )
-        -- ClickedDownloadPreferredSubset ->
-        --     case model.newReferenceSet of
-        --         NewPdbCodeList params ->
-        --             ( { model
-        --                 | newReferenceSet =
-        --                     NewPdbCodeList
-        --                         { params
-        --                             | remoteData = RemoteData.Loading
-        --                         }
-        --               }
-        --             , ReferenceSet.queryToCmd
-        --                 (ReferenceSet.preferredStatesSubsetQuery params.pdbCodeList)
-        --                 GotPreferredSubsetData
-        --             )
-        --         NewHighResBiolUnit _ ->
-        --             Error.updateWithError
-        --                 ClearPageErrors
-        --                 model
-        --                 { title = "Unexpected reference set type"
-        --                 , details =
-        --                     """Failed to create a new reference set. The type of
-        --                         reference set you're creating shouldn't have allowed you
-        --                         to click this button!  Try refreshing your browser to
-        --                         fix this, or if it persists, report it as a bug.  See
-        --                         the home page for details on how to do this.
-        --                     """
-        --                 , severity = Error.Medium
-        --                 }
-        -- GotPreferredSubsetData remoteData ->
-        --     case ( model.newReferenceSet, model.mResourceUuid, remoteData ) of
-        --         ( NewPdbCodeList params, Just resourceUuid, RemoteData.Success metrics ) ->
-        --             let
-        --                 { uuidString, nextResourceUuid } =
-        --                     ResourceUuid.toString
-        --                         resourceUuid
-        --                 referenceSet =
-        --                     ReferenceSet.PdbCodeList
-        --                         { metrics = metrics
-        --                         , aggregateData = Metrics.createAggregateData metrics
-        --                         , name =
-        --                             Maybe.withDefault "NAME"
-        --                                 params.mName
-        --                         , description =
-        --                             Maybe.withDefault "DESCRIPTION"
-        --                                 params.mDescription
-        --                         , pdbCodeList = params.pdbCodeList
-        --                         , deleteStatus = Buttons.initDangerStatus
-        --                         }
-        --             in
-        --             ( { model
-        --                 | newReferenceSet = NewHighResBiolUnit RemoteData.NotAsked
-        --                 , mResourceUuid = Just nextResourceUuid
-        --                 , referenceSets =
-        --                     Dict.insert
-        --                         uuidString
-        --                         (referenceSet
-        --                             |> ReferenceSet.createReferenceSetStub
-        --                             |> ReferenceSet.storeReferenceSetStubLocally
-        --                         )
-        --                         model.referenceSets
-        --               }
-        --             , Cmd.batch
-        --                 [ ReferenceSet.storeReferenceSet
-        --                     { uuidString = uuidString
-        --                     , referenceSet =
-        --                         Codec.encoder
-        --                             ReferenceSet.codec
-        --                             referenceSet
-        --                     }
-        --                 , navigate model.navKey Route.ReferenceSets
-        --                 ]
-        --             )
-        --         _ ->
-        --             Error.updateWithError
-        --                 ClearPageErrors
-        --                 model
-        --                 { title = "Failed to create reference set"
-        --                 , details =
-        --                     """Failed to create a new reference set. Try refreshing your
-        --                     browser to fix this, or if it persists, report it as a bug.
-        --                     See the home page for details on how to do this.
-        --                     """
-        --                 , severity = Error.Medium
-        --                 }
         ClearPageErrors ->
             ( { model | pageErrors = [] }
             , Cmd.none
@@ -915,6 +852,7 @@ bodyView model =
                             (refSetTypeSelector currentChoice)
                             [ Default Top500
                             , Default Pisces
+                            , PdbCodeList defaultCodeListModel
                             ]
                             |> List.intersperse (text "|")
                         )
@@ -922,8 +860,8 @@ bodyView model =
                         Default refSet ->
                             defaultRefSetView refSet
 
-                        _ ->
-                            Debug.todo "Add option"
+                        PdbCodeList codeListModel ->
+                            pdbCodeListView codeListModel
                     ]
 
             BuildingReferenceSet newRefSet ->
@@ -1045,94 +983,97 @@ completedBuildingView failedCodes refSet =
         )
 
 
+pdbCodeListView : PdbCodeListModel -> Element Msg
+pdbCodeListView codeListModel =
+    column [ width fill, spacing 15 ]
+        [ paragraph []
+            [ text
+                """Create a reference set from a list of PDB codes. The biological unit
+                of the structure, as defined on PDBe as assembly 1, will be used to
+                create the reference set.
+                """
+            ]
+        , Input.text
+            Style.textInputStyle
+            { onChange = UpdatedName
+            , text = Maybe.withDefault "" codeListModel.mName
+            , placeholder = Nothing
+            , label =
+                Input.labelAbove []
+                    (Style.h2 <| text "Name")
+            }
+        , Input.multiline
+            Style.textInputStyle
+            { onChange = UpdatedDescription
+            , text = Maybe.withDefault "" codeListModel.mDescription
+            , placeholder = Nothing
+            , label =
+                Input.labelAbove []
+                    (Style.h2 <| text "Description")
+            , spellcheck = True
+            }
+        , Input.multiline
+            (Style.textInputStyle
+                ++ [ height <| px 150 ]
+            )
+            { onChange = UpdatedPdbCodes
+            , text = codeListModel.rawPdbCodeListInput
+            , placeholder = Nothing
+            , label =
+                Input.labelAbove []
+                    (Style.h2 <|
+                        text "PDB Codes (whitespace separated)"
+                    )
+            , spellcheck = True
+            }
+        , paragraph []
+            [ "Found "
+                ++ (Set.size codeListModel.pdbCodeList |> String.fromInt)
+                ++ " PDB codes. "
+                ++ (Set.size codeListModel.malformedPdbCodes |> String.fromInt)
+                ++ " "
+                ++ (if Set.size codeListModel.malformedPdbCodes > 1 then
+                        "entries do"
 
--- newPdbCodeListView : NewPdbCodeListParams -> Element Msg
--- newPdbCodeListView params =
---     column [ width fill, spacing 30 ]
---         [ paragraph []
---             [ text
---                 """Create a reference set from a list of PDB codes. The biological unit
---                 of the structure, as defined on PDBe as assembly 1, will be used to
---                 create the reference set.
---                 """
---             ]
---         , Input.text
---             Style.textInputStyle
---             { onChange = UpdatedName params
---             , text = Maybe.withDefault "" params.mName
---             , placeholder = Nothing
---             , label =
---                 Input.labelAbove []
---                     (Style.h2 <| text "Name")
---             }
---         , Input.multiline
---             Style.textInputStyle
---             { onChange = UpdatedDescription params
---             , text = Maybe.withDefault "" params.mDescription
---             , placeholder = Nothing
---             , label =
---                 Input.labelAbove []
---                     (Style.h2 <| text "Description")
---             , spellcheck = False
---             }
---         , Input.multiline
---             (Style.textInputStyle
---                 ++ [ height <| px 200 ]
---             )
---             { onChange = UpdatedPdbCodes params
---             , text = params.rawPdbCodeListInput
---             , placeholder = Nothing
---             , label =
---                 Input.labelAbove []
---                     (Style.h2 <|
---                         text "PDB Codes (whitespace separated)"
---                     )
---             , spellcheck = True
---             }
---         , paragraph []
---             [ "Found "
---                 ++ (Set.size params.pdbCodeList |> String.fromInt)
---                 ++ " PDB codes. "
---                 ++ (Set.size params.malformedPdbCodes |> String.fromInt)
---                 ++ " "
---                 ++ (if Set.size params.malformedPdbCodes > 1 then
---                         "entries do"
---                     else
---                         "entry does"
---                    )
---                 ++ " not look a like PDB code:\n"
---                 ++ (Set.toList params.malformedPdbCodes |> String.join " ")
---                 |> text
---             ]
---         , let
---             validName =
---                 case params.mName of
---                     Nothing ->
---                         False
---                     Just _ ->
---                         True
---             validDescription =
---                 case params.mDescription of
---                     Nothing ->
---                         False
---                     Just _ ->
---                         True
---             complete =
---                 validName && validDescription && (Set.isEmpty >> not) params.pdbCodeList
---           in
---           Buttons.conditionalButton
---             { clickMsg =
---                 Just ClickedDownloadPreferredSubset
---             , label = text "Create Reference Set"
---             , isActive = complete
---             }
---         ]
+                    else
+                        "entry does"
+                   )
+                ++ " not look a like PDB code:\n"
+                ++ (Set.toList codeListModel.malformedPdbCodes |> String.join " ")
+                |> text
+            ]
+        , let
+            validName =
+                case codeListModel.mName of
+                    Nothing ->
+                        False
+
+                    Just _ ->
+                        True
+
+            validDescription =
+                case codeListModel.mDescription of
+                    Nothing ->
+                        False
+
+                    Just _ ->
+                        True
+
+            complete =
+                validName && validDescription && (Set.isEmpty >> not) codeListModel.pdbCodeList
+          in
+          Buttons.conditionalButton
+            { clickMsg =
+                Just ClickedDownloadRefSet
+            , label = text "Download Reference Set"
+            , isActive = complete
+            }
+        ]
+
+
+
 -- }}}
 -- {{{ New Reference Set Queries
-
-
-type alias ReferenceSetRemoteData =
-    RemoteData (Graphql.Http.Error (List RefSetMetrics)) (List RefSetMetrics)
 
 
 type alias BasicMetrics =

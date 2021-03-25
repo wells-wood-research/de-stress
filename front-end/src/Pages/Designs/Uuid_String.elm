@@ -834,6 +834,7 @@ metricsOverview metrics =
         [ Style.h2 <| text "Metrics"
         , wrappedRow
             [ spacing 5
+            , centerX
             ]
             [ createTableFloatColumn metrics.hydrophobicFitness 0 "Hydrophobic Fitness"
             , createTableColumn cell (roundFloatText metrics.isoelectricPoint 0) "pI"
@@ -974,7 +975,9 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings hoverInfoOption
                 ]
         , radioInputSelection
         , wrappedRow
-            [ spacing 5 ]
+            [ spacing 5
+            , centerX
+            ]
             (case evoEF2TableOption of
                 Summary ->
                     evoef2SummaryColumns metrics hoverInfoOption
@@ -1187,7 +1190,9 @@ rosettaResultsTableView metrics displaySettings hoverInfoOption =
             paragraph []
                 [ text "Rosetta Energy Function Results" ]
         , wrappedRow
-            [ spacing 5 ]
+            [ spacing 5
+            , centerX
+            ]
             (rosettaColumns metrics hoverInfoOption)
         , Folds.sectionFoldView
             { foldVisible = displaySettings.rosettaLogInfo

@@ -163,7 +163,7 @@ bodyView model =
             (wrappedRow [ centerX, spacing 10 ]
                 [ paragraph []
                     [ Style.h1 <|
-                        text "Requirement Specifications"
+                        text "Specifications"
                     ]
                 , Buttons.linkButton
                     { route =

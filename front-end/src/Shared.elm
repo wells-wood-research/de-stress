@@ -16,7 +16,6 @@ port module Shared exposing
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
-import Csv.Decode exposing (errorToString)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
