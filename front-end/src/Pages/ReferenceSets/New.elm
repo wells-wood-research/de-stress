@@ -22,6 +22,7 @@ import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
+import List.Extra as Le
 import RemoteData as Rd exposing (RemoteData)
 import Set exposing (Set)
 import Shared
@@ -121,23 +122,23 @@ type alias MetricsRemoteData =
 
 initialMetricsRemoteData : MetricsRemoteData
 initialMetricsRemoteData =
-    { basicMetrics = Rd.NotAsked
-    , budeFFTotal = Rd.NotAsked
-    , evoEF2Total = Rd.NotAsked
-    , rosettaTotal = Rd.NotAsked
-    , dfire2Total = Rd.NotAsked
-    , aggrescan3DTotal = Rd.NotAsked
+    { basicMetrics = Rd.Loading
+    , budeFFTotal = Rd.Loading
+    , evoEF2Total = Rd.Loading
+    , rosettaTotal = Rd.Loading
+    , dfire2Total = Rd.Loading
+    , aggrescan3DTotal = Rd.Loading
     }
 
 
 isMetricsDownloadComplete : MetricsRemoteData -> Bool
 isMetricsDownloadComplete metricsRemoteData =
-    [ Rd.isNotAsked metricsRemoteData.basicMetrics
-    , Rd.isNotAsked metricsRemoteData.budeFFTotal
-    , Rd.isNotAsked metricsRemoteData.dfire2Total
-    , Rd.isNotAsked metricsRemoteData.evoEF2Total
-    , Rd.isNotAsked metricsRemoteData.rosettaTotal
-    , Rd.isNotAsked metricsRemoteData.aggrescan3DTotal
+    [ Rd.isLoading metricsRemoteData.basicMetrics
+    , Rd.isLoading metricsRemoteData.budeFFTotal
+    , Rd.isLoading metricsRemoteData.dfire2Total
+    , Rd.isLoading metricsRemoteData.evoEF2Total
+    , Rd.isLoading metricsRemoteData.rosettaTotal
+    , Rd.isLoading metricsRemoteData.aggrescan3DTotal
     ]
         |> List.all not
 
@@ -145,18 +146,6 @@ isMetricsDownloadComplete metricsRemoteData =
 errToStr : String -> RemoteData e a -> RemoteData String a
 errToStr metricName rd =
     Rd.mapError (always <| "failed to download " ++ metricName ++ " metrics") rd
-
-
-convertToRefSetMetrics :
-    List BasicMetrics
-    -> List BudeFFTotal
-    -> List EvoEF2Total
-    -> List Dfire2Total
-    -> List RosettaTotal
-    -> List Aggrescan3DTotal
-    -> List RefSetMetrics
-convertToRefSetMetrics bm bff evo df ros agg =
-    []
 
 
 getBuildProgress : NewReferenceSet -> { max : Int, current : Int }
@@ -167,7 +156,13 @@ getBuildProgress { metricsRemoteData } =
                 Rd.NotAsked ->
                     0
 
-                _ ->
+                Rd.Loading ->
+                    0
+
+                Rd.Failure _ ->
+                    1
+
+                Rd.Success _ ->
                     1
 
         progressValues =
@@ -189,7 +184,7 @@ pageStateForCompletedDownload newRefSet metricsRemoteData =
     let
         mergedMetricsRemoteData =
             Rd.map
-                convertToRefSetMetrics
+                (convertAllToRefSetMetrics newRefSet.pdbCodes)
                 (errToStr "basic" metricsRemoteData.basicMetrics)
                 |> Rd.andMap
                     (errToStr "bude ff" metricsRemoteData.budeFFTotal)
@@ -203,9 +198,9 @@ pageStateForCompletedDownload newRefSet metricsRemoteData =
                     (errToStr "aggrescan3d" metricsRemoteData.aggrescan3DTotal)
     in
     case mergedMetricsRemoteData of
-        Rd.Success metrics ->
+        Rd.Success (Ok { failedCodes, metrics }) ->
             CompletedBuilding
-                { failedCodes = Set.empty
+                { failedCodes = failedCodes
                 , referenceSet =
                     { name = newRefSet.name
                     , description = newRefSet.description
@@ -216,6 +211,9 @@ pageStateForCompletedDownload newRefSet metricsRemoteData =
                     }
                 }
 
+        Rd.Success (Err e) ->
+            FailedToBuild e
+
         Rd.Failure e ->
             FailedToBuild e
 
@@ -223,6 +221,100 @@ pageStateForCompletedDownload newRefSet metricsRemoteData =
             FailedToBuild
                 """Something went wrong when requesting
                 metrics. Please try again."""
+
+
+convertAllToRefSetMetrics :
+    Set String
+    -> List BasicMetrics
+    -> List BudeFFTotal
+    -> List EvoEF2Total
+    -> List Dfire2Total
+    -> List RosettaTotal
+    -> List Aggrescan3DTotal
+    -> Result String { failedCodes : Set String, metrics : List RefSetMetrics }
+convertAllToRefSetMetrics initialPdbCodes bm bff evo df ros agg =
+    let
+        allPdbCodes =
+            [ List.map .pdbCode bm
+            , List.map .pdbCode bff
+            , List.map .pdbCode evo
+            , List.map .pdbCode df
+            , List.map .pdbCode ros
+            , List.map .pdbCode agg
+            ]
+                |> List.map Set.fromList
+
+        -- This set should be empty, if it's not, it means that when the requests were
+        -- made different records were available in each query
+        oddPdbCodes =
+            allPdbCodes
+                |> List.foldl Set.diff Set.empty
+
+        successfulPdbCodes =
+            allPdbCodes
+                |> List.foldl Set.union Set.empty
+
+        sBm =
+            List.sortBy .pdbCode bm
+
+        sBff =
+            List.sortBy .pdbCode bff
+
+        sEvo =
+            List.sortBy .pdbCode evo
+
+        sDf =
+            List.sortBy .pdbCode df
+
+        sRos =
+            List.sortBy .pdbCode ros
+
+        sAgg =
+            List.sortBy .pdbCode agg
+    in
+    if Set.isEmpty oddPdbCodes then
+        Ok
+            { failedCodes = Set.diff initialPdbCodes successfulPdbCodes
+            , metrics =
+                List.map downloadedToRefSetMetrics sBm
+                    |> Le.andMap sBff
+                    |> Le.andMap sEvo
+                    |> Le.andMap sDf
+                    |> Le.andMap sRos
+                    |> Le.andMap sAgg
+            }
+
+    else
+        """Something went wrong when requesting the metrics. I encountered an odd
+            situation where a partial set of metrics was available for the following
+            entries: """
+            ++ String.join ", " (Set.toList oddPdbCodes)
+            |> Err
+
+
+downloadedToRefSetMetrics :
+    BasicMetrics
+    -> BudeFFTotal
+    -> EvoEF2Total
+    -> Dfire2Total
+    -> RosettaTotal
+    -> Aggrescan3DTotal
+    -> RefSetMetrics
+downloadedToRefSetMetrics bm bff evo df ros agg =
+    { pdbCode = bm.pdbCode
+    , composition = bm.composition
+    , torsionAngles = bm.torsionAngles
+    , hydrophobicFitness = bm.hydrophobicFitness
+    , isoelectricPoint = bm.isoelectricPoint
+    , mass = bm.mass
+    , numberOfResidues = bm.numberOfResidues
+    , packingDensity = bm.packingDensity
+    , budeFFTotalEnergy = bff.budeFFTotal
+    , evoEFTotalEnergy = evo.evoEF2Total
+    , dfireTotalEnergy = df.dfire2Total
+    , rosettaTotalEnergy = ros.rosettaTotal
+    , aggrescan3dTotalValue = agg.aggrescan3DTotal
+    }
 
 
 constructionMethodToString : ConstructionMethod -> String
@@ -351,7 +443,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching."
+                    updateWithUnexpectedStateError model
 
         GotBasicMetrics remoteData ->
             case model.pageState of
@@ -380,7 +472,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching"
+                    updateWithUnexpectedStateError model
 
         GotBudeFFMetrics remoteData ->
             case model.pageState of
@@ -409,7 +501,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching"
+                    updateWithUnexpectedStateError model
 
         GotEvoEF2Metrics remoteData ->
             case model.pageState of
@@ -438,7 +530,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching"
+                    updateWithUnexpectedStateError model
 
         GotDfire2Metrics remoteData ->
             case model.pageState of
@@ -467,7 +559,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching"
+                    updateWithUnexpectedStateError model
 
         GotRosettaMetrics remoteData ->
             case model.pageState of
@@ -496,7 +588,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching"
+                    updateWithUnexpectedStateError model
 
         GotAggrescan3DMetrics remoteData ->
             case model.pageState of
@@ -525,7 +617,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "Add error catching"
+                    updateWithUnexpectedStateError model
 
         -- GotMetricsBatch _ ->
         --     Error.updateWithError
@@ -542,12 +634,44 @@ update msg model =
         --         , severity = Error.Medium
         --         }
         ClickedCreateReferenceSet ->
-            -- case model.pageState of
-            --     CompletedBuilding newRefSet ->
-            ( model, Cmd.none )
+            case ( model.pageState, model.mResourceUuid ) of
+                ( CompletedBuilding { referenceSet }, Just resourceUuid ) ->
+                    let
+                        { uuidString, nextResourceUuid } =
+                            ResourceUuid.toString
+                                resourceUuid
+                    in
+                    ( { model
+                        | pageState = ChoosingRefSetType <| Default Top500
+                        , mResourceUuid = Just nextResourceUuid
+                        , referenceSets =
+                            Dict.insert
+                                uuidString
+                                (referenceSet
+                                    |> ReferenceSet.createReferenceSetStub
+                                    |> ReferenceSet.storeReferenceSetStubLocally
+                                )
+                                model.referenceSets
+                      }
+                    , Cmd.batch
+                        [ ReferenceSet.storeReferenceSet
+                            { uuidString = uuidString
+                            , referenceSet =
+                                Codec.encoder
+                                    ReferenceSet.codec
+                                    referenceSet
+                            }
+                        , navigate model.navKey Route.ReferenceSets
+                        ]
+                    )
+
+                _ ->
+                    Debug.todo "ljf"
 
         ClickedCancelCreate ->
-            Debug.todo "Add cancel option"
+            ( model
+            , navigate model.navKey Route.ReferenceSets
+            )
 
         -- -- Preferred State Subset
         -- UpdatedName params name ->
@@ -697,6 +821,21 @@ update msg model =
             )
 
 
+updateWithUnexpectedStateError : Model -> ( Model, Cmd Msg )
+updateWithUnexpectedStateError model =
+    Error.updateWithError
+        ClearPageErrors
+        { model | pageState = ChoosingRefSetType (Default Top500) }
+        { title = "Failed to create reference set"
+        , details =
+            """ Looks like there was an error when creating your reference set. Try
+            refreshing your browser and if this problem persists, report it as a bug.
+            See the home page for details on how to do this.
+            """
+        , severity = Error.Medium
+        }
+
+
 save : Model -> Shared.Model -> Shared.Model
 save model shared =
     let
@@ -840,17 +979,34 @@ buildingProgressView newRefSet =
         ]
 
 
-completedBuildingView : Set String -> ReferenceSet -> Element msg
+completedBuildingView : Set String -> ReferenceSet -> Element Msg
 completedBuildingView failedCodes refSet =
     column
         [ spacing 15, width fill ]
         ([ paragraph
             []
             [ text "Finished downloading data." ]
+         , Style.progressBar { max = 5, current = 5 }
          , paragraph
             []
-            [ text "Downloaded metrics for "
-            , text " structures."
+            [ text "Successfully metrics for "
+            , refSet.metrics
+                |> List.length
+                |> String.fromInt
+                |> text
+            , text " structures. Would you like to create the reference set?"
+            ]
+         , wrappedRow [ spacing 10 ]
+            [ Buttons.alwaysActiveButton
+                { label = text "Create"
+                , clickMsg = ClickedCreateReferenceSet
+                , pressed = False
+                }
+            , Buttons.alwaysActiveButton
+                { label = text "Cancel"
+                , clickMsg = ClickedCancelCreate
+                , pressed = False
+                }
             ]
          ]
             ++ (if not <| Set.isEmpty failedCodes then
@@ -1185,46 +1341,40 @@ aggrescan3DTotalQuery pdbCodeList =
 
 top500 : NewReferenceSet
 top500 =
-    { id = "top-500"
-    , name = "Top 500"
+    { id = "top-500-subset"
+    , name = "Top 500 Subset"
     , description =
-        """A set of high-quality structures defined by the Richardson lab. Uses the
-        preferred biological unit as defined by PDBe.
+        """A set of high-quality structures defined by the Richardson lab. This is a
+        subset of the structures in top500, as the metrics fail to run for all the
+        structures files in the set. Uses the preferred biological unit as defined by
+        PDBe.
         """
     , pdbCodes =
         """
-        1ajj 1npk 1aay 1iib 1ifc 1nkd 3pyp 1g3p 1mla 1cru 1a2p 1yac 1qnf 1vsr 1rhs 1ctj
-        1mun 3pvi 1tfe 2tps 1aba 1dlf 5hpg 1d2n 1pmi 1qcz 2cba 256b 1mrj 1yge 1whi 1b6g
-        2bbk 1gvp 3eip 1bkr 2end 1smd 8abp 1dgf 1qtw 1b3a 1b16 2qwc 2cua 1qlw 1a28 1bs9
-        1kuh 1bk0 1ytb 4lzt 1bx7 1flt 1erv 1wap 1toa 1mpg 1qd1 1dps 1jer 2sn3 2msb 119l
-        1xnb 1hcl 1uae 1c3w 1hmt 1ejg 4xis 2trx 1cxc 1b4k 2arc 2spc 1bdo 3pte 3sdh 1c90
-        1bab 1vca 1gpe 1ush 1a8i 2lis 1qh4 1ah7 1byi 1lmb 1mct 1dhn 1bgf 1cka 2dpm 2cpp
-        1qk5 1uch 1ido 1qft 1ten 1bi5 1c3d 1fus 1bhp 1gof 1luc 2knt 1qe3 1gai 1orc 1aqz
-        1di6 2ilk 1bs0 1psr 1ayl 1d3v 1cgo 5p21 1ak0 1bf4 2mhr 1bty 2ahj 1dcs 1ben 1b9w
-        1atl 1bbh 1cpq 1din 1bqc 1aqu 2tnf 6cel 1qs1 3grs 1bpi 153l 1nls 1bkb 1rcf 1dqs
-        1dnl 1bk7 1qre 1qrr 1tud 1swu 1bg6 2bop 1atz 1bfd 1bxo 1msk 1qdd 1cv8 1chd 1gca
-        2hmz 1fxd 2baa 1b0u 1byq 1qh8 1rge 1fdr 1zin 2tgi 1cxy 1cs1 1hpm 1qsa 2cpg 1nox
-        1mro 1vie 1vfr 9wga 1cex 1vcc 1cjw 2ahj 1ceq 1ads 1qip 1ra9 2fdn 1eco 1gdo 1qau
-        1lst 1vhh 16pk 1dci 7rsa 2act 1ute 1qqq 1qcx 8ruc 1bf6 1uxy 7a3h 1qks 1pef 1qfm
-        451c 1sbp 1doz 2myr 2por 1nif 1isu 1nzy 1hcr 1elk 1agj 1kap 1bb1 7fd1 1czf 7odc
-        1plc 1b8o 1hka 1df4 1lkk 1ek0 1cvl 2ctc 3nul 1dvj 1pda 1mfi 6gsv 1dbw 1aie 1mof
-        1ay7 1c75 1mgt 1yve 1bm8 1uro 7atj 1aru 1fvk 1hxn 1dif 1a92 1wab 1gd1 1dxg 1evh
-        2hft 1not 1a2z 1edg 1bue 1aqb 1tif 1qnj 1ptf 2cbp 3seb 1nul 2mcm 1aoh 1c02 2bc2
-        1fds 1lam 1osa 19hc 2sak 1mjh 3ezm 1qus 1ubp 1bte 1qq5 1dpt 1qhv 1cc8 1cf9 3cla
-        1a62 1gso 1qsg 1btk 1kp6 1qjd 1bg2 1aac 1cmb 1a4i 1mro 1ajs 2a0b 1qhf 1bfg 1gdj
-        1cyo 2nac 3ebx 1bsm 1a6m 1tx4 1nkr 1d7p 1c5e 2igd 1ek6 1avw 1flt 1ql0 1rie 1thv
-        1edm 1fmb 1nar 1ctf 1oaa 1axn 1cxq 1qgq 1tml 1tyv 1mfm 1pdo 1nfn 2dri 1a8d 4pga
-        1b67 1bx4 2pvb 1qup 1dos 1jet 2eng 1czp 1mba 1hfe 1lbu 1pgs 1qj4 1tph 2cyp 1ixh
-        1amm 1qf9 1amp 1a7s 4eug 3cyr 1aho 1ttb 3hts 1tgs 1bec 2erl 1vns 1qgi 5cyt 1ndd
-        1fas 1flm 1bj7 1jhg 1qts 1guq 1xwl 1h2r 1brt 2cpl 1dp7 1sml 1m6p 1cip 1arb 1bkj
-        1aop 2nlr 1qu9 1cke 1ccz 2bbk 1cyd 1koe 1kpf 2acy 1es5 1etn 1auo 1akr 1kve 1bd0
-        3vub 1gci 1a1y 1bu7 1poa 3sil 1qh5 1c1k 1flp 1xik 1svf 1lcl 1msi 1qh8 1a12 5icb
-        1stn 1mol 1amf 1a73 1slu 3chb 1xjo 1c1l 1h2r 1bbz 1egw 1vjs 1hfc 1phn 1mdc 1fkj
-        1cem 1atg 1mug 1erx 1qgw 1bw9 1a3a 1a8e 1b5e 1ftr 3chy 1mml 1b6a 1qq4 1b4v 1opd
-        1c3p 1tca 3std 1nwp 1cnz 1b0y 1euw 1tc1 1ezm 1htr 1gce 1pym 1bdm 1pcf 1rb9 3bto
-        1onc 1kpt 1fna 1tgx 1nbc 1tax 2gar 1c52 1t1d 1beh 3pro 1c24 1cnv 1dfu 1pen 1bu8
-        1vfy 1svy 1bqk 2hbg 2rn2 1qb7 1dbg 1ako 1cb0 1iab 2ayh 1ugi 1rzl 1cy5 2pth 1moq
-        1cl8 1fnc 1bgc 5nul
+        119l 153l 16pk 1a28 1a2p 1a62 1a6m 1a73 1a7s 1a8d 1a8e 1a92 1aay 1aba 1ads 1agj
+        1ah7 1aho 1aie 1ajj 1ak0 1ako 1akr 1amf 1amm 1amp 1aoh 1aop 1aqb 1aqz 1arb 1aru
+        1atg 1atl 1atz 1auo 1axn 1ay7 1ayl 1b0y 1b16 1b3a 1b5e 1b67 1b6a 1b6g 1b8o 1b9w
+        1bb1 1bbh 1bbz 1bdo 1beh 1bf4 1bfd 1bfg 1bg2 1bg6 1bgc 1bgf 1bhp 1bi5 1bj7 1bk0
+        1bk7 1bkb 1bkj 1bkr 1bm8 1bpi 1bqc 1bqk 1brt 1bs9 1bsm 1btk 1bx4 1bx7 1bxo 1byi
+        1byq 1c02 1c1k 1c1l 1c24 1c3d 1c3p 1c3w 1c52 1c5e 1c75 1c90 1cb0 1cc8 1ccz 1cem
+        1cex 1cgo 1chd 1cip 1cjw 1cke 1cl8 1cmb 1cnv 1ctf 1ctj 1cv8 1cvl 1cxc 1cxq 1cxy
+        1cyo 1czp 1d2n 1d7p 1dbg 1dcs 1df4 1dfu 1dhn 1di6 1dif 1dnl 1doz 1dp7 1dpt 1dvj
+        1dxg 1eco 1edg 1egw 1ek0 1elk 1erv 1erx 1es5 1etn 1euw 1evh 1ezm 1fas 1fdr 1fds
+        1fkj 1flm 1flp 1flt 1fmb 1fna 1fnc 1fus 1fvk 1fxd 1g3p 1gai 1gca 1gci 1gdj 1gso
+        1gvp 1hcl 1hcr 1hfc 1hka 1hmt 1hpm 1htr 1iab 1ido 1ifc 1iib 1isu 1ixh 1jer 1jet
+        1jhg 1kap 1koe 1kp6 1kpf 1kpt 1kuh 1kve 1lam 1lbu 1lcl 1lkk 1lmb 1lst 1m6p 1mba
+        1mfi 1mfm 1mgt 1mjh 1mla 1mml 1mof 1mol 1moq 1msi 1msk 1mug 1mun 1nar 1nbc 1ndd
+        1nfn 1nif 1nkd 1nkr 1nls 1not 1nox 1npk 1nul 1nwp 1oaa 1onc 1opd 1osa 1pda 1pdo
+        1pef 1pen 1pgs 1phn 1plc 1pmi 1poa 1psr 1ptf 1pym 1qau 1qb7 1qcx 1qdd 1qe3 1qf9
+        1qgi 1qgq 1qgw 1qh5 1qhf 1qhv 1qj4 1qk5 1ql0 1qnf 1qq4 1qq5 1qqq 1qre 1qrr 1qsa
+        1qts 1qtw 1qu9 1qup 1qus 1ra9 1rb9 1rcf 1rge 1rhs 1rie 1rzl 1sbp 1smd 1sml 1stn
+        1svf 1svy 1swu 1t1d 1tc1 1tca 1tfe 1tgx 1thv 1tif 1tml 1toa 1tph 1ttb 1tud 1tx4
+        1tyv 1uae 1uch 1uro 1ush 1ute 1uxy 1vca 1vcc 1vfr 1vfy 1vhh 1vie 1vjs 1vsr 1wab
+        1whi 1xjo 1xnb 1yac 1ytb 1zin 256b 2a0b 2act 2acy 2arc 2ayh 2baa 2bc2 2bop 2cba
+        2cbp 2cpg 2cpl 2cpp 2ctc 2cua 2cyp 2dpm 2dri 2end 2erl 2fdn 2gar 2hbg 2hft 2igd
+        2ilk 2knt 2lis 2mcm 2mhr 2por 2pth 2pvb 2rn2 2sak 2sn3 2spc 2tgi 2tnf 2trx 3chb
+        3chy 3cla 3cyr 3ebx 3eip 3ezm 3hts 3nul 3pte 3pvi 3pyp 3seb 3vub 451c 4eug 4lzt
+        5cyt 5hpg 5nul 5p21 6cel 6gsv 7a3h 7atj 7fd1 7odc 7rsa 8abp 9wga
         """
             |> String.words
             |> Set.fromList
