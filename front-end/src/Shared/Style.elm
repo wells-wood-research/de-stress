@@ -126,7 +126,7 @@ progressBar { max, current } =
         segmentView filled segmentNumber =
             let
                 rounded =
-                    if segmentNumber == 0 then
+                    if segmentNumber == 1 then
                         Border.roundEach
                             { topLeft = 10
                             , topRight = 0
@@ -173,7 +173,7 @@ progressBar { max, current } =
          ]
             ++ defaultBorder
         )
-        (List.map (segmentView current) (List.range 0 max))
+        (List.map (segmentView current) (List.range 1 max))
 
 
 

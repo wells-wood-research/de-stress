@@ -1,5 +1,14 @@
 module Pages.ReferenceSets.New exposing (Model, Msg, Params, page)
 
+import BigStructure.Object.Aggrescan3DResults as Aggrescan3DResults
+import BigStructure.Object.BiolUnit as BiolUnit
+import BigStructure.Object.BudeFFResults as BudeFFResults
+import BigStructure.Object.DFIRE2Results as DFIRE2Results
+import BigStructure.Object.EvoEF2Results as EvoEF2Results
+import BigStructure.Object.Pdb as Pdb
+import BigStructure.Object.RosettaResults as RosettaResults
+import BigStructure.Object.State as State
+import BigStructure.Query as Query
 import Browser.Navigation as Nav
 import Codec
 import Dict exposing (Dict)
@@ -9,14 +18,17 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Graphql.Http
+import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
-import RemoteData
+import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
+import RemoteData exposing (RemoteData)
 import Set exposing (Set)
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Error as Error
 import Shared.Metrics as Metrics exposing (RefSetMetrics)
-import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet, ReferenceSetRemoteData)
+import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet)
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Style as Style
 import Spa.Document exposing (Document)
@@ -48,13 +60,7 @@ type alias Model =
     , referenceSets : Dict String ReferenceSet.StoredReferenceSet
     , navKey : Nav.Key
     , pageErrors : List Error.Error
-    , batchSize : Int
     }
-
-
-defaultBatchSize : Int
-defaultBatchSize =
-    20
 
 
 type PageState
@@ -98,47 +104,56 @@ type alias NewReferenceSet =
     , name : String
     , description : String
     , pdbCodes : Set String
-    , currentBatch : List String
-    , remaining : List String
     , failedCodes : Set String
-    , metrics : List RefSetMetrics
+    , metricsRemoteData : MetricsRemoteData
     }
 
 
-getBuildProgress : Int -> NewReferenceSet -> { max : Int, current : Int }
-getBuildProgress chunks newRefSet =
+type alias MetricsRemoteData =
+    { basicMetrics : Maybe BasicMetricsRemoteData
+    , budeFFTotal : Maybe BudeFFTotalRemoteData
+    , evoEF2Total : Maybe EvoEF2TotalRemoteData
+    , dfire2Total : Maybe Dfire2TotalRemoteData
+    , rosettaTotal : Maybe RosettaTotalRemoteData
+    , aggrescan3DTotal : Maybe Aggrescan3DTotalRemoteData
+    }
+
+
+initialMetricsRemoteData : MetricsRemoteData
+initialMetricsRemoteData =
+    { basicMetrics = Nothing
+    , budeFFTotal = Nothing
+    , evoEF2Total = Nothing
+    , rosettaTotal = Nothing
+    , dfire2Total = Nothing
+    , aggrescan3DTotal = Nothing
+    }
+
+
+getBuildProgress : NewReferenceSet -> { max : Int, current : Int }
+getBuildProgress { metricsRemoteData } =
     let
-        numberRemaining =
-            newRefSet.currentBatch
-                ++ newRefSet.remaining
-                |> List.length
-                |> toFloat
+        maybeToInt : Maybe a -> Int
+        maybeToInt mA =
+            case mA of
+                Just _ ->
+                    1
 
-        total =
-            Set.size newRefSet.pdbCodes |> toFloat
+                Nothing ->
+                    0
 
-        current =
-            (total - numberRemaining)
-                / total
-                |> (*) (toFloat chunks)
-                |> round
+        progressValues =
+            [ maybeToInt metricsRemoteData.basicMetrics
+            , maybeToInt metricsRemoteData.budeFFTotal
+            , maybeToInt metricsRemoteData.dfire2Total
+            , maybeToInt metricsRemoteData.evoEF2Total
+            , maybeToInt metricsRemoteData.rosettaTotal
+            , maybeToInt metricsRemoteData.aggrescan3DTotal
+            ]
     in
-    { max = chunks
-    , current = current
+    { max = List.length progressValues
+    , current = List.sum progressValues
     }
-
-
-createReferenceSet : NewReferenceSet -> ( String, ReferenceSet )
-createReferenceSet { id, name, description, pdbCodes, metrics } =
-    ( id
-    , { name = name
-      , description = description
-      , pdbCodeList = pdbCodes
-      , metrics = metrics
-      , aggregateData = Metrics.createAggregateData metrics
-      , deleteStatus = Buttons.initDangerStatus
-      }
-    )
 
 
 constructionMethodToString : ConstructionMethod -> String
@@ -171,7 +186,6 @@ init shared _ =
               , referenceSets = runState.referenceSets
               , navKey = shared.key
               , pageErrors = []
-              , batchSize = defaultBatchSize
               }
             , Cmd.none
             )
@@ -182,7 +196,6 @@ init shared _ =
               , referenceSets = Dict.empty
               , navKey = shared.key
               , pageErrors = []
-              , batchSize = defaultBatchSize
               }
             , Cmd.none
             )
@@ -196,7 +209,12 @@ init shared _ =
 type Msg
     = UpdatedConstructionMethod ConstructionMethod
     | ClickedDownloadRefSet
-    | GotMetricsBatch ReferenceSetRemoteData
+    | GotBasicMetrics BasicMetricsRemoteData
+    | GotBudeFFMetrics BudeFFTotalRemoteData
+    | GotEvoEF2Metrics EvoEF2TotalRemoteData
+    | GotDfire2Metrics Dfire2TotalRemoteData
+    | GotRosettaMetrics RosettaTotalRemoteData
+    | GotAggrescan3DMetrics Aggrescan3DTotalRemoteData
       -- | UpdatedName NewPdbCodeListParams String
       -- | UpdatedDescription NewPdbCodeListParams String
       -- | UpdatedPdbCodes NewPdbCodeListParams String
@@ -223,96 +241,177 @@ update msg model =
                             case refSet of
                                 Top500 ->
                                     top500
-
-                        pdbCodesList =
-                            Set.toList newRefSet.pdbCodes
-
-                        currentBatch =
-                            List.take model.batchSize pdbCodesList
-
-                        remaining =
-                            List.drop model.batchSize pdbCodesList
                     in
                     ( { model
                         | pageState =
                             BuildingReferenceSet
-                                { newRefSet
-                                    | currentBatch = currentBatch
-                                    , remaining = remaining
-                                }
+                                newRefSet
                       }
-                    , ReferenceSet.queryToCmd
-                        (ReferenceSet.preferredStatesSubsetQuery <|
-                            Set.fromList currentBatch
-                        )
-                        GotMetricsBatch
+                    , Cmd.batch
+                        [ basicMetricsQuery newRefSet.pdbCodes
+                            |> Graphql.Http.queryRequest
+                                "http://127.0.0.1:8181/graphql"
+                            |> Graphql.Http.send
+                                (RemoteData.fromResult >> GotBasicMetrics)
+                        , budeFFTotalQuery newRefSet.pdbCodes
+                            |> Graphql.Http.queryRequest
+                                "http://127.0.0.1:8181/graphql"
+                            |> Graphql.Http.send
+                                (RemoteData.fromResult >> GotBudeFFMetrics)
+                        , evoEF2TotalQuery newRefSet.pdbCodes
+                            |> Graphql.Http.queryRequest
+                                "http://127.0.0.1:8181/graphql"
+                            |> Graphql.Http.send
+                                (RemoteData.fromResult >> GotEvoEF2Metrics)
+                        , dfire2TotalQuery newRefSet.pdbCodes
+                            |> Graphql.Http.queryRequest
+                                "http://127.0.0.1:8181/graphql"
+                            |> Graphql.Http.send
+                                (RemoteData.fromResult >> GotDfire2Metrics)
+                        , rosettaTotalQuery newRefSet.pdbCodes
+                            |> Graphql.Http.queryRequest
+                                "http://127.0.0.1:8181/graphql"
+                            |> Graphql.Http.send
+                                (RemoteData.fromResult >> GotRosettaMetrics)
+                        , aggrescan3DTotalQuery newRefSet.pdbCodes
+                            |> Graphql.Http.queryRequest
+                                "http://127.0.0.1:8181/graphql"
+                            |> Graphql.Http.send
+                                (RemoteData.fromResult >> GotAggrescan3DMetrics)
+                        ]
                     )
 
                 _ ->
                     Debug.todo "Add error catching."
 
-        GotMetricsBatch (RemoteData.Success metrics) ->
+        GotBasicMetrics remoteData ->
             case model.pageState of
-                BuildingReferenceSet newRefSet ->
-                    let
-                        updatedNewRefSet =
-                            { newRefSet
-                                | currentBatch =
-                                    List.take model.batchSize
-                                        newRefSet.remaining
-                                , remaining =
-                                    List.drop model.batchSize
-                                        newRefSet.remaining
-                                , metrics = newRefSet.metrics ++ metrics
-                            }
-                    in
-                    if List.isEmpty updatedNewRefSet.currentBatch then
-                        ( { model
-                            | pageState =
-                                CompletedBuilding
-                                    { updatedNewRefSet
-                                        | failedCodes =
-                                            List.map
-                                                .pdbCode
-                                                updatedNewRefSet.metrics
-                                                |> Set.fromList
-                                                |> Set.diff updatedNewRefSet.pdbCodes
-                                    }
-                          }
-                        , Cmd.none
-                        )
-
-                    else
-                        ( { model
-                            | pageState =
-                                BuildingReferenceSet
-                                    updatedNewRefSet
-                          }
-                        , ReferenceSet.queryToCmd
-                            (ReferenceSet.preferredStatesSubsetQuery <|
-                                Set.fromList updatedNewRefSet.currentBatch
-                            )
-                            GotMetricsBatch
-                        )
+                BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    ( { model
+                        | pageState =
+                            BuildingReferenceSet
+                                { newRefSet
+                                    | metricsRemoteData =
+                                        { metricsRemoteData
+                                            | basicMetrics = Just remoteData
+                                        }
+                                }
+                      }
+                    , Cmd.none
+                    )
 
                 _ ->
                     Debug.todo "Add error catching"
 
-        GotMetricsBatch _ ->
-            Error.updateWithError
-                ClearPageErrors
-                { model | pageState = ChoosingRefSetType (Default Top500) }
-                { title = "Failed to create reference set"
-                , details =
-                    """Failed to create a new reference set. It looks like we
-                    had trouble downloading the data from the server. Check your
-                    internet connection and refresh your browser. If this
-                    problem persists, report it as a bug. See the home page for
-                    details on how to do this.
-                    """
-                , severity = Error.Medium
-                }
+        GotBudeFFMetrics remoteData ->
+            case model.pageState of
+                BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    ( { model
+                        | pageState =
+                            BuildingReferenceSet
+                                { newRefSet
+                                    | metricsRemoteData =
+                                        { metricsRemoteData
+                                            | budeFFTotal = Just remoteData
+                                        }
+                                }
+                      }
+                    , Cmd.none
+                    )
 
+                _ ->
+                    Debug.todo "Add error catching"
+
+        GotEvoEF2Metrics remoteData ->
+            case model.pageState of
+                BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    ( { model
+                        | pageState =
+                            BuildingReferenceSet
+                                { newRefSet
+                                    | metricsRemoteData =
+                                        { metricsRemoteData
+                                            | evoEF2Total = Just remoteData
+                                        }
+                                }
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    Debug.todo "Add error catching"
+
+        GotDfire2Metrics remoteData ->
+            case model.pageState of
+                BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    ( { model
+                        | pageState =
+                            BuildingReferenceSet
+                                { newRefSet
+                                    | metricsRemoteData =
+                                        { metricsRemoteData
+                                            | dfire2Total = Just remoteData
+                                        }
+                                }
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    Debug.todo "Add error catching"
+
+        GotRosettaMetrics remoteData ->
+            case model.pageState of
+                BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    ( { model
+                        | pageState =
+                            BuildingReferenceSet
+                                { newRefSet
+                                    | metricsRemoteData =
+                                        { metricsRemoteData
+                                            | rosettaTotal = Just remoteData
+                                        }
+                                }
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    Debug.todo "Add error catching"
+
+        GotAggrescan3DMetrics remoteData ->
+            case model.pageState of
+                BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    ( { model
+                        | pageState =
+                            BuildingReferenceSet
+                                { newRefSet
+                                    | metricsRemoteData =
+                                        { metricsRemoteData
+                                            | aggrescan3DTotal = Just remoteData
+                                        }
+                                }
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    Debug.todo "Add error catching"
+
+        -- GotMetricsBatch _ ->
+        --     Error.updateWithError
+        --         ClearPageErrors
+        --         { model | pageState = ChoosingRefSetType (Default Top500) }
+        --         { title = "Failed to create reference set"
+        --         , details =
+        --             """Failed to create a new reference set. It looks like we
+        --             had trouble downloading the data from the server. Check your
+        --             internet connection and refresh your browser. If this
+        --             problem persists, report it as a bug. See the home page for
+        --             details on how to do this.
+        --             """
+        --         , severity = Error.Medium
+        --         }
         ClickedCreateReferenceSet ->
             -- case model.pageState of
             --     CompletedBuilding newRefSet ->
@@ -602,7 +701,7 @@ buildingProgressView newRefSet =
         [ paragraph
             []
             [ text "Downloading reference set..." ]
-        , getBuildProgress 100 newRefSet
+        , getBuildProgress newRefSet
             |> Style.progressBar
         ]
 
@@ -614,12 +713,11 @@ completedBuildingView newRefSet =
         ([ paragraph
             []
             [ text "Finished downloading data." ]
-         , getBuildProgress 100 newRefSet
+         , getBuildProgress newRefSet
             |> Style.progressBar
          , paragraph
             []
             [ text "Downloaded metrics for "
-            , text <| String.fromInt <| List.length newRefSet.metrics
             , text " structures."
             ]
          ]
@@ -731,6 +829,225 @@ completedBuildingView newRefSet =
 --             }
 --         ]
 -- }}}
+-- {{{ New Reference Set Queries
+
+
+type alias ReferenceSetRemoteData =
+    RemoteData (Graphql.Http.Error (List RefSetMetrics)) (List RefSetMetrics)
+
+
+type alias BasicMetrics =
+    { pdbCode : String
+    , composition : Dict String Float
+    , torsionAngles : Dict String ( Float, Float, Float )
+    , hydrophobicFitness : Maybe Float
+    , isoelectricPoint : Float
+    , mass : Float
+    , numberOfResidues : Int
+    , packingDensity : Float
+    }
+
+
+type alias BasicMetricsRemoteData =
+    RemoteData (Graphql.Http.Error (List BasicMetrics)) (List BasicMetrics)
+
+
+basicMetricsQuery : Set String -> SelectionSet (List BasicMetrics) RootQuery
+basicMetricsQuery pdbCodeList =
+    Query.preferredStatesSubset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed BasicMetrics
+            |> with
+                (State.biolUnit (BiolUnit.pdb Pdb.pdbCode)
+                    |> SelectionSet.map
+                        (\mmPdbCode ->
+                            case mmPdbCode of
+                                Just (Just pdbCode) ->
+                                    pdbCode
+
+                                _ ->
+                                    "Unknown PDB"
+                        )
+                )
+            |> with (SelectionSet.map Metrics.compositionStringToDict State.composition)
+            |> with (SelectionSet.map Metrics.torsionAngleStringToDict State.torsionAngles)
+            |> with State.hydrophobicFitness
+            |> with State.isoelectricPoint
+            |> with State.mass
+            |> with State.numOfResidues
+            |> with State.meanPackingDensity
+        )
+
+
+unwrapMMSS : SelectionSet (Maybe (Maybe (Maybe b))) scope -> SelectionSet (Maybe b) scope
+unwrapMMSS =
+    SelectionSet.map
+        (Maybe.andThen (Maybe.andThen identity))
+
+
+type alias BudeFFTotal =
+    { pdbCode : String
+    , budeFFTotal : Maybe Float
+    }
+
+
+type alias BudeFFTotalRemoteData =
+    RemoteData (Graphql.Http.Error (List BudeFFTotal)) (List BudeFFTotal)
+
+
+budeFFTotalQuery : Set String -> SelectionSet (List BudeFFTotal) RootQuery
+budeFFTotalQuery pdbCodeList =
+    Query.preferredBudeSubset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed BudeFFTotal
+            |> with
+                (SelectionSet.map (Maybe.withDefault "Unknown PDB")
+                    (unwrapMMSS
+                        (BudeFFResults.state
+                            (State.biolUnit
+                                (BiolUnit.pdb
+                                    Pdb.pdbCode
+                                )
+                            )
+                        )
+                    )
+                )
+            |> with BudeFFResults.totalEnergy
+        )
+
+
+type alias EvoEF2Total =
+    { pdbCode : String
+    , evoEF2Total : Maybe Float
+    }
+
+
+type alias EvoEF2TotalRemoteData =
+    RemoteData (Graphql.Http.Error (List EvoEF2Total)) (List EvoEF2Total)
+
+
+evoEF2TotalQuery : Set String -> SelectionSet (List EvoEF2Total) RootQuery
+evoEF2TotalQuery pdbCodeList =
+    Query.preferredEvoef2Subset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed EvoEF2Total
+            |> with
+                (SelectionSet.map (Maybe.withDefault "Unknown PDB")
+                    (unwrapMMSS
+                        (EvoEF2Results.state
+                            (State.biolUnit
+                                (BiolUnit.pdb
+                                    Pdb.pdbCode
+                                )
+                            )
+                        )
+                    )
+                )
+            |> with EvoEF2Results.total
+        )
+
+
+type alias Dfire2Total =
+    { pdbCode : String
+    , dfire2Total : Maybe Float
+    }
+
+
+type alias Dfire2TotalRemoteData =
+    RemoteData (Graphql.Http.Error (List Dfire2Total)) (List Dfire2Total)
+
+
+dfire2TotalQuery : Set String -> SelectionSet (List Dfire2Total) RootQuery
+dfire2TotalQuery pdbCodeList =
+    Query.preferredDfire2Subset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed Dfire2Total
+            |> with
+                (SelectionSet.map (Maybe.withDefault "Unknown PDB")
+                    (unwrapMMSS
+                        (DFIRE2Results.state
+                            (State.biolUnit
+                                (BiolUnit.pdb
+                                    Pdb.pdbCode
+                                )
+                            )
+                        )
+                    )
+                )
+            |> with DFIRE2Results.total
+        )
+
+
+type alias RosettaTotal =
+    { pdbCode : String
+    , rosettaTotal : Maybe Float
+    }
+
+
+type alias RosettaTotalRemoteData =
+    RemoteData (Graphql.Http.Error (List RosettaTotal)) (List RosettaTotal)
+
+
+rosettaTotalQuery : Set String -> SelectionSet (List RosettaTotal) RootQuery
+rosettaTotalQuery pdbCodeList =
+    Query.preferredRosettaSubset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed RosettaTotal
+            |> with
+                (SelectionSet.map (Maybe.withDefault "Unknown PDB")
+                    (unwrapMMSS
+                        (RosettaResults.state
+                            (State.biolUnit
+                                (BiolUnit.pdb
+                                    Pdb.pdbCode
+                                )
+                            )
+                        )
+                    )
+                )
+            |> with RosettaResults.totalScore
+        )
+
+
+type alias Aggrescan3DTotal =
+    { pdbCode : String
+    , aggrescan3DTotal : Maybe Float
+    }
+
+
+type alias Aggrescan3DTotalRemoteData =
+    RemoteData (Graphql.Http.Error (List Aggrescan3DTotal)) (List Aggrescan3DTotal)
+
+
+aggrescan3DTotalQuery : Set String -> SelectionSet (List Aggrescan3DTotal) RootQuery
+aggrescan3DTotalQuery pdbCodeList =
+    Query.preferredAggrescan3dSubset
+        (\optionals -> { optionals | stateNumber = Absent })
+        { codes = Set.toList pdbCodeList }
+        (SelectionSet.succeed Aggrescan3DTotal
+            |> with
+                (SelectionSet.map (Maybe.withDefault "Unknown PDB")
+                    (unwrapMMSS
+                        (Aggrescan3DResults.state
+                            (State.biolUnit
+                                (BiolUnit.pdb
+                                    Pdb.pdbCode
+                                )
+                            )
+                        )
+                    )
+                )
+            |> with Aggrescan3DResults.totalValue
+        )
+
+
+
+-- }}}
 -- {{{ Default Reference Sets
 
 
@@ -779,10 +1096,8 @@ top500 =
         """
             |> String.words
             |> Set.fromList
-    , currentBatch = []
-    , remaining = []
     , failedCodes = Set.empty
-    , metrics = []
+    , metricsRemoteData = initialMetricsRemoteData
     }
 
 
