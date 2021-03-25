@@ -43,7 +43,8 @@ application is being served or it will break.
 Launch the application:
 
 ```bash
-docker-compose -f development-compose.yml up -d
+# Change rq-worker to however many processes you want to use for analysis
+docker-compose -f development-compose.yml --env-file .env up -d --scale rq-worker=4
 ```
 
 Navigate to `de-stress/database` and run `import_db_dump.sh`.
