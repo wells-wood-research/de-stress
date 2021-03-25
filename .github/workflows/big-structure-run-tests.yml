@@ -36,7 +36,7 @@ jobs:
           docker build -t big-structure .
           cd ..
           docker run --rm -v $(pwd)/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
-              --env-file ../.env-testing \
+              --env-file .env-testing \
               big-structure \
               poetry run pytest -m "not rosetta"
           
