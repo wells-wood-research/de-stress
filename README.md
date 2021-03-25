@@ -6,19 +6,24 @@ DEsigned STRucture Evaluation ServiceS
 
 # Deployment
 
-First of all, from within `de-stress/`, build all the containers:
-
-```bash
-# use production-compose.yml if you're deploying in a production environment
-docker-compose -f development-compose.yml build
-```
-
 Make sure you have all the relevant dependencies in
 `de-stress/dependencies_for_de-stress/`. Currently, these are:
 
 * EvoEF2 (source)
 * DeFire
 * Rosetta (source)
+
+Create a `.env` file in the top level `de-stress` folder. You can copy
+`de-stress/.env-testing` and update that. This 
+
+Download `big_structure.dump` and place it in `de-stress/database`.
+
+Next, from within `de-stress/`, build all the containers:
+
+```bash
+# use production-compose.yml if you're deploying in a production environment
+docker-compose -f development-compose.yml build
+```
 
 Compile the dependencies in the container:
 
@@ -27,7 +32,7 @@ docker run \
     -it \
     --rm \
     -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress \
-    big-structure-tes:latest \
+    de-stress_big-structure:latest \
     sh build_dependencies.sh
 ```
 
@@ -41,10 +46,4 @@ Launch the application:
 docker-compose -f development-compose.yml up -d
 ```
 
-Build `big_structure`, the reference dataset (**This is just a placeholder step, the
-full step will happen differently in the final application**):
-
-```bash
-docker exec de-stress_big-structure_1 \
-    poetry run dbs_db_from_scratch tests/testing_files/db_generation/
-```
+Navigate to `de-stress/database` and run `import_db_dump.sh`.
