@@ -22,7 +22,7 @@ import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
-import RemoteData exposing (RemoteData)
+import RemoteData as Rd exposing (RemoteData)
 import Set exposing (Set)
 import Shared
 import Shared.Buttons as Buttons
@@ -66,7 +66,8 @@ type alias Model =
 type PageState
     = ChoosingRefSetType ConstructionMethod
     | BuildingReferenceSet NewReferenceSet
-    | CompletedBuilding NewReferenceSet
+    | CompletedBuilding { failedCodes : Set String, referenceSet : ReferenceSet }
+    | FailedToBuild String
 
 
 type ConstructionMethod
@@ -95,7 +96,7 @@ defaultCodeListModel =
     , rawPdbCodeListInput = ""
     , pdbCodeList = Set.empty
     , malformedPdbCodes = Set.empty
-    , remoteData = RemoteData.NotAsked
+    , remoteData = Rd.NotAsked
     }
 
 
@@ -104,56 +105,124 @@ type alias NewReferenceSet =
     , name : String
     , description : String
     , pdbCodes : Set String
-    , failedCodes : Set String
     , metricsRemoteData : MetricsRemoteData
     }
 
 
 type alias MetricsRemoteData =
-    { basicMetrics : Maybe BasicMetricsRemoteData
-    , budeFFTotal : Maybe BudeFFTotalRemoteData
-    , evoEF2Total : Maybe EvoEF2TotalRemoteData
-    , dfire2Total : Maybe Dfire2TotalRemoteData
-    , rosettaTotal : Maybe RosettaTotalRemoteData
-    , aggrescan3DTotal : Maybe Aggrescan3DTotalRemoteData
+    { basicMetrics : BasicMetricsRemoteData
+    , budeFFTotal : BudeFFTotalRemoteData
+    , evoEF2Total : EvoEF2TotalRemoteData
+    , dfire2Total : Dfire2TotalRemoteData
+    , rosettaTotal : RosettaTotalRemoteData
+    , aggrescan3DTotal : Aggrescan3DTotalRemoteData
     }
 
 
 initialMetricsRemoteData : MetricsRemoteData
 initialMetricsRemoteData =
-    { basicMetrics = Nothing
-    , budeFFTotal = Nothing
-    , evoEF2Total = Nothing
-    , rosettaTotal = Nothing
-    , dfire2Total = Nothing
-    , aggrescan3DTotal = Nothing
+    { basicMetrics = Rd.NotAsked
+    , budeFFTotal = Rd.NotAsked
+    , evoEF2Total = Rd.NotAsked
+    , rosettaTotal = Rd.NotAsked
+    , dfire2Total = Rd.NotAsked
+    , aggrescan3DTotal = Rd.NotAsked
     }
+
+
+isMetricsDownloadComplete : MetricsRemoteData -> Bool
+isMetricsDownloadComplete metricsRemoteData =
+    [ Rd.isNotAsked metricsRemoteData.basicMetrics
+    , Rd.isNotAsked metricsRemoteData.budeFFTotal
+    , Rd.isNotAsked metricsRemoteData.dfire2Total
+    , Rd.isNotAsked metricsRemoteData.evoEF2Total
+    , Rd.isNotAsked metricsRemoteData.rosettaTotal
+    , Rd.isNotAsked metricsRemoteData.aggrescan3DTotal
+    ]
+        |> List.all not
+
+
+errToStr : String -> RemoteData e a -> RemoteData String a
+errToStr metricName rd =
+    Rd.mapError (always <| "failed to download " ++ metricName ++ " metrics") rd
+
+
+convertToRefSetMetrics :
+    List BasicMetrics
+    -> List BudeFFTotal
+    -> List EvoEF2Total
+    -> List Dfire2Total
+    -> List RosettaTotal
+    -> List Aggrescan3DTotal
+    -> List RefSetMetrics
+convertToRefSetMetrics bm bff evo df ros agg =
+    []
 
 
 getBuildProgress : NewReferenceSet -> { max : Int, current : Int }
 getBuildProgress { metricsRemoteData } =
     let
-        maybeToInt : Maybe a -> Int
-        maybeToInt mA =
-            case mA of
-                Just _ ->
-                    1
-
-                Nothing ->
+        rdToInt rd =
+            case rd of
+                Rd.NotAsked ->
                     0
 
+                _ ->
+                    1
+
         progressValues =
-            [ maybeToInt metricsRemoteData.basicMetrics
-            , maybeToInt metricsRemoteData.budeFFTotal
-            , maybeToInt metricsRemoteData.dfire2Total
-            , maybeToInt metricsRemoteData.evoEF2Total
-            , maybeToInt metricsRemoteData.rosettaTotal
-            , maybeToInt metricsRemoteData.aggrescan3DTotal
+            [ rdToInt metricsRemoteData.basicMetrics
+            , rdToInt metricsRemoteData.budeFFTotal
+            , rdToInt metricsRemoteData.dfire2Total
+            , rdToInt metricsRemoteData.evoEF2Total
+            , rdToInt metricsRemoteData.rosettaTotal
+            , rdToInt metricsRemoteData.aggrescan3DTotal
             ]
     in
     { max = List.length progressValues
     , current = List.sum progressValues
     }
+
+
+pageStateForCompletedDownload : NewReferenceSet -> MetricsRemoteData -> PageState
+pageStateForCompletedDownload newRefSet metricsRemoteData =
+    let
+        mergedMetricsRemoteData =
+            Rd.map
+                convertToRefSetMetrics
+                (errToStr "basic" metricsRemoteData.basicMetrics)
+                |> Rd.andMap
+                    (errToStr "bude ff" metricsRemoteData.budeFFTotal)
+                |> Rd.andMap
+                    (errToStr "evoef2" metricsRemoteData.evoEF2Total)
+                |> Rd.andMap
+                    (errToStr "dfire2" metricsRemoteData.dfire2Total)
+                |> Rd.andMap
+                    (errToStr "rosetta" metricsRemoteData.rosettaTotal)
+                |> Rd.andMap
+                    (errToStr "aggrescan3d" metricsRemoteData.aggrescan3DTotal)
+    in
+    case mergedMetricsRemoteData of
+        Rd.Success metrics ->
+            CompletedBuilding
+                { failedCodes = Set.empty
+                , referenceSet =
+                    { name = newRefSet.name
+                    , description = newRefSet.description
+                    , pdbCodeList = Set.empty
+                    , metrics = metrics
+                    , aggregateData = Metrics.createAggregateData metrics
+                    , deleteStatus = Buttons.initDangerStatus
+                    }
+                }
+
+        Rd.Failure e ->
+            FailedToBuild e
+
+        _ ->
+            FailedToBuild
+                """Something went wrong when requesting
+                metrics. Please try again."""
 
 
 constructionMethodToString : ConstructionMethod -> String
@@ -252,32 +321,32 @@ update msg model =
                             |> Graphql.Http.queryRequest
                                 "http://127.0.0.1:8181/graphql"
                             |> Graphql.Http.send
-                                (RemoteData.fromResult >> GotBasicMetrics)
+                                (Rd.fromResult >> GotBasicMetrics)
                         , budeFFTotalQuery newRefSet.pdbCodes
                             |> Graphql.Http.queryRequest
                                 "http://127.0.0.1:8181/graphql"
                             |> Graphql.Http.send
-                                (RemoteData.fromResult >> GotBudeFFMetrics)
+                                (Rd.fromResult >> GotBudeFFMetrics)
                         , evoEF2TotalQuery newRefSet.pdbCodes
                             |> Graphql.Http.queryRequest
                                 "http://127.0.0.1:8181/graphql"
                             |> Graphql.Http.send
-                                (RemoteData.fromResult >> GotEvoEF2Metrics)
+                                (Rd.fromResult >> GotEvoEF2Metrics)
                         , dfire2TotalQuery newRefSet.pdbCodes
                             |> Graphql.Http.queryRequest
                                 "http://127.0.0.1:8181/graphql"
                             |> Graphql.Http.send
-                                (RemoteData.fromResult >> GotDfire2Metrics)
+                                (Rd.fromResult >> GotDfire2Metrics)
                         , rosettaTotalQuery newRefSet.pdbCodes
                             |> Graphql.Http.queryRequest
                                 "http://127.0.0.1:8181/graphql"
                             |> Graphql.Http.send
-                                (RemoteData.fromResult >> GotRosettaMetrics)
+                                (Rd.fromResult >> GotRosettaMetrics)
                         , aggrescan3DTotalQuery newRefSet.pdbCodes
                             |> Graphql.Http.queryRequest
                                 "http://127.0.0.1:8181/graphql"
                             |> Graphql.Http.send
-                                (RemoteData.fromResult >> GotAggrescan3DMetrics)
+                                (Rd.fromResult >> GotAggrescan3DMetrics)
                         ]
                     )
 
@@ -287,15 +356,25 @@ update msg model =
         GotBasicMetrics remoteData ->
             case model.pageState of
                 BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    let
+                        updatedMetricsRemoteData =
+                            { metricsRemoteData
+                                | basicMetrics = remoteData
+                            }
+                    in
                     ( { model
                         | pageState =
-                            BuildingReferenceSet
-                                { newRefSet
-                                    | metricsRemoteData =
-                                        { metricsRemoteData
-                                            | basicMetrics = Just remoteData
-                                        }
-                                }
+                            if isMetricsDownloadComplete updatedMetricsRemoteData then
+                                pageStateForCompletedDownload
+                                    newRefSet
+                                    updatedMetricsRemoteData
+
+                            else
+                                BuildingReferenceSet
+                                    { newRefSet
+                                        | metricsRemoteData =
+                                            updatedMetricsRemoteData
+                                    }
                       }
                     , Cmd.none
                     )
@@ -306,15 +385,25 @@ update msg model =
         GotBudeFFMetrics remoteData ->
             case model.pageState of
                 BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    let
+                        updatedMetricsRemoteData =
+                            { metricsRemoteData
+                                | budeFFTotal = remoteData
+                            }
+                    in
                     ( { model
                         | pageState =
-                            BuildingReferenceSet
-                                { newRefSet
-                                    | metricsRemoteData =
-                                        { metricsRemoteData
-                                            | budeFFTotal = Just remoteData
-                                        }
-                                }
+                            if isMetricsDownloadComplete updatedMetricsRemoteData then
+                                pageStateForCompletedDownload
+                                    newRefSet
+                                    updatedMetricsRemoteData
+
+                            else
+                                BuildingReferenceSet
+                                    { newRefSet
+                                        | metricsRemoteData =
+                                            updatedMetricsRemoteData
+                                    }
                       }
                     , Cmd.none
                     )
@@ -325,15 +414,25 @@ update msg model =
         GotEvoEF2Metrics remoteData ->
             case model.pageState of
                 BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    let
+                        updatedMetricsRemoteData =
+                            { metricsRemoteData
+                                | evoEF2Total = remoteData
+                            }
+                    in
                     ( { model
                         | pageState =
-                            BuildingReferenceSet
-                                { newRefSet
-                                    | metricsRemoteData =
-                                        { metricsRemoteData
-                                            | evoEF2Total = Just remoteData
-                                        }
-                                }
+                            if isMetricsDownloadComplete updatedMetricsRemoteData then
+                                pageStateForCompletedDownload
+                                    newRefSet
+                                    updatedMetricsRemoteData
+
+                            else
+                                BuildingReferenceSet
+                                    { newRefSet
+                                        | metricsRemoteData =
+                                            updatedMetricsRemoteData
+                                    }
                       }
                     , Cmd.none
                     )
@@ -344,15 +443,25 @@ update msg model =
         GotDfire2Metrics remoteData ->
             case model.pageState of
                 BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    let
+                        updatedMetricsRemoteData =
+                            { metricsRemoteData
+                                | dfire2Total = remoteData
+                            }
+                    in
                     ( { model
                         | pageState =
-                            BuildingReferenceSet
-                                { newRefSet
-                                    | metricsRemoteData =
-                                        { metricsRemoteData
-                                            | dfire2Total = Just remoteData
-                                        }
-                                }
+                            if isMetricsDownloadComplete updatedMetricsRemoteData then
+                                pageStateForCompletedDownload
+                                    newRefSet
+                                    updatedMetricsRemoteData
+
+                            else
+                                BuildingReferenceSet
+                                    { newRefSet
+                                        | metricsRemoteData =
+                                            updatedMetricsRemoteData
+                                    }
                       }
                     , Cmd.none
                     )
@@ -363,15 +472,25 @@ update msg model =
         GotRosettaMetrics remoteData ->
             case model.pageState of
                 BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    let
+                        updatedMetricsRemoteData =
+                            { metricsRemoteData
+                                | rosettaTotal = remoteData
+                            }
+                    in
                     ( { model
                         | pageState =
-                            BuildingReferenceSet
-                                { newRefSet
-                                    | metricsRemoteData =
-                                        { metricsRemoteData
-                                            | rosettaTotal = Just remoteData
-                                        }
-                                }
+                            if isMetricsDownloadComplete updatedMetricsRemoteData then
+                                pageStateForCompletedDownload
+                                    newRefSet
+                                    updatedMetricsRemoteData
+
+                            else
+                                BuildingReferenceSet
+                                    { newRefSet
+                                        | metricsRemoteData =
+                                            updatedMetricsRemoteData
+                                    }
                       }
                     , Cmd.none
                     )
@@ -382,15 +501,25 @@ update msg model =
         GotAggrescan3DMetrics remoteData ->
             case model.pageState of
                 BuildingReferenceSet ({ metricsRemoteData } as newRefSet) ->
+                    let
+                        updatedMetricsRemoteData =
+                            { metricsRemoteData
+                                | aggrescan3DTotal = remoteData
+                            }
+                    in
                     ( { model
                         | pageState =
-                            BuildingReferenceSet
-                                { newRefSet
-                                    | metricsRemoteData =
-                                        { metricsRemoteData
-                                            | aggrescan3DTotal = Just remoteData
-                                        }
-                                }
+                            if isMetricsDownloadComplete updatedMetricsRemoteData then
+                                pageStateForCompletedDownload
+                                    newRefSet
+                                    updatedMetricsRemoteData
+
+                            else
+                                BuildingReferenceSet
+                                    { newRefSet
+                                        | metricsRemoteData =
+                                            updatedMetricsRemoteData
+                                    }
                       }
                     , Cmd.none
                     )
@@ -653,8 +782,13 @@ bodyView model =
             BuildingReferenceSet newRefSet ->
                 buildingProgressView newRefSet
 
-            CompletedBuilding newRefSet ->
-                completedBuildingView newRefSet
+            CompletedBuilding { failedCodes, referenceSet } ->
+                completedBuildingView failedCodes referenceSet
+
+            FailedToBuild error ->
+                paragraph
+                    []
+                    [ text error ]
         ]
 
 
@@ -706,22 +840,20 @@ buildingProgressView newRefSet =
         ]
 
 
-completedBuildingView : NewReferenceSet -> Element msg
-completedBuildingView newRefSet =
+completedBuildingView : Set String -> ReferenceSet -> Element msg
+completedBuildingView failedCodes refSet =
     column
         [ spacing 15, width fill ]
         ([ paragraph
             []
             [ text "Finished downloading data." ]
-         , getBuildProgress newRefSet
-            |> Style.progressBar
          , paragraph
             []
             [ text "Downloaded metrics for "
             , text " structures."
             ]
          ]
-            ++ (if not <| Set.isEmpty newRefSet.failedCodes then
+            ++ (if not <| Set.isEmpty failedCodes then
                     [ Style.h2 <| text "Warning"
                     , paragraph
                         []
@@ -734,7 +866,7 @@ completedBuildingView newRefSet =
                         ]
                     , paragraph
                         []
-                        [ Set.toList newRefSet.failedCodes
+                        [ Set.toList failedCodes
                             |> String.join " "
                             |> text
                         ]
@@ -1096,7 +1228,6 @@ top500 =
         """
             |> String.words
             |> Set.fromList
-    , failedCodes = Set.empty
     , metricsRemoteData = initialMetricsRemoteData
     }
 
