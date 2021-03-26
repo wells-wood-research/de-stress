@@ -34,7 +34,7 @@ app.debug = False
 
 # Job queue setup, the worker runs in the `rq_worker` container
 REDIS_CONNECTION = redis.Redis("destress-redis", 6379)
-JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION, default_timeout=30)
+JOB_QUEUE = rq.Queue(connection=REDIS_CONNECTION, default_timeout=60)
 
 # {{{ ServerJobManager
 
