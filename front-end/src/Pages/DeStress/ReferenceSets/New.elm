@@ -756,7 +756,7 @@ update msg model =
 
         ClickedCancelCreate ->
             ( model
-            , navigate model.navKey Route.ReferenceSets
+            , navigate model.navKey Route.DeStress__ReferenceSets
             )
 
         ClearPageErrors ->
