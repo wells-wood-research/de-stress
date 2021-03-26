@@ -1019,7 +1019,11 @@ bodyView model =
             , el [ width fill ] <|
                 if List.isEmpty designCardData then
                     el [ centerX ] <|
-                        paragraph [] [ text "Click \"Load\" to add models." ]
+                        paragraph []
+                            [ text
+                                """Click "Load" to add protein-structure models (in PDB
+                                format)."""
+                            ]
 
                 else
                     case ( model.device.class, model.device.orientation ) of
@@ -1053,7 +1057,7 @@ singleColumnView : Model -> List DesignCardData -> Element Msg
 singleColumnView model designCardData =
     column
         [ spacing 10, width fill ]
-        [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+        [ row Style.scrollOptions <|
             (List.map
                 (columnViewModeSelector model.columnViewMode)
                 [ DesignList
@@ -1091,7 +1095,7 @@ doubleColumnView model designCardData =
         [ width fill ]
         [ column
             [ alignTop, spacing 15, width <| fillPortion 1 ]
-            [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+            [ row Style.scrollOptions <|
                 (List.map
                     (columnViewModeSelector model.columnViewMode)
                     [ DesignList
@@ -1223,6 +1227,27 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                             |> not
                 )
                 allDesignCardData
+
+        numOfRunning =
+            List.filter
+                (\{ designStub } ->
+                    WebSockets.isRunning designStub.metricsJobStatus
+                )
+                allDesignCardData
+                |> List.length
+
+        numOfDesigns =
+            List.length allDesignCardData
+
+        metricsProgress =
+            if numOfRunning == 0 then
+                none
+
+            else
+                Style.progressBar
+                    { max = numOfDesigns
+                    , current = numOfDesigns - numOfRunning
+                    }
     in
     case mSelectedSpecification of
         Just _ ->
@@ -1235,7 +1260,8 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                         }
             in
             column [ spacing 15, width fill ]
-                ([ Style.h2 <| text "Meets Specification"
+                ([ metricsProgress
+                 , Style.h2 <| text "Meets Specification"
                  , meetsSpecification
                     |> List.map designCardView
                     |> cardContainer
@@ -1257,9 +1283,12 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                 )
 
         Nothing ->
-            designCardData
-                |> List.map designCardView
-                |> cardContainer
+            cardContainer
+                (metricsProgress
+                    :: (designCardData
+                            |> List.map designCardView
+                       )
+                )
 
 
 designCardView :
@@ -1347,7 +1376,7 @@ controlPanel model =
         allTags =
             getAllTags model.designs
     in
-    column [ padding 10, spacing 10 ]
+    column [ spacing 10 ]
         [ Style.h2 <| text "Export Design Data"
         , wrappedRow []
             [ Buttons.conditionalButton

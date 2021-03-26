@@ -414,13 +414,13 @@ type alias RefSetMetrics =
     , hydrophobicFitness : Maybe Float
     , isoelectricPoint : Float
     , mass : Float
-    , numOfResidues : Int
+    , numberOfResidues : Int
     , packingDensity : Float
-    , budeFFResults : Maybe BudeFFResults
-    , evoEF2Results : Maybe EvoEF2Results
-    , dfire2Results : Maybe DFIRE2Results
-    , rosettaResults : Maybe RosettaResults
-    , aggrescan3dResults : Maybe Aggrescan3DResults
+    , budeFFTotalEnergy : Maybe Float
+    , evoEFTotalEnergy : Maybe Float
+    , dfireTotalEnergy : Maybe Float
+    , rosettaTotalEnergy : Maybe Float
+    , aggrescan3dTotalValue : Maybe Float
     }
 
 
@@ -441,21 +441,13 @@ refSetMetricsCodec =
         |> Codec.field "hydrophobicFitness" .hydrophobicFitness (Codec.maybe Codec.float)
         |> Codec.field "isoelectricPoint" .isoelectricPoint Codec.float
         |> Codec.field "mass" .mass Codec.float
-        |> Codec.field "numOfResidues" .numOfResidues Codec.int
+        |> Codec.field "numberOfResidues" .numberOfResidues Codec.int
         |> Codec.field "packingDensity" .packingDensity Codec.float
-        |> Codec.field "budeFFResults" .budeFFResults (Codec.maybe budeFFResultsCodec)
-        |> Codec.field "evoEF2Results" .evoEF2Results (Codec.maybe evoEF2ResultsCodec)
-        |> Codec.field "dfire2Results" .dfire2Results (Codec.maybe dfire2ResultsCodec)
-        |> Codec.field "rosettaResults"
-            .rosettaResults
-            (Codec.maybe
-                rosettaResultsCodec
-            )
-        |> Codec.field "aggrescan3dResults"
-            .aggrescan3dResults
-            (Codec.maybe
-                aggrescan3DResultsCodec
-            )
+        |> Codec.field "budeFFTotalEnergy" .budeFFTotalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "evoEFTotalEnergy" .evoEFTotalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "dfireTotalEnergy" .dfireTotalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "rosettaTotalEnergy" .rosettaTotalEnergy (Codec.maybe Codec.float)
+        |> Codec.field "aggrescan3dTotalValue" .aggrescan3dTotalValue (Codec.maybe Codec.float)
         |> Codec.buildObject
 
 
@@ -598,6 +590,7 @@ torsionAngleParser =
 type alias HistPlotData =
     { hydrophobicFitness : Float
     , isoelectricPoint : Float
+    , mass : Float
     , numberOfResidues : Float
     , packingDensity : Float
     , budeFFTotalEnergy : Float
@@ -612,35 +605,32 @@ makeHistPlotData :
     { a
         | hydrophobicFitness : Maybe Float
         , isoelectricPoint : Float
-        , numOfResidues : Int
+        , mass : Float
+        , numberOfResidues : Int
         , packingDensity : Float
-        , budeFFResults : Maybe BudeFFResults
-        , evoEF2Results : Maybe EvoEF2Results
-        , dfire2Results : Maybe DFIRE2Results
-        , rosettaResults : Maybe RosettaResults
-        , aggrescan3dResults : Maybe Aggrescan3DResults
+        , budeFFTotalEnergy : Maybe Float
+        , evoEFTotalEnergy : Maybe Float
+        , dfireTotalEnergy : Maybe Float
+        , rosettaTotalEnergy : Maybe Float
+        , aggrescan3dTotalValue : Maybe Float
     }
     -> HistPlotData
 makeHistPlotData metrics =
     { hydrophobicFitness = Maybe.withDefault (0 / 0) metrics.hydrophobicFitness
     , isoelectricPoint = metrics.isoelectricPoint
-    , numberOfResidues = metrics.numOfResidues |> toFloat
+    , mass = metrics.mass
+    , numberOfResidues = metrics.numberOfResidues |> toFloat
     , packingDensity = metrics.packingDensity
     , budeFFTotalEnergy =
-        Maybe.andThen .totalEnergy metrics.budeFFResults
-            |> Maybe.withDefault (0 / 0)
+        Maybe.withDefault (0 / 0) metrics.budeFFTotalEnergy
     , evoEFTotalEnergy =
-        Maybe.andThen .total metrics.evoEF2Results
-            |> Maybe.withDefault (0 / 0)
+        Maybe.withDefault (0 / 0) metrics.evoEFTotalEnergy
     , dfireTotalEnergy =
-        Maybe.andThen .total metrics.dfire2Results
-            |> Maybe.withDefault (0 / 0)
+        Maybe.withDefault (0 / 0) metrics.dfireTotalEnergy
     , rosettaTotalEnergy =
-        Maybe.andThen .total_score metrics.rosettaResults
-            |> Maybe.withDefault (0 / 0)
+        Maybe.withDefault (0 / 0) metrics.rosettaTotalEnergy
     , aggrescan3dTotalValue =
-        Maybe.andThen .total_value metrics.aggrescan3dResults
-            |> Maybe.withDefault (0 / 0)
+        Maybe.withDefault (0 / 0) metrics.aggrescan3dTotalValue
     }
 
 
@@ -648,6 +638,7 @@ histPlotTuples : List ( String, HistPlotData -> Float )
 histPlotTuples =
     [ ( "Hydrophobic Fitness", .hydrophobicFitness )
     , ( "Isoelectric Point", .isoelectricPoint )
+    , ( "Mass (Da)", .mass )
     , ( "Number of Residues", .numberOfResidues )
     , ( "Mean Packing Density", .packingDensity )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy )

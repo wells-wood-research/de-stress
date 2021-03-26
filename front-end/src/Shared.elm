@@ -16,7 +16,6 @@ port module Shared exposing
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec, Value)
-import Csv.Decode exposing (errorToString)
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
@@ -501,16 +500,7 @@ viewHeader connStat currentRoute =
                 WebSockets.statusIconView connStat
             ]
         , row
-            [ centerX
-            , paddingEach { top = 0, right = 0, bottom = 12, left = 0 }
-            , scrollbarX
-            , spacing 10
-            , width <|
-                maximum 500 <|
-                    fill
-            , Font.medium
-            , Font.size 24
-            ]
+            Style.scrollOptions
             ([ viewLink currentRoute ( text "Designs", Route.Designs )
              , viewLink currentRoute ( text "Reference Sets", Route.ReferenceSets )
              , viewLink currentRoute ( text "Specifications", Route.Specifications )

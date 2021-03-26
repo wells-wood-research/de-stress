@@ -521,10 +521,7 @@ plotCommands device metrics referenceSet =
             , spec =
                 Metrics.createCompositionSpec
                     device
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .aggregateData
-                    )
+                    referenceSet.aggregateData
                     (Just metrics)
             }
         , Plots.vegaPlot <|
@@ -533,10 +530,7 @@ plotCommands device metrics referenceSet =
                 Metrics.createTorsionAngleSpec
                     device
                     (Just metrics)
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
-                    )
+                    referenceSet.metrics
             }
         , Plots.vegaPlot <|
             { plotId = "metricsHistograms"
@@ -546,18 +540,17 @@ plotCommands device metrics referenceSet =
                     [ Metrics.makeHistPlotData
                         { hydrophobicFitness = metrics.hydrophobicFitness
                         , isoelectricPoint = metrics.isoelectricPoint
-                        , numOfResidues = metrics.numOfResidues
+                        , mass = metrics.mass
+                        , numberOfResidues = metrics.numOfResidues
                         , packingDensity = metrics.packingDensity
-                        , budeFFResults = Just metrics.budeFFResults
-                        , evoEF2Results = Just metrics.evoEF2Results
-                        , dfire2Results = Just metrics.dfire2Results
-                        , rosettaResults = Just metrics.rosettaResults
-                        , aggrescan3dResults = Just metrics.aggrescan3dResults
+                        , budeFFTotalEnergy = metrics.budeFFResults.totalEnergy
+                        , evoEFTotalEnergy = metrics.evoEF2Results.total
+                        , dfireTotalEnergy = metrics.dfire2Results.total
+                        , rosettaTotalEnergy = metrics.rosettaResults.total_score
+                        , aggrescan3dTotalValue = metrics.aggrescan3dResults.total_value
                         }
                     ]
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
+                    (referenceSet.metrics
                         |> List.map Metrics.makeHistPlotData
                     )
             }
@@ -841,6 +834,7 @@ metricsOverview metrics =
         [ Style.h2 <| text "Metrics"
         , wrappedRow
             [ spacing 5
+            , centerX
             ]
             [ createTableFloatColumn metrics.hydrophobicFitness 0 "Hydrophobic Fitness"
             , createTableColumn cell (roundFloatText metrics.isoelectricPoint 0) "pI"
@@ -981,7 +975,9 @@ evoEF2ResultsTableView evoEF2TableOption metrics displaySettings hoverInfoOption
                 ]
         , radioInputSelection
         , wrappedRow
-            [ spacing 5 ]
+            [ spacing 5
+            , centerX
+            ]
             (case evoEF2TableOption of
                 Summary ->
                     evoef2SummaryColumns metrics hoverInfoOption
@@ -1194,7 +1190,9 @@ rosettaResultsTableView metrics displaySettings hoverInfoOption =
             paragraph []
                 [ text "Rosetta Energy Function Results" ]
         , wrappedRow
-            [ spacing 5 ]
+            [ spacing 5
+            , centerX
+            ]
             (rosettaColumns metrics hoverInfoOption)
         , Folds.sectionFoldView
             { foldVisible = displaySettings.rosettaLogInfo

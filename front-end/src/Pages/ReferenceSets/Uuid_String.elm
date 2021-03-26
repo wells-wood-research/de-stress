@@ -4,6 +4,7 @@ import Browser.Navigation as Nav
 import Codec exposing (Value)
 import Dict
 import Element exposing (..)
+import Element.Font as Font
 import Element.Keyed as Keyed
 import Html
 import Html.Attributes as HAtt
@@ -180,7 +181,7 @@ update msg model =
                             (\{ uuidString, referenceSet } ->
                                 { uuidString = uuidString
                                 , referenceSet =
-                                    ReferenceSet.updateDeleteStatus dangerStatus referenceSet
+                                    { referenceSet | deleteStatus = dangerStatus }
                                 }
                             )
                             model.pageState
@@ -206,10 +207,7 @@ plotCommands device referenceSet =
             , spec =
                 Metrics.createCompositionSpec
                     device
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .aggregateData
-                    )
+                    referenceSet.aggregateData
                     Nothing
             }
         , Plots.vegaPlot <|
@@ -218,10 +216,7 @@ plotCommands device referenceSet =
                 Metrics.createTorsionAngleSpec
                     device
                     Nothing
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
-                    )
+                    referenceSet.metrics
             }
         , Plots.vegaPlot <|
             { plotId = "metricsHistograms"
@@ -229,9 +224,7 @@ plotCommands device referenceSet =
                 Metrics.createAllHistogramsSpec
                     device
                     []
-                    (referenceSet
-                        |> ReferenceSet.getGenericData
-                        |> .metrics
+                    (referenceSet.metrics
                         |> List.map Metrics.makeHistPlotData
                     )
             }
@@ -306,7 +299,8 @@ bodyView model =
 
             LoadingWithStub uuidString stub ->
                 sectionColumn
-                    [ simpleDetails uuidString (stub |> ReferenceSet.getParamsForStub)
+                    [ simpleDetails uuidString stub
+                    , paragraph [ Font.bold ] [ text "Loading overview..." ]
                     ]
 
             RefSetNotFound referenceSetUuid ->
@@ -317,7 +311,7 @@ bodyView model =
                     [ fullDetails
                         uuidString
                         model.displaySettings
-                        (referenceSet |> ReferenceSet.getGenericData)
+                        referenceSet
                     ]
 
             Deleted uuidString ->
@@ -383,6 +377,15 @@ fullDetails uuidString displaySettings referenceSet =
         [ simpleDetails uuidString referenceSet
         , Style.h2 <|
             text "Overview"
+        , paragraph
+            []
+            [ text "This reference set contains "
+            , referenceSet.metrics
+                |> List.length
+                |> String.fromInt
+                |> text
+            , text " structures."
+            ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.pdbCodes
             , title = "PDB Codes"
