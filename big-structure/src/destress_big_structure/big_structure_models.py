@@ -14,7 +14,7 @@ from sqlalchemy.ext.declarative import declarative_base  # type: ignore
 from destress_big_structure.settings import POSTGRES_PASSWORD
 
 big_structure_engine = create_engine(
-    f"postgresql://postgres:{POSTGRES_PASSWORD}@database:5432/bigstructure",
+    f"postgresql://postgres:{POSTGRES_PASSWORD}@destress-database:5432/bigstructure",
     convert_unicode=True,
 )
 big_structure_db_session = scoped_session(

@@ -30,7 +30,7 @@ from .schema import schema
 app = Flask(__name__)
 sockets = Sockets(app)
 CORS(app)
-app.debug = True
+app.debug = False
 
 # Job queue setup, the worker runs in the `rq_worker` container
 REDIS_CONNECTION = redis.Redis("destress-redis", 6379)

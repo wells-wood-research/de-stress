@@ -7,16 +7,33 @@ services:
     build:
       context: ./de-stress/big-structure/
     environment:
-      - GUNICORN_WORKERS=2
-      - APP_PORT=80
+      - POSTGRES_PASSWORD
+      - EVOEF2_BINARY_PATH
+      - DFIRE2_FOLDER_PATH
+      - ROSETTA_BINARY_PATH
+      - AGGRESCAN3D_SCRIPT_PATH
+      - GUNICORN_WORKERS
+      - APP_PORT
     depends_on:
       - destress-redis
     restart: always
     volumes:
       - ./de-stress/dependencies_for_de-stress:/dependencies_for_de-stress
+  destress-database:
+    build:
+      context: ./de-stress/database/
+    environment:
+      - POSTGRES_PASSWORD
+    restart: always
   destress-rq-worker:
     build:
       context: ./de-stress/big-structure/
+    environment:
+      - POSTGRES_PASSWORD
+      - EVOEF2_BINARY_PATH
+      - DFIRE2_FOLDER_PATH
+      - ROSETTA_BINARY_PATH
+      - AGGRESCAN3D_SCRIPT_PATH
     depends_on:
       - destress-big-structure
       - destress-redis
@@ -29,9 +46,10 @@ services:
   destress-dashboard:
     image: eoranged/rq-dashboard
     environment:
-      - RQ_DASHBOARD_REDIS_URL=redis://redis:6379
-      - RQ_DASHBOARD_PORT=8182
+      - RQ_DASHBOARD_REDIS_URL
+      - RQ_DASHBOARD_PORT
     depends_on:
       - destress-redis
     ports:
-      - "8182:8182"
+      - "${RQ_DASHBOARD_PORT}:${RQ_DASHBOARD_PORT}"
+
