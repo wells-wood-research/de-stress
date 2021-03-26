@@ -9,6 +9,7 @@ port module Shared.WebSockets exposing
     , incoming
     , incomingCodec
     , initServerJobStatus
+    , isRunning
     , metricsAvailable
     , metricsJobStatusString
     , metricsServerJobCodec
@@ -147,6 +148,31 @@ metricsAvailable serverJobStatus =
             True
 
         _ ->
+            False
+
+
+isRunning : ServerJobStatus a b -> Bool
+isRunning serverJobStatus =
+    case serverJobStatus of
+        Ready ->
+            False
+
+        Submitted _ ->
+            True
+
+        Queued ->
+            True
+
+        InProgress ->
+            True
+
+        Cancelled ->
+            False
+
+        Failed _ ->
+            False
+
+        Complete _ ->
             False
 
 

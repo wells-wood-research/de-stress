@@ -19,26 +19,24 @@ import Graphql.SelectionSet exposing (SelectionSet)
 import Json.Decode as Decode exposing (Decoder)
 
 
-type alias AllPdbsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllPdbsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all PDB records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all PDB records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allPdbs :
-    (AllPdbsOptionalArguments -> AllPdbsOptionalArguments)
+    AllPdbsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.Pdb
     -> SelectionSet (List decodesTo) RootQuery
-allPdbs fillInOptionals____ object____ =
-    let
-        filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
-
-        optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
-                |> List.filterMap identity
-    in
-    Object.selectionForCompositeField "allPdbs" optionalArgs____ object____ (identity >> Decode.list)
+allPdbs requiredArgs____ object____ =
+    Object.selectionForCompositeField "allPdbs" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
 
 
 {-| Returns a count of the PDB records.
@@ -48,46 +46,44 @@ pdbCount =
     Object.selectionForField "Int" "pdbCount" [] Decode.int
 
 
-type alias AllBiolUnitsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllBiolUnitsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
+{-|
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
+-}
 allBiolUnits :
-    (AllBiolUnitsOptionalArguments -> AllBiolUnitsOptionalArguments)
+    AllBiolUnitsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.BiolUnit
     -> SelectionSet (List decodesTo) RootQuery
-allBiolUnits fillInOptionals____ object____ =
-    let
-        filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
-
-        optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
-                |> List.filterMap identity
-    in
-    Object.selectionForCompositeField "allBiolUnits" optionalArgs____ object____ (identity >> Decode.list)
+allBiolUnits requiredArgs____ object____ =
+    Object.selectionForCompositeField "allBiolUnits" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
 
 
-type alias PreferredBiolUnitsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias PreferredBiolUnitsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets preferred biological unit records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets preferred biological unit records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 preferredBiolUnits :
-    (PreferredBiolUnitsOptionalArguments -> PreferredBiolUnitsOptionalArguments)
+    PreferredBiolUnitsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.BiolUnit
     -> SelectionSet (List decodesTo) RootQuery
-preferredBiolUnits fillInOptionals____ object____ =
-    let
-        filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
-
-        optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
-                |> List.filterMap identity
-    in
-    Object.selectionForCompositeField "preferredBiolUnits" optionalArgs____ object____ (identity >> Decode.list)
+preferredBiolUnits requiredArgs____ object____ =
+    Object.selectionForCompositeField "preferredBiolUnits" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
 
 
 {-| Returns a count of the biological unit records.
@@ -97,52 +93,58 @@ biolUnitCount =
     Object.selectionForField "Int" "biolUnitCount" [] Decode.int
 
 
-type alias AllStatesOptionalArguments =
-    { first : OptionalArgument Int }
-
-
-{-| Gets all states. Accepts the argument `first`, which allows you to limit the number of results.
--}
-allStates :
-    (AllStatesOptionalArguments -> AllStatesOptionalArguments)
-    -> SelectionSet decodesTo BigStructure.Object.State
-    -> SelectionSet (List decodesTo) RootQuery
-allStates fillInOptionals____ object____ =
-    let
-        filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
-
-        optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
-                |> List.filterMap identity
-    in
-    Object.selectionForCompositeField "allStates" optionalArgs____ object____ (identity >> Decode.list)
-
-
-type alias PreferredStatesOptionalArguments =
-    { first : OptionalArgument Int
-    , stateNumber : OptionalArgument Int
+type alias AllStatesRequiredArguments =
+    { count : Int
+    , page : Int
     }
 
 
-{-| Gets the preferred state for all preferred biological units. Accepts the arguments:
-`state_number`, which allows you specify the preferred state number.
-`first`, which allows you to limit the number of results.
+{-| Gets all states.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
+-}
+allStates :
+    AllStatesRequiredArguments
+    -> SelectionSet decodesTo BigStructure.Object.State
+    -> SelectionSet (List decodesTo) RootQuery
+allStates requiredArgs____ object____ =
+    Object.selectionForCompositeField "allStates" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
+
+
+type alias PreferredStatesOptionalArguments =
+    { stateNumber : OptionalArgument Int }
+
+
+type alias PreferredStatesRequiredArguments =
+    { count : Int
+    , page : Int
+    }
+
+
+{-| Gets the preferred state for all preferred biological units.
+
+  - stateNumber - The state number that is preferred.
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 preferredStates :
     (PreferredStatesOptionalArguments -> PreferredStatesOptionalArguments)
+    -> PreferredStatesRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.State
     -> SelectionSet (List decodesTo) RootQuery
-preferredStates fillInOptionals____ object____ =
+preferredStates fillInOptionals____ requiredArgs____ object____ =
     let
         filledInOptionals____ =
-            fillInOptionals____ { first = Absent, stateNumber = Absent }
+            fillInOptionals____ { stateNumber = Absent }
 
         optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int, Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
+            [ Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "preferredStates" optionalArgs____ object____ (identity >> Decode.list)
+    Object.selectionForCompositeField "preferredStates" (optionalArgs____ ++ [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ]) object____ (identity >> Decode.list)
 
 
 type alias PreferredStatesSubsetOptionalArguments =
@@ -154,6 +156,10 @@ type alias PreferredStatesSubsetRequiredArguments =
 
 
 {-| Gets preferred biological unit state records. It requires the `codes`parameter, which is a list of PDB codes to create the subset.
+
+  - codes - A list of PDB codes to be retrieved. Length capped at 1000.
+  - stateNumber - The state number that is preferred.
+
 -}
 preferredStatesSubset :
     (PreferredStatesSubsetOptionalArguments -> PreferredStatesSubsetOptionalArguments)
@@ -179,26 +185,24 @@ stateCount =
     Object.selectionForField "Int" "stateCount" [] Decode.int
 
 
-type alias AllChainsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllChainsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all chains. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all chains.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allChains :
-    (AllChainsOptionalArguments -> AllChainsOptionalArguments)
+    AllChainsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.Chain
     -> SelectionSet (List decodesTo) RootQuery
-allChains fillInOptionals____ object____ =
-    let
-        filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
-
-        optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
-                |> List.filterMap identity
-    in
-    Object.selectionForCompositeField "allChains" optionalArgs____ object____ (identity >> Decode.list)
+allChains requiredArgs____ object____ =
+    Object.selectionForCompositeField "allChains" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
 
 
 {-| Returns a count of the chain records.
@@ -208,111 +212,256 @@ chainCount =
     Object.selectionForField "Int" "chainCount" [] Decode.int
 
 
-type alias AllBudeffResultsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllBudeffResultsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all bude ff results records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all bude ff results records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allBudeffResults :
-    (AllBudeffResultsOptionalArguments -> AllBudeffResultsOptionalArguments)
+    AllBudeffResultsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.BudeFFResults
     -> SelectionSet (List decodesTo) RootQuery
-allBudeffResults fillInOptionals____ object____ =
+allBudeffResults requiredArgs____ object____ =
+    Object.selectionForCompositeField "allBudeffResults" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
+
+
+type alias PreferredBudeSubsetOptionalArguments =
+    { stateNumber : OptionalArgument Int }
+
+
+type alias PreferredBudeSubsetRequiredArguments =
+    { codes : List String }
+
+
+{-| Gets BUDE results for preferred biological unit state records. It requires the `codes` parameter, which is a list of PDB codes to create the subset.
+
+  - codes - A list of PDB codes to be retrieved. Length capped at 1000.
+  - stateNumber - The state number that is preferred. Default = 0
+
+-}
+preferredBudeSubset :
+    (PreferredBudeSubsetOptionalArguments -> PreferredBudeSubsetOptionalArguments)
+    -> PreferredBudeSubsetRequiredArguments
+    -> SelectionSet decodesTo BigStructure.Object.BudeFFResults
+    -> SelectionSet (List decodesTo) RootQuery
+preferredBudeSubset fillInOptionals____ requiredArgs____ object____ =
     let
         filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
+            fillInOptionals____ { stateNumber = Absent }
 
         optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
+            [ Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allBudeffResults" optionalArgs____ object____ (identity >> Decode.list)
+    Object.selectionForCompositeField "preferredBudeSubset" (optionalArgs____ ++ [ Argument.required "codes" requiredArgs____.codes (Encode.string |> Encode.list) ]) object____ (identity >> Decode.list)
 
 
-type alias AllEvoef2ResultsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllEvoef2ResultsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all evoef2 results records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all evoef2 results records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allEvoef2Results :
-    (AllEvoef2ResultsOptionalArguments -> AllEvoef2ResultsOptionalArguments)
+    AllEvoef2ResultsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.EvoEF2Results
     -> SelectionSet (List decodesTo) RootQuery
-allEvoef2Results fillInOptionals____ object____ =
+allEvoef2Results requiredArgs____ object____ =
+    Object.selectionForCompositeField "allEvoef2Results" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
+
+
+type alias PreferredEvoef2SubsetOptionalArguments =
+    { stateNumber : OptionalArgument Int }
+
+
+type alias PreferredEvoef2SubsetRequiredArguments =
+    { codes : List String }
+
+
+{-| Gets EvoEF2 results for preferred biological unit state records. It requires the `codes` parameter, which is a list of PDB codes to create the subset.
+
+  - codes - A list of PDB codes to be retrieved. Length capped at 1000.
+  - stateNumber - The state number that is preferred. Default = 0
+
+-}
+preferredEvoef2Subset :
+    (PreferredEvoef2SubsetOptionalArguments -> PreferredEvoef2SubsetOptionalArguments)
+    -> PreferredEvoef2SubsetRequiredArguments
+    -> SelectionSet decodesTo BigStructure.Object.EvoEF2Results
+    -> SelectionSet (List decodesTo) RootQuery
+preferredEvoef2Subset fillInOptionals____ requiredArgs____ object____ =
     let
         filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
+            fillInOptionals____ { stateNumber = Absent }
 
         optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
+            [ Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allEvoef2Results" optionalArgs____ object____ (identity >> Decode.list)
+    Object.selectionForCompositeField "preferredEvoef2Subset" (optionalArgs____ ++ [ Argument.required "codes" requiredArgs____.codes (Encode.string |> Encode.list) ]) object____ (identity >> Decode.list)
 
 
-type alias AllDfire2ResultsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllDfire2ResultsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all dfire2 results records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all dfire2 results records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allDfire2Results :
-    (AllDfire2ResultsOptionalArguments -> AllDfire2ResultsOptionalArguments)
+    AllDfire2ResultsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.DFIRE2Results
     -> SelectionSet (List decodesTo) RootQuery
-allDfire2Results fillInOptionals____ object____ =
+allDfire2Results requiredArgs____ object____ =
+    Object.selectionForCompositeField "allDfire2Results" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
+
+
+type alias PreferredDfire2SubsetOptionalArguments =
+    { stateNumber : OptionalArgument Int }
+
+
+type alias PreferredDfire2SubsetRequiredArguments =
+    { codes : List String }
+
+
+{-| Gets DFIRE2 results for preferred biological unit state records. It requires the `codes` parameter, which is a list of PDB codes to create the subset.
+
+  - codes - A list of PDB codes to be retrieved. Length capped at 1000.
+  - stateNumber - The state number that is preferred. Default = 0
+
+-}
+preferredDfire2Subset :
+    (PreferredDfire2SubsetOptionalArguments -> PreferredDfire2SubsetOptionalArguments)
+    -> PreferredDfire2SubsetRequiredArguments
+    -> SelectionSet decodesTo BigStructure.Object.DFIRE2Results
+    -> SelectionSet (List decodesTo) RootQuery
+preferredDfire2Subset fillInOptionals____ requiredArgs____ object____ =
     let
         filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
+            fillInOptionals____ { stateNumber = Absent }
 
         optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
+            [ Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allDfire2Results" optionalArgs____ object____ (identity >> Decode.list)
+    Object.selectionForCompositeField "preferredDfire2Subset" (optionalArgs____ ++ [ Argument.required "codes" requiredArgs____.codes (Encode.string |> Encode.list) ]) object____ (identity >> Decode.list)
 
 
-type alias AllRosettaResultsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllRosettaResultsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all rosetta results records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all rosetta results records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allRosettaResults :
-    (AllRosettaResultsOptionalArguments -> AllRosettaResultsOptionalArguments)
+    AllRosettaResultsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.RosettaResults
     -> SelectionSet (List decodesTo) RootQuery
-allRosettaResults fillInOptionals____ object____ =
+allRosettaResults requiredArgs____ object____ =
+    Object.selectionForCompositeField "allRosettaResults" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
+
+
+type alias PreferredRosettaSubsetOptionalArguments =
+    { stateNumber : OptionalArgument Int }
+
+
+type alias PreferredRosettaSubsetRequiredArguments =
+    { codes : List String }
+
+
+{-| Gets Rosetta results for preferred biological unit state records. It requires the `codes` parameter, which is a list of PDB codes to create the subset.
+
+  - codes - A list of PDB codes to be retrieved. Length capped at 1000.
+  - stateNumber - The state number that is preferred. Default = 0
+
+-}
+preferredRosettaSubset :
+    (PreferredRosettaSubsetOptionalArguments -> PreferredRosettaSubsetOptionalArguments)
+    -> PreferredRosettaSubsetRequiredArguments
+    -> SelectionSet decodesTo BigStructure.Object.RosettaResults
+    -> SelectionSet (List decodesTo) RootQuery
+preferredRosettaSubset fillInOptionals____ requiredArgs____ object____ =
     let
         filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
+            fillInOptionals____ { stateNumber = Absent }
 
         optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
+            [ Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allRosettaResults" optionalArgs____ object____ (identity >> Decode.list)
+    Object.selectionForCompositeField "preferredRosettaSubset" (optionalArgs____ ++ [ Argument.required "codes" requiredArgs____.codes (Encode.string |> Encode.list) ]) object____ (identity >> Decode.list)
 
 
-type alias AllAggrescan3dResultsOptionalArguments =
-    { first : OptionalArgument Int }
+type alias AllAggrescan3dResultsRequiredArguments =
+    { count : Int
+    , page : Int
+    }
 
 
-{-| Gets all aggrescan3d results records. Accepts the argument `first`, which allows you to limit the number of results.
+{-| Gets all aggrescan3d results records.
+
+  - count - Number of entries to be returned. Max=1,000
+  - page - Page of entries i.e. with a count of 100, page 1 would be entry 1-100, page 2 would be entries 101-200.
+
 -}
 allAggrescan3dResults :
-    (AllAggrescan3dResultsOptionalArguments -> AllAggrescan3dResultsOptionalArguments)
+    AllAggrescan3dResultsRequiredArguments
     -> SelectionSet decodesTo BigStructure.Object.Aggrescan3DResults
     -> SelectionSet (List decodesTo) RootQuery
-allAggrescan3dResults fillInOptionals____ object____ =
+allAggrescan3dResults requiredArgs____ object____ =
+    Object.selectionForCompositeField "allAggrescan3dResults" [ Argument.required "count" requiredArgs____.count Encode.int, Argument.required "page" requiredArgs____.page Encode.int ] object____ (identity >> Decode.list)
+
+
+type alias PreferredAggrescan3dSubsetOptionalArguments =
+    { stateNumber : OptionalArgument Int }
+
+
+type alias PreferredAggrescan3dSubsetRequiredArguments =
+    { codes : List String }
+
+
+{-| Gets Aggrescan3D results for preferred biological unit state records. It requires the `codes` parameter, which is a list of PDB codes to create the subset.
+
+  - codes - A list of PDB codes to be retrieved. Length capped at 1000.
+  - stateNumber - The state number that is preferred. Default = 0
+
+-}
+preferredAggrescan3dSubset :
+    (PreferredAggrescan3dSubsetOptionalArguments -> PreferredAggrescan3dSubsetOptionalArguments)
+    -> PreferredAggrescan3dSubsetRequiredArguments
+    -> SelectionSet decodesTo BigStructure.Object.Aggrescan3DResults
+    -> SelectionSet (List decodesTo) RootQuery
+preferredAggrescan3dSubset fillInOptionals____ requiredArgs____ object____ =
     let
         filledInOptionals____ =
-            fillInOptionals____ { first = Absent }
+            fillInOptionals____ { stateNumber = Absent }
 
         optionalArgs____ =
-            [ Argument.optional "first" filledInOptionals____.first Encode.int ]
+            [ Argument.optional "stateNumber" filledInOptionals____.stateNumber Encode.int ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "allAggrescan3dResults" optionalArgs____ object____ (identity >> Decode.list)
+    Object.selectionForCompositeField "preferredAggrescan3dSubset" (optionalArgs____ ++ [ Argument.required "codes" requiredArgs____.codes (Encode.string |> Encode.list) ]) object____ (identity >> Decode.list)

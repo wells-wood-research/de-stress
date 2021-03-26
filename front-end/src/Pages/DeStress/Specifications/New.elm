@@ -777,7 +777,7 @@ addRequirementView mNewRequirement =
 
 labelStyle : List (Attribute msg)
 labelStyle =
-    [ alignBottom
+    [ centerY
     , paddingXY 0 10
     , pointer
     ]
@@ -808,25 +808,24 @@ newRequirementView msgConstructor mNewRequirement =
         Just newRequirement ->
             let
                 requirementLabel =
-                    el
+                    paragraph
                         ((Nothing
                             |> msgConstructor
                             |> Events.onClick
                          )
                             :: labelStyle
                         )
-                    <|
-                        (newRequirement
+                        [ newRequirement
                             |> stringFromNewRequirement
                             |> text
-                        )
+                        ]
             in
             case newRequirement of
                 Data data ->
                     case data of
                         Constant Nothing ->
                             ( False
-                            , row [ spacing 10 ]
+                            , wrappedRow [ spacing 10 ]
                                 [ requirementLabel
                                 , optionsView
                                     { msgConstructor =
@@ -849,7 +848,7 @@ newRequirementView msgConstructor mNewRequirement =
 
                         Value Nothing ->
                             ( False
-                            , row [ spacing 10 ]
+                            , wrappedRow [ spacing 10 ]
                                 [ requirementLabel
                                 , optionsView
                                     { msgConstructor =
@@ -955,15 +954,14 @@ constantTypeView :
 constantTypeView msgConstructor constantType =
     let
         constantLabel =
-            el
+            paragraph
                 ((Nothing |> msgConstructor |> Events.onClick)
                     :: labelStyle
                 )
-            <|
-                text "Constant"
+                [ text "Constant" ]
 
         constantTypeLabel =
-            el
+            paragraph
                 ((Constant Nothing
                     |> Data
                     |> Just
@@ -972,8 +970,7 @@ constantTypeView msgConstructor constantType =
                  )
                     :: labelStyle
                 )
-            <|
-                (constantType |> stringFromConstantType |> text)
+                [ constantType |> stringFromConstantType |> text ]
 
         constantTypeConstructor : ConstantType -> Msg
         constantTypeConstructor =
@@ -986,7 +983,7 @@ constantTypeView msgConstructor constantType =
     case constantType of
         Method Nothing ->
             ( False
-            , row [ spacing 10 ]
+            , wrappedRow [ spacing 10 ]
                 [ constantLabel
                 , constantTypeLabel
                 , optionsView
@@ -1003,15 +1000,16 @@ constantTypeView msgConstructor constantType =
 
         Method (Just methodType) ->
             ( True
-            , row [ spacing 10 ]
+            , wrappedRow [ spacing 10 ]
                 [ constantLabel
                 , constantTypeLabel
-                , el
+                , paragraph
                     [ Method Nothing
                         |> constantTypeConstructor
                         |> Events.onClick
                     ]
-                    (methodType |> stringFromMethodType |> text)
+                    [ methodType |> stringFromMethodType |> text
+                    ]
                 ]
             )
 
@@ -1030,18 +1028,17 @@ valueTypeView msgConstructor valueType =
                 >> msgConstructor
 
         valueLabel =
-            el
+            paragraph
                 ((Nothing
                     |> msgConstructor
                     |> Events.onClick
                  )
                     :: labelStyle
                 )
-            <|
-                text "Value"
+                [ text "Value" ]
 
         valueTypeLabel =
-            el
+            paragraph
                 ((Value Nothing
                     |> Data
                     |> Just
@@ -1050,32 +1047,29 @@ valueTypeView msgConstructor valueType =
                  )
                     :: labelStyle
                 )
-            <|
-                (stringFromValueType valueType
+                [ stringFromValueType valueType
                     |> text
-                )
+                ]
 
         orderLabel : Order -> Msg -> Element Msg
         orderLabel order noOrderMsg =
-            el
+            paragraph
                 ((noOrderMsg |> Events.onClick)
                     :: labelStyle
                 )
-            <|
-                (Requirement.stringFromOrder order
+                [ Requirement.stringFromOrder order
                     |> text
-                )
+                ]
 
         unitTypeLabel : UnitType -> Msg -> Element Msg
         unitTypeLabel unitType noUnitTypeMsg =
-            el
+            paragraph
                 ((noUnitTypeMsg |> Events.onClick)
                     :: labelStyle
                 )
-            <|
-                (Requirement.stringFromUnitType unitType
+                [ Requirement.stringFromUnitType unitType
                     |> text
-                )
+                ]
     in
     case valueType of
         IsoelectricPoint Nothing Nothing ->
@@ -1090,9 +1084,11 @@ valueTypeView msgConstructor valueType =
 
         IsoelectricPoint Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         IsoelectricPoint (Just order) mValue ->
@@ -1126,9 +1122,11 @@ valueTypeView msgConstructor valueType =
 
         HydrophobicFitness Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         HydrophobicFitness (Just order) mValue ->
@@ -1162,9 +1160,11 @@ valueTypeView msgConstructor valueType =
 
         MeanPackingDensity Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         MeanPackingDensity (Just order) mValue ->
@@ -1232,9 +1232,11 @@ valueTypeView msgConstructor valueType =
 
         CompositionDeviation _ _ ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         BUDEFFTotal Nothing Nothing ->
@@ -1249,9 +1251,11 @@ valueTypeView msgConstructor valueType =
 
         BUDEFFTotal Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         BUDEFFTotal (Just order) mValue ->
@@ -1285,9 +1289,11 @@ valueTypeView msgConstructor valueType =
 
         EvoEF2Total Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         EvoEF2Total (Just order) mValue ->
@@ -1321,9 +1327,11 @@ valueTypeView msgConstructor valueType =
 
         DFIRE2Total Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         DFIRE2Total (Just order) mValue ->
@@ -1357,9 +1365,11 @@ valueTypeView msgConstructor valueType =
 
         RosettaTotal Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         RosettaTotal (Just order) mValue ->
@@ -1393,9 +1403,11 @@ valueTypeView msgConstructor valueType =
 
         Agg3DTotal Nothing (Just _) ->
             ( False
-            , text <|
-                "Something went wrong while defining your value, hit "
-                    ++ "cancel and start again."
+            , paragraph []
+                [ text <|
+                    "Something went wrong while defining your value, hit "
+                        ++ "cancel and start again."
+                ]
             )
 
         Agg3DTotal (Just order) mValue ->
@@ -1428,14 +1440,14 @@ optionsView :
 optionsView { msgConstructor, optionToString, optionName, options } =
     let
         optionView option =
-            el
+            paragraph
                 (Style.defaultBorder
                     ++ [ padding 5
                        , pointer
                        , Events.onClick <| msgConstructor option
                        ]
                 )
-                (optionToString option |> text)
+                [ optionToString option |> text ]
     in
     column
         [ spacing 10 ]
@@ -1452,7 +1464,7 @@ valueOrderView :
     -> ( Bool, Element Msg )
 valueOrderView { valueTypeLabel, valueLabel, msgConstructor } =
     ( False
-    , row [ spacing 10 ]
+    , wrappedRow [ spacing 10 ]
         [ valueLabel
         , valueTypeLabel
         , optionsView
@@ -1472,7 +1484,7 @@ valueUnitTypeView :
     -> ( Bool, Element Msg )
 valueUnitTypeView { msgConstructor, labels } =
     ( False
-    , row [ spacing 10 ]
+    , wrappedRow [ spacing 10 ]
         (labels
             ++ [ optionsView
                     { msgConstructor = msgConstructor
@@ -1546,7 +1558,7 @@ valueFloatInputView { mValue, msgConstructor, labels } =
 
                 _ ->
                     False
-    , row [ spacing 10 ]
+    , wrappedRow [ spacing 10 ]
         (labels
             ++ [ Input.text
                     Style.textInputStyle
@@ -1577,7 +1589,7 @@ valueSequenceInputView { valueLabel, valueTypeLabel, msgConstructor, mValue } =
 
         Just _ ->
             True
-    , row [ spacing 10 ]
+    , wrappedRow [ spacing 10 ]
         [ valueLabel
         , valueTypeLabel
         , Input.text
