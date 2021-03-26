@@ -46,7 +46,7 @@ view _ =
                     """Welcome to the DEsigned STRucture Evaluation ServiceS, or
                     DE-STRESS for short! DE-STRESS provides a suite of tools for
                     evaluating protein designs. Our aim is to help make protein design
-                    more reliable by providing tools to help you to select the most
+                    more reliable, by providing tools to help you select the most
                     promising designs to take into the lab.
                     """
                 , el [ Font.bold ] <|
@@ -97,7 +97,7 @@ view _ =
             , paragraph []
                 [ text
                     """DE-STRESS is open sourced under a permissive MIT license, but
-                    please be aware that version that we host online is for
+                    please be aware that the version we host online is for
                     """
                 , el [ Font.bold ] <|
                     text "non-commercial purposes only"
