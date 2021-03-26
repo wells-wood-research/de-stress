@@ -1357,7 +1357,7 @@ pisces =
     { id = "pisces-subset"
     , name = "Pisces Subset"
     , description =
-        """A set of high-quality structures non-redundant structures defined by the
+        """A set of non-redundant structures defined by the
         Dunbrack lab. These structures have an identity cutoff of 20%, a maximum
         resolution of 1.6 Å and a minimum R-work of 25%.  Uses the preferred biological
         unit as defined by PDBe.
