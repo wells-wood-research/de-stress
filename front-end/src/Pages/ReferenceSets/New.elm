@@ -938,7 +938,7 @@ completedBuildingView failedCodes refSet =
          , Style.progressBar { max = 5, current = 5 }
          , paragraph
             []
-            [ text "Successfully metrics for "
+            [ text "Metrics ran successfully for "
             , refSet.metrics
                 |> List.length
                 |> String.fromInt
