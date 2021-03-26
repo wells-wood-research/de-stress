@@ -1057,7 +1057,7 @@ singleColumnView : Model -> List DesignCardData -> Element Msg
 singleColumnView model designCardData =
     column
         [ spacing 10, width fill ]
-        [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+        [ row Style.scrollOptions <|
             (List.map
                 (columnViewModeSelector model.columnViewMode)
                 [ DesignList
@@ -1095,7 +1095,7 @@ doubleColumnView model designCardData =
         [ width fill ]
         [ column
             [ alignTop, spacing 15, width <| fillPortion 1 ]
-            [ wrappedRow [ centerX, padding 15, spacing 20, Font.size 24 ] <|
+            [ row Style.scrollOptions <|
                 (List.map
                     (columnViewModeSelector model.columnViewMode)
                     [ DesignList
@@ -1376,7 +1376,7 @@ controlPanel model =
         allTags =
             getAllTags model.designs
     in
-    column [ padding 10, spacing 10 ]
+    column [ spacing 10 ]
         [ Style.h2 <| text "Export Design Data"
         , wrappedRow []
             [ Buttons.conditionalButton

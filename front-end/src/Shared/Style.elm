@@ -41,6 +41,20 @@ pageWidths =
     }
 
 
+scrollOptions : List (Attribute msg)
+scrollOptions =
+    [ centerX
+    , paddingEach { top = 0, right = 0, bottom = 12, left = 0 }
+    , scrollbarX
+    , spacing 10
+    , width <|
+        maximum 500 <|
+            fill
+    , Font.medium
+    , Font.size 24
+    ]
+
+
 
 -- {{{ HEADINGS
 

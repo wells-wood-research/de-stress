@@ -846,8 +846,8 @@ bodyView model =
             |> el [ centerX ]
         , case model.pageState of
             ChoosingRefSetType currentChoice ->
-                column [ spacing 15 ]
-                    [ row [ centerX, spacing 15 ] <|
+                column [ width fill, spacing 15 ]
+                    [ row Style.scrollOptions <|
                         (List.map
                             (refSetTypeSelector currentChoice)
                             [ Default Top500

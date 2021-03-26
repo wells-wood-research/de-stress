@@ -61,7 +61,7 @@ view _ =
                     your designs on our server. Your structure files are added directly
                     to an "in memory" job queue so nothing is ever written to disk. All
                     application data is stored locally on your device. You can export
-                    all this data to a CSV file using the control panel in "Designs"
+                    all this data to a CSV file using the control panel in the "Designs"
                     page. If you want to be certain we don't have access to your
                     designs, consider hosting a local instance of the web application.
                     Take a look at the README in the source code for information on how
