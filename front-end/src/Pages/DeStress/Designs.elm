@@ -1686,7 +1686,7 @@ overviewSpec device plotData =
 
         transform =
             VL.transform
-                << VL.calculateAs "'/designs/' + datum.uuid" "url"
+                << VL.calculateAs "'/de-stress/designs/' + datum.uuid" "url"
                 << VL.calculateAs "datum.name + datum.uuid" "unique name"
 
         ( headTuples, tailTuples ) =
