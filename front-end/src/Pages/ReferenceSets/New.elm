@@ -752,7 +752,7 @@ update msg model =
                     )
 
                 _ ->
-                    Debug.todo "ljf"
+                    updateWithUnexpectedStateError model
 
         ClickedCancelCreate ->
             ( model
