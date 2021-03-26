@@ -4,6 +4,7 @@ import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Shared
 import Shared.Buttons as Buttons
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSetStub)
@@ -158,7 +159,7 @@ bodyView model =
     el [ centerX, width <| maximum 800 <| fill ] <|
         column
             [ width fill, spacing 30 ]
-            [ wrappedRow [ centerX, spacing 10 ]
+            (wrappedRow [ centerX, spacing 10 ]
                 [ paragraph []
                     [ Style.h1 <|
                         text "Reference Sets"
@@ -166,16 +167,35 @@ bodyView model =
                 , Buttons.linkButton
                     { route = Route.ReferenceSets__New, label = text "New" }
                 ]
-            , column [ width fill, spacing 15 ]
-                (Dict.toList model.referenceSets
-                    |> List.map
-                        (\( k, v ) ->
-                            ( k, ReferenceSet.storedReferenceSetToStub v )
-                        )
-                    |> List.map
-                        (referenceSetStubView model.mSelectedReferenceSet)
-                )
-            ]
+                :: (if Dict.isEmpty model.referenceSets then
+                        [ paragraph []
+                            [ text
+                                """Reference sets contain metrics that have been
+                                calculated for a group of experimentally determined
+                                protein structures that you can compare to your designs.
+                                This can help you contextualise the metrics that
+                                DE-STRESS reports. We have defined a few default
+                                reference sets, but you can also create your own by
+                                providing a list of PDB codes.
+                                """
+                            , el [ Font.bold ] <|
+                                text "Click the \"New\" to add a reference set."
+                            ]
+                        ]
+
+                    else
+                        [ column [ width fill, spacing 15 ]
+                            (Dict.toList model.referenceSets
+                                |> List.map
+                                    (\( k, v ) ->
+                                        ( k, ReferenceSet.storedReferenceSetToStub v )
+                                    )
+                                |> List.map
+                                    (referenceSetStubView model.mSelectedReferenceSet)
+                            )
+                        ]
+                   )
+            )
 
 
 referenceSetStubView : Maybe String -> ( String, ReferenceSetStub ) -> Element Msg

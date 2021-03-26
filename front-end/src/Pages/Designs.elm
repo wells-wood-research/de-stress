@@ -1019,7 +1019,11 @@ bodyView model =
             , el [ width fill ] <|
                 if List.isEmpty designCardData then
                     el [ centerX ] <|
-                        paragraph [] [ text "Click \"Load\" to add models." ]
+                        paragraph []
+                            [ text
+                                """Click "Load" to add protein-structure models (in PDB
+                                format)."""
+                            ]
 
                 else
                     case ( model.device.class, model.device.orientation ) of

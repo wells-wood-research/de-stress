@@ -4,6 +4,7 @@ import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Specification as Specification
@@ -171,12 +172,26 @@ bodyView model =
                     , label = text "New"
                     }
                 ]
-                :: (Dict.toList model.specifications
-                        |> List.map
-                            (\( k, v ) ->
-                                ( k, Specification.storedSpecificationToStub v )
-                            )
-                        |> List.map (specificationStubView model.mSelectedSpecification)
+                :: (if Dict.isEmpty model.specifications then
+                        [ paragraph []
+                            [ text
+                                """Specifications are a formal description of the
+                                properties that your protein should have. You can define
+                                complex requirements and then automatically filter for
+                                designs that meet the specification.
+                                """
+                            , el [ Font.bold ] <|
+                                text "Click the \"New\" to add a specification."
+                            ]
+                        ]
+
+                    else
+                        Dict.toList model.specifications
+                            |> List.map
+                                (\( k, v ) ->
+                                    ( k, Specification.storedSpecificationToStub v )
+                                )
+                            |> List.map (specificationStubView model.mSelectedSpecification)
                    )
             )
 
