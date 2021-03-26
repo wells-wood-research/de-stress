@@ -1316,7 +1316,7 @@ top500 =
     , description =
         """A set of high-quality structures defined by the Richardson lab. This is a
         subset of the structures in top500, as the metrics fail to run for some of the
-        structures files in the set. Uses the preferred biological unit as defined by
+        structure files in the set. Uses the preferred biological unit as defined by
         PDBe.
         """
     , pdbCodes =
