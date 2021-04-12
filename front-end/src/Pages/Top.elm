@@ -86,7 +86,7 @@ view _ =
                 |> Style.h3
             , paragraph []
                 [ text
-                    """If you use DE-STRESS, plase cite the following article:"""
+                    """If you use DE-STRESS, please cite the following article:"""
                 ]
             , paragraph []
                 [ text
