@@ -1481,7 +1481,7 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
                 , DesignDetails uuidString
                     |> Events.onClick
                 ]
-                [ Style.h2 <| text designStub.name
+                [ el [ Font.underline ] <| Style.h2 <| text designStub.name
                 , paragraph []
                     [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
                         |> text
