@@ -5,7 +5,7 @@ module Shared.Metrics exposing
     , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
-    , MeanAndStdDev
+    , MeanMedAndStdDev
     , RefSetMetrics
     , RosettaResults
     , SequenceInfo
@@ -452,41 +452,93 @@ refSetMetricsCodec =
 
 
 type alias AggregateData =
-    { meanComposition : Dict String (Maybe MeanAndStdDev) }
+    { composition : Dict String (Maybe MeanMedAndStdDev)
+    , hydrophobicFitness : Maybe MeanMedAndStdDev
+    , isoelectricPoint : Maybe MeanMedAndStdDev
+    , numberOfResidues : Maybe MeanMedAndStdDev
+    , packingDensity : Maybe MeanMedAndStdDev
+    , budeFFTotalEnergy : Maybe MeanMedAndStdDev
+    , evoEFTotalEnergy : Maybe MeanMedAndStdDev
+    , dfireTotalEnergy : Maybe MeanMedAndStdDev
+    , rosettaTotalEnergy : Maybe MeanMedAndStdDev
+    , aggrescan3dTotalValue : Maybe MeanMedAndStdDev
+    }
 
 
-type alias MeanAndStdDev =
+type alias MeanMedAndStdDev =
     { mean : Float
+    , median : Float
     , stdDev : Float
     }
 
 
 createAggregateData : List RefSetMetrics -> AggregateData
 createAggregateData refSetMetricsList =
-    { meanComposition =
+    { composition =
         refSetMetricsList
             |> List.map .composition
             |> calculateMeanComposition
+    , hydrophobicFitness =
+        refSetMetricsList
+            |> List.filterMap .hydrophobicFitness
+            |> calculateMeanMedAndStdDev
+    , isoelectricPoint =
+        refSetMetricsList
+            |> List.map .isoelectricPoint
+            |> calculateMeanMedAndStdDev
+    , numberOfResidues =
+        refSetMetricsList
+            |> List.map .numberOfResidues
+            |> List.map toFloat
+            |> calculateMeanMedAndStdDev
+    , packingDensity =
+        refSetMetricsList
+            |> List.map .packingDensity
+            |> calculateMeanMedAndStdDev
+    , budeFFTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .budeFFTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , evoEFTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .evoEFTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , dfireTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .dfireTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , rosettaTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .rosettaTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , aggrescan3dTotalValue =
+        refSetMetricsList
+            |> List.filterMap .aggrescan3dTotalValue
+            |> calculateMeanMedAndStdDev
     }
 
 
 aggregateDataCodec : Codec AggregateData
 aggregateDataCodec =
     Codec.object AggregateData
-        |> Codec.field "meanComposition"
-            .meanComposition
-            (Codec.dict
-                (Codec.maybe
-                    meanAndStdDevCodec
-                )
-            )
+        |> Codec.field "composition" .composition (Codec.dict (Codec.maybe meanAndStdDevCodec))
+        |> Codec.field "hydrophobicFitness" .hydrophobicFitness (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "isoelectricPoint" .isoelectricPoint (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "numberOfResidues" .numberOfResidues (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "packingDensity" .packingDensity (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "budeFFTotalEnergy" .budeFFTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "evoEFTotalEnergy" .evoEFTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "dfireTotalEnergy" .dfireTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "rosettaTotalEnergy" .rosettaTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "aggrescan3dTotalValue" .aggrescan3dTotalValue (Codec.maybe meanAndStdDevCodec)
         |> Codec.buildObject
 
 
-meanAndStdDevCodec : Codec MeanAndStdDev
+meanAndStdDevCodec : Codec MeanMedAndStdDev
 meanAndStdDevCodec =
-    Codec.object MeanAndStdDev
+    Codec.object MeanMedAndStdDev
         |> Codec.field "mean" .mean Codec.float
+        |> Codec.field "median" .median Codec.float
         |> Codec.field "stdDev" .stdDev Codec.float
         |> Codec.buildObject
 
@@ -790,7 +842,7 @@ compositionDictWithDefaultValues inputDict =
         |> Dict.fromList
 
 
-calculateMeanComposition : List (Dict String Float) -> Dict String (Maybe MeanAndStdDev)
+calculateMeanComposition : List (Dict String Float) -> Dict String (Maybe MeanMedAndStdDev)
 calculateMeanComposition compositionList =
     compositionList
         |> List.foldl
@@ -807,19 +859,23 @@ calculateMeanComposition compositionList =
         |> Dict.toList
         |> List.map
             (Tuple.mapSecond
-                (\v ->
-                    case ( Stats.mean v, Stats.stdDeviation v ) of
-                        ( Just mean, Just stdDev ) ->
-                            Just
-                                { mean = mean
-                                , stdDev = stdDev
-                                }
-
-                        _ ->
-                            Nothing
-                )
+                (\v -> calculateMeanMedAndStdDev v)
             )
         |> Dict.fromList
+
+
+calculateMeanMedAndStdDev : List Float -> Maybe MeanMedAndStdDev
+calculateMeanMedAndStdDev values =
+    case ( Stats.mean values, Stats.median values, Stats.stdDeviation values ) of
+        ( Just mean, Just median, Just stdDev ) ->
+            Just
+                { mean = mean
+                , median = median
+                , stdDev = stdDev
+                }
+
+        _ ->
+            Nothing
 
 
 createCompositionSpec :
@@ -838,7 +894,7 @@ createCompositionSpec device aggregateData mDesignMetrics =
             compositionSpec
                 device
                 (Just designComposition)
-                (Dict.toList aggregateData.meanComposition
+                (Dict.toList aggregateData.composition
                     |> List.map
                         (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
                     |> Dict.fromList
@@ -848,7 +904,7 @@ createCompositionSpec device aggregateData mDesignMetrics =
             compositionSpec
                 device
                 Nothing
-                (Dict.toList aggregateData.meanComposition
+                (Dict.toList aggregateData.composition
                     |> List.map
                         (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
                     |> Dict.fromList
