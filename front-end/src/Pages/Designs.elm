@@ -71,6 +71,7 @@ type alias Model =
     , pageErrors : List Error.Error
     , designs : Dict String Design.StoredDesign
     , mSelectedSpecification : Maybe Specification
+    , deleteSelectedStatus : Buttons.DangerStatus
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
     , selectedUuids : Set.Set String
@@ -133,6 +134,7 @@ init shared _ =
             , pageErrors = []
             , designs = designDict
             , mSelectedSpecification = Nothing
+            , deleteSelectedStatus = Buttons.initDangerStatus
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
             , selectedUuids = Set.empty
@@ -198,6 +200,7 @@ type Msg
     | StructureLoaded String String
     | GotSpecification Value
     | DeleteDesign String Buttons.DangerStatus
+    | DeleteSelectedDesigns Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
     | ClearPageErrors
@@ -433,10 +436,17 @@ update msg model =
             )
 
         DeleteDesign uuidString dangerStatus ->
+            let
+                filterTags =
+                    model.filterTags
+            in
             if Buttons.isConfirmed dangerStatus then
                 let
                     updatedModel =
-                        { model | designs = Dict.remove uuidString model.designs }
+                        { model
+                            | designs = Dict.remove uuidString model.designs
+                            , filterTags = { filterTags | untaggedVisible = True }
+                        }
                 in
                 ( updatedModel
                 , Design.deleteDesign { uuidString = uuidString }
@@ -459,13 +469,46 @@ update msg model =
                 , Cmd.none
                 )
 
+        DeleteSelectedDesigns dangerStatus ->
+            let
+                filterTags =
+                    model.filterTags
+            in
+            if Buttons.isConfirmed dangerStatus then
+                let
+                    updatedModel =
+                        { model
+                            | designs =
+                                Dict.filter
+                                    (\k _ -> not (Set.member k model.selectedUuids))
+                                    model.designs
+                            , selectedUuids = Set.empty
+                            , filterTags = { filterTags | untaggedVisible = True }
+                        }
+                in
+                ( updatedModel
+                , Set.toList model.selectedUuids
+                    |> List.map (\uuid -> Design.deleteDesign { uuidString = uuid })
+                    |> Cmd.batch
+                )
+
+            else
+                ( { model | deleteSelectedStatus = dangerStatus }
+                , Cmd.none
+                )
+
         DeleteAllDesigns dangerStatus ->
+            let
+                filterTags =
+                    model.filterTags
+            in
             if Buttons.isConfirmed dangerStatus then
                 let
                     updatedModel =
                         { model
                             | deleteAllStatus = Buttons.initDangerStatus
                             , designs = Dict.empty
+                            , filterTags = { filterTags | untaggedVisible = True }
                         }
                 in
                 ( updatedModel
@@ -560,6 +603,7 @@ update msg model =
                             { filterTags
                                 | tags =
                                     Set.empty
+                                , untaggedVisible = True
                             }
 
                         AddAll ->
@@ -1109,7 +1153,10 @@ singleColumnView model designCardData =
                         none
 
                       else
-                        selectedCommandsView model.selectedUuids model.tagString
+                        selectedCommandsView
+                            model.selectedUuids
+                            model.tagString
+                            model.deleteSelectedStatus
                     , allDesignsView
                         (getAllTags model.designs)
                         model.filterTags.tags
@@ -1151,7 +1198,10 @@ doubleColumnView model designCardData =
                             none
 
                           else
-                            selectedCommandsView model.selectedUuids model.tagString
+                            selectedCommandsView
+                                model.selectedUuids
+                                model.tagString
+                                model.deleteSelectedStatus
                         , allDesignsView
                             (getAllTags model.designs)
                             model.filterTags.tags
@@ -1274,15 +1324,15 @@ designCardsView filterTags untaggedVisible mSelectedSpecification allDesignCardD
         designCardData =
             List.filter
                 (\{ designStub } ->
-                    if Set.isEmpty filterTags then
-                        True
-
-                    else if Set.isEmpty designStub.tags then
+                    if Set.isEmpty designStub.tags then
                         if untaggedVisible then
                             True
 
                         else
                             False
+
+                    else if Set.isEmpty filterTags then
+                        True
 
                     else
                         Set.diff designStub.tags filterTags
@@ -1458,23 +1508,23 @@ allTagsView { tags, filterTags, untaggedVisible } =
         |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
         |> (++)
             [ text "Show"
-            , showAllTag { filterTags = filterTags, allTags = tags }
+            , showAllTag filterTags untaggedVisible
             , showUntagged untaggedVisible
             , text "|"
             ]
         |> wrappedRow [ spacing 10 ]
 
 
-showAllTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
-showAllTag { filterTags } =
+showAllTag : Set.Set String -> Bool -> Element Msg
+showAllTag filterTags untaggedVisible =
     el
         [ padding 5
         , pointer
-        , if Set.isEmpty filterTags then
-            Background.color Style.colorPalette.c3
+        , if (Set.isEmpty filterTags |> not) || not untaggedVisible then
+            Background.color Style.colorPalette.c4
 
           else
-            Background.color Style.colorPalette.c4
+            Background.color Style.colorPalette.c3
         , Border.rounded 8
         , Events.onClick (RemoveAll |> UpdateFilterTags)
         ]
@@ -1523,31 +1573,40 @@ tagView mMsg filterTags tag =
         text tag
 
 
-selectedCommandsView : Set.Set String -> String -> Element Msg
-selectedCommandsView selectedUuids tagString =
-    wrappedRow [ spacing 10, width fill ]
-        [ Input.text []
-            { onChange = UpdateTagString
-            , text = tagString
-            , placeholder =
-                Just
-                    (Input.placeholder [] <|
-                        text "tag1, tag2..."
-                    )
-            , label = Input.labelLeft [] <| text "Add Tags"
-            }
-        , Buttons.conditionalButton
-            { label = text "Ok"
-            , clickMsg = Just <| AddTags selectedUuids tagString
-            , isActive =
-                stringToTags tagString
-                    |> Set.isEmpty
-                    |> not
-            }
-        , Buttons.alwaysActiveButton
-            { label = text "Cancel"
-            , clickMsg = CancelSelection
-            , pressed = False
+selectedCommandsView : Set.Set String -> String -> Buttons.DangerStatus -> Element Msg
+selectedCommandsView selectedUuids tagString dangerStatus =
+    column
+        [ spacing 10, width fill ]
+        [ wrappedRow [ spacing 10, width fill ]
+            [ Input.text []
+                { onChange = UpdateTagString
+                , text = tagString
+                , placeholder =
+                    Just
+                        (Input.placeholder [] <|
+                            text "tag1, tag2..."
+                        )
+                , label = Input.labelLeft [] <| text "Add Tags"
+                }
+            , Buttons.conditionalButton
+                { label = text "Ok"
+                , clickMsg = Just <| AddTags selectedUuids tagString
+                , isActive =
+                    stringToTags tagString
+                        |> Set.isEmpty
+                        |> not
+                }
+            , Buttons.alwaysActiveButton
+                { label = text "Cancel"
+                , clickMsg = CancelSelection
+                , pressed = False
+                }
+            ]
+        , Buttons.dangerousButton
+            { label = text "Delete Selected"
+            , confirmText = "Are you sure you want to delete the selected designs?"
+            , status = dangerStatus
+            , dangerousMsg = DeleteSelectedDesigns
             }
         ]
 
