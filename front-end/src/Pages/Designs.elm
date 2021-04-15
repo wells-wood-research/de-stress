@@ -75,7 +75,7 @@ type alias Model =
     , navKey : Key
     , selectedUuids : Set.Set String
     , tagString : String
-    , filterTags : Set.Set String
+    , filterTags : { tags : Set.Set String, untaggedVisible : Bool }
     , device : Device
     , columnViewMode : ColumnViewMode
     , maxFilesInUploads : Int
@@ -137,7 +137,7 @@ init shared _ =
             , navKey = shared.key
             , selectedUuids = Set.empty
             , tagString = ""
-            , filterTags = Set.empty
+            , filterTags = { tags = Set.empty, untaggedVisible = True }
             , device = classifyDevice shared
             , columnViewMode = DesignList
             , maxFilesInUploads = 30
@@ -212,6 +212,7 @@ type Msg
 
 type FilterTagsOption
     = AddOrRemove String
+    | ToggleUntagged
     | RemoveAll
     | AddAll
 
@@ -533,21 +534,39 @@ update msg model =
             )
 
         UpdateFilterTags option ->
+            let
+                filterTags =
+                    model.filterTags
+            in
             ( { model
                 | filterTags =
                     case option of
                         AddOrRemove tag ->
-                            if Set.member tag model.filterTags then
-                                Set.remove tag model.filterTags
+                            { filterTags
+                                | tags =
+                                    if Set.member tag filterTags.tags then
+                                        Set.remove tag filterTags.tags
 
-                            else
-                                Set.insert tag model.filterTags
+                                    else
+                                        Set.insert tag filterTags.tags
+                            }
+
+                        ToggleUntagged ->
+                            { filterTags
+                                | untaggedVisible = not filterTags.untaggedVisible
+                            }
 
                         RemoveAll ->
-                            Set.empty
+                            { filterTags
+                                | tags =
+                                    Set.empty
+                            }
 
                         AddAll ->
-                            getAllTags model.designs
+                            { filterTags
+                                | tags =
+                                    getAllTags model.designs
+                            }
               }
             , Cmd.none
             )
@@ -600,7 +619,18 @@ update msg model =
                 cmds =
                     [ createFile csvString ]
             in
-            if List.isEmpty noDataDesigns then
+            if Dict.isEmpty model.designs then
+                Error.updateWithError
+                    ClearPageErrors
+                    model
+                    { title = "No design data to export"
+                    , details =
+                        """No designs are loaded. Click "Load" to add your designs.
+                        """
+                    , severity = Error.Low
+                    }
+
+            else if List.isEmpty noDataDesigns then
                 ( model, Cmd.batch cmds )
 
             else
@@ -1008,11 +1038,16 @@ bodyView model =
                         , clickMsg = Just StructuresRequested
                         , isActive = isActive
                         }
-                    , Buttons.dangerousButton
-                        { label = text "Delete All"
-                        , confirmText = "Are you sure you want to delete ALL design?"
-                        , status = model.deleteAllStatus
-                        , dangerousMsg = DeleteAllDesigns
+                    , Buttons.conditionalButton
+                        { label = text "Export"
+                        , clickMsg = Just ExportAllDesignData
+                        , isActive =
+                            case model.loadingState of
+                                LoadingFiles _ _ ->
+                                    False
+
+                                Free ->
+                                    True
                         }
                     ]
                 ]
@@ -1075,8 +1110,10 @@ singleColumnView model designCardData =
 
                       else
                         selectedCommandsView model.selectedUuids model.tagString
-                    , designCardsView
-                        model.filterTags
+                    , allDesignsView
+                        (getAllTags model.designs)
+                        model.filterTags.tags
+                        model.filterTags.untaggedVisible
                         model.mSelectedSpecification
                         designCardData
                     ]
@@ -1115,8 +1152,10 @@ doubleColumnView model designCardData =
 
                           else
                             selectedCommandsView model.selectedUuids model.tagString
-                        , designCardsView
-                            model.filterTags
+                        , allDesignsView
+                            (getAllTags model.designs)
+                            model.filterTags.tags
+                            model.filterTags.untaggedVisible
                             model.mSelectedSpecification
                             designCardData
                         ]
@@ -1130,6 +1169,26 @@ doubleColumnView model designCardData =
 
 
 -- {{{ Design Cards
+
+
+allDesignsView : Set.Set String -> Set.Set String -> Bool -> Maybe Specification -> List DesignCardData -> Element Msg
+allDesignsView allTags filterTags untaggedVisible mSelectedSpecification designCardData =
+    column [ spacing 10, width fill ]
+        [ if Set.isEmpty allTags then
+            none
+
+          else
+            allTagsView
+                { tags = allTags
+                , filterTags = filterTags
+                , untaggedVisible = untaggedVisible
+                }
+        , designCardsView
+            filterTags
+            untaggedVisible
+            mSelectedSpecification
+            designCardData
+        ]
 
 
 type alias DesignCardData =
@@ -1206,8 +1265,8 @@ partitionDesignCardData remainingData partitionedData =
             partitionDesignCardData rest newPartitioned
 
 
-designCardsView : Set.Set String -> Maybe Specification -> List DesignCardData -> Element Msg
-designCardsView filterTags mSelectedSpecification allDesignCardData =
+designCardsView : Set.Set String -> Bool -> Maybe Specification -> List DesignCardData -> Element Msg
+designCardsView filterTags untaggedVisible mSelectedSpecification allDesignCardData =
     let
         cardContainer =
             column [ spacing 10, width fill ]
@@ -1219,7 +1278,11 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
                         True
 
                     else if Set.isEmpty designStub.tags then
-                        True
+                        if untaggedVisible then
+                            True
+
+                        else
+                            False
 
                     else
                         Set.diff designStub.tags filterTags
@@ -1372,39 +1435,14 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
 
 controlPanel : Model -> Element Msg
 controlPanel model =
-    let
-        allTags =
-            getAllTags model.designs
-    in
     column [ spacing 10 ]
-        [ Style.h2 <| text "Export Design Data"
-        , wrappedRow []
-            [ Buttons.conditionalButton
-                { label = text "Export All"
-                , clickMsg = Just ExportAllDesignData
-                , isActive =
-                    case model.loadingState of
-                        LoadingFiles _ _ ->
-                            False
-
-                        Free ->
-                            True
-                }
-            ]
-        , Style.h2 <| text "Tags"
-        , if Set.isEmpty allTags then
-            paragraph []
-                [ text <|
-                    ("No designs are tagged, select designs in order to tag them. "
-                        ++ "This will help you keep your designs organised."
-                    )
-                ]
-
-          else
-            allTagsView
-                { tags = getAllTags model.designs
-                , filterTags = model.filterTags
-                }
+        [ Style.h2 <| text "Delete All Designs"
+        , Buttons.dangerousButton
+            { label = text "Delete All"
+            , confirmText = "Are you sure you want to delete ALL design?"
+            , status = model.deleteAllStatus
+            , dangerousMsg = DeleteAllDesigns
+            }
         ]
 
 
@@ -1413,22 +1451,22 @@ controlPanel model =
 -- {{{ Tags
 
 
-allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
-allTagsView { tags, filterTags } =
+allTagsView : { tags : Set.Set String, filterTags : Set.Set String, untaggedVisible : Bool } -> Element Msg
+allTagsView { tags, filterTags, untaggedVisible } =
     tags
         |> Set.toList
         |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
         |> (++)
-            [ text "Filter by Tag"
-            , filterNoneTag { filterTags = filterTags, allTags = tags }
-            , filterAllTag { filterTags = filterTags, allTags = tags }
+            [ text "Show"
+            , showAllTag { filterTags = filterTags, allTags = tags }
+            , showUntagged untaggedVisible
             , text "|"
             ]
         |> wrappedRow [ spacing 10 ]
 
 
-filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
-filterNoneTag { filterTags } =
+showAllTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
+showAllTag { filterTags } =
     el
         [ padding 5
         , pointer
@@ -1441,24 +1479,24 @@ filterNoneTag { filterTags } =
         , Events.onClick (RemoveAll |> UpdateFilterTags)
         ]
     <|
-        text "None"
+        text "All"
 
 
-filterAllTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
-filterAllTag { filterTags, allTags } =
+showUntagged : Bool -> Element Msg
+showUntagged untaggedVisible =
     el
         [ padding 5
         , pointer
-        , if filterTags == allTags then
+        , if untaggedVisible then
             Background.color Style.colorPalette.c3
 
           else
             Background.color Style.colorPalette.c4
         , Border.rounded 8
-        , Events.onClick (AddAll |> UpdateFilterTags)
+        , Events.onClick (ToggleUntagged |> UpdateFilterTags)
         ]
     <|
-        text "All"
+        text "Untagged"
 
 
 tagView : Maybe (String -> Msg) -> Set.Set String -> String -> Element Msg
@@ -1496,7 +1534,7 @@ selectedCommandsView selectedUuids tagString =
                     (Input.placeholder [] <|
                         text "tag1, tag2..."
                     )
-            , label = Input.labelLeft [] <| text "Tags"
+            , label = Input.labelLeft [] <| text "Add Tags"
             }
         , Buttons.conditionalButton
             { label = text "Ok"
