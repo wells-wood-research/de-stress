@@ -25,6 +25,7 @@ import Shared.Editable as Editable
 import Shared.Error as Error
 import Shared.Metrics as Metrics
 import Shared.Plots as Plots
+import Shared.ReferenceSet as ReferenceSet
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification exposing (Specification)
 import Shared.Style as Style
@@ -70,6 +71,7 @@ type alias Model =
     , loadingState : DesignLoadingState
     , pageErrors : List Error.Error
     , designs : Dict String Design.StoredDesign
+    , referenceSets : Dict String ReferenceSet.StoredReferenceSet
     , mSelectedSpecification : Maybe Specification
     , deleteSelectedStatus : Buttons.DangerStatus
     , deleteAllStatus : Buttons.DangerStatus
@@ -120,19 +122,20 @@ type alias Params =
 init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
 init shared _ =
     let
-        ( mResourceUuid, designDict ) =
+        ( mResourceUuid, designDict, referenceSetsDict ) =
             case Shared.getRunState shared of
-                Just { resourceUuid, designs } ->
-                    ( Just resourceUuid, designs )
+                Just { resourceUuid, designs, referenceSets } ->
+                    ( Just resourceUuid, designs, referenceSets )
 
                 Nothing ->
-                    ( Nothing, Dict.empty )
+                    ( Nothing, Dict.empty, Dict.empty )
 
         model =
             { mResourceUuid = mResourceUuid
             , loadingState = Free
             , pageErrors = []
             , designs = designDict
+            , referenceSets = referenceSetsDict
             , mSelectedSpecification = Nothing
             , deleteSelectedStatus = Buttons.initDangerStatus
             , deleteAllStatus = Buttons.initDangerStatus
@@ -146,12 +149,20 @@ init shared _ =
             , maxResiduesInStructure = 500
             }
 
-        plotCmd =
+        designStubs =
             model.designs
                 |> Dict.toList
                 |> List.map (Tuple.mapSecond Design.storedDesignToStub)
                 |> Dict.fromList
-                |> makeOverViewSpec model.device
+
+        referenceSetStubs =
+            model.referenceSets
+                |> Dict.toList
+                |> List.map (Tuple.mapSecond ReferenceSet.storedReferenceSetToStub)
+                |> Dict.fromList
+
+        plotCmd =
+            makeOverViewSpec model.device referenceSetStubs designStubs
                 |> Plots.vegaPlot
     in
     ( model
@@ -619,11 +630,20 @@ update msg model =
             ( { model | columnViewMode = newMode }
             , case newMode of
                 OverviewPlots ->
-                    model.designs
-                        |> Dict.toList
-                        |> List.map (Tuple.mapSecond Design.storedDesignToStub)
-                        |> Dict.fromList
-                        |> makeOverViewSpec model.device
+                    let
+                        designStubs =
+                            model.designs
+                                |> Dict.toList
+                                |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                                |> Dict.fromList
+
+                        referenceSetStubs =
+                            model.referenceSets
+                                |> Dict.toList
+                                |> List.map (Tuple.mapSecond ReferenceSet.storedReferenceSetToStub)
+                                |> Dict.fromList
+                    in
+                    makeOverViewSpec model.device referenceSetStubs designStubs
                         |> Plots.vegaPlot
 
                 _ ->
@@ -940,6 +960,7 @@ save model shared =
                     { runState
                         | resourceUuid = resourceUuid
                         , designs = model.designs
+                        , referenceSets = model.referenceSets
                         , saveStateRequested = True
                     }
                 )
@@ -958,15 +979,24 @@ load shared model =
                     { model
                         | mResourceUuid = Just runState.resourceUuid
                         , designs = runState.designs
+                        , referenceSets = runState.referenceSets
                         , device = classifyDevice shared
                     }
 
-                plotCmd =
+                designStubs =
                     updatedModel.designs
                         |> Dict.toList
                         |> List.map (Tuple.mapSecond Design.storedDesignToStub)
                         |> Dict.fromList
-                        |> makeOverViewSpec updatedModel.device
+
+                referenceSetStubs =
+                    updatedModel.referenceSets
+                        |> Dict.toList
+                        |> List.map (Tuple.mapSecond ReferenceSet.storedReferenceSetToStub)
+                        |> Dict.fromList
+
+                plotCmd =
+                    makeOverViewSpec updatedModel.device referenceSetStubs designStubs
                         |> Plots.vegaPlot
             in
             ( updatedModel
@@ -1619,10 +1649,12 @@ selectedCommandsView selectedUuids tagString dangerStatus =
 overviewPlots : Element msg
 overviewPlots =
     column
-        [ spacing 10, width fill ]
+        [ spacing 15, width fill ]
         [ el [ centerX ] <|
-            paragraph []
-                [ text "(Click on the bars to see design details.)"
+            paragraph [ Font.center ]
+                [ """Click on the bars to see design/reference set details.
+                  """
+                    |> text
                 ]
         , Keyed.el [ centerX ]
             ( "overview"
@@ -1643,16 +1675,28 @@ overviewPlots =
         ]
 
 
-makeOverViewSpec : Device -> Dict String Design.DesignStub -> { plotId : String, spec : VL.Spec }
-makeOverViewSpec device designStubs =
+makeOverViewSpec :
+    Device
+    -> Dict String ReferenceSet.ReferenceSetStub
+    -> Dict String Design.DesignStub
+    -> { plotId : String, spec : VL.Spec }
+makeOverViewSpec device referenceSetStubs designStubs =
+    let
+        designPlotData =
+            designStubs
+                |> Dict.toList
+                |> List.filterMap makePlotData
+
+        referenceSetPlotData =
+            referenceSetStubs
+                |> Dict.toList
+                |> List.filterMap makeRefSetPlotData
+    in
     { plotId = "overview"
     , spec =
         overviewSpec
             device
-            (designStubs
-                |> Dict.toList
-                |> List.filterMap makePlotData
-            )
+            (designPlotData ++ referenceSetPlotData)
     }
 
 
@@ -1682,8 +1726,54 @@ makePlotData ( uuid, { name, metricsJobStatus } ) =
                 , aggrescan3dTotalValue =
                     Maybe.withDefault (0 / 0)
                         metrics.aggrescan3dResults.total_value
+                , dataType = "designs"
                 }
             )
+
+
+makeRefSetPlotData : ( String, ReferenceSet.ReferenceSetStub ) -> Maybe PlotData
+makeRefSetPlotData ( uuid, { name, aggregateData } ) =
+    Just <|
+        { uuid = uuid
+        , name = name
+        , hydrophobicFitness =
+            aggregateData.hydrophobicFitness
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , isoelectricPoint =
+            aggregateData.isoelectricPoint
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , numberOfResidues =
+            aggregateData.numberOfResidues
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , packingDensity =
+            aggregateData.packingDensity
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , budeFFTotalEnergy =
+            aggregateData.budeFFTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , evoEFTotalEnergy =
+            aggregateData.evoEFTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , dfireTotalEnergy =
+            aggregateData.dfireTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , rosettaTotalEnergy =
+            aggregateData.rosettaTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , aggrescan3dTotalValue =
+            aggregateData.aggrescan3dTotalValue
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , dataType = "reference-sets"
+        }
 
 
 type alias PlotData =
@@ -1698,6 +1788,7 @@ type alias PlotData =
     , dfireTotalEnergy : Float
     , rosettaTotalEnergy : Float
     , aggrescan3dTotalValue : Float
+    , dataType : String
     }
 
 
@@ -1728,7 +1819,7 @@ overviewSpec device plotData =
         metricValueBarSpec ( label, _, sortProp ) =
             VL.asSpec
                 [ VL.bar []
-                , VL.title (label ++ "\nfor All Designs") []
+                , VL.title label []
                 , VL.width 200
                 , (VL.encoding
                     << VL.position VL.Y
@@ -1747,6 +1838,13 @@ overviewSpec device plotData =
                         [ VL.pName label
                         , VL.pMType VL.Quantitative
                         , VL.pAxis [ VL.axTitle label, VL.axGrid True ]
+                        ]
+                    << VL.color
+                        [ VL.mName "dataType"
+                        , VL.mLegend
+                            [ VL.leTitle "Data Type"
+                            , VL.leOrient VL.loTop
+                            ]
                         ]
                     << VL.hyperlink
                         [ VL.hName "url"
@@ -1772,6 +1870,11 @@ overviewSpec device plotData =
                     (VL.strs <|
                         List.map .uuid plotData
                     )
+                << VL.dataColumn
+                    "dataType"
+                    (VL.strs <|
+                        List.map .dataType plotData
+                    )
                 << dataColumns
 
         config =
@@ -1783,7 +1886,7 @@ overviewSpec device plotData =
 
         transform =
             VL.transform
-                << VL.calculateAs "'/designs/' + datum.uuid" "url"
+                << VL.calculateAs "'/' + datum.dataType + '/' + datum.uuid" "url"
                 << VL.calculateAs "datum.name + datum.uuid" "unique name"
 
         ( headTuples, tailTuples ) =
