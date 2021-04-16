@@ -716,6 +716,33 @@ update msg model =
                     |> Tuple.mapSecond (\c -> c :: cmds |> Cmd.batch)
 
 
+aaLetterTo3Letter : Dict String String
+aaLetterTo3Letter =
+    [ ( "A", "ALA" )
+    , ( "C", "CYS" )
+    , ( "D", "ASP" )
+    , ( "E", "GLU" )
+    , ( "F", "PHE" )
+    , ( "G", "GLY" )
+    , ( "H", "HIS" )
+    , ( "I", "ILE" )
+    , ( "K", "LYS" )
+    , ( "L", "LEU" )
+    , ( "M", "MET" )
+    , ( "N", "ASN" )
+    , ( "P", "PRO" )
+    , ( "Q", "GLN" )
+    , ( "R", "ARG" )
+    , ( "S", "SER" )
+    , ( "T", "THR" )
+    , ( "V", "VAL" )
+    , ( "W", "TRP" )
+    , ( "X", "UNK" )
+    , ( "Y", "TYR" )
+    ]
+        |> Dict.fromList
+
+
 designStubCSVEncoder : Design.DesignStub -> List ( String, String )
 designStubCSVEncoder designStub =
     let
@@ -730,7 +757,9 @@ designStubCSVEncoder designStub =
 
         createCompLine : Dict String Float -> String -> ( String, String )
         createCompLine compDict label =
-            ( "composition: " ++ label
+            ( Dict.get label aaLetterTo3Letter
+                |> Maybe.withDefault "UNK"
+                |> (++) "composition: "
             , Dict.get label compDict
                 |> Maybe.withDefault 0.0
                 |> String.fromFloat
