@@ -824,21 +824,24 @@ basicMetrics metrics hoverInfoOption =
         [ Style.h2 <| text "Basic Metrics"
         , Style.h3 <| text "Sequences and DSSP Assignment"
         , sequenceInfoDictView sequenceInfo
-        , text "DSSP Assignment Lookup"
+        , paragraph [ Font.italic, Font.size 14 ] [ text "DSSP Key" ]
         , wrappedRow
             [ spacing 15
             , centerX
-            , Font.size 16
+            , Font.size 14
             ]
-            [ text "H = α-helix"
-            , text "B = residue in isolated β-bridge"
-            , text "E = extended strand, participates in β ladder"
-            , text "G = 3-helix (3 10 helix)"
-            , text "I = 5 helix (π-helix)"
-            , text "T = hydrogen bonded turn"
-            , text "S = bend"
-            , text "- = loop"
-            ]
+            ([ "H = α-helix"
+             , "B = isolated β-bridge"
+             , "E = extended β-strand"
+             , "G = 3-10 helix"
+             , "I = π-helix"
+             , "T = hydrogen-bonded turn"
+             , "S = bend"
+             , "- = loop"
+             ]
+                |> List.intersperse "|"
+                |> List.map text
+            )
         , metricsOverview metrics hoverInfoOption
         ]
 
