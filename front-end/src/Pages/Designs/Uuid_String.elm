@@ -787,7 +787,7 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
         ]
             ++ (case WebSockets.getDesignMetrics metricsJobStatus of
                     Just designMetrics ->
-                        [ basicMetrics designMetrics
+                        [ basicMetrics designMetrics hoverInfoOption
                         , budeFFResultsTableView designMetrics hoverInfoOption
                         , evoEF2ResultsTableView evoEF2TableOption designMetrics displaySettings hoverInfoOption
                         , dfire2ResultsView designMetrics displaySettings hoverInfoOption
@@ -814,8 +814,8 @@ designDetailsView _ mSpecification mReferenceSet design evoEF2TableOption displa
                )
 
 
-basicMetrics : Metrics.DesignMetrics -> Element msg
-basicMetrics metrics =
+basicMetrics : Metrics.DesignMetrics -> Tooltips.HoverInfoOption -> Element Msg
+basicMetrics metrics hoverInfoOption =
     let
         { sequenceInfo } =
             metrics
@@ -824,23 +824,46 @@ basicMetrics metrics =
         [ Style.h2 <| text "Basic Metrics"
         , Style.h3 <| text "Sequences and DSSP Assignment"
         , sequenceInfoDictView sequenceInfo
-        , metricsOverview metrics
+        , paragraph [ Font.italic, Font.size 14 ] [ text "DSSP Key" ]
+        , wrappedRow
+            [ spacing 15
+            , centerX
+            , Font.size 14
+            ]
+            ([ "H = α-helix"
+             , "B = isolated β-bridge"
+             , "E = extended β-strand"
+             , "G = 3-10 helix"
+             , "I = π-helix"
+             , "T = hydrogen-bonded turn"
+             , "S = bend"
+             , "- = loop"
+             ]
+                |> List.intersperse "|"
+                |> List.map text
+            )
+        , metricsOverview metrics hoverInfoOption
         ]
 
 
-metricsOverview : Metrics.DesignMetrics -> Element msg
-metricsOverview metrics =
+metricsOverview : Metrics.DesignMetrics -> Tooltips.HoverInfoOption -> Element Msg
+metricsOverview metrics hoverInfoOption =
     column [ spacing 10, width fill ]
         [ Style.h2 <| text "Metrics"
         , wrappedRow
             [ spacing 5
             , centerX
             ]
-            [ createTableFloatColumn metrics.hydrophobicFitness 0 "Hydrophobic Fitness"
-            , createTableColumn cell (roundFloatText metrics.isoelectricPoint 0) "pI"
-            , createTableColumn cell (intText metrics.numOfResidues) "# of Residues"
-            , createTableColumn cell (roundFloatText metrics.mass 0) "Mass (Da)"
-            , createTableColumn cell (roundFloatText metrics.packingDensity 0) "Mean Packing Density"
+            [ el (Tooltips.hydrophobicFitnessHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableFloatColumn metrics.hydrophobicFitness 0 "Hydrophobic Fitness"
+            , el (Tooltips.isoelectricPointHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableColumn cell (roundFloatText metrics.isoelectricPoint 0) "Isoelectric Point"
+            , el (Tooltips.numOfResiduesHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableColumn cell (intText metrics.numOfResidues) "Number of Residues"
+            , el (Tooltips.massHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableColumn cell (roundFloatText metrics.mass 0) "Mass (Da)"
+            , el (Tooltips.packingDensityHoverBox hoverInfoOption ChangeHoverInfo) <|
+                createTableColumn cell (roundFloatText metrics.packingDensity 0) "Mean Packing Density"
             ]
         ]
 
@@ -1009,7 +1032,7 @@ evoef2SummaryColumns :
     -> List (Element Msg)
 evoef2SummaryColumns metrics hoverInfoOption =
     [ el (Tooltips.evoEF2SummaryTotalHoverBox hoverInfoOption ChangeHoverInfo) <|
-        createTableFloatColumn metrics.evoEF2Results.total 0 "Total EvoEF2"
+        createTableFloatColumn metrics.evoEF2Results.total 0 "Total Energy"
     , el (Tooltips.evoEF2SummaryRefHoverBox hoverInfoOption ChangeHoverInfo) <|
         createTableFloatColumn metrics.evoEF2Results.ref_total 0 "Reference"
     , el (Tooltips.evoEF2SummaryIntraRHoverBox hoverInfoOption ChangeHoverInfo) <|
@@ -1154,7 +1177,7 @@ dfire2ResultsView metrics displaySettings hoverInfoOption =
             [ spacing 5
             , centerX
             ]
-            [ el (Tooltips.dfire2TotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.dfire2Results.total 0 "Total DFIRE2" ]
+            [ el (Tooltips.dfire2TotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.dfire2Results.total 0 "Total Energy" ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.dfire2LogInfo
             , title = hideableSectionToString DFIRE2LogInfo
@@ -1208,7 +1231,7 @@ rosettaColumns :
     -> Tooltips.HoverInfoOption
     -> List (Element Msg)
 rosettaColumns metrics hoverInfoOption =
-    [ el (Tooltips.rosettaTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.total_score 0 "Total Rosetta"
+    [ el (Tooltips.rosettaTotalHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.total_score 0 "Total Energy"
     , el (Tooltips.rosettaReferenceHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.ref 0 "Reference"
     , el (Tooltips.rosettaVDWAttHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_atr 0 "VDW Attractive"
     , el (Tooltips.rosettaVDWRepHoverBox hoverInfoOption ChangeHoverInfo) <| createTableFloatColumn metrics.rosettaResults.fa_rep 0 "VDW Repulsive"
