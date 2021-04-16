@@ -1818,7 +1818,9 @@ overviewSpec device plotData =
 
         metricValueBarSpec ( label, _, sortProp ) =
             VL.asSpec
-                [ VL.bar []
+                [ VL.bar
+                    [ VL.maTooltip VL.ttEncoding
+                    ]
                 , VL.title label []
                 , VL.width 200
                 , (VL.encoding
@@ -1832,6 +1834,7 @@ overviewSpec device plotData =
                         , VL.pAxis
                             [ VL.axLabelExpr
                                 "split(datum.label, '@@@')[0]"
+                            , VL.axTitle ""
                             ]
                         ]
                     << VL.position VL.X

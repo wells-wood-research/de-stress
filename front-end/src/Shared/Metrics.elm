@@ -735,7 +735,9 @@ createAllHistogramsSpec device designHistPlotData refSetHistPlotData =
                 [ VL.width 200
                 , VL.layer
                     (VL.asSpec
-                        [ VL.bar []
+                        [ VL.bar
+                            [ VL.maTooltip VL.ttEncoding
+                            ]
                         , refSetData []
                         , (VL.encoding
                             << VL.position VL.X
@@ -756,13 +758,15 @@ createAllHistogramsSpec device designHistPlotData refSetHistPlotData =
 
                             else
                                 [ VL.asSpec
-                                    [ VL.rule [ VL.maSize 3 ]
+                                    [ VL.rule
+                                        [ VL.maSize 3
+                                        , VL.maTooltip VL.ttEncoding
+                                        ]
                                     , designSetData []
                                     , (VL.encoding
                                         << VL.position VL.X
                                             [ VL.pName ("design_" ++ label)
                                             , VL.pMType VL.Quantitative
-                                            , VL.pAxis [ VL.axTitle "" ]
                                             ]
                                       )
                                         []
@@ -896,7 +900,7 @@ createCompositionSpec device aggregateData mDesignMetrics =
                 (Just designComposition)
                 (Dict.toList aggregateData.composition
                     |> List.map
-                        (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+                        (\( k, v ) -> ( k, Maybe.map .median v |> Maybe.withDefault 0 ))
                     |> Dict.fromList
                 )
 
@@ -906,7 +910,7 @@ createCompositionSpec device aggregateData mDesignMetrics =
                 Nothing
                 (Dict.toList aggregateData.composition
                     |> List.map
-                        (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+                        (\( k, v ) -> ( k, Maybe.map .median v |> Maybe.withDefault 0 ))
                     |> Dict.fromList
                 )
 
@@ -955,15 +959,8 @@ compositionSpec device mDesignCompositionDict pdbCompositionDict =
                         )
                             ++ List.repeat
                                 (List.length <| Dict.keys pdbCompositionDict)
-                                "Reference"
+                                "Median Reference Set Value"
                     )
-
-        config =
-            (VL.configure
-                << VL.configuration (VL.coView [ VL.vicoStroke <| Just "transparent" ])
-                << VL.configuration (VL.coAxis [ VL.axcoDomainWidth 1 ])
-            )
-                []
     in
     VL.toVegaLite
         [ data []
@@ -971,22 +968,25 @@ compositionSpec device mDesignCompositionDict pdbCompositionDict =
         , VL.width <|
             case ( device.class, device.orientation ) of
                 ( Phone, Portrait ) ->
-                    200
+                    12
 
                 _ ->
-                    400
+                    25
         , VL.bar
-            []
+            [ VL.maTooltip VL.ttEncoding
+            ]
         , (VL.encoding
+            << VL.column [ VL.fName "Amino Acids", VL.fNominal, VL.fSpacing 1 ]
             << VL.position VL.Y
                 [ VL.pName "Proportion"
-                , VL.pAggregate VL.opSum
                 , VL.pMType VL.Quantitative
-                , VL.pAxis [ VL.axTitle "Amino Acid Proportion", VL.axGrid True ]
+                , VL.pAggregate VL.opSum
+                , VL.pAxis [ VL.axTitle "Amino Acid Proportion", VL.axGrid False ]
                 ]
             << VL.position VL.X
-                [ VL.pName "Amino Acids"
+                [ VL.pName "Set"
                 , VL.pMType VL.Nominal
+                , VL.pAxis []
                 ]
             << VL.color
                 [ VL.mName "Set"
@@ -998,7 +998,6 @@ compositionSpec device mDesignCompositionDict pdbCompositionDict =
                 ]
           )
             []
-        , config
         ]
 
 
@@ -1155,7 +1154,7 @@ fullTorsionAnglesSpec device designTorsionAngles pdbTorsionAnglesDicts =
                 , pdbData []
                 , sel []
                 , VL.tick
-                    [ VL.maOpacity 0.2
+                    [ VL.maOpacity 0.01
                     ]
                 , (VL.encoding
                     << VL.position VL.X
@@ -1247,7 +1246,7 @@ refSetTorsionAnglesSpec device pdbTorsionAnglesDicts =
                 , pdbData []
                 , sel []
                 , VL.tick
-                    [ VL.maOpacity 0.2
+                    [ VL.maOpacity 0.01
                     ]
                 , (VL.encoding
                     << VL.position VL.X

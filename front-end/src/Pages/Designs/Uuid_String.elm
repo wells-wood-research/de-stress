@@ -1336,6 +1336,12 @@ metricsHistogramsView : Element msg
 metricsHistogramsView =
     column [ width fill ]
         [ Style.h3 <| text "Metrics Histograms"
+        , paragraph
+            []
+            [ """The black vertical line shows the value for the design.
+ Hover over the
+              line to see the exact value.
+              """ |> text ]
         , Keyed.el [ centerX ]
             ( "metricsHistograms"
             , Html.div
