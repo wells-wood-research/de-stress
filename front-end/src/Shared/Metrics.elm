@@ -5,7 +5,7 @@ module Shared.Metrics exposing
     , DFIRE2Results
     , DesignMetrics
     , EvoEF2Results
-    , MeanAndStdDev
+    , MeanMedAndStdDev
     , RefSetMetrics
     , RosettaResults
     , SequenceInfo
@@ -452,41 +452,93 @@ refSetMetricsCodec =
 
 
 type alias AggregateData =
-    { meanComposition : Dict String (Maybe MeanAndStdDev) }
+    { composition : Dict String (Maybe MeanMedAndStdDev)
+    , hydrophobicFitness : Maybe MeanMedAndStdDev
+    , isoelectricPoint : Maybe MeanMedAndStdDev
+    , numberOfResidues : Maybe MeanMedAndStdDev
+    , packingDensity : Maybe MeanMedAndStdDev
+    , budeFFTotalEnergy : Maybe MeanMedAndStdDev
+    , evoEFTotalEnergy : Maybe MeanMedAndStdDev
+    , dfireTotalEnergy : Maybe MeanMedAndStdDev
+    , rosettaTotalEnergy : Maybe MeanMedAndStdDev
+    , aggrescan3dTotalValue : Maybe MeanMedAndStdDev
+    }
 
 
-type alias MeanAndStdDev =
+type alias MeanMedAndStdDev =
     { mean : Float
+    , median : Float
     , stdDev : Float
     }
 
 
 createAggregateData : List RefSetMetrics -> AggregateData
 createAggregateData refSetMetricsList =
-    { meanComposition =
+    { composition =
         refSetMetricsList
             |> List.map .composition
             |> calculateMeanComposition
+    , hydrophobicFitness =
+        refSetMetricsList
+            |> List.filterMap .hydrophobicFitness
+            |> calculateMeanMedAndStdDev
+    , isoelectricPoint =
+        refSetMetricsList
+            |> List.map .isoelectricPoint
+            |> calculateMeanMedAndStdDev
+    , numberOfResidues =
+        refSetMetricsList
+            |> List.map .numberOfResidues
+            |> List.map toFloat
+            |> calculateMeanMedAndStdDev
+    , packingDensity =
+        refSetMetricsList
+            |> List.map .packingDensity
+            |> calculateMeanMedAndStdDev
+    , budeFFTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .budeFFTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , evoEFTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .evoEFTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , dfireTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .dfireTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , rosettaTotalEnergy =
+        refSetMetricsList
+            |> List.filterMap .rosettaTotalEnergy
+            |> calculateMeanMedAndStdDev
+    , aggrescan3dTotalValue =
+        refSetMetricsList
+            |> List.filterMap .aggrescan3dTotalValue
+            |> calculateMeanMedAndStdDev
     }
 
 
 aggregateDataCodec : Codec AggregateData
 aggregateDataCodec =
     Codec.object AggregateData
-        |> Codec.field "meanComposition"
-            .meanComposition
-            (Codec.dict
-                (Codec.maybe
-                    meanAndStdDevCodec
-                )
-            )
+        |> Codec.field "composition" .composition (Codec.dict (Codec.maybe meanAndStdDevCodec))
+        |> Codec.field "hydrophobicFitness" .hydrophobicFitness (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "isoelectricPoint" .isoelectricPoint (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "numberOfResidues" .numberOfResidues (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "packingDensity" .packingDensity (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "budeFFTotalEnergy" .budeFFTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "evoEFTotalEnergy" .evoEFTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "dfireTotalEnergy" .dfireTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "rosettaTotalEnergy" .rosettaTotalEnergy (Codec.maybe meanAndStdDevCodec)
+        |> Codec.field "aggrescan3dTotalValue" .aggrescan3dTotalValue (Codec.maybe meanAndStdDevCodec)
         |> Codec.buildObject
 
 
-meanAndStdDevCodec : Codec MeanAndStdDev
+meanAndStdDevCodec : Codec MeanMedAndStdDev
 meanAndStdDevCodec =
-    Codec.object MeanAndStdDev
+    Codec.object MeanMedAndStdDev
         |> Codec.field "mean" .mean Codec.float
+        |> Codec.field "median" .median Codec.float
         |> Codec.field "stdDev" .stdDev Codec.float
         |> Codec.buildObject
 
@@ -683,7 +735,9 @@ createAllHistogramsSpec device designHistPlotData refSetHistPlotData =
                 [ VL.width 200
                 , VL.layer
                     (VL.asSpec
-                        [ VL.bar []
+                        [ VL.bar
+                            [ VL.maTooltip VL.ttEncoding
+                            ]
                         , refSetData []
                         , (VL.encoding
                             << VL.position VL.X
@@ -704,13 +758,15 @@ createAllHistogramsSpec device designHistPlotData refSetHistPlotData =
 
                             else
                                 [ VL.asSpec
-                                    [ VL.rule [ VL.maSize 3 ]
+                                    [ VL.rule
+                                        [ VL.maSize 3
+                                        , VL.maTooltip VL.ttEncoding
+                                        ]
                                     , designSetData []
                                     , (VL.encoding
                                         << VL.position VL.X
                                             [ VL.pName ("design_" ++ label)
                                             , VL.pMType VL.Quantitative
-                                            , VL.pAxis [ VL.axTitle "" ]
                                             ]
                                       )
                                         []
@@ -790,7 +846,7 @@ compositionDictWithDefaultValues inputDict =
         |> Dict.fromList
 
 
-calculateMeanComposition : List (Dict String Float) -> Dict String (Maybe MeanAndStdDev)
+calculateMeanComposition : List (Dict String Float) -> Dict String (Maybe MeanMedAndStdDev)
 calculateMeanComposition compositionList =
     compositionList
         |> List.foldl
@@ -807,19 +863,23 @@ calculateMeanComposition compositionList =
         |> Dict.toList
         |> List.map
             (Tuple.mapSecond
-                (\v ->
-                    case ( Stats.mean v, Stats.stdDeviation v ) of
-                        ( Just mean, Just stdDev ) ->
-                            Just
-                                { mean = mean
-                                , stdDev = stdDev
-                                }
-
-                        _ ->
-                            Nothing
-                )
+                (\v -> calculateMeanMedAndStdDev v)
             )
         |> Dict.fromList
+
+
+calculateMeanMedAndStdDev : List Float -> Maybe MeanMedAndStdDev
+calculateMeanMedAndStdDev values =
+    case ( Stats.mean values, Stats.median values, Stats.stdDeviation values ) of
+        ( Just mean, Just median, Just stdDev ) ->
+            Just
+                { mean = mean
+                , median = median
+                , stdDev = stdDev
+                }
+
+        _ ->
+            Nothing
 
 
 createCompositionSpec :
@@ -838,9 +898,9 @@ createCompositionSpec device aggregateData mDesignMetrics =
             compositionSpec
                 device
                 (Just designComposition)
-                (Dict.toList aggregateData.meanComposition
+                (Dict.toList aggregateData.composition
                     |> List.map
-                        (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+                        (\( k, v ) -> ( k, Maybe.map .median v |> Maybe.withDefault 0 ))
                     |> Dict.fromList
                 )
 
@@ -848,9 +908,9 @@ createCompositionSpec device aggregateData mDesignMetrics =
             compositionSpec
                 device
                 Nothing
-                (Dict.toList aggregateData.meanComposition
+                (Dict.toList aggregateData.composition
                     |> List.map
-                        (\( k, v ) -> ( k, Maybe.map .mean v |> Maybe.withDefault 0 ))
+                        (\( k, v ) -> ( k, Maybe.map .median v |> Maybe.withDefault 0 ))
                     |> Dict.fromList
                 )
 
@@ -899,15 +959,8 @@ compositionSpec device mDesignCompositionDict pdbCompositionDict =
                         )
                             ++ List.repeat
                                 (List.length <| Dict.keys pdbCompositionDict)
-                                "Reference"
+                                "Median Reference Set Value"
                     )
-
-        config =
-            (VL.configure
-                << VL.configuration (VL.coView [ VL.vicoStroke <| Just "transparent" ])
-                << VL.configuration (VL.coAxis [ VL.axcoDomainWidth 1 ])
-            )
-                []
     in
     VL.toVegaLite
         [ data []
@@ -915,22 +968,25 @@ compositionSpec device mDesignCompositionDict pdbCompositionDict =
         , VL.width <|
             case ( device.class, device.orientation ) of
                 ( Phone, Portrait ) ->
-                    200
+                    12
 
                 _ ->
-                    400
+                    25
         , VL.bar
-            []
+            [ VL.maTooltip VL.ttEncoding
+            ]
         , (VL.encoding
+            << VL.column [ VL.fName "Amino Acids", VL.fNominal, VL.fSpacing 1 ]
             << VL.position VL.Y
                 [ VL.pName "Proportion"
-                , VL.pAggregate VL.opSum
                 , VL.pMType VL.Quantitative
-                , VL.pAxis [ VL.axTitle "Amino Acid Proportion", VL.axGrid True ]
+                , VL.pAggregate VL.opSum
+                , VL.pAxis [ VL.axTitle "Amino Acid Proportion", VL.axGrid False ]
                 ]
             << VL.position VL.X
-                [ VL.pName "Amino Acids"
+                [ VL.pName "Set"
                 , VL.pMType VL.Nominal
+                , VL.pAxis []
                 ]
             << VL.color
                 [ VL.mName "Set"
@@ -942,7 +998,6 @@ compositionSpec device mDesignCompositionDict pdbCompositionDict =
                 ]
           )
             []
-        , config
         ]
 
 
@@ -1099,7 +1154,7 @@ fullTorsionAnglesSpec device designTorsionAngles pdbTorsionAnglesDicts =
                 , pdbData []
                 , sel []
                 , VL.tick
-                    [ VL.maOpacity 0.2
+                    [ VL.maOpacity 0.01
                     ]
                 , (VL.encoding
                     << VL.position VL.X
@@ -1191,7 +1246,7 @@ refSetTorsionAnglesSpec device pdbTorsionAnglesDicts =
                 , pdbData []
                 , sel []
                 , VL.tick
-                    [ VL.maOpacity 0.2
+                    [ VL.maOpacity 0.01
                     ]
                 , (VL.encoding
                     << VL.position VL.X
