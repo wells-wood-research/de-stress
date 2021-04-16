@@ -1485,7 +1485,7 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
                 Border.color Style.colorPalette.red
 
             Just True ->
-                Border.color Style.colorPalette.c3
+                Border.color Style.colorPalette.c6
         , Border.width 4
         , Border.rounded 10
         ]
