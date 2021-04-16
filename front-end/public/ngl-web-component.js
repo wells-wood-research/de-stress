@@ -17,7 +17,7 @@ class NGLViewer extends HTMLElement {
   showStructure() {
     const pdbString = this.getAttribute("pdb-string");
 
-    var stage = new Stage(this.id);
+    var stage = new Stage(this.id, { backgroundColor: "#BEBEBE" });
     var stringBlob = new Blob([pdbString], { type: "text/plain" });
     stage.loadFile(stringBlob, { ext: "pdb" }).then(function (component) {
       component.addRepresentation("cartoon");
