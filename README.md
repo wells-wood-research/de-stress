@@ -1,5 +1,5 @@
 # de-stress
-DEsigned STRucture Evaluation ServiceS
+### DEsigned STRucture Evaluation ServiceS
 
 ![Front End Tests](https://github.com/wells-wood-research/de-stress/workflows/Front%20End%20Tests/badge.svg)
 ![Big Structure Tests](https://github.com/wells-wood-research/de-stress/workflows/Big%20Structure%20Tests/badge.svg)
@@ -8,13 +8,13 @@ DE-STRESS is a web application that provides a suite of tools for evaluating pro
 designs. Our aim is to help make protein design more reliable, by providing tools to
 help you select the most promising designs to take into the lab.
 
-# Citing DE-STRESS
+## Citing DE-STRESS
 
 If you use DE-STRESS, please cite the following article:
 
 Stam MJ and Wood CW (2021)...
 
-# Contacting Us
+## Contacting Us
 
 If you find a bug or would like to request a feature, we'd really appreciate it if you
 report it as an [issue](https://github.com/wells-wood-research/de-stress/issues). If
@@ -24,7 +24,7 @@ you're stuck and need help or have any general feedback, please create a post on
 For more information about our research group, check out our
 [group website](https://www.wellswoodresearchgroup.com).
 
-# Local Deployment
+## Local Deployment
 
 Make sure you have all the relevant dependencies in
 `de-stress/dependencies_for_de-stress/`. Currently, these are:
