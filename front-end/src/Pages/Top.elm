@@ -102,14 +102,6 @@ citations =
                     everyday needs.  Nucleic Acids Research 43, D364–D368.
                     """
                 ]
-            , paragraph
-                []
-                [ text
-                    """Wood et al. (2017). ISAMBARD: an open-source computational
-                    environment for biomolecular analysis, modelling and design.
-                    Bioinformatics 33, 3043–3050.
-                    """
-                ]
             ]
     , evoef2 =
         paragraph
