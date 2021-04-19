@@ -39,7 +39,6 @@ type alias Citations =
     , dssp : Element Msg
     , evoef2 : Element Msg
     , hydro_fit : Element Msg
-    , iso_point : Element Msg
     , pack_dens : Element Msg
     , rosetta : Element Msg
     }
@@ -48,8 +47,8 @@ type alias Citations =
 citations : Citations
 citations =
     { aggrescan3D = text """Kuriata et al. (2019). Aggrescan3D standalone package for 
-                              structure-based prediction of protein aggregation properties. 
-                              Bioinformatics 35, 3834–3835."""
+                            structure-based prediction of protein aggregation properties. 
+                            Bioinformatics 35, 3834–3835."""
     , bude =
         column []
             [ paragraph [] [ text """McIntosh-Smith et al. (2012). Benchmarking Energy Efficiency, 
@@ -58,30 +57,32 @@ citations =
             , paragraph [] [ text """McIntosh-Smith et al. (2015). High performance in silico 
                                                 virtual drug screening on many-core processors. 
                                                 The International Journal of High Performance Computing Applications 29, 
-                                                119–134. """ ]
+                                                119–134.""" ]
             ]
     , dfire2 = text """Yang et al. (2008). Ab initio folding of terminal 
-                           segments with secondary structures reveals the fine difference 
-                           between two closely related all-atom statistical energy functions. 
-                           Protein Science 17, 1212–1219."""
+                       segments with secondary structures reveals the fine difference 
+                       between two closely related all-atom statistical energy functions. 
+                       Protein Science 17, 1212–1219."""
     , dssp =
         column
             []
             [ paragraph
                 []
-                [ text """Kabsch et al. Dictionary of protein secondary structure: 
-                                     Pattern recognition of hydrogen-bonded and geometrical features. 
-                                     Biopolymers 22, 2577–2637.""" ]
+                [ text """Kabsch et al. (1983). Dictionary of protein secondary structure: 
+                          Pattern recognition of hydrogen-bonded and geometrical features. 
+                          Biopolymers 22, 2577–2637.""" ]
             , paragraph
                 []
                 [ text """Touw et al. (2015). A series of PDB-related databanks for everyday needs. 
                                      Nucleic Acids Research 43, D364–D368.""" ]
+            , paragraph
+                []
+                [ text """Wood et al. (2017). ISAMBARD: an open-source computational environment for biomolecular 
+                          analysis, modelling and design. Bioinformatics 33, 3043–3050.""" ]
             ]
     , evoef2 = text """Huang et al. (2020). EvoEF2: accurate 
                            and fast energy function for computational protein design. 
                            Bioinformatics 36, 1135–1142."""
-    , iso_point = text """Wood et al. (2017). ISAMBARD: an open-source computational environment for biomolecular 
-                          analysis, modelling and design. Bioinformatics 33, 3043–3050."""
     , hydro_fit =
         column
             []
@@ -139,9 +140,6 @@ citationsTable =
         , rowView
             "Hydrophobic Fitness"
             citations.hydro_fit
-        , rowView
-            "Isoelectric Point"
-            citations.iso_point
         , rowView
             "Packing Density"
             citations.pack_dens
