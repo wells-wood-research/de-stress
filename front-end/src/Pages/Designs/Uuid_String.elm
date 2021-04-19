@@ -1502,7 +1502,7 @@ requirementView metrics requirement =
     el
         ([ width fill, Border.rounded 10 ]
             ++ (if requirementResolves then
-                    [ Background.color Style.colorPalette.c3 ]
+                    [ Background.color Style.colorPalette.c6 ]
 
                 else
                     [ Background.color Style.colorPalette.red ]

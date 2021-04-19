@@ -21,6 +21,7 @@ colorPalette :
     , c3 : Color
     , c4 : Color
     , c5 : Color
+    , c6 : Color
     , white : Color
     }
 colorPalette =
@@ -31,6 +32,7 @@ colorPalette =
     , c3 = rgb255 217 184 97 -- #EAD3A7
     , c4 = rgb255 190 190 190 -- #DCDED1
     , c5 = rgb255 220 220 220 -- #FAF7E4
+    , c6 = rgb255 51 165 50 --#33A532
     , white = rgb255 255 255 255
     }
 
