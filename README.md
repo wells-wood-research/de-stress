@@ -8,6 +8,10 @@ DE-STRESS is a web application that provides a suite of tools for evaluating pro
 designs. Our aim is to help make protein design more reliable, by providing tools to
 help you select the most promising designs to take into the lab.
 
+The application is available for non-commercial use through the following URL:
+
+https://pragmaticproteindesign.bio.ed.ac.uk/de-stress/
+
 ## Citing DE-STRESS
 
 If you use DE-STRESS, please cite the following article:
