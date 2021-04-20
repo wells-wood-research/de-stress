@@ -92,7 +92,7 @@ resolveRequirement mAggregateData metrics requirement =
                                     resolveCompositionDeviation
                                         unitType
                                         threshold
-                                        aggregateData.meanComposition
+                                        aggregateData.composition
                                         metrics.composition
 
                                 Nothing ->
@@ -147,7 +147,7 @@ resolveRequirement mAggregateData metrics requirement =
 resolveCompositionDeviation :
     UnitType
     -> Float
-    -> Dict String (Maybe Metrics.MeanAndStdDev)
+    -> Dict String (Maybe Metrics.MeanMedAndStdDev)
     -> Dict String Float
     -> Bool
 resolveCompositionDeviation unitType threshold meanComposition designComposition =

@@ -76,6 +76,11 @@ module Shared.Tooltips exposing
     , evoEF2SummaryRefHoverBox
     , evoEF2SummaryTotalHoverBox
     , hoverInfoView
+    , hydrophobicFitnessHoverBox
+    , isoelectricPointHoverBox
+    , massHoverBox
+    , numOfResiduesHoverBox
+    , packingDensityHoverBox
     , rosettaAAPropHoverBox
     , rosettaDunbrackHoverBox
     , rosettaElecHoverBox
@@ -107,7 +112,12 @@ import Shared.Style as Style
 
 
 type HoverInfoOption
-    = BudeFFTotalEnergy
+    = HydrophobicFitness
+    | IsoelectricPoint
+    | NumOfResidues
+    | Mass
+    | PackingDensity
+    | BudeFFTotalEnergy
     | BudeFFSteric
     | BudeFFDesolvation
     | BudeFFCharge
@@ -257,6 +267,74 @@ hoverInfoView { title, info, mouseEnterMsg, hoverInfoOption, changeMsg } =
 
 
 
+-- {{{ Basic Metrics Tooltips
+
+
+hydrophobicFitnessHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+hydrophobicFitnessHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Hydrophobic Fitness"
+        , info = """ This value is an efficient centroid-based method for calculating the packing quality of the protein
+                     structure. For this method C, F, I, L, M, V, W and Y are considered hydrophobic.
+                 """
+        , mouseEnterMsg = HydrophobicFitness
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+isoelectricPointHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+isoelectricPointHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Isoelectric Point"
+        , info = """ This value is the pH of a solution at which the net charge of the protein becomes zero.
+                 """
+        , mouseEnterMsg = IsoelectricPoint
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+numOfResiduesHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+numOfResiduesHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Number of Residues"
+        , info = """ This value is the number of amino acid residues in the protein structure. 
+                 """
+        , mouseEnterMsg = NumOfResidues
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+massHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+massHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Mass (Da)"
+        , info = """ This value is the mass of the protein structure in daltons (Da). 
+                 """
+        , mouseEnterMsg = Mass
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+packingDensityHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
+packingDensityHoverBox option changeMsg =
+    hoverInfoView
+        { title = "Mean Packing Density"
+        , info = """This value is the average packing density of the non-hydrogen atoms in the protein structure. 
+                    The packing density of an atom is a measure of the number of atoms within a specified radius
+                    (default 7 angstroms).
+                 """
+        , mouseEnterMsg = PackingDensity
+        , hoverInfoOption = option
+        , changeMsg = changeMsg
+        }
+
+
+
+-- }}}
 -- {{{ BUDE FF Tooltips
 
 
@@ -319,7 +397,7 @@ budeFFChargeHoverBox option changeMsg =
 evoEF2SummaryTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2SummaryTotalHoverBox option changeMsg =
     hoverInfoView
-        { title = "Total EvoEF2"
+        { title = "EvoEF2 Total Energy"
         , info = """This value is the total EvoEF2 energy. It is the sum of the reference, 
                     intra residue, inter residue - same chain and inter residue - different 
                     chains, energy values. In the EvoEF2 output this field is called `Total`."""
@@ -1172,7 +1250,7 @@ evoEF2InterDHBSCSCPhiHoverBox option changeMsg =
 dfire2TotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 dfire2TotalHoverBox option changeMsg =
     hoverInfoView
-        { title = "Total DFIRE2"
+        { title = "DFIRE2 Total Energy"
         , info = """This value is the total DFIRE2 energy. This is the only field that is returned from
                     running DFIRE2 on a pdb file."""
         , mouseEnterMsg = DFIRE2Total
@@ -1189,7 +1267,7 @@ dfire2TotalHoverBox option changeMsg =
 rosettaTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaTotalHoverBox option changeMsg =
     hoverInfoView
-        { title = "Total Rosetta"
+        { title = "Rosetta Total Energy"
         , info = """This value is the total Rosetta energy. It is a weighted sum of the different 
                     Rosetta energy values. In the Rosetta `score.sc` output file, this value is called 
                     `total_score`."""

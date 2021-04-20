@@ -1,16 +1,42 @@
 # de-stress
-DEsigned STRucture Evaluation ServiceS
+### DEsigned STRucture Evaluation ServiceS
 
 ![Front End Tests](https://github.com/wells-wood-research/de-stress/workflows/Front%20End%20Tests/badge.svg)
 ![Big Structure Tests](https://github.com/wells-wood-research/de-stress/workflows/Big%20Structure%20Tests/badge.svg)
 
-# Deployment
+DE-STRESS is a web application that provides a suite of tools for evaluating protein
+designs. Our aim is to help make protein design more reliable, by providing tools to
+help you select the most promising designs to take into the lab.
+
+The application is available for non-commercial use through the following URL:
+
+https://pragmaticproteindesign.bio.ed.ac.uk/de-stress/
+
+## Citing DE-STRESS
+
+If you use DE-STRESS, please cite the following article:
+
+Stam MJ and Wood CW (2021)...
+
+## Contacting Us
+
+If you find a bug or would like to request a feature, we'd really appreciate it if you
+report it as an [issue](https://github.com/wells-wood-research/de-stress/issues). If
+you're stuck and need help or have any general feedback, please create a post on the
+[discussion page](https://github.com/wells-wood-research/de-stress/discussions).
+
+For more information about our research group, check out our
+[group website](https://www.wellswoodresearchgroup.com).
+
+## Local Deployment
 
 Make sure you have all the relevant dependencies in
 `de-stress/dependencies_for_de-stress/`. Currently, these are:
 
+* Aggrescan3D
+* DFIRE 2 pair
+* DSSP
 * EvoEF2 (source)
-* DeFire
 * Rosetta (source)
 
 Create a `.env` file in the top level `de-stress` folder. You can copy

@@ -25,6 +25,7 @@ import Shared.Editable as Editable
 import Shared.Error as Error
 import Shared.Metrics as Metrics
 import Shared.Plots as Plots
+import Shared.ReferenceSet as ReferenceSet
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Specification as Specification exposing (Specification)
 import Shared.Style as Style
@@ -70,12 +71,14 @@ type alias Model =
     , loadingState : DesignLoadingState
     , pageErrors : List Error.Error
     , designs : Dict String Design.StoredDesign
+    , referenceSets : Dict String ReferenceSet.StoredReferenceSet
     , mSelectedSpecification : Maybe Specification
+    , deleteSelectedStatus : Buttons.DangerStatus
     , deleteAllStatus : Buttons.DangerStatus
     , navKey : Key
     , selectedUuids : Set.Set String
     , tagString : String
-    , filterTags : Set.Set String
+    , filterTags : { tags : Set.Set String, untaggedVisible : Bool }
     , device : Device
     , columnViewMode : ColumnViewMode
     , maxFilesInUploads : Int
@@ -119,37 +122,47 @@ type alias Params =
 init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
 init shared _ =
     let
-        ( mResourceUuid, designDict ) =
+        ( mResourceUuid, designDict, referenceSetsDict ) =
             case Shared.getRunState shared of
-                Just { resourceUuid, designs } ->
-                    ( Just resourceUuid, designs )
+                Just { resourceUuid, designs, referenceSets } ->
+                    ( Just resourceUuid, designs, referenceSets )
 
                 Nothing ->
-                    ( Nothing, Dict.empty )
+                    ( Nothing, Dict.empty, Dict.empty )
 
         model =
             { mResourceUuid = mResourceUuid
             , loadingState = Free
             , pageErrors = []
             , designs = designDict
+            , referenceSets = referenceSetsDict
             , mSelectedSpecification = Nothing
+            , deleteSelectedStatus = Buttons.initDangerStatus
             , deleteAllStatus = Buttons.initDangerStatus
             , navKey = shared.key
             , selectedUuids = Set.empty
             , tagString = ""
-            , filterTags = Set.empty
+            , filterTags = { tags = Set.empty, untaggedVisible = True }
             , device = classifyDevice shared
             , columnViewMode = DesignList
             , maxFilesInUploads = 30
             , maxResiduesInStructure = 500
             }
 
-        plotCmd =
+        designStubs =
             model.designs
                 |> Dict.toList
                 |> List.map (Tuple.mapSecond Design.storedDesignToStub)
                 |> Dict.fromList
-                |> makeOverViewSpec model.device
+
+        referenceSetStubs =
+            model.referenceSets
+                |> Dict.toList
+                |> List.map (Tuple.mapSecond ReferenceSet.storedReferenceSetToStub)
+                |> Dict.fromList
+
+        plotCmd =
+            makeOverViewSpec model.device referenceSetStubs designStubs
                 |> Plots.vegaPlot
     in
     ( model
@@ -198,6 +211,7 @@ type Msg
     | StructureLoaded String String
     | GotSpecification Value
     | DeleteDesign String Buttons.DangerStatus
+    | DeleteSelectedDesigns Buttons.DangerStatus
     | DeleteAllDesigns Buttons.DangerStatus
     | DesignDetails String
     | ClearPageErrors
@@ -212,6 +226,7 @@ type Msg
 
 type FilterTagsOption
     = AddOrRemove String
+    | ToggleUntagged
     | RemoveAll
     | AddAll
 
@@ -432,10 +447,17 @@ update msg model =
             )
 
         DeleteDesign uuidString dangerStatus ->
+            let
+                filterTags =
+                    model.filterTags
+            in
             if Buttons.isConfirmed dangerStatus then
                 let
                     updatedModel =
-                        { model | designs = Dict.remove uuidString model.designs }
+                        { model
+                            | designs = Dict.remove uuidString model.designs
+                            , filterTags = { filterTags | untaggedVisible = True }
+                        }
                 in
                 ( updatedModel
                 , Design.deleteDesign { uuidString = uuidString }
@@ -458,13 +480,46 @@ update msg model =
                 , Cmd.none
                 )
 
+        DeleteSelectedDesigns dangerStatus ->
+            let
+                filterTags =
+                    model.filterTags
+            in
+            if Buttons.isConfirmed dangerStatus then
+                let
+                    updatedModel =
+                        { model
+                            | designs =
+                                Dict.filter
+                                    (\k _ -> not (Set.member k model.selectedUuids))
+                                    model.designs
+                            , selectedUuids = Set.empty
+                            , filterTags = { filterTags | untaggedVisible = True }
+                        }
+                in
+                ( updatedModel
+                , Set.toList model.selectedUuids
+                    |> List.map (\uuid -> Design.deleteDesign { uuidString = uuid })
+                    |> Cmd.batch
+                )
+
+            else
+                ( { model | deleteSelectedStatus = dangerStatus }
+                , Cmd.none
+                )
+
         DeleteAllDesigns dangerStatus ->
+            let
+                filterTags =
+                    model.filterTags
+            in
             if Buttons.isConfirmed dangerStatus then
                 let
                     updatedModel =
                         { model
                             | deleteAllStatus = Buttons.initDangerStatus
                             , designs = Dict.empty
+                            , filterTags = { filterTags | untaggedVisible = True }
                         }
                 in
                 ( updatedModel
@@ -533,21 +588,40 @@ update msg model =
             )
 
         UpdateFilterTags option ->
+            let
+                filterTags =
+                    model.filterTags
+            in
             ( { model
                 | filterTags =
                     case option of
                         AddOrRemove tag ->
-                            if Set.member tag model.filterTags then
-                                Set.remove tag model.filterTags
+                            { filterTags
+                                | tags =
+                                    if Set.member tag filterTags.tags then
+                                        Set.remove tag filterTags.tags
 
-                            else
-                                Set.insert tag model.filterTags
+                                    else
+                                        Set.insert tag filterTags.tags
+                            }
+
+                        ToggleUntagged ->
+                            { filterTags
+                                | untaggedVisible = not filterTags.untaggedVisible
+                            }
 
                         RemoveAll ->
-                            Set.empty
+                            { filterTags
+                                | tags =
+                                    Set.empty
+                                , untaggedVisible = True
+                            }
 
                         AddAll ->
-                            getAllTags model.designs
+                            { filterTags
+                                | tags =
+                                    getAllTags model.designs
+                            }
               }
             , Cmd.none
             )
@@ -556,11 +630,20 @@ update msg model =
             ( { model | columnViewMode = newMode }
             , case newMode of
                 OverviewPlots ->
-                    model.designs
-                        |> Dict.toList
-                        |> List.map (Tuple.mapSecond Design.storedDesignToStub)
-                        |> Dict.fromList
-                        |> makeOverViewSpec model.device
+                    let
+                        designStubs =
+                            model.designs
+                                |> Dict.toList
+                                |> List.map (Tuple.mapSecond Design.storedDesignToStub)
+                                |> Dict.fromList
+
+                        referenceSetStubs =
+                            model.referenceSets
+                                |> Dict.toList
+                                |> List.map (Tuple.mapSecond ReferenceSet.storedReferenceSetToStub)
+                                |> Dict.fromList
+                    in
+                    makeOverViewSpec model.device referenceSetStubs designStubs
                         |> Plots.vegaPlot
 
                 _ ->
@@ -600,7 +683,18 @@ update msg model =
                 cmds =
                     [ createFile csvString ]
             in
-            if List.isEmpty noDataDesigns then
+            if Dict.isEmpty model.designs then
+                Error.updateWithError
+                    ClearPageErrors
+                    model
+                    { title = "No design data to export"
+                    , details =
+                        """No designs are loaded. Click "Load" to add your designs.
+                        """
+                    , severity = Error.Low
+                    }
+
+            else if List.isEmpty noDataDesigns then
                 ( model, Cmd.batch cmds )
 
             else
@@ -622,6 +716,33 @@ update msg model =
                     |> Tuple.mapSecond (\c -> c :: cmds |> Cmd.batch)
 
 
+aaLetterTo3Letter : Dict String String
+aaLetterTo3Letter =
+    [ ( "A", "ALA" )
+    , ( "C", "CYS" )
+    , ( "D", "ASP" )
+    , ( "E", "GLU" )
+    , ( "F", "PHE" )
+    , ( "G", "GLY" )
+    , ( "H", "HIS" )
+    , ( "I", "ILE" )
+    , ( "K", "LYS" )
+    , ( "L", "LEU" )
+    , ( "M", "MET" )
+    , ( "N", "ASN" )
+    , ( "P", "PRO" )
+    , ( "Q", "GLN" )
+    , ( "R", "ARG" )
+    , ( "S", "SER" )
+    , ( "T", "THR" )
+    , ( "V", "VAL" )
+    , ( "W", "TRP" )
+    , ( "X", "UNK" )
+    , ( "Y", "TYR" )
+    ]
+        |> Dict.fromList
+
+
 designStubCSVEncoder : Design.DesignStub -> List ( String, String )
 designStubCSVEncoder designStub =
     let
@@ -636,7 +757,9 @@ designStubCSVEncoder designStub =
 
         createCompLine : Dict String Float -> String -> ( String, String )
         createCompLine compDict label =
-            ( "composition: " ++ label
+            ( Dict.get label aaLetterTo3Letter
+                |> Maybe.withDefault "UNK"
+                |> (++) "composition: "
             , Dict.get label compDict
                 |> Maybe.withDefault 0.0
                 |> String.fromFloat
@@ -866,6 +989,7 @@ save model shared =
                     { runState
                         | resourceUuid = resourceUuid
                         , designs = model.designs
+                        , referenceSets = model.referenceSets
                         , saveStateRequested = True
                     }
                 )
@@ -884,15 +1008,24 @@ load shared model =
                     { model
                         | mResourceUuid = Just runState.resourceUuid
                         , designs = runState.designs
+                        , referenceSets = runState.referenceSets
                         , device = classifyDevice shared
                     }
 
-                plotCmd =
+                designStubs =
                     updatedModel.designs
                         |> Dict.toList
                         |> List.map (Tuple.mapSecond Design.storedDesignToStub)
                         |> Dict.fromList
-                        |> makeOverViewSpec updatedModel.device
+
+                referenceSetStubs =
+                    updatedModel.referenceSets
+                        |> Dict.toList
+                        |> List.map (Tuple.mapSecond ReferenceSet.storedReferenceSetToStub)
+                        |> Dict.fromList
+
+                plotCmd =
+                    makeOverViewSpec updatedModel.device referenceSetStubs designStubs
                         |> Plots.vegaPlot
             in
             ( updatedModel
@@ -1008,11 +1141,16 @@ bodyView model =
                         , clickMsg = Just StructuresRequested
                         , isActive = isActive
                         }
-                    , Buttons.dangerousButton
-                        { label = text "Delete All"
-                        , confirmText = "Are you sure you want to delete ALL design?"
-                        , status = model.deleteAllStatus
-                        , dangerousMsg = DeleteAllDesigns
+                    , Buttons.conditionalButton
+                        { label = text "Export"
+                        , clickMsg = Just ExportAllDesignData
+                        , isActive =
+                            case model.loadingState of
+                                LoadingFiles _ _ ->
+                                    False
+
+                                Free ->
+                                    True
                         }
                     ]
                 ]
@@ -1074,9 +1212,14 @@ singleColumnView model designCardData =
                         none
 
                       else
-                        selectedCommandsView model.selectedUuids model.tagString
-                    , designCardsView
-                        model.filterTags
+                        selectedCommandsView
+                            model.selectedUuids
+                            model.tagString
+                            model.deleteSelectedStatus
+                    , allDesignsView
+                        (getAllTags model.designs)
+                        model.filterTags.tags
+                        model.filterTags.untaggedVisible
                         model.mSelectedSpecification
                         designCardData
                     ]
@@ -1114,9 +1257,14 @@ doubleColumnView model designCardData =
                             none
 
                           else
-                            selectedCommandsView model.selectedUuids model.tagString
-                        , designCardsView
-                            model.filterTags
+                            selectedCommandsView
+                                model.selectedUuids
+                                model.tagString
+                                model.deleteSelectedStatus
+                        , allDesignsView
+                            (getAllTags model.designs)
+                            model.filterTags.tags
+                            model.filterTags.untaggedVisible
                             model.mSelectedSpecification
                             designCardData
                         ]
@@ -1130,6 +1278,26 @@ doubleColumnView model designCardData =
 
 
 -- {{{ Design Cards
+
+
+allDesignsView : Set.Set String -> Set.Set String -> Bool -> Maybe Specification -> List DesignCardData -> Element Msg
+allDesignsView allTags filterTags untaggedVisible mSelectedSpecification designCardData =
+    column [ spacing 10, width fill ]
+        [ if Set.isEmpty allTags then
+            none
+
+          else
+            allTagsView
+                { tags = allTags
+                , filterTags = filterTags
+                , untaggedVisible = untaggedVisible
+                }
+        , designCardsView
+            filterTags
+            untaggedVisible
+            mSelectedSpecification
+            designCardData
+        ]
 
 
 type alias DesignCardData =
@@ -1206,8 +1374,8 @@ partitionDesignCardData remainingData partitionedData =
             partitionDesignCardData rest newPartitioned
 
 
-designCardsView : Set.Set String -> Maybe Specification -> List DesignCardData -> Element Msg
-designCardsView filterTags mSelectedSpecification allDesignCardData =
+designCardsView : Set.Set String -> Bool -> Maybe Specification -> List DesignCardData -> Element Msg
+designCardsView filterTags untaggedVisible mSelectedSpecification allDesignCardData =
     let
         cardContainer =
             column [ spacing 10, width fill ]
@@ -1215,10 +1383,14 @@ designCardsView filterTags mSelectedSpecification allDesignCardData =
         designCardData =
             List.filter
                 (\{ designStub } ->
-                    if Set.isEmpty filterTags then
-                        True
+                    if Set.isEmpty designStub.tags then
+                        if untaggedVisible then
+                            True
 
-                    else if Set.isEmpty designStub.tags then
+                        else
+                            False
+
+                    else if Set.isEmpty filterTags then
                         True
 
                     else
@@ -1313,7 +1485,7 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
                 Border.color Style.colorPalette.red
 
             Just True ->
-                Border.color Style.colorPalette.c3
+                Border.color Style.colorPalette.c6
         , Border.width 4
         , Border.rounded 10
         ]
@@ -1338,7 +1510,7 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
                 , DesignDetails uuidString
                     |> Events.onClick
                 ]
-                [ Style.h2 <| text designStub.name
+                [ el [ Font.underline ] <| Style.h2 <| text designStub.name
                 , paragraph []
                     [ WebSockets.metricsJobStatusString designStub.metricsJobStatus
                         |> text
@@ -1372,39 +1544,14 @@ designCardView { uuidString, designStub, mMeetsSpecification, selected } =
 
 controlPanel : Model -> Element Msg
 controlPanel model =
-    let
-        allTags =
-            getAllTags model.designs
-    in
     column [ spacing 10 ]
-        [ Style.h2 <| text "Export Design Data"
-        , wrappedRow []
-            [ Buttons.conditionalButton
-                { label = text "Export All"
-                , clickMsg = Just ExportAllDesignData
-                , isActive =
-                    case model.loadingState of
-                        LoadingFiles _ _ ->
-                            False
-
-                        Free ->
-                            True
-                }
-            ]
-        , Style.h2 <| text "Tags"
-        , if Set.isEmpty allTags then
-            paragraph []
-                [ text <|
-                    ("No designs are tagged, select designs in order to tag them. "
-                        ++ "This will help you keep your designs organised."
-                    )
-                ]
-
-          else
-            allTagsView
-                { tags = getAllTags model.designs
-                , filterTags = model.filterTags
-                }
+        [ Style.h2 <| text "Delete All Designs"
+        , Buttons.dangerousButton
+            { label = text "Delete All"
+            , confirmText = "Are you sure you want to delete ALL design?"
+            , status = model.deleteAllStatus
+            , dangerousMsg = DeleteAllDesigns
+            }
         ]
 
 
@@ -1413,52 +1560,52 @@ controlPanel model =
 -- {{{ Tags
 
 
-allTagsView : { tags : Set.Set String, filterTags : Set.Set String } -> Element Msg
-allTagsView { tags, filterTags } =
+allTagsView : { tags : Set.Set String, filterTags : Set.Set String, untaggedVisible : Bool } -> Element Msg
+allTagsView { tags, filterTags, untaggedVisible } =
     tags
         |> Set.toList
         |> List.map (tagView (Just (\ts -> AddOrRemove ts |> UpdateFilterTags)) filterTags)
         |> (++)
-            [ text "Filter by Tag"
-            , filterNoneTag { filterTags = filterTags, allTags = tags }
-            , filterAllTag { filterTags = filterTags, allTags = tags }
+            [ text "Show"
+            , showAllTag filterTags untaggedVisible
+            , showUntagged untaggedVisible
             , text "|"
             ]
         |> wrappedRow [ spacing 10 ]
 
 
-filterNoneTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
-filterNoneTag { filterTags } =
+showAllTag : Set.Set String -> Bool -> Element Msg
+showAllTag filterTags untaggedVisible =
     el
         [ padding 5
         , pointer
-        , if Set.isEmpty filterTags then
-            Background.color Style.colorPalette.c3
+        , if (Set.isEmpty filterTags |> not) || not untaggedVisible then
+            Background.color Style.colorPalette.c4
 
           else
-            Background.color Style.colorPalette.c4
+            Background.color Style.colorPalette.c3
         , Border.rounded 8
         , Events.onClick (RemoveAll |> UpdateFilterTags)
         ]
     <|
-        text "None"
+        text "All"
 
 
-filterAllTag : { filterTags : Set.Set String, allTags : Set.Set String } -> Element Msg
-filterAllTag { filterTags, allTags } =
+showUntagged : Bool -> Element Msg
+showUntagged untaggedVisible =
     el
         [ padding 5
         , pointer
-        , if filterTags == allTags then
+        , if untaggedVisible then
             Background.color Style.colorPalette.c3
 
           else
             Background.color Style.colorPalette.c4
         , Border.rounded 8
-        , Events.onClick (AddAll |> UpdateFilterTags)
+        , Events.onClick (ToggleUntagged |> UpdateFilterTags)
         ]
     <|
-        text "All"
+        text "Untagged"
 
 
 tagView : Maybe (String -> Msg) -> Set.Set String -> String -> Element Msg
@@ -1485,31 +1632,40 @@ tagView mMsg filterTags tag =
         text tag
 
 
-selectedCommandsView : Set.Set String -> String -> Element Msg
-selectedCommandsView selectedUuids tagString =
-    wrappedRow [ spacing 10, width fill ]
-        [ Input.text []
-            { onChange = UpdateTagString
-            , text = tagString
-            , placeholder =
-                Just
-                    (Input.placeholder [] <|
-                        text "tag1, tag2..."
-                    )
-            , label = Input.labelLeft [] <| text "Tags"
-            }
-        , Buttons.conditionalButton
-            { label = text "Ok"
-            , clickMsg = Just <| AddTags selectedUuids tagString
-            , isActive =
-                stringToTags tagString
-                    |> Set.isEmpty
-                    |> not
-            }
-        , Buttons.alwaysActiveButton
-            { label = text "Cancel"
-            , clickMsg = CancelSelection
-            , pressed = False
+selectedCommandsView : Set.Set String -> String -> Buttons.DangerStatus -> Element Msg
+selectedCommandsView selectedUuids tagString dangerStatus =
+    column
+        [ spacing 10, width fill ]
+        [ wrappedRow [ spacing 10, width fill ]
+            [ Input.text []
+                { onChange = UpdateTagString
+                , text = tagString
+                , placeholder =
+                    Just
+                        (Input.placeholder [] <|
+                            text "tag1, tag2..."
+                        )
+                , label = Input.labelLeft [] <| text "Add Tags"
+                }
+            , Buttons.conditionalButton
+                { label = text "Ok"
+                , clickMsg = Just <| AddTags selectedUuids tagString
+                , isActive =
+                    stringToTags tagString
+                        |> Set.isEmpty
+                        |> not
+                }
+            , Buttons.alwaysActiveButton
+                { label = text "Cancel"
+                , clickMsg = CancelSelection
+                , pressed = False
+                }
+            ]
+        , Buttons.dangerousButton
+            { label = text "Delete Selected"
+            , confirmText = "Are you sure you want to delete the selected designs?"
+            , status = dangerStatus
+            , dangerousMsg = DeleteSelectedDesigns
             }
         ]
 
@@ -1522,10 +1678,12 @@ selectedCommandsView selectedUuids tagString =
 overviewPlots : Element msg
 overviewPlots =
     column
-        [ spacing 10, width fill ]
+        [ spacing 15, width fill ]
         [ el [ centerX ] <|
-            paragraph []
-                [ text "(Click on the bars to see design details.)"
+            paragraph [ Font.center ]
+                [ """Click on the bars to see design/reference set details.
+                  """
+                    |> text
                 ]
         , Keyed.el [ centerX ]
             ( "overview"
@@ -1546,16 +1704,28 @@ overviewPlots =
         ]
 
 
-makeOverViewSpec : Device -> Dict String Design.DesignStub -> { plotId : String, spec : VL.Spec }
-makeOverViewSpec device designStubs =
+makeOverViewSpec :
+    Device
+    -> Dict String ReferenceSet.ReferenceSetStub
+    -> Dict String Design.DesignStub
+    -> { plotId : String, spec : VL.Spec }
+makeOverViewSpec device referenceSetStubs designStubs =
+    let
+        designPlotData =
+            designStubs
+                |> Dict.toList
+                |> List.filterMap makePlotData
+
+        referenceSetPlotData =
+            referenceSetStubs
+                |> Dict.toList
+                |> List.filterMap makeRefSetPlotData
+    in
     { plotId = "overview"
     , spec =
         overviewSpec
             device
-            (designStubs
-                |> Dict.toList
-                |> List.filterMap makePlotData
-            )
+            (designPlotData ++ referenceSetPlotData)
     }
 
 
@@ -1585,8 +1755,54 @@ makePlotData ( uuid, { name, metricsJobStatus } ) =
                 , aggrescan3dTotalValue =
                     Maybe.withDefault (0 / 0)
                         metrics.aggrescan3dResults.total_value
+                , dataType = "designs"
                 }
             )
+
+
+makeRefSetPlotData : ( String, ReferenceSet.ReferenceSetStub ) -> Maybe PlotData
+makeRefSetPlotData ( uuid, { name, aggregateData } ) =
+    Just <|
+        { uuid = uuid
+        , name = name
+        , hydrophobicFitness =
+            aggregateData.hydrophobicFitness
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , isoelectricPoint =
+            aggregateData.isoelectricPoint
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , numberOfResidues =
+            aggregateData.numberOfResidues
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , packingDensity =
+            aggregateData.packingDensity
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , budeFFTotalEnergy =
+            aggregateData.budeFFTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , evoEFTotalEnergy =
+            aggregateData.evoEFTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , dfireTotalEnergy =
+            aggregateData.dfireTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , rosettaTotalEnergy =
+            aggregateData.rosettaTotalEnergy
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , aggrescan3dTotalValue =
+            aggregateData.aggrescan3dTotalValue
+                |> Maybe.map .median
+                |> Maybe.withDefault (0 / 0)
+        , dataType = "reference-sets"
+        }
 
 
 type alias PlotData =
@@ -1601,6 +1817,7 @@ type alias PlotData =
     , dfireTotalEnergy : Float
     , rosettaTotalEnergy : Float
     , aggrescan3dTotalValue : Float
+    , dataType : String
     }
 
 
@@ -1612,7 +1829,7 @@ plotTuples =
     , ( "Mean Packing Density", .packingDensity, VL.soDescending )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy, VL.soAscending )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
-    , ( "dFire2 Total Energy", .dfireTotalEnergy, VL.soAscending )
+    , ( "DFIRE2 Total Energy", .dfireTotalEnergy, VL.soAscending )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
     , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soAscending )
     ]
@@ -1630,8 +1847,10 @@ overviewSpec device plotData =
 
         metricValueBarSpec ( label, _, sortProp ) =
             VL.asSpec
-                [ VL.bar []
-                , VL.title (label ++ "\nfor All Designs") []
+                [ VL.bar
+                    [ VL.maTooltip VL.ttEncoding
+                    ]
+                , VL.title label []
                 , VL.width 200
                 , (VL.encoding
                     << VL.position VL.Y
@@ -1644,12 +1863,20 @@ overviewSpec device plotData =
                         , VL.pAxis
                             [ VL.axLabelExpr
                                 "split(datum.label, '@@@')[0]"
+                            , VL.axTitle ""
                             ]
                         ]
                     << VL.position VL.X
                         [ VL.pName label
                         , VL.pMType VL.Quantitative
                         , VL.pAxis [ VL.axTitle label, VL.axGrid True ]
+                        ]
+                    << VL.color
+                        [ VL.mName "dataType"
+                        , VL.mLegend
+                            [ VL.leTitle "Data Type"
+                            , VL.leOrient VL.loTop
+                            ]
                         ]
                     << VL.hyperlink
                         [ VL.hName "url"
@@ -1675,6 +1902,11 @@ overviewSpec device plotData =
                     (VL.strs <|
                         List.map .uuid plotData
                     )
+                << VL.dataColumn
+                    "dataType"
+                    (VL.strs <|
+                        List.map .dataType plotData
+                    )
                 << dataColumns
 
         config =
@@ -1686,7 +1918,7 @@ overviewSpec device plotData =
 
         transform =
             VL.transform
-                << VL.calculateAs "'/de-stress/designs/' + datum.uuid" "url"
+                << VL.calculateAs "'/de-stress/' + datum.dataType + '/' + datum.uuid" "url"
                 << VL.calculateAs "datum.name + datum.uuid" "unique name"
 
         ( headTuples, tailTuples ) =

@@ -1,6 +1,7 @@
 module Pages.DeStress exposing (Model, Msg, Params, page)
 
 import Element exposing (..)
+import Element.Border as Border
 import Element.Font as Font
 import Shared.Style as Style
 import Spa.Document exposing (Document)
@@ -29,6 +30,180 @@ page =
 
 
 -- {{{ VIEW
+
+
+type alias Citations =
+    { aggrescan3D : Element Msg
+    , bude : Element Msg
+    , dfire2 : Element Msg
+    , dssp : Element Msg
+    , evoef2 : Element Msg
+    , hydro_fit : Element Msg
+    , pack_dens : Element Msg
+    , rosetta : Element Msg
+    }
+
+
+citations : Citations
+citations =
+    { aggrescan3D =
+        paragraph
+            []
+            [ text
+                """Kuriata et al. (2019). Aggrescan3D standalone package for
+                structure-based prediction of protein aggregation properties.
+                Bioinformatics 35, 3834–3835.
+                """
+            ]
+    , bude =
+        column []
+            [ paragraph
+                []
+                [ text
+                    """McIntosh-Smith et al. (2012). Benchmarking Energy Efficiency,
+                    Power Costs and Carbon Emissions on Heterogeneous Systems.  The
+                    Computer Journal 55, 192–205.
+                    """
+                ]
+            , paragraph
+                []
+                [ text
+                    """McIntosh-Smith et al. (2015). High performance in silico virtual
+                    drug screening on many-core processors.  The International Journal
+                    of High Performance Computing Applications 29, 119–134.
+                    """
+                ]
+            ]
+    , dfire2 =
+        paragraph
+            []
+            [ text
+                """Yang et al. (2008). Ab initio folding of terminal segments with
+                secondary structures reveals the fine difference between two closely
+                related all-atom statistical energy functions.  Protein Science 17,
+                1212–1219.
+                """
+            ]
+    , dssp =
+        column
+            []
+            [ paragraph
+                []
+                [ text
+                    """Kabsch et al. (1983). Dictionary of protein secondary structure:
+                    Pattern recognition of hydrogen-bonded and geometrical features.
+                    Biopolymers 22, 2577–2637.
+                    """
+                ]
+            , paragraph
+                []
+                [ text
+                    """Touw et al. (2015). A series of PDB-related databanks for
+                    everyday needs.  Nucleic Acids Research 43, D364–D368.
+                    """
+                ]
+            ]
+    , evoef2 =
+        paragraph
+            []
+            [ text
+                """Huang et al. (2020). EvoEF2: accurate and fast energy function for
+                computational protein design.  Bioinformatics 36, 1135–1142.
+                """
+            ]
+    , hydro_fit =
+        column
+            []
+            [ paragraph
+                []
+                [ text
+                    """Huang et al. (1995). Recognizing native folds by the arrangement
+                    of hydrophobic and polar residues. J Mol Biol 252, 709–720.
+                    """
+                ]
+            , paragraph
+                []
+                [ text
+                    """Wood et al. (2017). ISAMBARD: an open-source computational
+                    environment for biomolecular analysis, modelling and design.
+                    Bioinformatics 33, 3043–3050.
+                    """
+                ]
+            ]
+    , pack_dens =
+        column
+            []
+            [ paragraph
+                []
+                [ text
+                    """Weiss (2007). On the interrelationship between atomic
+                    displacement parameters (ADPs) and coordinates in protein
+                    structures. Acta Crystallogr D Biol Crystallogr 63, 1235–1242.
+                    """
+                ]
+            , paragraph
+                []
+                [ text
+                    """Wood et al. (2017). ISAMBARD: an open-source computational
+                    environment for biomolecular analysis, modelling and design.
+                    Bioinformatics 33, 3043–3050.
+                    """
+                ]
+            ]
+    , rosetta =
+        paragraph
+            []
+            [ text
+                """Alford et al. (2017). The Rosetta All-Atom Energy Function for
+                Macromolecular Modeling and Design.  J. Chem. Theory Comput. 13,
+                3031–3048.
+                """
+            ]
+    }
+
+
+citationsTable : Element Msg
+citationsTable =
+    column
+        [ width fill ]
+        [ row
+            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
+            [ el [ width <| fillPortion 1 ] <| text "Metric"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
+            ]
+        , rowView
+            "Aggrescan3D"
+            citations.aggrescan3D
+        , rowView
+            "BUDE"
+            citations.bude
+        , rowView
+            "DFIRE2"
+            citations.dfire2
+        , rowView
+            "DSSP"
+            citations.dssp
+        , rowView
+            "EvoEF2"
+            citations.evoef2
+        , rowView
+            "Hydrophobic Fitness"
+            citations.hydro_fit
+        , rowView
+            "Packing Density"
+            citations.pack_dens
+        , rowView
+            "Rosetta"
+            citations.rosetta
+        ]
+
+
+rowView : String -> Element Msg -> Element Msg
+rowView metricName citation =
+    row [ padding 5, spacing 5, width fill, Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 } ]
+        [ paragraph [ width <| fillPortion 1 ] [ paragraph [] [ text metricName ] ]
+        , el [ width <| fillPortion 3, Font.alignLeft ] <| paragraph [] [ citation ]
+        ]
 
 
 view : Url Params -> Document Msg
@@ -68,30 +243,6 @@ view _ =
                     to do this.
                     """
                 ]
-            , text "Links"
-                |> Style.h3
-            , paragraph []
-                [ link Style.linkStyle
-                    { url = "https://github.com/wells-wood-research/de-stress"
-                    , label = text "Source Code"
-                    }
-                ]
-            , paragraph []
-                [ link Style.linkStyle
-                    { url = "https://www.wellswoodresearchgroup.com/"
-                    , label = text "Wells Wood Research Group Website"
-                    }
-                ]
-            , text "Citing DE-STRESS"
-                |> Style.h3
-            , paragraph []
-                [ text
-                    """If you use DE-STRESS, plase cite the following article:"""
-                ]
-            , paragraph []
-                [ text
-                    """Stam MJ and Wood CW (2021)..."""
-                ]
             , text "Usage"
                 |> Style.h3
             , paragraph []
@@ -109,6 +260,20 @@ view _ =
                     application, but please get in contact with us if you need help
                     doing this.
                     """
+                ]
+            , text "Links"
+                |> Style.h3
+            , paragraph []
+                [ link Style.linkStyle
+                    { url = "https://github.com/wells-wood-research/de-stress"
+                    , label = text "Source Code"
+                    }
+                ]
+            , paragraph []
+                [ link Style.linkStyle
+                    { url = "https://www.wellswoodresearchgroup.com/"
+                    , label = text "Wells Wood Research Group Website"
+                    }
                 ]
             , text "Contacting Us"
                 |> Style.h3
@@ -145,6 +310,23 @@ view _ =
                     }
                 , text "."
                 ]
+            , text "Citing DE-STRESS"
+                |> Style.h3
+            , paragraph []
+                [ text
+                    """If you use DE-STRESS, please cite the following article:"""
+                ]
+            , paragraph []
+                [ text
+                    """Stam MJ and Wood CW (2021)..."""
+                ]
+            , paragraph []
+                [ text
+                    """If you have used any of the metrics included in DE-STRESS, please
+                    cite the relevant papers shown below:
+                    """
+                ]
+            , citationsTable
             ]
         ]
     }

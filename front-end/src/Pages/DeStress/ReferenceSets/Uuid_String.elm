@@ -4,10 +4,12 @@ import Browser.Navigation as Nav
 import Codec exposing (Value)
 import Dict
 import Element exposing (..)
+import Element.Border as Border
 import Element.Font as Font
 import Element.Keyed as Keyed
 import Html
 import Html.Attributes as HAtt
+import Round
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Folds as Folds
@@ -329,6 +331,7 @@ simpleDetails :
         { a
             | name : String
             , description : String
+            , aggregateData : Metrics.AggregateData
             , deleteStatus : Buttons.DangerStatus
         }
     -> Element Msg
@@ -357,6 +360,9 @@ simpleDetails uuidString refSetOrStub =
             , paragraph
                 []
                 [ text refSetOrStub.description ]
+            , Style.h2 <|
+                text "Aggregate Data"
+            , aggregateDataTable refSetOrStub.aggregateData
             ]
         ]
 
@@ -368,6 +374,7 @@ fullDetails :
         { a
             | name : String
             , description : String
+            , aggregateData : Metrics.AggregateData
             , deleteStatus : Buttons.DangerStatus
             , metrics : List RefSetMetrics
         }
@@ -398,6 +405,60 @@ fullDetails uuidString displaySettings referenceSet =
                     ]
             }
         , referenceOverview
+        ]
+
+
+roundFloatText : Float -> Int -> Element msg
+roundFloatText value digits =
+    text (Round.round digits value)
+
+
+aggregateDataTable : Metrics.AggregateData -> Element msg
+aggregateDataTable aggregateData =
+    let
+        collatedData =
+            [ aggregateData.hydrophobicFitness
+            , aggregateData.isoelectricPoint
+            , aggregateData.numberOfResidues
+            , aggregateData.packingDensity
+            , aggregateData.budeFFTotalEnergy
+            , aggregateData.evoEFTotalEnergy
+            , aggregateData.dfireTotalEnergy
+            , aggregateData.rosettaTotalEnergy
+            , aggregateData.aggrescan3dTotalValue
+            ]
+                |> List.filterMap identity
+                |> List.map2 Tuple.pair
+                    [ "Hydrophobic Fitness"
+                    , "Isoelectric Point"
+                    , "Number Of Residues"
+                    , "Packing Density"
+                    , "BUDE FF Total Energy"
+                    , "EvoEF2 Total Energy"
+                    , "DFIRE2 Total Energy"
+                    , "Rosetta Total Energy"
+                    , "Aggrescan3d Total Value"
+                    ]
+    in
+    column
+        [ width fill ]
+        (row [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
+            [ el [ width <| fillPortion 1 ] <| text "Metric"
+            , el [ width <| fillPortion 1, Font.alignRight ] <| text "Mean"
+            , el [ width <| fillPortion 1, Font.alignRight ] <| text "Median"
+            , el [ width <| fillPortion 1, Font.alignRight ] <| text "Std Dev"
+            ]
+            :: List.map rowView collatedData
+        )
+
+
+rowView : ( String, Metrics.MeanMedAndStdDev ) -> Element msg
+rowView ( name, { mean, median, stdDev } ) =
+    row [ padding 5, spacing 5, width fill, Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 } ]
+        [ paragraph [ width <| fillPortion 1 ] [ text name ]
+        , el [ width <| fillPortion 1, Font.alignRight ] <| roundFloatText mean 2
+        , el [ width <| fillPortion 1, Font.alignRight ] <| roundFloatText median 2
+        , el [ width <| fillPortion 1, Font.alignRight ] <| roundFloatText stdDev 2
         ]
 
 
