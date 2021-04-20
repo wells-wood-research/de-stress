@@ -34,7 +34,7 @@ Make sure you have all the relevant dependencies in
 `de-stress/dependencies_for_de-stress/`. Currently, these are:
 
 * Aggrescan3D
-* DFire 2 pair
+* DFIRE 2 pair
 * DSSP
 * EvoEF2 (source)
 * Rosetta (source)
