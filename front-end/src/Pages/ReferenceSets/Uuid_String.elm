@@ -433,9 +433,9 @@ aggregateDataTable aggregateData =
                     , "Isoelectric Point"
                     , "Number Of Residues"
                     , "Packing Density"
-                    , "BudeFF Total Energy"
-                    , "EvoEF Total Energy"
-                    , "Dfire Total Energy"
+                    , "BUDE FF Total Energy"
+                    , "EvoEF2 Total Energy"
+                    , "DFIRE2 Total Energy"
                     , "Rosetta Total Energy"
                     , "Aggrescan3d Total Value"
                     ]

@@ -695,7 +695,7 @@ histPlotTuples =
     , ( "Mean Packing Density", .packingDensity )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy )
-    , ( "dFire2 Total Energy", .dfireTotalEnergy )
+    , ( "DFIRE2 Total Energy", .dfireTotalEnergy )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy )
     , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue )
     ]
