@@ -3,6 +3,8 @@ module Pages.Top exposing (Model, Msg, Params, page)
 import Element exposing (..)
 import Element.Border as Border
 import Element.Font as Font
+import Html
+import Html.Attributes as Hatt
 import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Page as Page exposing (Page)
@@ -228,6 +230,35 @@ view _ =
                     text "Click \"Designs\" to get started"
                 , text "."
                 ]
+            , text "Tutorial"
+                |> Style.h3
+            , column
+                [ spacing 20, width fill ]
+                [ Html.iframe
+                    [ Hatt.width 560
+                    , Hatt.height 315
+                    , Hatt.src " https://www.youtube.com/embed/H-RGvzcUY7M"
+                    , Hatt.title "YouTube video player"
+                    , Hatt.attribute "frameborder" "0"
+                    , Hatt.attribute
+                        "allow"
+                        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    , Hatt.attribute "allowfullscreen" ""
+                    ]
+                    []
+                    |> html
+                    |> el [ centerX ]
+                , paragraph
+                    []
+                    [ text
+                        """The example structures used in the tutorial can be found """
+                    , link Style.linkStyle
+                        { url = "https://github.com/wells-wood-research/de-stress/raw/master/tutorial/tutorial-structures.tar.xz"
+                        , label = text "here"
+                        }
+                    , text "."
+                    ]
+                ]
             , text "Your Data"
                 |> Style.h3
             , paragraph []
@@ -318,7 +349,13 @@ view _ =
                 ]
             , paragraph []
                 [ text
-                    """Stam MJ and Wood CW (2021)..."""
+                    """Stam MJ and Wood CW (2021) DE-STRESS: A user-friendly web
+                    application for the evaluation of protein designs, Biorxiv, """
+                , link Style.linkStyle
+                    { url = "https://doi.org/10.1101/2021.04.28.441790"
+                    , label = text "https://doi.org/10.1101/2021.04.28.441790"
+                    }
+                , text "."
                 ]
             , paragraph []
                 [ text
