@@ -177,11 +177,13 @@ maybeText value =
             text ""
 
 
-rowViewSoftware : String -> String -> List String -> Element Msg
-rowViewSoftware description convention citationList =
+rowViewSoftware : String -> String -> String -> String -> List String -> Element Msg
+rowViewSoftware softwareName description convention commandUsed citationList =
     row [ padding 5, spacing 5, width fill, Border.widthEach { top = 1, bottom = 1, left = 0, right = 0 } ]
-        [ el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text description ]
+        [ el [ width <| fillPortion 1, Font.alignLeft ] <| text softwareName
+        , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text description ]
         , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text convention ]
+        , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text commandUsed ]
         , el [ width <| fillPortion 1, Font.alignLeft ] <|
             column
                 []
@@ -205,19 +207,40 @@ rowViewMetrics metricName metricDesc =
         ]
 
 
-aggrescan3DSoftwareTable : Element Msg
-aggrescan3DSoftwareTable =
+softwareTable : Element Msg
+softwareTable =
     column
         [ width fill ]
         [ row
             [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
+            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Software Name"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Convention for Use"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Command Used"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
             ]
-        , rowViewSoftware
+        , column []
+            [ aggrescan3DSoftwareTable
+            , budeSoftwareTable
+            , dfire2SoftwareTable
+            , dsspSoftwareTable
+            , evoef2SoftwareTable
+            , hydroFitSoftwareTable
+            , packDensSoftwareTable
+            , rosettaSoftwareTable
+            ]
+        ]
+
+
+aggrescan3DSoftwareTable : Element Msg
+aggrescan3DSoftwareTable =
+    column
+        [ width fill ]
+        [ rowViewSoftware
+            "Aggrescan3D 2.0"
             "Aggregation Propensity"
             Docs.softwareInfo.aggrescan3D.convention
+            ""
             Docs.softwareInfo.aggrescan3D.citations
         ]
 
@@ -226,15 +249,11 @@ budeSoftwareTable : Element Msg
 budeSoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "BUDE"
             "Energy Function"
             Docs.softwareInfo.bude.convention
+            ""
             Docs.softwareInfo.bude.citations
         ]
 
@@ -243,15 +262,11 @@ dfire2SoftwareTable : Element Msg
 dfire2SoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "DFIRE2"
             "Energy Function"
             Docs.softwareInfo.dfire2.convention
+            ""
             Docs.softwareInfo.dfire2.citations
         ]
 
@@ -260,15 +275,11 @@ dsspSoftwareTable : Element Msg
 dsspSoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "DSSP"
             "Secondary Structure Assignment"
             Docs.softwareInfo.dssp.convention
+            ""
             Docs.softwareInfo.dssp.citations
         ]
 
@@ -277,15 +288,11 @@ evoef2SoftwareTable : Element Msg
 evoef2SoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "EvoEF2"
             "Energy Function"
             Docs.softwareInfo.evoef2.convention
+            ""
             Docs.softwareInfo.evoef2.citations
         ]
 
@@ -294,15 +301,11 @@ hydroFitSoftwareTable : Element Msg
 hydroFitSoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "Hydrophobic Fitness"
             ""
             Docs.softwareInfo.hydroFit.convention
+            ""
             Docs.softwareInfo.hydroFit.citations
         ]
 
@@ -311,15 +314,11 @@ packDensSoftwareTable : Element Msg
 packDensSoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "Packing Density"
             ""
             Docs.softwareInfo.packDens.convention
+            ""
             Docs.softwareInfo.packDens.citations
         ]
 
@@ -328,15 +327,11 @@ rosettaSoftwareTable : Element Msg
 rosettaSoftwareTable =
     column
         [ width fill ]
-        [ row
-            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "How to use?"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
-            ]
-        , rowViewSoftware
+        [ rowViewSoftware
+            "Rosetta"
             "Energy Function"
             Docs.softwareInfo.rosetta.convention
+            ""
             Docs.softwareInfo.rosetta.citations
         ]
 
@@ -763,91 +758,83 @@ view model =
             , Font.size 16
             ]
             [ column [ spacing 20 ]
-                [ text "Aggrescan3D 2.0"
-                    |> Style.h2
-                , aggrescan3DSoftwareTable
+                [ paragraph [] [ text """DE-STRESS uses a wide range of metrics that come from 
+                                         software developed by researchers all across
+                                         the world and are well used in protein design. However, due to the 
+                                         large numbers of metrics from different sources, it can be difficult 
+                                         to keep track of what these different metrics mean and 
+                                         how to use them. This page has been created to help you understand 
+                                         what these metrics mean, where they have came from and their convention 
+                                         for use.""" ]
+                , paragraph [] [ text """The first table gives a description of each of the different software
+                                         that are included in DE-STRESS, a short section about the convention on 
+                                         using these metrics, the command used by DE-STRESS to obtain the results 
+                                         and the citations.""" ]
+                , paragraph [] [ text """Below this table there are sections for each of the different software that 
+                                      can be expanded to show a list of the different metrics, along with a description 
+                                      of what these metrics mean.""" ]
+                , softwareTable
                 , toggleTable
                     { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
+                    , title = "Aggrescan3D 2.0 Metric List"
                     , toggleMsg = ToggleSectionVisibility Aggrescan3D
                     , tableView = aggrescan3DMetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "BUDE"
-                    |> Style.h2
-                , budeSoftwareTable
-                , toggleTable
+                [ toggleTable
                     { tableVisible = model.displaySettings.bude
-                    , title = "Metric List"
+                    , title = "BUDE Metric List"
                     , toggleMsg = ToggleSectionVisibility BUDE
                     , tableView = budeMetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "DFIRE2"
-                    |> Style.h2
-                , dfire2SoftwareTable
-                , toggleTable
-                    { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
-                    , toggleMsg = ToggleSectionVisibility Aggrescan3D
-                    , tableView = aggrescan3DMetricTable
+                [ toggleTable
+                    { tableVisible = model.displaySettings.dfire2
+                    , title = "DFIRE2 Metric List"
+                    , toggleMsg = ToggleSectionVisibility DFIRE2
+                    , tableView = dfire2MetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "DSSP"
-                    |> Style.h2
-                , dsspSoftwareTable
-                , toggleTable
-                    { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
-                    , toggleMsg = ToggleSectionVisibility Aggrescan3D
-                    , tableView = aggrescan3DMetricTable
+                [ toggleTable
+                    { tableVisible = model.displaySettings.dssp
+                    , title = "DSSP Metric List"
+                    , toggleMsg = ToggleSectionVisibility DSSP
+                    , tableView = dsspMetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "EvoEF2"
-                    |> Style.h2
-                , evoef2SoftwareTable
-                , toggleTable
-                    { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
-                    , toggleMsg = ToggleSectionVisibility Aggrescan3D
-                    , tableView = aggrescan3DMetricTable
+                [ toggleTable
+                    { tableVisible = model.displaySettings.evoef2
+                    , title = "EvoEF2 Metric List"
+                    , toggleMsg = ToggleSectionVisibility EvoEF2
+                    , tableView = evoef2MetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "Hydrophobic Fitness"
-                    |> Style.h2
-                , hydroFitSoftwareTable
-                , toggleTable
-                    { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
-                    , toggleMsg = ToggleSectionVisibility Aggrescan3D
-                    , tableView = aggrescan3DMetricTable
+                [ toggleTable
+                    { tableVisible = model.displaySettings.hydroFit
+                    , title = "Hydrophobic Fitness Metric List"
+                    , toggleMsg = ToggleSectionVisibility HydroFit
+                    , tableView = hydroFitMetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "Packing Density"
-                    |> Style.h2
-                , packDensSoftwareTable
-                , toggleTable
-                    { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
-                    , toggleMsg = ToggleSectionVisibility Aggrescan3D
-                    , tableView = aggrescan3DMetricTable
+                [ toggleTable
+                    { tableVisible = model.displaySettings.packDens
+                    , title = "Packing Density Metric List"
+                    , toggleMsg = ToggleSectionVisibility PackDens
+                    , tableView = packDensMetricTable
                     }
                 ]
             , column [ spacing 20 ]
-                [ text "Rosetta"
-                    |> Style.h2
-                , rosettaSoftwareTable
-                , toggleTable
-                    { tableVisible = model.displaySettings.aggrescan3D
-                    , title = "Metric List"
-                    , toggleMsg = ToggleSectionVisibility Aggrescan3D
-                    , tableView = aggrescan3DMetricTable
+                [ toggleTable
+                    { tableVisible = model.displaySettings.rosetta
+                    , title = "Rosetta Metric List"
+                    , toggleMsg = ToggleSectionVisibility Rosetta
+                    , tableView = rosettaMetricTable
                     }
                 ]
             ]
