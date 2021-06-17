@@ -1,11 +1,7 @@
-module Shared.MetricDocumentation exposing
-    ( Aggrescan3DInfo
-    , Aggrescan3DMetricDesc
-    , Aggrescan3DMetricName
+module Shared.Documentation exposing
+    ( MetricInfo
     , SoftwareInfo
-    , aggrescan3DInfo
-    , aggrescan3DMetricDescs
-    , aggrescan3DMetricNames
+    , metricInfo
     , softwareInfo
     )
 
@@ -18,27 +14,58 @@ import Shared.Style as Style
 
 
 type alias SoftwareInfo =
-    { aggrescan3D : Aggrescan3DInfo
-    , bude : BUDEInfo
-    , dfire2 : DFIRE2Info
-    , dssp : DSSPInfo
-    , evoef2 : EvoEF2Info
-    , hydroFit : HydroFitInfo
-    , packDens : PackDensInfo
-    , rosetta : RosettaInfo
+    { aggrescan3D : CitationConventionInfo
+    , bude : CitationConventionInfo
+    , dfire2 : CitationConventionInfo
+    , dssp : CitationConventionInfo
+    , evoef2 : CitationConventionInfo
+    , hydroFit : CitationConventionInfo
+    , packDens : CitationConventionInfo
+    , rosetta : CitationConventionInfo
+    }
+
+
+type alias CitationConventionInfo =
+    { citations : List String
+    , convention : String
+    }
+
+
+type alias MetricInfo =
+    { aggrescan3D : Aggrescan3DMetricInfo
+    , bude : BUDEMetricInfo
+    , dfire2 : DFIRE2MetricInfo
+    , dssp : DSSPMetricInfo
+    , evoef2 : EvoEF2MetricInfo
+    , hydroFit : HydroFitMetricInfo
+    , packDens : PackDensMetricInfo
+    , rosetta : RosettaMetricInfo
     }
 
 
 softwareInfo : SoftwareInfo
 softwareInfo =
-    { aggrescan3D = aggrescan3DInfo
-    , bude = budeInfo
-    , dfire2 = dfire2Info
-    , dssp = dsspInfo
-    , evoef2 = evoef2Info
-    , hydroFit = hydroFitInfo
-    , packDens = packDensInfo
-    , rosetta = rosettaInfo
+    { aggrescan3D = aggrescan3DSoftwareInfo
+    , bude = budeSoftwareInfo
+    , dfire2 = dfire2SoftwareInfo
+    , dssp = dsspSoftwareInfo
+    , evoef2 = evoef2SoftwareInfo
+    , hydroFit = hydroFitSoftwareInfo
+    , packDens = packDensSoftwareInfo
+    , rosetta = rosettaSoftwareInfo
+    }
+
+
+metricInfo : MetricInfo
+metricInfo =
+    { aggrescan3D = aggrescan3DMetricInfo
+    , bude = budeMetricInfo
+    , dfire2 = dfire2MetricInfo
+    , dssp = dsspMetricInfo
+    , evoef2 = evoef2MetricInfo
+    , hydroFit = hydroFitMetricInfo
+    , packDens = packDensMetricInfo
+    , rosetta = rosettaMetricInfo
     }
 
 
@@ -62,9 +89,19 @@ type alias Aggrescan3DMetricDesc =
     }
 
 
-type alias Aggrescan3DInfo =
+type alias Aggrescan3DMetricInfo =
     { metricName : Aggrescan3DMetricName
     , metricDesc : Aggrescan3DMetricDesc
+    }
+
+
+aggrescan3DSoftwareInfo : CitationConventionInfo
+aggrescan3DSoftwareInfo =
+    { citations = [ """Kuriata et al. (2019). Aggrescan3D standalone package for
+                structure-based prediction of protein aggregation properties.
+                Bioinformatics 35, 3834–3835.
+                """ ]
+    , convention = ""
     }
 
 
@@ -92,8 +129,8 @@ aggrescan3DMetricDescs =
     }
 
 
-aggrescan3DInfo : Aggrescan3DInfo
-aggrescan3DInfo =
+aggrescan3DMetricInfo : Aggrescan3DMetricInfo
+aggrescan3DMetricInfo =
     { metricName = aggrescan3DMetricNames
     , metricDesc = aggrescan3DMetricDescs
     }
@@ -120,9 +157,25 @@ type alias BUDEMetricDesc =
     }
 
 
-type alias BUDEInfo =
+type alias BUDEMetricInfo =
     { metricName : BUDEMetricName
     , metricDesc : BUDEMetricDesc
+    }
+
+
+budeSoftwareInfo : CitationConventionInfo
+budeSoftwareInfo =
+    { citations =
+        [ """McIntosh-Smith et al. (2012). Benchmarking Energy Efficiency,
+                    Power Costs and Carbon Emissions on Heterogeneous Systems.  The
+                    Computer Journal 55, 192–205.
+                    """
+        , """McIntosh-Smith et al. (2015). High performance in silico virtual
+                    drug screening on many-core processors.  The International Journal
+                    of High Performance Computing Applications 29, 119–134.
+                    """
+        ]
+    , convention = ""
     }
 
 
@@ -147,8 +200,8 @@ budeMetricDescs =
     }
 
 
-budeInfo : BUDEInfo
-budeInfo =
+budeMetricInfo : BUDEMetricInfo
+budeMetricInfo =
     { metricName = budeMetricNames
     , metricDesc = budeMetricDescs
     }
@@ -167,9 +220,20 @@ type alias DFIRE2MetricDesc =
     { totalEnergy : String }
 
 
-type alias DFIRE2Info =
+type alias DFIRE2MetricInfo =
     { metricName : DFIRE2MetricName
     , metricDesc : DFIRE2MetricDesc
+    }
+
+
+dfire2SoftwareInfo : CitationConventionInfo
+dfire2SoftwareInfo =
+    { citations = [ """Yang et al. (2008). Ab initio folding of terminal segments with
+                secondary structures reveals the fine difference between two closely
+                related all-atom statistical energy functions.  Protein Science 17,
+                1212–1219.
+                """ ]
+    , convention = ""
     }
 
 
@@ -184,8 +248,8 @@ dfire2MetricDescs =
                                        running DFIRE2 on a pdb file.""" }
 
 
-dfire2Info : DFIRE2Info
-dfire2Info =
+dfire2MetricInfo : DFIRE2MetricInfo
+dfire2MetricInfo =
     { metricName = dfire2MetricNames
     , metricDesc = dfire2MetricDescs
     }
@@ -220,9 +284,24 @@ type alias DSSPMetricDesc =
     }
 
 
-type alias DSSPInfo =
+type alias DSSPMetricInfo =
     { metricName : DSSPMetricName
     , metricDesc : DSSPMetricDesc
+    }
+
+
+dsspSoftwareInfo : CitationConventionInfo
+dsspSoftwareInfo =
+    { citations =
+        [ """Kabsch et al. (1983). Dictionary of protein secondary structure:
+                    Pattern recognition of hydrogen-bonded and geometrical features.
+                    Biopolymers 22, 2577–2637.
+                    """
+        , """Touw et al. (2015). A series of PDB-related databanks for
+                    everyday needs.  Nucleic Acids Research 43, D364–D368.
+                    """
+        ]
+    , convention = ""
     }
 
 
@@ -252,8 +331,8 @@ dsspMetricDescs =
     }
 
 
-dsspInfo : DSSPInfo
-dsspInfo =
+dsspMetricInfo : DSSPMetricInfo
+dsspMetricInfo =
     { metricName = dsspMetricNames
     , metricDesc = dsspMetricDescs
     }
@@ -404,9 +483,18 @@ type alias EvoEF2MetricDesc =
     }
 
 
-type alias EvoEF2Info =
+type alias EvoEF2MetricInfo =
     { metricName : EvoEF2MetricName
     , metricDesc : EvoEF2MetricDesc
+    }
+
+
+evoef2SoftwareInfo : CitationConventionInfo
+evoef2SoftwareInfo =
+    { citations = [ """Huang et al. (2020). EvoEF2: accurate and fast energy function for
+                computational protein design.  Bioinformatics 36, 1135–1142.
+                """ ]
+    , convention = ""
     }
 
 
@@ -654,8 +742,8 @@ evoef2MetricDescs =
     }
 
 
-evoef2Info : EvoEF2Info
-evoef2Info =
+evoef2MetricInfo : EvoEF2MetricInfo
+evoef2MetricInfo =
     { metricName = evoef2MetricNames
     , metricDesc = evoef2MetricDescs
     }
@@ -674,9 +762,24 @@ type alias HydroFitMetricDesc =
     { hydroFit : String }
 
 
-type alias HydroFitInfo =
+type alias HydroFitMetricInfo =
     { metricName : HydroFitMetricName
     , metricDesc : HydroFitMetricDesc
+    }
+
+
+hydroFitSoftwareInfo : CitationConventionInfo
+hydroFitSoftwareInfo =
+    { citations =
+        [ """Huang et al. (1995). Recognizing native folds by the arrangement
+                    of hydrophobic and polar residues. J Mol Biol 252, 709–720.
+                    """
+        , """Wood et al. (2017). ISAMBARD: an open-source computational
+                    environment for biomolecular analysis, modelling and design.
+                    Bioinformatics 33, 3043–3050.
+                    """
+        ]
+    , convention = ""
     }
 
 
@@ -691,8 +794,8 @@ hydroFitMetricDescs =
                                        structure. For this method C, F, I, L, M, V, W and Y are considered hydrophobic.""" }
 
 
-hydroFitInfo : HydroFitInfo
-hydroFitInfo =
+hydroFitMetricInfo : HydroFitMetricInfo
+hydroFitMetricInfo =
     { metricName = hydroFitMetricNames
     , metricDesc = hydroFitMetricDescs
     }
@@ -711,9 +814,25 @@ type alias PackDensMetricDesc =
     { packDens : String }
 
 
-type alias PackDensInfo =
+type alias PackDensMetricInfo =
     { metricName : PackDensMetricName
     , metricDesc : PackDensMetricDesc
+    }
+
+
+packDensSoftwareInfo : CitationConventionInfo
+packDensSoftwareInfo =
+    { citations =
+        [ """Weiss (2007). On the interrelationship between atomic
+                    displacement parameters (ADPs) and coordinates in protein
+                    structures. Acta Crystallogr D Biol Crystallogr 63, 1235–1242.
+                    """
+        , """Wood et al. (2017). ISAMBARD: an open-source computational
+                    environment for biomolecular analysis, modelling and design.
+                    Bioinformatics 33, 3043–3050.
+                    """
+        ]
+    , convention = ""
     }
 
 
@@ -728,8 +847,8 @@ packDensMetricDescs =
                                        structure. For this method C, F, I, L, M, V, W and Y are considered hydrophobic.""" }
 
 
-packDensInfo : PackDensInfo
-packDensInfo =
+packDensMetricInfo : PackDensMetricInfo
+packDensMetricInfo =
     { metricName = packDensMetricNames
     , metricDesc = packDensMetricDescs
     }
@@ -788,9 +907,19 @@ type alias RosettaMetricDesc =
     }
 
 
-type alias RosettaInfo =
+type alias RosettaMetricInfo =
     { metricName : RosettaMetricName
     , metricDesc : RosettaMetricDesc
+    }
+
+
+rosettaSoftwareInfo : CitationConventionInfo
+rosettaSoftwareInfo =
+    { citations = [ """Alford et al. (2017). The Rosetta All-Atom Energy Function for
+                Macromolecular Modeling and Design.  J. Chem. Theory Comput. 13,
+                3031–3048.
+                """ ]
+    , convention = ""
     }
 
 
@@ -874,8 +1003,8 @@ rosettaMetricDescs =
     }
 
 
-rosettaInfo : RosettaInfo
-rosettaInfo =
+rosettaMetricInfo : RosettaMetricInfo
+rosettaMetricInfo =
     { metricName = rosettaMetricNames
     , metricDesc = rosettaMetricDescs
     }
