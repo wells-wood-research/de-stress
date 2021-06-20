@@ -34,7 +34,7 @@ from destress_big_structure.settings import (
     AGGRESCAN3D_SCRIPT_PATH,
 )
 
-MAX_RUN_TIME = 10
+MAX_RUN_TIME = 15
 
 # We're suppressing warnings about atoms not being parameterised in BUDE FF
 # I'm not reporting this as the user should look into BUDE FF to understand how it works
@@ -353,7 +353,10 @@ def run_bude_ff(ampal_assembly: ampal.Assembly) -> BudeFFOutput:
     except KeyError:
         # Contains an unknown atom
         budeff_output = BudeFFOutput(
-            total_energy=None, steric=None, desolvation=None, charge=None,
+            total_energy=None,
+            steric=None,
+            desolvation=None,
+            charge=None,
         )
     return budeff_output
 
