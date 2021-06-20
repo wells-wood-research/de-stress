@@ -34,7 +34,7 @@ from destress_big_structure.settings import (
     AGGRESCAN3D_SCRIPT_PATH,
 )
 
-MAX_RUN_TIME = 15
+MAX_RUN_TIME = 20
 
 # We're suppressing warnings about atoms not being parameterised in BUDE FF
 # I'm not reporting this as the user should look into BUDE FF to understand how it works
