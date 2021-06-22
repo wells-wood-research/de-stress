@@ -285,9 +285,8 @@ hydrophobicFitnessHoverBox option changeMsg =
 isoelectricPointHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 isoelectricPointHoverBox option changeMsg =
     hoverInfoView
-        { title = "Isoelectric Point"
-        , info = """ This value is the pH of a solution at which the net charge of the protein becomes zero.
-                 """
+        { title = Docs.metricInfo.isoPoint.metricName.isoPoint
+        , info = Docs.metricInfo.isoPoint.metricDesc.isoPoint
         , mouseEnterMsg = IsoelectricPoint
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -297,9 +296,8 @@ isoelectricPointHoverBox option changeMsg =
 numOfResiduesHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 numOfResiduesHoverBox option changeMsg =
     hoverInfoView
-        { title = "Number of Residues"
-        , info = """ This value is the number of amino acid residues in the protein structure. 
-                 """
+        { title = Docs.metricInfo.other.metricName.numberOfResidues
+        , info = Docs.metricInfo.other.metricDesc.numberOfResidues
         , mouseEnterMsg = NumOfResidues
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -309,9 +307,8 @@ numOfResiduesHoverBox option changeMsg =
 massHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 massHoverBox option changeMsg =
     hoverInfoView
-        { title = "Mass (Da)"
-        , info = """ This value is the mass of the protein structure in daltons (Da). 
-                 """
+        { title = Docs.metricInfo.other.metricName.mass
+        , info = Docs.metricInfo.other.metricDesc.mass
         , mouseEnterMsg = Mass
         , hoverInfoOption = option
         , changeMsg = changeMsg

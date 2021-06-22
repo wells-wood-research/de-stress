@@ -5,6 +5,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import FeatherIcons
+import Html as Html
 import List as List
 import Shared.Documentation as Docs
 import Shared.Style as Style
@@ -33,8 +34,10 @@ type HideableSection
     | DSSP
     | EvoEF2
     | HydroFit
+    | IsoPoint
     | PackDens
     | Rosetta
+    | Other
 
 
 type alias DisplaySettings =
@@ -44,8 +47,10 @@ type alias DisplaySettings =
     , dssp : Bool
     , evoef2 : Bool
     , hydroFit : Bool
+    , isoPoint : Bool
     , packDens : Bool
     , rosetta : Bool
+    , other : Bool
     }
 
 
@@ -87,8 +92,10 @@ init params =
         , dssp = False
         , evoef2 = False
         , hydroFit = False
+        , isoPoint = False
         , packDens = False
         , rosetta = False
+        , other = False
         }
     }
 
@@ -140,6 +147,12 @@ update msg model =
                                     not displaySettings.hydroFit
                             }
 
+                        IsoPoint ->
+                            { displaySettings
+                                | isoPoint =
+                                    not displaySettings.isoPoint
+                            }
+
                         PackDens ->
                             { displaySettings
                                 | packDens =
@@ -150,6 +163,12 @@ update msg model =
                             { displaySettings
                                 | rosetta =
                                     not displaySettings.rosetta
+                            }
+
+                        Other ->
+                            { displaySettings
+                                | other =
+                                    not displaySettings.other
                             }
             }
 
@@ -177,13 +196,12 @@ maybeText value =
             text ""
 
 
-rowViewSoftware : String -> String -> String -> String -> List String -> Element Msg
-rowViewSoftware softwareName description convention commandUsed citationList =
+rowViewSoftware : String -> String -> String -> List String -> Element Msg
+rowViewSoftware softwareName description commandUsed citationList =
     row [ padding 5, spacing 5, width fill, Border.widthEach { top = 1, bottom = 1, left = 0, right = 0 } ]
         [ el [ width <| fillPortion 1, Font.alignLeft ] <| text softwareName
         , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text description ]
-        , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text convention ]
-        , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text commandUsed ]
+        , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [ Font.family [ Font.typeface "Roboto Mono", Font.monospace ], Font.size 10 ] [ text commandUsed ]
         , el [ width <| fillPortion 1, Font.alignLeft ] <|
             column
                 []
@@ -216,7 +234,6 @@ softwareTable =
             [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
             [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Software Name"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
-            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Convention for Use"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Command Used"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
             ]
@@ -238,10 +255,9 @@ aggrescan3DSoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "Aggrescan3D 2.0"
+            "Aggrescan3D 2.0 (v1.0.2)"
             "Aggregation Propensity"
-            Docs.softwareInfo.aggrescan3D.convention
-            ""
+            "aggrescan -i pdb_file_path -w output -D 10 -v 4"
             Docs.softwareInfo.aggrescan3D.citations
         ]
 
@@ -250,12 +266,31 @@ budeSoftwareTable : Element Msg
 budeSoftwareTable =
     column
         [ width fill ]
-        [ rowViewSoftware
-            "BUDE"
-            "Energy Function"
-            Docs.softwareInfo.bude.convention
-            ""
-            Docs.softwareInfo.bude.citations
+        [ row [ padding 5, spacing 5, width fill, Border.widthEach { top = 1, bottom = 1, left = 0, right = 0 } ]
+            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "BUDE (v1.0.0)"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| paragraph [] [ text "Energy Function" ]
+            , el [ width <| fillPortion 1, Font.alignLeft ] <|
+                column [ Font.family [ Font.typeface "Roboto Mono", Font.monospace ], Font.size 10, spacing 4 ]
+                    [ row [] [ text """import ampal""" ]
+                    , row [] [ text """import budeff""" ]
+                    , row [] [ text """design = ampal.load_pdb(""" ]
+                    , row [] [ text """pdb_string, path=False)""" ]
+                    , row [] [ text """budeff.get_internal_energy(""" ]
+                    , row [] [ text """design))""" ]
+                    ]
+            , el [ width <| fillPortion 1, Font.alignLeft ] <|
+                column
+                    []
+                    [ paragraph
+                        []
+                        [ maybeText (List.head Docs.softwareInfo.bude.citations)
+                        ]
+                    , paragraph
+                        []
+                        [ maybeText (List.head (List.drop 1 Docs.softwareInfo.bude.citations))
+                        ]
+                    ]
+            ]
         ]
 
 
@@ -264,10 +299,9 @@ dfire2SoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "DFIRE2"
+            "DFIRE2-pair"
             "Energy Function"
-            Docs.softwareInfo.dfire2.convention
-            ""
+            "calene dfire_pair.lib pdb_file_path"
             Docs.softwareInfo.dfire2.citations
         ]
 
@@ -279,8 +313,20 @@ dsspSoftwareTable =
         [ rowViewSoftware
             "DSSP"
             "Secondary Structure Assignment"
-            Docs.softwareInfo.dssp.convention
-            ""
+            """ import isambard.evaluation as ev 
+                import ampal
+                design=ampal.load_pdb(pdb_string, path=False)
+                ev.tag_dssp_data(design)
+                sequence_info={
+                    chain.id: SequenceInfo(
+                        sequence="".join(m.mol_letter for m in chain),
+                        dssp_assignment="".join(
+                            m.tags["dssp_data"]["ss_definition"] for m in chain
+                        ),
+                    )
+                    for chain in design
+                    if isinstance(chain, ampal.Polypeptide)
+                }"""
             Docs.softwareInfo.dssp.citations
         ]
 
@@ -292,8 +338,7 @@ evoef2SoftwareTable =
         [ rowViewSoftware
             "EvoEF2"
             "Energy Function"
-            Docs.softwareInfo.evoef2.convention
-            ""
+            "EvoEF2 --command = ComputeStability --pdb = pdb_file_path"
             Docs.softwareInfo.evoef2.citations
         ]
 
@@ -303,10 +348,14 @@ hydroFitSoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "Hydrophobic Fitness"
-            ""
-            Docs.softwareInfo.hydroFit.convention
-            ""
+            """Hydrophobic Fitness 
+(ISAMBARD v2.3.1)"""
+            "Energy Function"
+            """import isambard.evaluation as ev 
+               import ampal
+               design=ampal.load_pdb(pdb_string, path=False)
+               ev.calculate_hydrophobic_fitness(
+                design)"""
             Docs.softwareInfo.hydroFit.citations
         ]
 
@@ -316,10 +365,15 @@ packDensSoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "Packing Density"
-            ""
-            Docs.softwareInfo.packDens.convention
-            ""
+            """Packing Density
+(ISAMBARD v2.3.1)"""
+            "Geometric Analysis"
+            """import isambard.evaluation as ev 
+               import ampal
+               design=ampal.load_pdb(pdb_string, path=False)
+            ev.tag_packing_density(design)
+            mean_packing_density = np.mean(
+             [a.tags["packing density"] for a in design.get_atoms() if a.element != "H"])"""
             Docs.softwareInfo.packDens.citations
         ]
 
@@ -329,10 +383,11 @@ rosettaSoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "Rosetta"
+            "Rosetta (ref2015)"
             "Energy Function"
-            Docs.softwareInfo.rosetta.convention
-            ""
+            """rosetta_src_2020.08.61146
+            _bundle/main/source/bin/score
+            _jd2.linuxgccrelease -in:file:s pdb_file_path -ignore_unrecognized_res -scorefile_format json"""
             Docs.softwareInfo.rosetta.citations
         ]
 
@@ -492,21 +547,29 @@ evoef2MetricTable =
             Docs.metricInfo.evoef2.metricDesc.referenceALA
             Docs.metricInfo.evoef2.metricVarName.referenceALA
         , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referenceCYS
-            Docs.metricInfo.evoef2.metricDesc.referenceCYS
-            Docs.metricInfo.evoef2.metricVarName.referenceCYS
+            Docs.metricInfo.evoef2.metricName.referenceARG
+            Docs.metricInfo.evoef2.metricDesc.referenceARG
+            Docs.metricInfo.evoef2.metricVarName.referenceARG
+        , rowViewMetrics
+            Docs.metricInfo.evoef2.metricName.referenceASN
+            Docs.metricInfo.evoef2.metricDesc.referenceASN
+            Docs.metricInfo.evoef2.metricVarName.referenceASN
         , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceASP
             Docs.metricInfo.evoef2.metricDesc.referenceASP
             Docs.metricInfo.evoef2.metricVarName.referenceASP
         , rowViewMetrics
+            Docs.metricInfo.evoef2.metricName.referenceCYS
+            Docs.metricInfo.evoef2.metricDesc.referenceCYS
+            Docs.metricInfo.evoef2.metricVarName.referenceCYS
+        , rowViewMetrics
+            Docs.metricInfo.evoef2.metricName.referenceGLN
+            Docs.metricInfo.evoef2.metricDesc.referenceGLN
+            Docs.metricInfo.evoef2.metricVarName.referenceGLN
+        , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceGLU
             Docs.metricInfo.evoef2.metricDesc.referenceGLU
             Docs.metricInfo.evoef2.metricVarName.referenceGLU
-        , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referencePHE
-            Docs.metricInfo.evoef2.metricDesc.referencePHE
-            Docs.metricInfo.evoef2.metricVarName.referencePHE
         , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceGLY
             Docs.metricInfo.evoef2.metricDesc.referenceGLY
@@ -520,33 +583,25 @@ evoef2MetricTable =
             Docs.metricInfo.evoef2.metricDesc.referenceILE
             Docs.metricInfo.evoef2.metricVarName.referenceILE
         , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referenceLYS
-            Docs.metricInfo.evoef2.metricDesc.referenceLYS
-            Docs.metricInfo.evoef2.metricVarName.referenceLYS
-        , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceLEU
             Docs.metricInfo.evoef2.metricDesc.referenceLEU
             Docs.metricInfo.evoef2.metricVarName.referenceLEU
+        , rowViewMetrics
+            Docs.metricInfo.evoef2.metricName.referenceLYS
+            Docs.metricInfo.evoef2.metricDesc.referenceLYS
+            Docs.metricInfo.evoef2.metricVarName.referenceLYS
         , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceMET
             Docs.metricInfo.evoef2.metricDesc.referenceMET
             Docs.metricInfo.evoef2.metricVarName.referenceMET
         , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referenceASN
-            Docs.metricInfo.evoef2.metricDesc.referenceASN
-            Docs.metricInfo.evoef2.metricVarName.referenceASN
+            Docs.metricInfo.evoef2.metricName.referencePHE
+            Docs.metricInfo.evoef2.metricDesc.referencePHE
+            Docs.metricInfo.evoef2.metricVarName.referencePHE
         , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referencePRO
             Docs.metricInfo.evoef2.metricDesc.referencePRO
             Docs.metricInfo.evoef2.metricVarName.referencePRO
-        , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referenceGLN
-            Docs.metricInfo.evoef2.metricDesc.referenceGLN
-            Docs.metricInfo.evoef2.metricVarName.referenceGLN
-        , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referenceARG
-            Docs.metricInfo.evoef2.metricDesc.referenceARG
-            Docs.metricInfo.evoef2.metricVarName.referenceARG
         , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceSER
             Docs.metricInfo.evoef2.metricDesc.referenceSER
@@ -556,10 +611,6 @@ evoef2MetricTable =
             Docs.metricInfo.evoef2.metricDesc.referenceTHR
             Docs.metricInfo.evoef2.metricVarName.referenceTHR
         , rowViewMetrics
-            Docs.metricInfo.evoef2.metricName.referenceVAL
-            Docs.metricInfo.evoef2.metricDesc.referenceVAL
-            Docs.metricInfo.evoef2.metricVarName.referenceVAL
-        , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.referenceTRP
             Docs.metricInfo.evoef2.metricDesc.referenceTRP
             Docs.metricInfo.evoef2.metricVarName.referenceTRP
@@ -567,6 +618,10 @@ evoef2MetricTable =
             Docs.metricInfo.evoef2.metricName.referenceTYR
             Docs.metricInfo.evoef2.metricDesc.referenceTYR
             Docs.metricInfo.evoef2.metricVarName.referenceTYR
+        , rowViewMetrics
+            Docs.metricInfo.evoef2.metricName.referenceVAL
+            Docs.metricInfo.evoef2.metricDesc.referenceVAL
+            Docs.metricInfo.evoef2.metricVarName.referenceVAL
         , rowViewMetrics
             Docs.metricInfo.evoef2.metricName.intraRVdwatt
             Docs.metricInfo.evoef2.metricDesc.intraRVdwatt
@@ -751,6 +806,23 @@ hydroFitMetricTable =
         ]
 
 
+isoPointMetricTable : Element Msg
+isoPointMetricTable =
+    column
+        [ width fill ]
+        [ row
+            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
+            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Metric Name"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Metric Description"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Variable Name in CSV Output"
+            ]
+        , rowViewMetrics
+            Docs.metricInfo.isoPoint.metricName.isoPoint
+            Docs.metricInfo.isoPoint.metricDesc.isoPoint
+            Docs.metricInfo.isoPoint.metricVarName.isoPoint
+        ]
+
+
 packDensMetricTable : Element Msg
 packDensMetricTable =
     column
@@ -861,6 +933,111 @@ rosettaMetricTable =
         ]
 
 
+otherMetricTable : Element Msg
+otherMetricTable =
+    column
+        [ width fill ]
+        [ row
+            [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
+            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Metric Name"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Metric Description"
+            , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Variable Name in CSV Output"
+            ]
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionALA
+            Docs.metricInfo.other.metricDesc.compositionALA
+            Docs.metricInfo.other.metricVarName.compositionALA
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionARG
+            Docs.metricInfo.other.metricDesc.compositionARG
+            Docs.metricInfo.other.metricVarName.compositionARG
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionASN
+            Docs.metricInfo.other.metricDesc.compositionASN
+            Docs.metricInfo.other.metricVarName.compositionASN
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionASP
+            Docs.metricInfo.other.metricDesc.compositionASP
+            Docs.metricInfo.other.metricVarName.compositionASP
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionCYS
+            Docs.metricInfo.other.metricDesc.compositionCYS
+            Docs.metricInfo.other.metricVarName.compositionCYS
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionGLN
+            Docs.metricInfo.other.metricDesc.compositionGLN
+            Docs.metricInfo.other.metricVarName.compositionGLN
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionGLU
+            Docs.metricInfo.other.metricDesc.compositionGLU
+            Docs.metricInfo.other.metricVarName.compositionGLU
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionGLY
+            Docs.metricInfo.other.metricDesc.compositionGLY
+            Docs.metricInfo.other.metricVarName.compositionGLY
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionHIS
+            Docs.metricInfo.other.metricDesc.compositionHIS
+            Docs.metricInfo.other.metricVarName.compositionHIS
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionILE
+            Docs.metricInfo.other.metricDesc.compositionILE
+            Docs.metricInfo.other.metricVarName.compositionILE
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionLEU
+            Docs.metricInfo.other.metricDesc.compositionLEU
+            Docs.metricInfo.other.metricVarName.compositionLEU
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionLYS
+            Docs.metricInfo.other.metricDesc.compositionLYS
+            Docs.metricInfo.other.metricVarName.compositionLYS
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionMET
+            Docs.metricInfo.other.metricDesc.compositionMET
+            Docs.metricInfo.other.metricVarName.compositionMET
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionPHE
+            Docs.metricInfo.other.metricDesc.compositionPHE
+            Docs.metricInfo.other.metricVarName.compositionPHE
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionPRO
+            Docs.metricInfo.other.metricDesc.compositionPRO
+            Docs.metricInfo.other.metricVarName.compositionPRO
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionSER
+            Docs.metricInfo.other.metricDesc.compositionSER
+            Docs.metricInfo.other.metricVarName.compositionSER
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionTHR
+            Docs.metricInfo.other.metricDesc.compositionTHR
+            Docs.metricInfo.other.metricVarName.compositionTHR
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionTRP
+            Docs.metricInfo.other.metricDesc.compositionTRP
+            Docs.metricInfo.other.metricVarName.compositionTRP
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionTYR
+            Docs.metricInfo.other.metricDesc.compositionTYR
+            Docs.metricInfo.other.metricVarName.compositionTYR
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionVAL
+            Docs.metricInfo.other.metricDesc.compositionVAL
+            Docs.metricInfo.other.metricVarName.compositionVAL
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.compositionUNK
+            Docs.metricInfo.other.metricDesc.compositionUNK
+            Docs.metricInfo.other.metricVarName.compositionUNK
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.numberOfResidues
+            Docs.metricInfo.other.metricDesc.numberOfResidues
+            Docs.metricInfo.other.metricVarName.numberOfResidues
+        , rowViewMetrics
+            Docs.metricInfo.other.metricName.mass
+            Docs.metricInfo.other.metricDesc.mass
+            Docs.metricInfo.other.metricVarName.mass
+        ]
+
+
 view : Model -> Document Msg
 view model =
     { title = "Glossary"
@@ -880,13 +1057,26 @@ view model =
                                          how to use them. This page has been created to help you understand 
                                          what these metrics mean, where they have came from and their convention 
                                          for use.""" ]
-                , paragraph [] [ text """The first table gives a description of each of the different software
-                                         that are included in DE-STRESS, a short section about the convention on 
-                                         using these metrics, the command used by DE-STRESS to obtain the results 
-                                         and the citations.""" ]
-                , paragraph [] [ text """Below this table there are sections for each of the different software that 
-                                      can be expanded to show a list of the different metrics, along with a description 
-                                      of what these metrics mean.""" ]
+                , paragraph [] [ text """The first table gives a description of the different software
+                                         that are included in DE-STRESS, the command used by DE-STRESS to obtain the results 
+                                         and the citations. Below this table there are sections for each of the different software that 
+                                         can be expanded to show a list of the different metrics, along with a description 
+                                         of what these metrics mean.
+                                         """ ]
+                , paragraph [] [ text """It's difficult to provide instructions on exactly how to use these 
+                                         metrics as it depends on the use case and the protein you want to design. 
+                                         However, for the the energy function metrics, generally the lower the value
+                                         the better, as this indicates the stability of the protein design. There will be 
+                                         inconsistencies across the different energy function values as they have all been developed
+                                         with different methodologies, and for different applications. One thing to consider while
+                                         using these energy function values is that they have not been normalised for the size of 
+                                         the protein. This means that you might see larger values for larger proteins, and so for 
+                                         meaningful comparisons across different protein structures, these values should be 
+                                         normalised to take into account the size of the protein. For the Aggrescan3D Total Score 
+                                         value, the lower the value means the higher global solubility of the structure. 
+                                         However, similar to the energy function values, this value is dependent on the size of the 
+                                         protein. Aggrescan3D also provides a normalised value Average Score which allows the 
+                                         comparison of the aggregation propensity/solubility of different structures.""" ]
                 , softwareTable
                 , toggleTable
                     { tableVisible = model.displaySettings.aggrescan3D
@@ -937,6 +1127,14 @@ view model =
                 ]
             , column [ spacing 20 ]
                 [ toggleTable
+                    { tableVisible = model.displaySettings.isoPoint
+                    , title = "Isoelectric Point Metric List"
+                    , toggleMsg = ToggleSectionVisibility IsoPoint
+                    , tableView = isoPointMetricTable
+                    }
+                ]
+            , column [ spacing 20 ]
+                [ toggleTable
                     { tableVisible = model.displaySettings.packDens
                     , title = "Packing Density Metric List"
                     , toggleMsg = ToggleSectionVisibility PackDens
@@ -949,6 +1147,14 @@ view model =
                     , title = "Rosetta Metric List"
                     , toggleMsg = ToggleSectionVisibility Rosetta
                     , tableView = rosettaMetricTable
+                    }
+                ]
+            , column [ spacing 20 ]
+                [ toggleTable
+                    { tableVisible = model.displaySettings.other
+                    , title = "Other Metric List"
+                    , toggleMsg = ToggleSectionVisibility Other
+                    , tableView = otherMetricTable
                     }
                 ]
             ]

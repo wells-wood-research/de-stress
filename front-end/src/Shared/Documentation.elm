@@ -20,6 +20,7 @@ type alias SoftwareInfo =
     , dssp : CitationConventionInfo
     , evoef2 : CitationConventionInfo
     , hydroFit : CitationConventionInfo
+    , isoPoint : CitationConventionInfo
     , packDens : CitationConventionInfo
     , rosetta : CitationConventionInfo
     }
@@ -38,8 +39,10 @@ type alias MetricInfo =
     , dssp : DSSPMetricInfo
     , evoef2 : EvoEF2MetricInfo
     , hydroFit : HydroFitMetricInfo
+    , isoPoint : IsoPointMetricInfo
     , packDens : PackDensMetricInfo
     , rosetta : RosettaMetricInfo
+    , other : OtherMetricInfo
     }
 
 
@@ -51,6 +54,7 @@ softwareInfo =
     , dssp = dsspSoftwareInfo
     , evoef2 = evoef2SoftwareInfo
     , hydroFit = hydroFitSoftwareInfo
+    , isoPoint = isoPointSoftwareInfo
     , packDens = packDensSoftwareInfo
     , rosetta = rosettaSoftwareInfo
     }
@@ -64,8 +68,10 @@ metricInfo =
     , dssp = dsspMetricInfo
     , evoef2 = evoef2MetricInfo
     , hydroFit = hydroFitMetricInfo
+    , isoPoint = isoPointMetricInfo
     , packDens = packDensMetricInfo
     , rosetta = rosettaMetricInfo
+    , other = otherMetricInfo
     }
 
 
@@ -822,6 +828,59 @@ hydroFitMetricInfo =
 
 
 -- }}}
+-- {{{ Isoelectric Point
+
+
+type alias IsoPointMetrics =
+    { isoPoint : String
+    }
+
+
+type alias IsoPointMetricInfo =
+    { metricName : IsoPointMetrics
+    , metricDesc : IsoPointMetrics
+    , metricVarName : IsoPointMetrics
+    }
+
+
+isoPointSoftwareInfo : CitationConventionInfo
+isoPointSoftwareInfo =
+    { citations =
+        [ """"""
+        ]
+    , convention = ""
+    }
+
+
+isoPointMetricNames : IsoPointMetrics
+isoPointMetricNames =
+    { isoPoint = "Isoelectric Point"
+    }
+
+
+isoPointMetricDescs : IsoPointMetrics
+isoPointMetricDescs =
+    { isoPoint = """ This value is the pH of a solution at which the net charge of the protein becomes zero.
+                 """
+    }
+
+
+isoPointMetricVarName : IsoPointMetrics
+isoPointMetricVarName =
+    { isoPoint = "isoelectric point (pH)"
+    }
+
+
+isoPointMetricInfo : IsoPointMetricInfo
+isoPointMetricInfo =
+    { metricName = isoPointMetricNames
+    , metricDesc = isoPointMetricDescs
+    , metricVarName = isoPointMetricVarName
+    }
+
+
+
+-- }}}
 -- {{{ Packing Density
 
 
@@ -1032,4 +1091,134 @@ rosettaMetricInfo =
     { metricName = rosettaMetricNames
     , metricDesc = rosettaMetricDescs
     , metricVarName = rosettaMetricVarName
+    }
+
+
+
+-- {{{ Other Metrics
+
+
+type alias OtherMetrics =
+    { compositionALA : String
+    , compositionCYS : String
+    , compositionASP : String
+    , compositionGLU : String
+    , compositionPHE : String
+    , compositionGLY : String
+    , compositionHIS : String
+    , compositionILE : String
+    , compositionLYS : String
+    , compositionLEU : String
+    , compositionMET : String
+    , compositionASN : String
+    , compositionPRO : String
+    , compositionGLN : String
+    , compositionARG : String
+    , compositionSER : String
+    , compositionTHR : String
+    , compositionVAL : String
+    , compositionTRP : String
+    , compositionUNK : String
+    , compositionTYR : String
+    , numberOfResidues : String
+    , mass : String
+    }
+
+
+type alias OtherMetricInfo =
+    { metricName : OtherMetrics
+    , metricDesc : OtherMetrics
+    , metricVarName : OtherMetrics
+    }
+
+
+otherMetricNames : OtherMetrics
+otherMetricNames =
+    { compositionALA = "ALA - Composition"
+    , compositionCYS = "CYS - Composition"
+    , compositionASP = "ASP - Composition"
+    , compositionGLU = "GLU - Composition"
+    , compositionPHE = "PHE - Composition"
+    , compositionGLY = "GLY - Composition"
+    , compositionHIS = "HIS - Composition"
+    , compositionILE = "ILE - Composition"
+    , compositionLYS = "LYS - Composition"
+    , compositionLEU = "LEU - Composition"
+    , compositionMET = "MET - Composition"
+    , compositionASN = "ASN - Composition"
+    , compositionPRO = "PRO - Composition"
+    , compositionGLN = "GLN - Composition"
+    , compositionARG = "ARG - Composition"
+    , compositionSER = "SER  - Composition"
+    , compositionTHR = "THR - Composition"
+    , compositionVAL = "VAL - Composition"
+    , compositionTRP = "TRP - Composition"
+    , compositionUNK = "UNK - Composition"
+    , compositionTYR = "TYR - Composition"
+    , numberOfResidues = "Number of Residues"
+    , mass = "Mass (Da)"
+    }
+
+
+otherMetricDescs : OtherMetrics
+otherMetricDescs =
+    { compositionALA = "The proportion of residues that are Alanine (ALA) in the structure."
+    , compositionARG = "The proportion of residues that are Arginine (ARG) in the structure."
+    , compositionASN = "The proportion of residues that are Asparagine (ASN) in the structure."
+    , compositionASP = "The proportion of residues that are Aspartic Acid (ASP) in the structure."
+    , compositionCYS = "The proportion of residues that are Cysteine (CYS) in the structure."
+    , compositionGLN = "The proportion of residues that are Glutamine (GLN) in the structure."
+    , compositionGLU = "The proportion of residues that are Glutamic Acid (GLU) in the structure."
+    , compositionGLY = "The proportion of residues that are Glycine (GLY) in the structure."
+    , compositionHIS = "The proportion of residues that are Histidine (HIS) in the structure."
+    , compositionILE = "The proportion of residues that are Isoleucine (ILE) in the structure."
+    , compositionLEU = "The proportion of residues that are Leucine (LEU) in the structure."
+    , compositionLYS = "The proportion of residues that are Lysine (LYS) in the structure."
+    , compositionMET = "The proportion of residues that are Methionine (MET) in the structure."
+    , compositionPHE = "The proportion of residues that are Phenylalanine (PHE) in the structure."
+    , compositionPRO = "The proportion of residues that are Proline (PRO) in the structure."
+    , compositionSER = "The proportion of residues that are Serine (SER) in the structure."
+    , compositionTHR = "The proportion of residues that are Threonine (THR) in the structure."
+    , compositionTRP = "The proportion of residues that are Tryptophan (TRP) in the structure."
+    , compositionTYR = "The proportion of residues that are Tyrosine (TYR) in the structure."
+    , compositionVAL = "The proportion of residues that are Valine (VAL) in the structure."
+    , compositionUNK = "The proportion of residues that are Unknown (UNK) in the structure."
+    , numberOfResidues = "The number of amino acid residues in the structure."
+    , mass = "The mass of the structure in daltons (Da)."
+    }
+
+
+otherMetricVarName : OtherMetrics
+otherMetricVarName =
+    { compositionALA = "composition: ALA"
+    , compositionCYS = "composition: CYS"
+    , compositionASP = "composition: ASP"
+    , compositionGLU = "composition: GLU"
+    , compositionPHE = "composition: PHE"
+    , compositionGLY = "composition: GLY"
+    , compositionHIS = "composition: HIS"
+    , compositionILE = "composition: ILE"
+    , compositionLYS = "composition: LYS"
+    , compositionLEU = "composition: LEU"
+    , compositionMET = "composition: MET"
+    , compositionASN = "composition: ASN"
+    , compositionPRO = "composition: PRO"
+    , compositionGLN = "composition: GLN"
+    , compositionARG = "composition: ARG"
+    , compositionSER = "composition: SER"
+    , compositionTHR = "composition: THR"
+    , compositionVAL = "composition: VAL"
+    , compositionTRP = "composition: TRP"
+    , compositionUNK = "composition: UNK"
+    , compositionTYR = "composition: TYR"
+    , numberOfResidues = "number of redidues"
+    , mass = " mass (da)"
+    }
+
+
+otherMetricInfo : OtherMetricInfo
+otherMetricInfo =
+    { metricName = otherMetricNames
+    , metricDesc = otherMetricDescs
+    , metricVarName = otherMetricVarName
     }
