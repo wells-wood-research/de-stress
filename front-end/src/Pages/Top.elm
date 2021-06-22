@@ -117,6 +117,22 @@ view _ =
                     doing this.
                     """
                 ]
+            , text "Before you start..."
+                |> Style.h3
+            , paragraph []
+                [ text
+                    """The usefulness of the scores presented by DE-STRESS are entirely
+                    dependent on the quality of the models that you upload. No energy
+                    minimisation, relaxation or model optimisation of any other kind is
+                    performed, we simply run the metrics on the models that you provide.
+                    If any of the metrics that are returned are particularly high, you
+                    may want to consider relaxing your model in some way (using
+                    molecular dynamics, Rosetta etc.). Related to this, after you have
+                    shortlisted designs based on the output of DE-STRESS, you should
+                    consider more in depth evaluation of models and sequences using
+                    methods such as molecular dynamics or protein folding simulations.
+                    """
+                ]
             , text "Links"
                 |> Style.h3
             , paragraph []
