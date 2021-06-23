@@ -232,7 +232,7 @@ softwareTable =
         [ width fill ]
         [ row
             [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Software Name"
+            [ el [ width <| fillPortion 1, Font.alignLeft ] <| text "Programme Name"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Description"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Command Used"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
@@ -311,7 +311,7 @@ dsspSoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "DSSP"
+            "DSSP (v2.0.4)"
             "Secondary Structure Assignment"
             """ import isambard.evaluation as ev 
                 import ampal
@@ -336,7 +336,7 @@ evoef2SoftwareTable =
     column
         [ width fill ]
         [ rowViewSoftware
-            "EvoEF2"
+            "EvoEF2 (EvoEF v2)"
             "Energy Function"
             "EvoEF2 --command = ComputeStability --pdb = pdb_file_path"
             Docs.softwareInfo.evoef2.citations
@@ -1050,28 +1050,28 @@ view model =
             ]
             [ column [ spacing 20 ]
                 [ paragraph [] [ text """DE-STRESS uses a wide range of metrics that come from 
-                                         software developed by researchers all across
-                                         the world and are well used in protein design. However, due to the 
+                                         programmes developed by researchers all across
+                                         the world, which are well used in protein design. However, due to the 
                                          large numbers of metrics from different sources, it can be difficult 
-                                         to keep track of what these different metrics mean and 
+                                         to keep track of what these metrics mean and 
                                          how to use them. This page has been created to help you understand 
                                          what these metrics mean, where they have came from and their convention 
                                          for use.""" ]
-                , paragraph [] [ text """The first table gives a description of the different software
+                , paragraph [] [ text """The first table gives a description of the programmes
                                          that are included in DE-STRESS, the command used by DE-STRESS to obtain the results 
-                                         and the citations. Below this table there are sections for each of the different software that 
-                                         can be expanded to show a list of the different metrics, along with a description 
+                                         and the citations. Below this table there are sections for each programme 
+                                         that can be expanded to show a list of the metrics, along with a description 
                                          of what these metrics mean.
                                          """ ]
                 , paragraph [] [ text """It's difficult to provide instructions on exactly how to use these 
                                          metrics as it depends on the use case and the protein you want to design. 
                                          However, for the the energy function metrics, generally the lower the value
                                          the better, as this indicates the stability of the protein design. There will be 
-                                         inconsistencies across the different energy function values as they have all been developed
-                                         with different methodologies, and for different applications. One thing to consider while
+                                         inconsistencies across the energy functions as they have been developed
+                                         with different methodologies, and for different applications. One point to consider while
                                          using these energy function values is that they have not been normalised for the size of 
                                          the protein. This means that you might see larger values for larger proteins, and so for 
-                                         meaningful comparisons across different protein structures, these values should be 
+                                         meaningful comparisons across protein structures, these values should be 
                                          normalised to take into account the size of the protein. For the Aggrescan3D Total Score 
                                          value, the lower the value means the higher global solubility of the structure. 
                                          However, similar to the energy function values, this value is dependent on the size of the 
