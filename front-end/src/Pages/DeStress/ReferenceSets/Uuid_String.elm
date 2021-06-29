@@ -395,7 +395,7 @@ fullDetails uuidString displaySettings referenceSet =
             ]
         , Folds.sectionFoldView
             { foldVisible = displaySettings.pdbCodes
-            , title = "PDB Codes"
+            , title = "Structure Files"
             , toggleMsg = TogglePdbCodesFold
             , contentView =
                 paragraph []

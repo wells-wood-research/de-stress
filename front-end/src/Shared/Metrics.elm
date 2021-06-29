@@ -19,6 +19,7 @@ module Shared.Metrics exposing
     , desMetricsCodec
     , makeHistPlotData
     , refSetMetricsCodec
+    , refSetMetricsFromDesignMetrics
     , torsionAngleStringToDict
     )
 
@@ -449,6 +450,24 @@ refSetMetricsCodec =
         |> Codec.field "rosettaTotalEnergy" .rosettaTotalEnergy (Codec.maybe Codec.float)
         |> Codec.field "aggrescan3dTotalValue" .aggrescan3dTotalValue (Codec.maybe Codec.float)
         |> Codec.buildObject
+
+
+refSetMetricsFromDesignMetrics : String -> DesignMetrics -> RefSetMetrics
+refSetMetricsFromDesignMetrics filename designMetrics =
+    { pdbCode = filename
+    , composition = designMetrics.composition
+    , torsionAngles = designMetrics.torsionAngles
+    , hydrophobicFitness = designMetrics.hydrophobicFitness
+    , isoelectricPoint = designMetrics.isoelectricPoint
+    , mass = designMetrics.mass
+    , numberOfResidues = designMetrics.numOfResidues
+    , packingDensity = designMetrics.packingDensity
+    , budeFFTotalEnergy = designMetrics.budeFFResults.totalEnergy
+    , evoEFTotalEnergy = designMetrics.evoEF2Results.total
+    , dfireTotalEnergy = designMetrics.dfire2Results.total
+    , rosettaTotalEnergy = designMetrics.rosettaResults.total_score
+    , aggrescan3dTotalValue = designMetrics.aggrescan3dResults.total_value
+    }
 
 
 type alias AggregateData =

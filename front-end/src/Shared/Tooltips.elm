@@ -108,6 +108,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
+import Shared.Documentation as Docs
 import Shared.Style as Style
 
 
@@ -273,10 +274,8 @@ hoverInfoView { title, info, mouseEnterMsg, hoverInfoOption, changeMsg } =
 hydrophobicFitnessHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 hydrophobicFitnessHoverBox option changeMsg =
     hoverInfoView
-        { title = "Hydrophobic Fitness"
-        , info = """ This value is an efficient centroid-based method for calculating the packing quality of the protein
-                     structure. For this method C, F, I, L, M, V, W and Y are considered hydrophobic.
-                 """
+        { title = Docs.metricInfo.hydroFit.metricName.hydroFit
+        , info = Docs.metricInfo.hydroFit.metricDesc.hydroFit
         , mouseEnterMsg = HydrophobicFitness
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -286,9 +285,8 @@ hydrophobicFitnessHoverBox option changeMsg =
 isoelectricPointHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 isoelectricPointHoverBox option changeMsg =
     hoverInfoView
-        { title = "Isoelectric Point"
-        , info = """ This value is the pH of a solution at which the net charge of the protein becomes zero.
-                 """
+        { title = Docs.metricInfo.isoPoint.metricName.isoPoint
+        , info = Docs.metricInfo.isoPoint.metricDesc.isoPoint
         , mouseEnterMsg = IsoelectricPoint
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -298,9 +296,8 @@ isoelectricPointHoverBox option changeMsg =
 numOfResiduesHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 numOfResiduesHoverBox option changeMsg =
     hoverInfoView
-        { title = "Number of Residues"
-        , info = """ This value is the number of amino acid residues in the protein structure. 
-                 """
+        { title = Docs.metricInfo.other.metricName.numberOfResidues
+        , info = Docs.metricInfo.other.metricDesc.numberOfResidues
         , mouseEnterMsg = NumOfResidues
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -310,9 +307,8 @@ numOfResiduesHoverBox option changeMsg =
 massHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 massHoverBox option changeMsg =
     hoverInfoView
-        { title = "Mass (Da)"
-        , info = """ This value is the mass of the protein structure in daltons (Da). 
-                 """
+        { title = Docs.metricInfo.other.metricName.mass
+        , info = Docs.metricInfo.other.metricDesc.mass
         , mouseEnterMsg = Mass
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -322,11 +318,8 @@ massHoverBox option changeMsg =
 packingDensityHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 packingDensityHoverBox option changeMsg =
     hoverInfoView
-        { title = "Mean Packing Density"
-        , info = """This value is the average packing density of the non-hydrogen atoms in the protein structure. 
-                    The packing density of an atom is a measure of the number of atoms within a specified radius
-                    (default 7 angstroms).
-                 """
+        { title = Docs.metricInfo.packDens.metricName.packDens
+        , info = Docs.metricInfo.packDens.metricDesc.packDens
         , mouseEnterMsg = PackingDensity
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -341,10 +334,8 @@ packingDensityHoverBox option changeMsg =
 budeFFTotalEnergyHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 budeFFTotalEnergyHoverBox option changeMsg =
     hoverInfoView
-        { title = "BUDE FF Total Energy"
-        , info = """This value is the total BUDE force field energy. It is the sum of
-                 the steric, desolvation and charge components.
-                 """
+        { title = Docs.metricInfo.bude.metricName.totalEnergy
+        , info = Docs.metricInfo.bude.metricDesc.totalEnergy
         , mouseEnterMsg = BudeFFTotalEnergy
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -354,11 +345,8 @@ budeFFTotalEnergyHoverBox option changeMsg =
 budeFFStericHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 budeFFStericHoverBox option changeMsg =
     hoverInfoView
-        { title = "BUDE FF Steric Energy"
-        , info = """This value is the steric component of the BUDE force field energy.
-                 It is calculated with a simplified Leonard-Jones potential. It is
-                 softer than the steric component of many other force fields.
-                 """
+        { title = Docs.metricInfo.bude.metricName.stericEnergy
+        , info = Docs.metricInfo.bude.metricDesc.stericEnergy
         , mouseEnterMsg = BudeFFSteric
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -368,9 +356,8 @@ budeFFStericHoverBox option changeMsg =
 budeFFDesolvationHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 budeFFDesolvationHoverBox option changeMsg =
     hoverInfoView
-        { title = "BUDE FF Desolvation Energy"
-        , info = """This value is the desolvation component of the BUDE force field energy.
-                 """
+        { title = Docs.metricInfo.bude.metricName.desolvationEnergy
+        , info = Docs.metricInfo.bude.metricDesc.desolvationEnergy
         , mouseEnterMsg = BudeFFDesolvation
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -380,9 +367,8 @@ budeFFDesolvationHoverBox option changeMsg =
 budeFFChargeHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 budeFFChargeHoverBox option changeMsg =
     hoverInfoView
-        { title = "BUDE FF Charge Energy"
-        , info = """This value is the charge component of the BUDE force field energy.
-                 """
+        { title = Docs.metricInfo.bude.metricName.chargeEnergy
+        , info = Docs.metricInfo.bude.metricDesc.chargeEnergy
         , mouseEnterMsg = BudeFFCharge
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -397,10 +383,8 @@ budeFFChargeHoverBox option changeMsg =
 evoEF2SummaryTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2SummaryTotalHoverBox option changeMsg =
     hoverInfoView
-        { title = "EvoEF2 Total Energy"
-        , info = """This value is the total EvoEF2 energy. It is the sum of the reference, 
-                    intra residue, inter residue - same chain and inter residue - different 
-                    chains, energy values. In the EvoEF2 output this field is called `Total`."""
+        { title = Docs.metricInfo.evoef2.metricName.totalEnergy
+        , info = Docs.metricInfo.evoef2.metricDesc.totalEnergy
         , mouseEnterMsg = EvoEF2Total
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -410,9 +394,8 @@ evoEF2SummaryTotalHoverBox option changeMsg =
 evoEF2SummaryRefHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2SummaryRefHoverBox option changeMsg =
     hoverInfoView
-        { title = "Reference"
-        , info = """This value is the total reference energy. This value is not included in 
-                    the EvoEF2 output and is calculated in DE-STRESS."""
+        { title = Docs.metricInfo.evoef2.metricName.refTotalEnergy
+        , info = Docs.metricInfo.evoef2.metricDesc.refTotalEnergy
         , mouseEnterMsg = EvoEF2RefTotal
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -422,9 +405,8 @@ evoEF2SummaryRefHoverBox option changeMsg =
 evoEF2SummaryIntraRHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2SummaryIntraRHoverBox option changeMsg =
     hoverInfoView
-        { title = "Intra Residue"
-        , info = """This value is the total energy for intra residue interactions. This value is 
-                    not included in the EvoEF2 output and is calculated in DE-STRESS."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRTotalEnergy
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRTotalEnergy
         , mouseEnterMsg = EvoEF2IntaRTotal
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -434,9 +416,8 @@ evoEF2SummaryIntraRHoverBox option changeMsg =
 evoEF2SummaryInterSHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2SummaryInterSHoverBox option changeMsg =
     hoverInfoView
-        { title = "Inter Residue - Same Chain"
-        , info = """This value is the total energy for inter residue interactions in the same chain. 
-                    This value is not included in the EvoEF2 output and is calculated in DE-STRESS."""
+        { title = Docs.metricInfo.evoef2.metricName.interSTotalEnergy
+        , info = Docs.metricInfo.evoef2.metricDesc.interSTotalEnergy
         , mouseEnterMsg = EvoEF2InterSTotal
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -446,9 +427,8 @@ evoEF2SummaryInterSHoverBox option changeMsg =
 evoEF2SummaryInterDHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2SummaryInterDHoverBox option changeMsg =
     hoverInfoView
-        { title = "Inter Residue - Different Chains"
-        , info = """This value is the total energy for inter residue interactions in different chains. 
-                    This value is not included in the EvoEF2 output and is calculated in DE-STRESS."""
+        { title = Docs.metricInfo.evoef2.metricName.interDTotalEnergy
+        , info = Docs.metricInfo.evoef2.metricDesc.interDTotalEnergy
         , mouseEnterMsg = EvoEF2InterDTotal
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -463,9 +443,8 @@ evoEF2SummaryInterDHoverBox option changeMsg =
 evoEF2RefALAHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefALAHoverBox option changeMsg =
     hoverInfoView
-        { title = "ALA - Reference"
-        , info = """This value is reference energy for the amino acid Alanine (ALA). In the EvoEF2
-                    output this value is called `reference_ALA`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceALA
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceALA
         , mouseEnterMsg = EvoEF2RefALA
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -475,9 +454,8 @@ evoEF2RefALAHoverBox option changeMsg =
 evoEF2RefCYSHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefCYSHoverBox option changeMsg =
     hoverInfoView
-        { title = "CYS - Reference"
-        , info = """This value is reference energy for the amino acid Cysteine (CYS). In the EvoEF2
-                    output this value is called `reference_CYS`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceCYS
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceCYS
         , mouseEnterMsg = EvoEF2RefCYS
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -487,9 +465,8 @@ evoEF2RefCYSHoverBox option changeMsg =
 evoEF2RefASPHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefASPHoverBox option changeMsg =
     hoverInfoView
-        { title = "ASP - Reference"
-        , info = """This value is reference energy for the amino acid Aspartic acid (ASP). In the EvoEF2
-                    output this value is called `reference_ASP`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceASP
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceASP
         , mouseEnterMsg = EvoEF2RefASP
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -499,9 +476,8 @@ evoEF2RefASPHoverBox option changeMsg =
 evoEF2RefGLUHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefGLUHoverBox option changeMsg =
     hoverInfoView
-        { title = "GLU - Reference"
-        , info = """This value is reference energy for the amino acid Glutamic acid (GLU). In the EvoEF2
-                    output this value is called `reference_GLU`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceGLU
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceGLU
         , mouseEnterMsg = EvoEF2RefGLU
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -511,9 +487,8 @@ evoEF2RefGLUHoverBox option changeMsg =
 evoEF2RefPHEHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefPHEHoverBox option changeMsg =
     hoverInfoView
-        { title = "PHE - Reference"
-        , info = """This value is reference energy for the amino acid Phenylalanine (PHE). In the EvoEF2
-                    output this value is called `reference_PHE`."""
+        { title = Docs.metricInfo.evoef2.metricName.referencePHE
+        , info = Docs.metricInfo.evoef2.metricDesc.referencePHE
         , mouseEnterMsg = EvoEF2RefPHE
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -523,9 +498,8 @@ evoEF2RefPHEHoverBox option changeMsg =
 evoEF2RefGLYHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefGLYHoverBox option changeMsg =
     hoverInfoView
-        { title = "GLY - Reference"
-        , info = """This value is reference energy for the amino acid glycine (GLY). In the EvoEF2
-                    output this value is called `reference_GLY`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceGLY
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceGLY
         , mouseEnterMsg = EvoEF2RefGLY
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -535,9 +509,8 @@ evoEF2RefGLYHoverBox option changeMsg =
 evoEF2RefHISHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefHISHoverBox option changeMsg =
     hoverInfoView
-        { title = "HIS - Reference"
-        , info = """This value is reference energy for the amino acid Histidine (HIS). In the EvoEF2
-                    output this value is called `reference_HIS`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceHIS
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceHIS
         , mouseEnterMsg = EvoEF2RefHIS
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -547,9 +520,8 @@ evoEF2RefHISHoverBox option changeMsg =
 evoEF2RefILEHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefILEHoverBox option changeMsg =
     hoverInfoView
-        { title = "ILE - Reference"
-        , info = """This value is reference energy for the amino acid Isoleucine (ILE). In the EvoEF2
-                    output this value is called `reference_ILE`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceILE
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceILE
         , mouseEnterMsg = EvoEF2RefILE
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -559,9 +531,8 @@ evoEF2RefILEHoverBox option changeMsg =
 evoEF2RefLYSHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefLYSHoverBox option changeMsg =
     hoverInfoView
-        { title = "LYS - Reference"
-        , info = """This value is reference energy for the amino acid Lysine (LYS). In the EvoEF2
-                    output this value is called `reference_LYS`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceLYS
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceLYS
         , mouseEnterMsg = EvoEF2RefLYS
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -571,9 +542,8 @@ evoEF2RefLYSHoverBox option changeMsg =
 evoEF2RefLEUHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefLEUHoverBox option changeMsg =
     hoverInfoView
-        { title = "LEU - Reference"
-        , info = """This value is reference energy for the amino acid Leucine (LEU). In the EvoEF2
-                    output this value is called `reference_LEU`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceLEU
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceLEU
         , mouseEnterMsg = EvoEF2RefLEU
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -583,9 +553,8 @@ evoEF2RefLEUHoverBox option changeMsg =
 evoEF2RefMETHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefMETHoverBox option changeMsg =
     hoverInfoView
-        { title = "MET - Reference"
-        , info = """This value is reference energy for the amino acid Methionine (MET). In the EvoEF2
-                    output this value is called `reference_MET`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceMET
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceMET
         , mouseEnterMsg = EvoEF2RefMET
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -595,9 +564,8 @@ evoEF2RefMETHoverBox option changeMsg =
 evoEF2RefASNHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefASNHoverBox option changeMsg =
     hoverInfoView
-        { title = "ASN - Reference"
-        , info = """This value is reference energy for the amino acid Asparagine (ASN). In the EvoEF2
-                    output this value is called `reference_ASN`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceASN
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceASN
         , mouseEnterMsg = EvoEF2RefASN
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -607,9 +575,8 @@ evoEF2RefASNHoverBox option changeMsg =
 evoEF2RefPROHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefPROHoverBox option changeMsg =
     hoverInfoView
-        { title = "PRO - Reference"
-        , info = """This value is reference energy for the amino acid Proline (PRO). In the EvoEF2
-                    output this value is called `reference_PRO`."""
+        { title = Docs.metricInfo.evoef2.metricName.referencePRO
+        , info = Docs.metricInfo.evoef2.metricDesc.referencePRO
         , mouseEnterMsg = EvoEF2RefPRO
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -619,9 +586,8 @@ evoEF2RefPROHoverBox option changeMsg =
 evoEF2RefGLNHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefGLNHoverBox option changeMsg =
     hoverInfoView
-        { title = "GLN - Reference"
-        , info = """This value is reference energy for the amino acid Glutamine (GLN). In the EvoEF2
-                    output this value is called `reference_GLN`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceGLN
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceGLN
         , mouseEnterMsg = EvoEF2RefGLN
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -631,9 +597,8 @@ evoEF2RefGLNHoverBox option changeMsg =
 evoEF2RefARGHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefARGHoverBox option changeMsg =
     hoverInfoView
-        { title = "ARG - Reference"
-        , info = """This value is reference energy for the amino acid Arginine (ARG). In the EvoEF2
-                    output this value is called `reference_ARG`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceARG
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceARG
         , mouseEnterMsg = EvoEF2RefARG
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -643,9 +608,8 @@ evoEF2RefARGHoverBox option changeMsg =
 evoEF2RefSERHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefSERHoverBox option changeMsg =
     hoverInfoView
-        { title = "SER - Reference"
-        , info = """This value is reference energy for the amino acid Serine  (SER). In the EvoEF2
-                    output this value is called `reference_SER`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceSER
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceSER
         , mouseEnterMsg = EvoEF2RefSER
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -655,9 +619,8 @@ evoEF2RefSERHoverBox option changeMsg =
 evoEF2RefTHRHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefTHRHoverBox option changeMsg =
     hoverInfoView
-        { title = "THR - Reference"
-        , info = """This value is reference energy for the amino acid Threonine (THR). In the EvoEF2
-                    output this value is called `reference_THR`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceTHR
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceTHR
         , mouseEnterMsg = EvoEF2RefTHR
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -667,9 +630,8 @@ evoEF2RefTHRHoverBox option changeMsg =
 evoEF2RefVALHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefVALHoverBox option changeMsg =
     hoverInfoView
-        { title = "VAL - Reference"
-        , info = """This value is reference energy for the amino acid Valine (VAL). In the EvoEF2
-                    output this value is called `reference_VAL`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceVAL
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceVAL
         , mouseEnterMsg = EvoEF2RefVAL
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -679,9 +641,8 @@ evoEF2RefVALHoverBox option changeMsg =
 evoEF2RefTRPHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefTRPHoverBox option changeMsg =
     hoverInfoView
-        { title = "TRP - Reference"
-        , info = """This value is reference energy for the amino acid Tryptophan (TRP). In the EvoEF2
-                    output this value is called `reference_TRP`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceTRP
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceTRP
         , mouseEnterMsg = EvoEF2RefTRP
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -691,9 +652,8 @@ evoEF2RefTRPHoverBox option changeMsg =
 evoEF2RefTYRHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2RefTYRHoverBox option changeMsg =
     hoverInfoView
-        { title = "TYR - Reference"
-        , info = """This value is reference energy for the amino acid Tyrosine (TYR). In the EvoEF2
-                    output this value is called `reference_TYR`."""
+        { title = Docs.metricInfo.evoef2.metricName.referenceTYR
+        , info = Docs.metricInfo.evoef2.metricDesc.referenceTYR
         , mouseEnterMsg = EvoEF2RefTYR
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -708,9 +668,8 @@ evoEF2RefTYRHoverBox option changeMsg =
 evoEF2IntraRVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRVDWAttHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Attractive - Intra Residue"
-        , info = """This value is the Van der Waals attractive energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `intraR_vdwatt`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRVdwatt
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRVdwatt
         , mouseEnterMsg = EvoEF2IntraRVDWAtt
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -720,9 +679,8 @@ evoEF2IntraRVDWAttHoverBox option changeMsg =
 evoEF2IntraRVDWRepHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRVDWRepHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Repulsive - Intra Residue"
-        , info = """This value is the Van der Waals repulsive energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `intraR_vdwrep`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRVdwrep
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRVdwrep
         , mouseEnterMsg = EvoEF2IntraRVDWRep
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -732,9 +690,8 @@ evoEF2IntraRVDWRepHoverBox option changeMsg =
 evoEF2IntraRElecHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRElecHoverBox option changeMsg =
     hoverInfoView
-        { title = "Electrostatics - Intra Residue"
-        , info = """This value is the Coulomb’s electrostatics energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `intraR_electr`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRElectr
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRElectr
         , mouseEnterMsg = EvoEF2IntraRElec
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -744,9 +701,8 @@ evoEF2IntraRElecHoverBox option changeMsg =
 evoEF2IntraRDesolvPHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRDesolvPHoverBox option changeMsg =
     hoverInfoView
-        { title = "Desolvation Polar - Intra Residue"
-        , info = """This value is the polar atoms desolvation energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `intraR_deslvP`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRDeslvP
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRDeslvP
         , mouseEnterMsg = EvoEF2IntraRDesolvP
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -756,9 +712,8 @@ evoEF2IntraRDesolvPHoverBox option changeMsg =
 evoEF2IntraRDesolvHHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRDesolvHHoverBox option changeMsg =
     hoverInfoView
-        { title = "Desolvation Non Polar - Intra Residue"
-        , info = """This value is the non polar atoms desolvation energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `intraR_deslvH`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRDeslvH
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRDeslvH
         , mouseEnterMsg = EvoEF2IntraRDesolvH
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -768,9 +723,8 @@ evoEF2IntraRDesolvHHoverBox option changeMsg =
 evoEF2IntraRAAPropHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRAAPropHoverBox option changeMsg =
     hoverInfoView
-        { title = "Amino Acid Propensity - Intra Residue"
-        , info = """This value is the amino acid propensity energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `aapropensity`."""
+        { title = Docs.metricInfo.evoef2.metricName.aapropensity
+        , info = Docs.metricInfo.evoef2.metricDesc.aapropensity
         , mouseEnterMsg = EvoEF2AAProp
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -780,9 +734,8 @@ evoEF2IntraRAAPropHoverBox option changeMsg =
 evoEF2IntraRRamaHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRRamaHoverBox option changeMsg =
     hoverInfoView
-        { title = "Ramachandran - Intra Residue"
-        , info = """This value is the Ramachandran energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `ramachandran`."""
+        { title = Docs.metricInfo.evoef2.metricName.ramachandran
+        , info = Docs.metricInfo.evoef2.metricDesc.ramachandran
         , mouseEnterMsg = EvoEF2Rama
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -792,9 +745,8 @@ evoEF2IntraRRamaHoverBox option changeMsg =
 evoEF2IntraRDunbrackHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRDunbrackHoverBox option changeMsg =
     hoverInfoView
-        { title = "Dunbrack Rotamer - Intra Residue"
-        , info = """This value is the Dunbrack Rotamer energy for intra residue interactions. 
-                    In the EvoEF2 output this value is called `dunbrack`."""
+        { title = Docs.metricInfo.evoef2.metricName.dunbrack
+        , info = Docs.metricInfo.evoef2.metricDesc.dunbrack
         , mouseEnterMsg = EvoEF2Dunbrack
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -804,10 +756,8 @@ evoEF2IntraRDunbrackHoverBox option changeMsg =
 evoEF2IntraRHBSCBBDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRHBSCBBDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Distance - Intra Residue"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from sidechain - backbone and intra residue interactions. 
-                    In the EvoEF2 output this value is called `intraR_hbscbb_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRHbscbbDis
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRHbscbbDis
         , mouseEnterMsg = EvoEF2IntraRHBSCBBDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -817,11 +767,8 @@ evoEF2IntraRHBSCBBDisHoverBox option changeMsg =
 evoEF2IntraRHBSCBBTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRHBSCBBTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Theta - Intra Residue"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from sidechain - backbone 
-                    and intra residue interactions. In the EvoEF2 output this value is 
-                    called `intraR_hbscbb_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRHbscbbThe
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRHbscbbThe
         , mouseEnterMsg = EvoEF2IntraRHBSCBBThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -831,11 +778,8 @@ evoEF2IntraRHBSCBBTheHoverBox option changeMsg =
 evoEF2IntraRHBSCBBPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2IntraRHBSCBBPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Phi - Intra Residue"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from sidechain - backbone 
-                    and intra residue interactions. In the EvoEF2 output this value is 
-                    called `intraR_hbscbb_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.intraRHbscbbPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.intraRHbscbbPhi
         , mouseEnterMsg = EvoEF2IntraRHBSCBBPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -850,9 +794,8 @@ evoEF2IntraRHBSCBBPhiHoverBox option changeMsg =
 evoEF2InterSVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSVDWAttHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Attractive - Inter Residue - Same Chain"
-        , info = """This value is the Van der Waals attractive energy for inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_vdwatt`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSVdwatt
+        , info = Docs.metricInfo.evoef2.metricDesc.interSVdwatt
         , mouseEnterMsg = EvoEF2InterSVDWAtt
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -862,9 +805,8 @@ evoEF2InterSVDWAttHoverBox option changeMsg =
 evoEF2InterSVDWRepHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSVDWRepHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Repulsive - Inter Residue - Same Chain"
-        , info = """This value is the Van der Waals repulsive energy for inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_vdwrep`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSVdwrep
+        , info = Docs.metricInfo.evoef2.metricDesc.interSVdwrep
         , mouseEnterMsg = EvoEF2InterSVDWRep
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -874,9 +816,8 @@ evoEF2InterSVDWRepHoverBox option changeMsg =
 evoEF2InterSElecHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSElecHoverBox option changeMsg =
     hoverInfoView
-        { title = "Electrostatics - Inter Residue - Same Chain"
-        , info = """This value is the Coulomb’s electrostatics energy for inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_electr`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSElectr
+        , info = Docs.metricInfo.evoef2.metricDesc.interSElectr
         , mouseEnterMsg = EvoEF2InterSElec
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -886,9 +827,8 @@ evoEF2InterSElecHoverBox option changeMsg =
 evoEF2InterSDesolvPHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSDesolvPHoverBox option changeMsg =
     hoverInfoView
-        { title = "Desolvation Polar - Inter Residue - Same Chain"
-        , info = """This value is the polar atoms desolvation energy for inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_deslvP`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSDeslvP
+        , info = Docs.metricInfo.evoef2.metricDesc.interSDeslvP
         , mouseEnterMsg = EvoEF2InterSDesolvP
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -898,9 +838,8 @@ evoEF2InterSDesolvPHoverBox option changeMsg =
 evoEF2InterSDesolvHHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSDesolvHHoverBox option changeMsg =
     hoverInfoView
-        { title = "Desolvation Non Polar - Inter Residue - Same Chain"
-        , info = """This value is the non polar atoms desolvation energy for inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_deslvH`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSDeslvH
+        , info = Docs.metricInfo.evoef2.metricDesc.interSDeslvH
         , mouseEnterMsg = EvoEF2InterSDesolvH
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -910,9 +849,8 @@ evoEF2InterSDesolvHHoverBox option changeMsg =
 evoEF2InterSSSbondHHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSSSbondHHoverBox option changeMsg =
     hoverInfoView
-        { title = "Disulfide Bonding - Inter Residue - Same Chain"
-        , info = """This value is the disulfide bonding energy for inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_ssbond`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSSsbond
+        , info = Docs.metricInfo.evoef2.metricDesc.interSSsbond
         , mouseEnterMsg = EvoEF2InterSSSbond
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -922,10 +860,8 @@ evoEF2InterSSSbondHHoverBox option changeMsg =
 evoEF2InterSHBBBBBDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBBBBBDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Backbone Distance - Inter Residue - Same Chain"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from backbone - backbone and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbbbbb_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbbbbbDis
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbbbbbDis
         , mouseEnterMsg = EvoEF2InterSHBBBBBDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -935,11 +871,8 @@ evoEF2InterSHBBBBBDisHoverBox option changeMsg =
 evoEF2InterSHBBBBBTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBBBBBTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Backbone Theta - Inter Residue - Same Chain"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from backbone - backbone 
-                    and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbbbbb_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbbbbbThe
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbbbbbThe
         , mouseEnterMsg = EvoEF2InterSHBBBBBThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -949,11 +882,8 @@ evoEF2InterSHBBBBBTheHoverBox option changeMsg =
 evoEF2InterSHBBBBBPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBBBBBPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Backbone Phi - Inter Residue - Same Chain"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from backbone - backbone 
-                    and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbbbbb_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbbbbbPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbbbbbPhi
         , mouseEnterMsg = EvoEF2InterSHBBBBBPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -963,10 +893,8 @@ evoEF2InterSHBBBBBPhiHoverBox option changeMsg =
 evoEF2InterSHBSCBBDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBSCBBDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Distance - Inter Residue - Same Chain"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from side chain - backbone and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbscbb_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbscbbDis
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbscbbDis
         , mouseEnterMsg = EvoEF2InterSHBSCBBDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -976,11 +904,8 @@ evoEF2InterSHBSCBBDisHoverBox option changeMsg =
 evoEF2InterSHBSCBBTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBSCBBTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Theta - Inter Residue - Same Chain"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from side chain - backbone 
-                    and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbscbb_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbscbbThe
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbscbbThe
         , mouseEnterMsg = EvoEF2InterSHBSCBBThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -990,11 +915,8 @@ evoEF2InterSHBSCBBTheHoverBox option changeMsg =
 evoEF2InterSHBSCBBPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBSCBBPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Phi - Inter Residue - Same Chain"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from side chain - backbone 
-                    and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbscbb_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbscbbPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbscbbPhi
         , mouseEnterMsg = EvoEF2InterSHBSCBBPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1004,10 +926,8 @@ evoEF2InterSHBSCBBPhiHoverBox option changeMsg =
 evoEF2InterSHBSCSCDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBSCSCDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain Distance - Inter Residue - Same Chain"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from side chain - side chain and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbscsc_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbscscDis
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbscscDis
         , mouseEnterMsg = EvoEF2InterSHBSCSCDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1017,11 +937,8 @@ evoEF2InterSHBSCSCDisHoverBox option changeMsg =
 evoEF2InterSHBSCSCTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBSCSCTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain Theta - Inter Residue - Same Chain"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from side chain - side chain 
-                    and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbscsc_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbscscThe
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbscscThe
         , mouseEnterMsg = EvoEF2InterSHBSCSCThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1031,11 +948,8 @@ evoEF2InterSHBSCSCTheHoverBox option changeMsg =
 evoEF2InterSHBSCSCPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterSHBSCSCPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain Phi - Inter Residue - Same Chain"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from side chain - side chain
-                    and inter residue interactions - same chain. 
-                    In the EvoEF2 output this value is called `interS_hbscsc_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.interSHbscscPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.interSHbscscPhi
         , mouseEnterMsg = EvoEF2InterSHBSCSCPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1050,9 +964,8 @@ evoEF2InterSHBSCSCPhiHoverBox option changeMsg =
 evoEF2InterDVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDVDWAttHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Attractive - Inter Residue - Different Chains"
-        , info = """This value is the Van der Waals attractive energy for inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_vdwatt`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDVdwatt
+        , info = Docs.metricInfo.evoef2.metricDesc.interDVdwatt
         , mouseEnterMsg = EvoEF2InterDVDWAtt
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1062,9 +975,8 @@ evoEF2InterDVDWAttHoverBox option changeMsg =
 evoEF2InterDVDWRepHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDVDWRepHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Repulsive - Inter Residue - Different Chains"
-        , info = """This value is the Van der Waals repulsive energy for inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_vdwrep`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDVdwrep
+        , info = Docs.metricInfo.evoef2.metricDesc.interDVdwrep
         , mouseEnterMsg = EvoEF2InterDVDWRep
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1074,9 +986,8 @@ evoEF2InterDVDWRepHoverBox option changeMsg =
 evoEF2InterDElecHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDElecHoverBox option changeMsg =
     hoverInfoView
-        { title = "Electrostatics - Inter Residue - Different Chains"
-        , info = """This value is the Coulomb’s electrostatics energy for inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_electr`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDElectr
+        , info = Docs.metricInfo.evoef2.metricDesc.interDElectr
         , mouseEnterMsg = EvoEF2InterDElec
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1086,9 +997,8 @@ evoEF2InterDElecHoverBox option changeMsg =
 evoEF2InterDDesolvPHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDDesolvPHoverBox option changeMsg =
     hoverInfoView
-        { title = "Desolvation Polar - Inter Residue - Different Chains"
-        , info = """This value is the polar atoms desolvation energy for inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_deslvP`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDDeslvP
+        , info = Docs.metricInfo.evoef2.metricDesc.interDDeslvP
         , mouseEnterMsg = EvoEF2InterDDesolvP
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1098,9 +1008,8 @@ evoEF2InterDDesolvPHoverBox option changeMsg =
 evoEF2InterDDesolvHHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDDesolvHHoverBox option changeMsg =
     hoverInfoView
-        { title = "Desolvation Non Polar - Inter Residue - Different Chains"
-        , info = """This value is the non polar atoms desolvation energy for inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_deslvH`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDDeslvH
+        , info = Docs.metricInfo.evoef2.metricDesc.interDDeslvH
         , mouseEnterMsg = EvoEF2InterDDesolvH
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1110,9 +1019,8 @@ evoEF2InterDDesolvHHoverBox option changeMsg =
 evoEF2InterDSSbondHHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDSSbondHHoverBox option changeMsg =
     hoverInfoView
-        { title = "Disulfide Bonding - Inter Residue - Different Chains"
-        , info = """This value is the disulfide bonding energy for inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_ssbond`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDSsbond
+        , info = Docs.metricInfo.evoef2.metricDesc.interDSsbond
         , mouseEnterMsg = EvoEF2InterDSSbond
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1122,10 +1030,8 @@ evoEF2InterDSSbondHHoverBox option changeMsg =
 evoEF2InterDHBBBBBDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBBBBBDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Backbone Distance - Inter Residue - Different Chains"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from backbone - backbone and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbbbbb_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbbbbbDis
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbbbbbDis
         , mouseEnterMsg = EvoEF2InterDHBBBBBDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1135,11 +1041,8 @@ evoEF2InterDHBBBBBDisHoverBox option changeMsg =
 evoEF2InterDHBBBBBTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBBBBBTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Backbone Theta - Inter Residue - Different Chains"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from backbone - backbone 
-                    and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbbbbb_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbbbbbThe
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbbbbbThe
         , mouseEnterMsg = EvoEF2InterDHBBBBBThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1149,11 +1052,8 @@ evoEF2InterDHBBBBBTheHoverBox option changeMsg =
 evoEF2InterDHBBBBBPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBBBBBPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Backbone Phi - Inter Residue - Different Chains"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from backbone - backbone 
-                    and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbbbbb_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbbbbbPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbbbbbPhi
         , mouseEnterMsg = EvoEF2InterDHBBBBBPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1163,10 +1063,8 @@ evoEF2InterDHBBBBBPhiHoverBox option changeMsg =
 evoEF2InterDHBSCBBDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBSCBBDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Distance - Inter Residue - Different Chains"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from side chain - backbone and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbscbb_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbscbbDis
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbscbbDis
         , mouseEnterMsg = EvoEF2InterDHBSCBBDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1176,11 +1074,8 @@ evoEF2InterDHBSCBBDisHoverBox option changeMsg =
 evoEF2InterDHBSCBBTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBSCBBTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Theta - Inter Residue - Different Chains"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from side chain - backbone 
-                    and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbscbb_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbscbbThe
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbscbbThe
         , mouseEnterMsg = EvoEF2InterDHBSCBBThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1190,11 +1085,8 @@ evoEF2InterDHBSCBBTheHoverBox option changeMsg =
 evoEF2InterDHBSCBBPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBSCBBPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Backbone Phi - Inter Residue - Different Chains"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from side chain - backbone 
-                    and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbscbb_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbscbbPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbscbbPhi
         , mouseEnterMsg = EvoEF2InterDHBSCBBPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1204,10 +1096,8 @@ evoEF2InterDHBSCBBPhiHoverBox option changeMsg =
 evoEF2InterDHBSCSCDisHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBSCSCDisHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain Distance - Inter Residue - Different Chains"
-        , info = """This value is the energy for the hydrogen-acceptor distance
-                    from side chain - side chain and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbscsc_dis`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbscscDis
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbscscDis
         , mouseEnterMsg = EvoEF2InterDHBSCSCDis
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1217,11 +1107,8 @@ evoEF2InterDHBSCSCDisHoverBox option changeMsg =
 evoEF2InterDHBSCSCTheHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBSCSCTheHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain Theta - Inter Residue - Different Chains"
-        , info = """This value is the energy for the angle between the donor, 
-                    hydrogen and acceptor atoms (theta), from side chain - side chain 
-                    and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbscsc_the`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbscscThe
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbscscThe
         , mouseEnterMsg = EvoEF2InterDHBSCSCThe
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1231,11 +1118,8 @@ evoEF2InterDHBSCSCTheHoverBox option changeMsg =
 evoEF2InterDHBSCSCPhiHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 evoEF2InterDHBSCSCPhiHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain Phi - Inter Residue - Different Chains"
-        , info = """This value is the energy for the angle between the hydrogen, 
-                    acceptor and base atoms (phi), from side chain - side chain
-                    and inter residue interactions - different chains. 
-                    In the EvoEF2 output this value is called `interD_hbscsc_phi`."""
+        { title = Docs.metricInfo.evoef2.metricName.interDHbscscPhi
+        , info = Docs.metricInfo.evoef2.metricDesc.interDHbscscPhi
         , mouseEnterMsg = EvoEF2InterDHBSCSCPhi
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1250,9 +1134,8 @@ evoEF2InterDHBSCSCPhiHoverBox option changeMsg =
 dfire2TotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 dfire2TotalHoverBox option changeMsg =
     hoverInfoView
-        { title = "DFIRE2 Total Energy"
-        , info = """This value is the total DFIRE2 energy. This is the only field that is returned from
-                    running DFIRE2 on a pdb file."""
+        { title = Docs.metricInfo.dfire2.metricName.totalEnergy
+        , info = Docs.metricInfo.dfire2.metricDesc.totalEnergy
         , mouseEnterMsg = DFIRE2Total
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1267,10 +1150,8 @@ dfire2TotalHoverBox option changeMsg =
 rosettaTotalHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaTotalHoverBox option changeMsg =
     hoverInfoView
-        { title = "Rosetta Total Energy"
-        , info = """This value is the total Rosetta energy. It is a weighted sum of the different 
-                    Rosetta energy values. In the Rosetta `score.sc` output file, this value is called 
-                    `total_score`."""
+        { title = Docs.metricInfo.rosetta.metricName.totalEnergy
+        , info = Docs.metricInfo.rosetta.metricDesc.totalEnergy
         , mouseEnterMsg = RosettaTotal
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1280,9 +1161,8 @@ rosettaTotalHoverBox option changeMsg =
 rosettaReferenceHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaReferenceHoverBox option changeMsg =
     hoverInfoView
-        { title = "Reference"
-        , info = """This value is the reference energy for the different amino acids. 
-                    In the Rosetta `score.sc` output file, this value is called `ref`."""
+        { title = Docs.metricInfo.rosetta.metricName.reference
+        , info = Docs.metricInfo.rosetta.metricDesc.reference
         , mouseEnterMsg = RosettaReference
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1292,10 +1172,8 @@ rosettaReferenceHoverBox option changeMsg =
 rosettaVDWAttHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaVDWAttHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Attractive"
-        , info = """This value is the attractive energy between two atoms on different residues 
-                    separated by distance, d. In the Rosetta `score.sc` output file, this value 
-                    is called `fa_atr`."""
+        { title = Docs.metricInfo.rosetta.metricName.vdwAtt
+        , info = Docs.metricInfo.rosetta.metricDesc.vdwAtt
         , mouseEnterMsg = RosettaVDWAtt
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1305,10 +1183,8 @@ rosettaVDWAttHoverBox option changeMsg =
 rosettaVDWRepHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaVDWRepHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Repulsive"
-        , info = """This value is the repulsive energy between two atoms on different residues 
-                    separated by distance, d. In the Rosetta `score.sc` output file, this value 
-                    is called `fa_rep`."""
+        { title = Docs.metricInfo.rosetta.metricName.vdwRep
+        , info = Docs.metricInfo.rosetta.metricDesc.vdwRep
         , mouseEnterMsg = RosettaVDWRep
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1318,10 +1194,8 @@ rosettaVDWRepHoverBox option changeMsg =
 rosettaVDWRepIntraRHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaVDWRepIntraRHoverBox option changeMsg =
     hoverInfoView
-        { title = "VDW Repulsive Intra Residue"
-        , info = """This value is the repulsive energy between two atoms on the same residue 
-                    separated by distance, d. In the Rosetta `score.sc` output file, this value 
-                    is called `fa_intra_rep`."""
+        { title = Docs.metricInfo.rosetta.metricName.vdwRepIntraR
+        , info = Docs.metricInfo.rosetta.metricDesc.vdwRepIntraR
         , mouseEnterMsg = RosettaVDWRepIntraR
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1331,10 +1205,8 @@ rosettaVDWRepIntraRHoverBox option changeMsg =
 rosettaElecHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaElecHoverBox option changeMsg =
     hoverInfoView
-        { title = "Electrostatics"
-        , info = """This value is the energy of interaction between two non-bonded charged atoms 
-                    separated by distance, d. In the Rosetta `score.sc` output file, this value 
-                    is called `fa_elec`."""
+        { title = Docs.metricInfo.rosetta.metricName.electrostatics
+        , info = Docs.metricInfo.rosetta.metricDesc.electrostatics
         , mouseEnterMsg = RosettaElec
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1344,10 +1216,8 @@ rosettaElecHoverBox option changeMsg =
 rosettaSolvIsoHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaSolvIsoHoverBox option changeMsg =
     hoverInfoView
-        { title = "Solvation Isotropic"
-        , info = """This value is the Gaussian exclusion implicit solvation energy between 
-                    protein atoms in different residues. In the Rosetta `score.sc` output file, 
-                    this value is called `fa_sol`."""
+        { title = Docs.metricInfo.rosetta.metricName.solvIso
+        , info = Docs.metricInfo.rosetta.metricDesc.solvIso
         , mouseEnterMsg = RosettaSolvIso
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1357,10 +1227,8 @@ rosettaSolvIsoHoverBox option changeMsg =
 rosettaSolvAnisoHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaSolvAnisoHoverBox option changeMsg =
     hoverInfoView
-        { title = "Solvation Anisotropic Polar Atoms"
-        , info = """This value is the orientation-dependent solvation of polar atoms 
-                    assuming ideal water geometry. In the Rosetta `score.sc` output file, 
-                    this value is called `lk_ball_wtd`."""
+        { title = Docs.metricInfo.rosetta.metricName.solvAniso
+        , info = Docs.metricInfo.rosetta.metricDesc.solvAniso
         , mouseEnterMsg = RosettaSolvAniso
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1370,10 +1238,8 @@ rosettaSolvAnisoHoverBox option changeMsg =
 rosettaSolvIsoIntraRHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaSolvIsoIntraRHoverBox option changeMsg =
     hoverInfoView
-        { title = "Solvation Isotropic Intra Residue"
-        , info = """This value is the Gaussian exclusion implicit solvation energy between 
-                    protein atoms in the same residue. In the Rosetta `score.sc` output file, 
-                    this value is called `fa_sol_intraR`."""
+        { title = Docs.metricInfo.rosetta.metricName.solvIsoIntraR
+        , info = Docs.metricInfo.rosetta.metricDesc.solvIsoIntraR
         , mouseEnterMsg = RosettaSolvIsoIntraR
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1383,9 +1249,8 @@ rosettaSolvIsoIntraRHoverBox option changeMsg =
 rosettaHBLRBBHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaHBLRBBHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Long Range Backbone"
-        , info = """This value is the energy of long range hydrogen bonds. In the Rosetta `score.sc` 
-                    output file, this value is called `hbond_lr_bb`."""
+        { title = Docs.metricInfo.rosetta.metricName.hblrbb
+        , info = Docs.metricInfo.rosetta.metricDesc.hblrbb
         , mouseEnterMsg = RosettaHBLRBB
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1395,9 +1260,8 @@ rosettaHBLRBBHoverBox option changeMsg =
 rosettaHBSRBBHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaHBSRBBHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Short Range Backbone"
-        , info = """This value is the energy of short range hydrogen bonds. In the Rosetta `score.sc` 
-                    output file, this value is called `hbond_sr_bb`."""
+        { title = Docs.metricInfo.rosetta.metricName.hbsrbb
+        , info = Docs.metricInfo.rosetta.metricDesc.hbsrbb
         , mouseEnterMsg = RosettaHBSRBB
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1407,9 +1271,8 @@ rosettaHBSRBBHoverBox option changeMsg =
 rosettaHBBBSCHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaHBBBSCHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Backbone Sidechain"
-        , info = """This value is the energy of backbone-side chain hydrogen bonds. In the Rosetta `score.sc` 
-                    output file, this value is called `hbond_bb_sc`."""
+        { title = Docs.metricInfo.rosetta.metricName.hbbbsc
+        , info = Docs.metricInfo.rosetta.metricDesc.hbbbsc
         , mouseEnterMsg = RosettaHBBBSC
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1419,9 +1282,8 @@ rosettaHBBBSCHoverBox option changeMsg =
 rosettaHBSCSCHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaHBSCSCHoverBox option changeMsg =
     hoverInfoView
-        { title = "HB Sidechain Sidechain"
-        , info = """This value is the energy of side chain-side chain hydrogen bonds. In the Rosetta `score.sc` 
-                    output file, this value is called `hbond_sc`."""
+        { title = Docs.metricInfo.rosetta.metricName.hbscsc
+        , info = Docs.metricInfo.rosetta.metricDesc.hbscsc
         , mouseEnterMsg = RosettaHBSCSC
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1431,9 +1293,8 @@ rosettaHBSCSCHoverBox option changeMsg =
 rosettaSSbondHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaSSbondHoverBox option changeMsg =
     hoverInfoView
-        { title = "Disulfide Bridges"
-        , info = """This value is the energy of disulfide bridges. In the Rosetta `score.sc` 
-                    output file, this value is called `dslf_fa13`."""
+        { title = Docs.metricInfo.rosetta.metricName.ssBond
+        , info = Docs.metricInfo.rosetta.metricDesc.ssBond
         , mouseEnterMsg = RosettaSSbond
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1443,9 +1304,8 @@ rosettaSSbondHoverBox option changeMsg =
 rosettaRamaHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaRamaHoverBox option changeMsg =
     hoverInfoView
-        { title = "Backbone Torsion Preference"
-        , info = """This value is the probability of backbone ϕ, ψ angles given the amino acid type. 
-                    In the Rosetta `score.sc` output file, this value is called `rama_prepro`."""
+        { title = Docs.metricInfo.rosetta.metricName.rama
+        , info = Docs.metricInfo.rosetta.metricDesc.rama
         , mouseEnterMsg = RosettaRama
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1455,9 +1315,8 @@ rosettaRamaHoverBox option changeMsg =
 rosettaAAPropHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaAAPropHoverBox option changeMsg =
     hoverInfoView
-        { title = "Amino Acid Propensity"
-        , info = """This value is the probability of amino acid identity given the backbone ϕ, ψ angles. 
-                    In the Rosetta `score.sc` output file, this value is called `p_aa_pp`."""
+        { title = Docs.metricInfo.rosetta.metricName.aaProp
+        , info = Docs.metricInfo.rosetta.metricDesc.aaProp
         , mouseEnterMsg = RosettaAAProp
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1467,10 +1326,8 @@ rosettaAAPropHoverBox option changeMsg =
 rosettaDunbrackHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaDunbrackHoverBox option changeMsg =
     hoverInfoView
-        { title = "Dunbrack Rotamer"
-        , info = """This value is the probability that a chosen rotamer is native-like given 
-                    backbone ϕ, ψ angles. In the Rosetta `score.sc` output file, this value 
-                    is called `fa_dun`."""
+        { title = Docs.metricInfo.rosetta.metricName.dunbrack
+        , info = Docs.metricInfo.rosetta.metricDesc.dunbrack
         , mouseEnterMsg = RosettaDunbrack
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1480,10 +1337,8 @@ rosettaDunbrackHoverBox option changeMsg =
 rosettaOmegaPenHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaOmegaPenHoverBox option changeMsg =
     hoverInfoView
-        { title = "Omega Penalty"
-        , info = """This value is a backbone-dependent penalty for cis ω dihedrals that deviate 
-                    from 0° and trans ω dihedrals that deviate from 180°. In the Rosetta `score.sc` 
-                    output file, this value is called `omega`."""
+        { title = Docs.metricInfo.rosetta.metricName.omegaPen
+        , info = Docs.metricInfo.rosetta.metricDesc.omegaPen
         , mouseEnterMsg = RosettaOmegaPen
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1493,9 +1348,8 @@ rosettaOmegaPenHoverBox option changeMsg =
 rosettaOpenProPenHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaOpenProPenHoverBox option changeMsg =
     hoverInfoView
-        { title = "Open Proline Penalty"
-        , info = """This value is a penalty for an open proline ring and proline ω bonding energy. 
-                    In the Rosetta `score.sc` output file, this value is called `pro_close`."""
+        { title = Docs.metricInfo.rosetta.metricName.openProPen
+        , info = Docs.metricInfo.rosetta.metricDesc.openProPen
         , mouseEnterMsg = RosettaOpenProPen
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1505,9 +1359,8 @@ rosettaOpenProPenHoverBox option changeMsg =
 rosettaTyroPenHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 rosettaTyroPenHoverBox option changeMsg =
     hoverInfoView
-        { title = "Tyrosine χ3 Dihedral Angle Penalty"
-        , info = """This value is a sinusoidal penalty for non-planar tyrosine χ3 dihedral angle. 
-                    In the Rosetta `score.sc` output file, this value is called `yhh_planarity`."""
+        { title = Docs.metricInfo.rosetta.metricName.tyroPen
+        , info = Docs.metricInfo.rosetta.metricDesc.tyroPen
         , mouseEnterMsg = RosettaTyroPen
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1522,11 +1375,8 @@ rosettaTyroPenHoverBox option changeMsg =
 agg3dTotalScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 agg3dTotalScoreHoverBox option changeMsg =
     hoverInfoView
-        { title = "Total Score"
-        , info = """This value is a global indicator of the aggregation propensity/solubility of the protein structure. 
-                    It depends on the protein size. It allows assessing changes in solubility promoted by 
-                    amino acid substitutions in a particular protein structure. The more negative the value, 
-                    the highest the global solubility."""
+        { title = Docs.metricInfo.aggrescan3D.metricName.totalScore
+        , info = Docs.metricInfo.aggrescan3D.metricDesc.totalScore
         , mouseEnterMsg = Agg3dTotalScore
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1536,11 +1386,8 @@ agg3dTotalScoreHoverBox option changeMsg =
 agg3dAvgScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 agg3dAvgScoreHoverBox option changeMsg =
     hoverInfoView
-        { title = "Average Score"
-        , info = """This value is a normalized indicator of the aggregation propensity/solubility of the protein structure. 
-                    Allows comparing the solubility of different protein structures. It also allows assessing 
-                    changes in solubility promoted by amino acid substitutions in a particular protein structure. 
-                    The more negative the value, the highest the normalized solubility."""
+        { title = Docs.metricInfo.aggrescan3D.metricName.averageScore
+        , info = Docs.metricInfo.aggrescan3D.metricDesc.averageScore
         , mouseEnterMsg = Agg3dAvgScore
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1550,8 +1397,8 @@ agg3dAvgScoreHoverBox option changeMsg =
 agg3dMinScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 agg3dMinScoreHoverBox option changeMsg =
     hoverInfoView
-        { title = "Minimum Score"
-        , info = """This is the value of the most soluble residue in the structural context."""
+        { title = Docs.metricInfo.aggrescan3D.metricName.minimumScore
+        , info = Docs.metricInfo.aggrescan3D.metricDesc.minimumScore
         , mouseEnterMsg = Agg3dMinScore
         , hoverInfoOption = option
         , changeMsg = changeMsg
@@ -1561,8 +1408,8 @@ agg3dMinScoreHoverBox option changeMsg =
 agg3dMaxScoreHoverBox : HoverInfoOption -> (HoverInfoOption -> msg) -> List (Attribute msg)
 agg3dMaxScoreHoverBox option changeMsg =
     hoverInfoView
-        { title = "Maximum Score"
-        , info = """This is the value of the most aggregation-prone residue in the structural context."""
+        { title = Docs.metricInfo.aggrescan3D.metricName.maximumScore
+        , info = Docs.metricInfo.aggrescan3D.metricDesc.maximumScore
         , mouseEnterMsg = Agg3dMaxScore
         , hoverInfoOption = option
         , changeMsg = changeMsg

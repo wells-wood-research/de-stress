@@ -25,11 +25,13 @@ import RemoteData as Rd exposing (RemoteData)
 import Set exposing (Set)
 import Shared
 import Shared.Buttons as Buttons
+import Shared.Design as Design exposing (StoredDesign)
 import Shared.Error as Error
 import Shared.Metrics as Metrics exposing (RefSetMetrics)
 import Shared.ReferenceSet as ReferenceSet exposing (ReferenceSet)
 import Shared.ResourceUuid as ResourceUuid exposing (ResourceUuid)
 import Shared.Style as Style
+import Shared.WebSockets as WebSockets
 import Spa.Document exposing (Document)
 import Spa.Generated.Route as Route
 import Spa.Page as Page exposing (Page)
@@ -56,6 +58,7 @@ page =
 type alias Model =
     { mResourceUuid : Maybe ResourceUuid
     , pageState : PageState
+    , designs : Dict String Design.StoredDesign
     , referenceSets : Dict String ReferenceSet.StoredReferenceSet
     , navKey : Nav.Key
     , pageErrors : List Error.Error
@@ -75,12 +78,20 @@ type PageState
 
 type ConstructionMethod
     = Default DefaultReferenceSet
+    | MyDesigns DesignsListModel
     | PdbCodeList PdbCodeListModel
 
 
 type DefaultReferenceSet
     = Top500
     | Pisces
+
+
+type alias DesignsListModel =
+    { mName : Maybe String
+    , mDescription : Maybe String
+    , selectedUuids : Set String
+    }
 
 
 type alias PdbCodeListModel =
@@ -99,6 +110,14 @@ codeListModelToNewRefSet uuidString codeListModel =
     , description = Maybe.withDefault "DEFAULT DESCRIPTION" codeListModel.mDescription
     , pdbCodes = codeListModel.pdbCodeList
     , metricsRemoteData = initialMetricsRemoteData
+    }
+
+
+defaultDesignListModel : DesignsListModel
+defaultDesignListModel =
+    { mName = Nothing
+    , mDescription = Nothing
+    , selectedUuids = Set.empty
     }
 
 
@@ -340,8 +359,11 @@ constructionMethodToString constructionMethod =
                 Pisces ->
                     pisces.name
 
+        MyDesigns _ ->
+            "My Designs"
+
         PdbCodeList _ ->
-            "Custom"
+            "PDB List"
 
 
 
@@ -359,6 +381,7 @@ init shared _ =
         Just runState ->
             ( { mResourceUuid = Just runState.resourceUuid
               , pageState = ChoosingRefSetType <| Default Top500
+              , designs = runState.designs
               , referenceSets = runState.referenceSets
               , navKey = shared.key
               , pageErrors = []
@@ -369,6 +392,7 @@ init shared _ =
         Nothing ->
             ( { mResourceUuid = Nothing
               , pageState = ChoosingRefSetType <| Default Top500
+              , designs = Dict.empty
               , referenceSets = Dict.empty
               , navKey = shared.key
               , pageErrors = []
@@ -386,6 +410,7 @@ type Msg
     = UpdatedConstructionMethod ConstructionMethod
     | UpdatedName String
     | UpdatedDescription String
+    | SelectDesign String Bool
     | UpdatedPdbCodes String
     | ClickedDownloadRefSet
     | GotBasicMetrics BasicMetricsRemoteData
@@ -430,6 +455,27 @@ update msg model =
                         , Cmd.none
                         )
 
+                ChoosingRefSetType (MyDesigns designsListModel) ->
+                    if String.isEmpty name then
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    MyDesigns
+                                        { designsListModel | mName = Nothing }
+                          }
+                        , Cmd.none
+                        )
+
+                    else
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    MyDesigns
+                                        { designsListModel | mName = Just name }
+                          }
+                        , Cmd.none
+                        )
+
                 _ ->
                     updateWithUnexpectedStateError model
 
@@ -455,6 +501,53 @@ update msg model =
                           }
                         , Cmd.none
                         )
+
+                ChoosingRefSetType (MyDesigns designsListModel) ->
+                    if String.isEmpty description then
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    MyDesigns
+                                        { designsListModel | mDescription = Nothing }
+                          }
+                        , Cmd.none
+                        )
+
+                    else
+                        ( { model
+                            | pageState =
+                                ChoosingRefSetType <|
+                                    MyDesigns
+                                        { designsListModel | mDescription = Just description }
+                          }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    updateWithUnexpectedStateError model
+
+        SelectDesign uuidString checked ->
+            case model.pageState of
+                ChoosingRefSetType (MyDesigns designsListModel) ->
+                    ( { model
+                        | pageState =
+                            ChoosingRefSetType <|
+                                MyDesigns
+                                    { designsListModel
+                                        | selectedUuids =
+                                            if checked then
+                                                Set.insert
+                                                    uuidString
+                                                    designsListModel.selectedUuids
+
+                                            else
+                                                Set.remove
+                                                    uuidString
+                                                    designsListModel.selectedUuids
+                                    }
+                      }
+                    , Cmd.none
+                    )
 
                 _ ->
                     updateWithUnexpectedStateError model
@@ -504,6 +597,9 @@ update msg model =
 
                                 Default Pisces ->
                                     pisces
+
+                                MyDesigns _ ->
+                                    Debug.todo "Add this"
 
                                 PdbCodeList codeListModel ->
                                     codeListModelToNewRefSet uuidString codeListModel
@@ -726,8 +822,76 @@ update msg model =
                     updateWithUnexpectedStateError model
 
         ClickedCreateReferenceSet ->
-            case model.pageState of
-                CompletedBuilding { uuidString, referenceSet } ->
+            case ( model.pageState, model.mResourceUuid ) of
+                ( ChoosingRefSetType (MyDesigns designsListModel), Just resourceUuid ) ->
+                    let
+                        { uuidString, nextResourceUuid } =
+                            ResourceUuid.toString resourceUuid
+
+                        selectedDesigns =
+                            model.designs
+                                |> Dict.toList
+                                |> List.filter
+                                    (\( uuid, _ ) ->
+                                        Set.member uuid
+                                            designsListModel.selectedUuids
+                                    )
+                                |> List.map Tuple.second
+                                |> List.map Design.storedDesignToStub
+
+                        designMetrics =
+                            selectedDesigns
+                                |> List.filterMap
+                                    (.metricsJobStatus >> WebSockets.getDesignMetrics)
+
+                        refSetMetrics =
+                            List.map2
+                                Metrics.refSetMetricsFromDesignMetrics
+                                (List.map .fileName selectedDesigns)
+                                designMetrics
+
+                        newReferenceSet =
+                            { name =
+                                designsListModel.mName
+                                    |> Maybe.withDefault "DEFAULT NAME"
+                            , description =
+                                designsListModel.mDescription
+                                    |> Maybe.withDefault "DEFAULT DESCRIPTION"
+                            , pdbCodeList =
+                                Set.fromList <|
+                                    List.map .fileName selectedDesigns
+                            , metrics = refSetMetrics
+                            , aggregateData =
+                                refSetMetrics
+                                    |> Metrics.createAggregateData
+                            , deleteStatus = Buttons.initDangerStatus
+                            }
+                    in
+                    ( { model
+                        | mResourceUuid = Just nextResourceUuid
+                        , pageState = ChoosingRefSetType <| Default Top500
+                        , referenceSets =
+                            Dict.insert
+                                uuidString
+                                (newReferenceSet
+                                    |> ReferenceSet.createReferenceSetStub
+                                    |> ReferenceSet.storeReferenceSetStubLocally
+                                )
+                                model.referenceSets
+                      }
+                    , Cmd.batch
+                        [ ReferenceSet.storeReferenceSet
+                            { uuidString = uuidString
+                            , referenceSet =
+                                Codec.encoder
+                                    ReferenceSet.codec
+                                    newReferenceSet
+                            }
+                        , navigate model.navKey Route.ReferenceSets
+                        ]
+                    )
+
+                ( CompletedBuilding { uuidString, referenceSet }, _ ) ->
                     ( { model
                         | pageState = ChoosingRefSetType <| Default Top500
                         , referenceSets =
@@ -852,6 +1016,7 @@ bodyView model =
                             (refSetTypeSelector currentChoice)
                             [ Default Top500
                             , Default Pisces
+                            , MyDesigns defaultDesignListModel
                             , PdbCodeList defaultCodeListModel
                             ]
                             |> List.intersperse (text "|")
@@ -859,6 +1024,9 @@ bodyView model =
                     , case currentChoice of
                         Default refSet ->
                             defaultRefSetView refSet
+
+                        MyDesigns designsListModel ->
+                            designsListView model.designs designsListModel
 
                         PdbCodeList codeListModel ->
                             pdbCodeListView codeListModel
@@ -981,6 +1149,83 @@ completedBuildingView failedCodes refSet =
                     []
                )
         )
+
+
+designsListView : Dict String StoredDesign -> DesignsListModel -> Element Msg
+designsListView designs designsListModel =
+    column [ width fill, spacing 15 ]
+        [ paragraph []
+            [ text
+                """Create a reference set from your own uploaded designs."""
+            ]
+        , Input.text
+            Style.textInputStyle
+            { onChange = UpdatedName
+            , text = Maybe.withDefault "" designsListModel.mName
+            , placeholder = Nothing
+            , label =
+                Input.labelAbove []
+                    (Style.h2 <| text "Name")
+            }
+        , Input.multiline
+            Style.textInputStyle
+            { onChange = UpdatedDescription
+            , text = Maybe.withDefault "" designsListModel.mDescription
+            , placeholder = Nothing
+            , label =
+                Input.labelAbove []
+                    (Style.h2 <| text "Description")
+            , spellcheck = True
+            }
+        , Style.h2 <| text "Designs"
+        , text "Select designs to include in the reference set."
+        , Dict.toList designs
+            |> List.map (designSelectView designsListModel.selectedUuids)
+            |> column []
+        , let
+            validName =
+                case designsListModel.mName of
+                    Nothing ->
+                        False
+
+                    Just _ ->
+                        True
+
+            validDescription =
+                case designsListModel.mDescription of
+                    Nothing ->
+                        False
+
+                    Just _ ->
+                        True
+
+            complete =
+                validName && validDescription && (Set.isEmpty >> not) designsListModel.selectedUuids
+          in
+          Buttons.conditionalButton
+            { clickMsg =
+                Just ClickedCreateReferenceSet
+            , label = text "Create Reference Set"
+            , isActive = complete
+            }
+        ]
+
+
+designSelectView : Set String -> ( String, StoredDesign ) -> Element Msg
+designSelectView selectedUuids ( uuidString, storedDesign ) =
+    let
+        designStub =
+            Design.storedDesignToStub storedDesign
+    in
+    row [ spacing 10 ]
+        [ Input.checkbox []
+            { onChange = SelectDesign uuidString
+            , icon = Input.defaultCheckbox
+            , checked = Set.member uuidString selectedUuids
+            , label = Input.labelHidden "Design Checkbox"
+            }
+        , text designStub.name
+        ]
 
 
 pdbCodeListView : PdbCodeListModel -> Element Msg
@@ -1312,7 +1557,7 @@ aggrescan3DTotalQuery pdbCodeList =
 top500 : NewReferenceSet
 top500 =
     { id = "top-500-subset"
-    , name = "Top 500 Subset"
+    , name = "Top 500"
     , description =
         """A set of high-quality structures defined by the Richardson lab. This is a
         subset of the structures in top500, as the metrics fail to run for some of the
@@ -1355,7 +1600,7 @@ top500 =
 pisces : NewReferenceSet
 pisces =
     { id = "pisces-subset"
-    , name = "Pisces Subset"
+    , name = "Pisces"
     , description =
         """A set of non-redundant structures defined by the
         Dunbrack lab. These structures have an identity cutoff of 20%, a maximum
