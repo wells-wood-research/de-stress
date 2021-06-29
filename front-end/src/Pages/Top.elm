@@ -346,40 +346,40 @@ citationsTable =
         [ width fill ]
         [ row
             [ padding 5, width fill, Border.widthXY 0 2, Font.bold ]
-            [ el [ width <| fillPortion 1 ] <| text "Metric"
+            [ el [ width <| fillPortion 1 ] <| text "External Software"
             , el [ width <| fillPortion 1, Font.alignLeft ] <| text "Citations"
             ]
-        , rowView
+        , rowViewCitations
             "Aggrescan3D"
             citations.aggrescan3D
-        , rowView
+        , rowViewCitations
             "BUDE"
             citations.bude
-        , rowView
+        , rowViewCitations
             "DFIRE2"
             citations.dfire2
-        , rowView
+        , rowViewCitations
             "DSSP"
             citations.dssp
-        , rowView
+        , rowViewCitations
             "EvoEF2"
             citations.evoef2
-        , rowView
+        , rowViewCitations
             "Hydrophobic Fitness"
             citations.hydro_fit
-        , rowView
+        , rowViewCitations
             "Packing Density"
             citations.pack_dens
-        , rowView
+        , rowViewCitations
             "Rosetta"
             citations.rosetta
         ]
 
 
-rowView : String -> Element Msg -> Element Msg
-rowView metricName citation =
+rowViewCitations : String -> Element Msg -> Element Msg
+rowViewCitations softwareName citation =
     row [ padding 5, spacing 5, width fill, Border.widthEach { top = 0, bottom = 1, left = 0, right = 0 } ]
-        [ paragraph [ width <| fillPortion 1 ] [ paragraph [] [ text metricName ] ]
+        [ paragraph [ width <| fillPortion 1 ] [ paragraph [] [ text softwareName ] ]
         , el [ width <| fillPortion 3, Font.alignLeft ] <| paragraph [] [ citation ]
         ]
 
