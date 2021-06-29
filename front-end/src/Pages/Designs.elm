@@ -1737,24 +1737,23 @@ makePlotData ( uuid, { name, metricsJobStatus } ) =
                 { uuid = uuid
                 , name = name
                 , hydrophobicFitness = Maybe.withDefault (0 / 0) metrics.hydrophobicFitness
+                , meanHydrophobicFitness = 0
                 , isoelectricPoint = metrics.isoelectricPoint
+                , meanIsoelectricPoint = 0
                 , numberOfResidues = metrics.numOfResidues |> toFloat
+                , meanNumberOfResidues = 0
                 , packingDensity = metrics.packingDensity
-                , budeFFTotalEnergy =
-                    Maybe.withDefault (0 / 0)
-                        metrics.budeFFResults.totalEnergy
-                , evoEFTotalEnergy =
-                    Maybe.withDefault (0 / 0)
-                        metrics.evoEF2Results.total
-                , dfireTotalEnergy =
-                    Maybe.withDefault (0 / 0)
-                        metrics.dfire2Results.total
-                , rosettaTotalEnergy =
-                    Maybe.withDefault (0 / 0)
-                        metrics.rosettaResults.total_score
-                , aggrescan3dTotalValue =
-                    Maybe.withDefault (0 / 0)
-                        metrics.aggrescan3dResults.total_value
+                , meanPackingDensity = 0
+                , budeFFTotalEnergy = Maybe.withDefault (0 / 0) metrics.budeFFResults.totalEnergy
+                , meanBudeFFTotalEnergy = 0
+                , evoEFTotalEnergy = Maybe.withDefault (0 / 0) metrics.evoEF2Results.total
+                , meanEvoEFTotalEnergy = 0
+                , dfireTotalEnergy = Maybe.withDefault (0 / 0) metrics.dfire2Results.total
+                , meanDfireTotalEnergy = 0
+                , rosettaTotalEnergy = Maybe.withDefault (0 / 0) metrics.rosettaResults.total_score
+                , meanRosettaTotalEnergy = 0
+                , aggrescan3dTotalValue = Maybe.withDefault (0 / 0) metrics.aggrescan3dResults.total_value
+                , meanAggrescan3dTotalValue = 0
                 , dataType = "designs"
                 }
             )
@@ -1767,40 +1766,76 @@ makeRefSetPlotData ( uuid, { name, aggregateData } ) =
         , name = name
         , hydrophobicFitness =
             aggregateData.hydrophobicFitness
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanHydrophobicFitness =
+            aggregateData.hydrophobicFitness
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , isoelectricPoint =
             aggregateData.isoelectricPoint
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanIsoelectricPoint =
+            aggregateData.isoelectricPoint
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , numberOfResidues =
             aggregateData.numberOfResidues
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanNumberOfResidues =
+            aggregateData.numberOfResidues
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , packingDensity =
             aggregateData.packingDensity
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanPackingDensity =
+            aggregateData.packingDensity
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , budeFFTotalEnergy =
             aggregateData.budeFFTotalEnergy
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanBudeFFTotalEnergy =
+            aggregateData.budeFFTotalEnergy
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , evoEFTotalEnergy =
             aggregateData.evoEFTotalEnergy
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanEvoEFTotalEnergy =
+            aggregateData.evoEFTotalEnergy
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , dfireTotalEnergy =
             aggregateData.dfireTotalEnergy
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanDfireTotalEnergy =
+            aggregateData.dfireTotalEnergy
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , rosettaTotalEnergy =
             aggregateData.rosettaTotalEnergy
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanRosettaTotalEnergy =
+            aggregateData.rosettaTotalEnergy
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , aggrescan3dTotalValue =
             aggregateData.aggrescan3dTotalValue
-                |> Maybe.map .median
+                |> Maybe.map .mean
                 |> Maybe.withDefault (0 / 0)
+        , meanAggrescan3dTotalValue =
+            aggregateData.aggrescan3dTotalValue
+                |> Maybe.map .stdDev
+                |> Maybe.withDefault 0
         , dataType = "reference-sets"
         }
 
@@ -1809,14 +1844,23 @@ type alias PlotData =
     { uuid : String
     , name : String
     , hydrophobicFitness : Float
+    , meanHydrophobicFitness : Float
     , isoelectricPoint : Float
+    , meanIsoelectricPoint : Float
     , numberOfResidues : Float
+    , meanNumberOfResidues : Float
     , packingDensity : Float
+    , meanPackingDensity : Float
     , budeFFTotalEnergy : Float
+    , meanBudeFFTotalEnergy : Float
     , evoEFTotalEnergy : Float
+    , meanEvoEFTotalEnergy : Float
     , dfireTotalEnergy : Float
+    , meanDfireTotalEnergy : Float
     , rosettaTotalEnergy : Float
+    , meanRosettaTotalEnergy : Float
     , aggrescan3dTotalValue : Float
+    , meanAggrescan3dTotalValue : Float
     , dataType : String
     }
 
@@ -1824,14 +1868,23 @@ type alias PlotData =
 plotTuples : List ( String, PlotData -> Float, VL.SortProperty )
 plotTuples =
     [ ( "Hydrophobic Fitness", .hydrophobicFitness, VL.soAscending )
+    , ( "Hydrophobic Fitness Std Dev", .meanHydrophobicFitness, VL.soAscending )
     , ( "Isoelectric Point", .isoelectricPoint, VL.soDescending )
+    , ( "Isoelectric Point Std Dev", .meanIsoelectricPoint, VL.soDescending )
     , ( "Number of Residues", .numberOfResidues, VL.soDescending )
+    , ( "Number of Residues Std Dev", .meanNumberOfResidues, VL.soDescending )
     , ( "Mean Packing Density", .packingDensity, VL.soDescending )
+    , ( "Mean Packing Density Std Dev", .meanPackingDensity, VL.soDescending )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy, VL.soAscending )
+    , ( "BUDE FF Total Energy Std Dev", .meanBudeFFTotalEnergy, VL.soAscending )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy, VL.soAscending )
-    , ( "dFire2 Total Energy", .dfireTotalEnergy, VL.soAscending )
+    , ( "EvoEF2 Total Energy Std Dev", .meanEvoEFTotalEnergy, VL.soAscending )
+    , ( "DFIRE2 Total Energy", .dfireTotalEnergy, VL.soAscending )
+    , ( "DFIRE2 Total Energy Std Dev", .meanDfireTotalEnergy, VL.soAscending )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy, VL.soAscending )
+    , ( "Rosetta Total Energy Std Dev", .meanRosettaTotalEnergy, VL.soAscending )
     , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue, VL.soAscending )
+    , ( "Aggrescan3D Total Value Std Dev", .meanAggrescan3dTotalValue, VL.soAscending )
     ]
 
 
@@ -1847,43 +1900,73 @@ overviewSpec device plotData =
 
         metricValueBarSpec ( label, _, sortProp ) =
             VL.asSpec
-                [ VL.bar
-                    [ VL.maTooltip VL.ttEncoding
+                [ VL.layer
+                    [ VL.asSpec
+                        [ VL.bar
+                            [ VL.maTooltip VL.ttEncoding
+                            ]
+                        , VL.title label []
+                        , VL.width 200
+                        , (VL.encoding
+                            << VL.position VL.Y
+                                [ VL.pName "Design Name"
+                                , VL.pNominal
+                                , VL.pSort
+                                    [ VL.soByField label VL.opMax
+                                    , sortProp
+                                    ]
+                                , VL.pAxis
+                                    [ VL.axLabelExpr
+                                        "split(datum.label, '@@@')[0]"
+                                    , VL.axTitle ""
+                                    ]
+                                ]
+                            << VL.position VL.X
+                                [ VL.pName label
+                                , VL.pMType VL.Quantitative
+                                , VL.pAxis [ VL.axTitle label, VL.axGrid True ]
+                                ]
+                            << VL.color
+                                [ VL.mName "dataType"
+                                , VL.mLegend
+                                    [ VL.leTitle "Data Type"
+                                    , VL.leOrient VL.loTop
+                                    ]
+                                ]
+                            << VL.hyperlink
+                                [ VL.hName "url"
+                                , VL.hNominal
+                                ]
+                          )
+                            []
+                        ]
+                    , VL.asSpec
+                        [ VL.errorbar []
+                        , (VL.encoding
+                            << VL.position VL.Y
+                                [ VL.pName "Design Name"
+                                , VL.pNominal
+                                , VL.pSort
+                                    [ VL.soByField label VL.opMax
+                                    , sortProp
+                                    ]
+                                ]
+                            << VL.position VL.XError
+                                [ VL.pName (label ++ " Std Dev")
+                                , VL.pMType VL.Quantitative
+
+                                --, VL.pAxis [ VL.axTitle label, VL.axGrid True ]
+                                ]
+                            << VL.position VL.X
+                                [ VL.pName label
+                                , VL.pMType VL.Quantitative
+
+                                --, VL.pAxis [ VL.axTitle label, VL.axGrid True ]
+                                ]
+                          )
+                            []
+                        ]
                     ]
-                , VL.title label []
-                , VL.width 200
-                , (VL.encoding
-                    << VL.position VL.Y
-                        [ VL.pName "Design Name"
-                        , VL.pNominal
-                        , VL.pSort
-                            [ VL.soByField label VL.opMax
-                            , sortProp
-                            ]
-                        , VL.pAxis
-                            [ VL.axLabelExpr
-                                "split(datum.label, '@@@')[0]"
-                            , VL.axTitle ""
-                            ]
-                        ]
-                    << VL.position VL.X
-                        [ VL.pName label
-                        , VL.pMType VL.Quantitative
-                        , VL.pAxis [ VL.axTitle label, VL.axGrid True ]
-                        ]
-                    << VL.color
-                        [ VL.mName "dataType"
-                        , VL.mLegend
-                            [ VL.leTitle "Data Type"
-                            , VL.leOrient VL.loTop
-                            ]
-                        ]
-                    << VL.hyperlink
-                        [ VL.hName "url"
-                        , VL.hNominal
-                        ]
-                  )
-                    []
                 ]
 
         dataColumns =
@@ -1933,18 +2016,24 @@ overviewSpec device plotData =
         , config
         , case ( device.class, device.orientation ) of
             ( Phone, Portrait ) ->
-                VL.vConcat <|
-                    List.map metricValueBarSpec plotTuples
+                plotTuples
+                    |> List.filter (\( n, _, _ ) -> not <| String.contains "Std Dev" n)
+                    |> List.map metricValueBarSpec
+                    |> VL.vConcat
 
             _ ->
                 VL.hConcat
                     [ VL.asSpec
-                        [ VL.vConcat <|
-                            List.map metricValueBarSpec headTuples
+                        [ headTuples
+                            |> List.filter (\( n, _, _ ) -> not <| String.contains "Std Dev" n)
+                            |> List.map metricValueBarSpec
+                            |> VL.vConcat
                         ]
                     , VL.asSpec
-                        [ VL.vConcat <|
-                            List.map metricValueBarSpec tailTuples
+                        [ tailTuples
+                            |> List.filter (\( n, _, _ ) -> not <| String.contains "Std Dev" n)
+                            |> List.map metricValueBarSpec
+                            |> VL.vConcat
                         ]
                     ]
         ]

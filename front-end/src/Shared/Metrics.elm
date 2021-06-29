@@ -19,6 +19,7 @@ module Shared.Metrics exposing
     , desMetricsCodec
     , makeHistPlotData
     , refSetMetricsCodec
+    , refSetMetricsFromDesignMetrics
     , torsionAngleStringToDict
     )
 
@@ -451,6 +452,24 @@ refSetMetricsCodec =
         |> Codec.buildObject
 
 
+refSetMetricsFromDesignMetrics : String -> DesignMetrics -> RefSetMetrics
+refSetMetricsFromDesignMetrics filename designMetrics =
+    { pdbCode = filename
+    , composition = designMetrics.composition
+    , torsionAngles = designMetrics.torsionAngles
+    , hydrophobicFitness = designMetrics.hydrophobicFitness
+    , isoelectricPoint = designMetrics.isoelectricPoint
+    , mass = designMetrics.mass
+    , numberOfResidues = designMetrics.numOfResidues
+    , packingDensity = designMetrics.packingDensity
+    , budeFFTotalEnergy = designMetrics.budeFFResults.totalEnergy
+    , evoEFTotalEnergy = designMetrics.evoEF2Results.total
+    , dfireTotalEnergy = designMetrics.dfire2Results.total
+    , rosettaTotalEnergy = designMetrics.rosettaResults.total_score
+    , aggrescan3dTotalValue = designMetrics.aggrescan3dResults.total_value
+    }
+
+
 type alias AggregateData =
     { composition : Dict String (Maybe MeanMedAndStdDev)
     , hydrophobicFitness : Maybe MeanMedAndStdDev
@@ -695,7 +714,7 @@ histPlotTuples =
     , ( "Mean Packing Density", .packingDensity )
     , ( "BUDE FF Total Energy", .budeFFTotalEnergy )
     , ( "EvoEF2 Total Energy", .evoEFTotalEnergy )
-    , ( "dFire2 Total Energy", .dfireTotalEnergy )
+    , ( "DFIRE2 Total Energy", .dfireTotalEnergy )
     , ( "Rosetta Total Energy", .rosettaTotalEnergy )
     , ( "Aggrescan3D Total Value", .aggrescan3dTotalValue )
     ]
