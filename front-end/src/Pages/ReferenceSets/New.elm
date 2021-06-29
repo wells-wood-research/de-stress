@@ -585,6 +585,9 @@ update msg model =
 
         ClickedDownloadRefSet ->
             case ( model.pageState, model.mResourceUuid ) of
+                ( ChoosingRefSetType (MyDesigns _), _ ) ->
+                    updateWithUnexpectedStateError model
+
                 ( ChoosingRefSetType refSetType, Just resourceUuid ) ->
                     let
                         { uuidString, nextResourceUuid } =
@@ -599,7 +602,9 @@ update msg model =
                                     pisces
 
                                 MyDesigns _ ->
-                                    Debug.todo "Add this"
+                                    -- This should not occur, we're catching it before
+                                    -- this
+                                    top500
 
                                 PdbCodeList codeListModel ->
                                     codeListModelToNewRefSet uuidString codeListModel
