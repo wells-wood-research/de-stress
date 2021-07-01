@@ -892,7 +892,7 @@ update msg model =
                                     ReferenceSet.codec
                                     newReferenceSet
                             }
-                        , navigate model.navKey Route.ReferenceSets
+                        , navigate model.navKey Route.DeStress__ReferenceSets
                         ]
                     )
 

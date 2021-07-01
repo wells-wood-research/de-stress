@@ -1,4 +1,4 @@
-module Pages.Glossary exposing (Model, Msg, Params, page)
+module Pages.DeStress.Glossary exposing (Model, Msg, Params, page)
 
 import Element exposing (..)
 import Element.Border as Border
