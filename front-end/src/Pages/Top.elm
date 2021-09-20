@@ -53,8 +53,8 @@ view _ =
                     promising designs to take into the lab.
                     """
                 , el [ Font.bold ] <|
-                    text "Click \"Designs\" to get started"
-                , text "."
+                    text "Please read the information below"
+                , text " before clicking \"Designs\" to get started."
                 ]
             , text "Tutorial"
                 |> Style.h3
@@ -127,10 +127,23 @@ view _ =
                     performed, we simply run the metrics on the models that you provide.
                     If any of the metrics that are returned are particularly high, you
                     may want to consider relaxing your model in some way (using
-                    molecular dynamics, Rosetta etc.). Related to this, after you have
+                    something like the """
+                , link Style.linkStyle
+                    { url =
+                        "https://www.rosettacommons.org/docs/latest/application_documentation/structure_prediction/relax"
+                    , label = text "Fast Relax protocol"
+                    }
+                , text
+                    """ in Rosetta or """
+                , link Style.linkStyle
+                    { url =
+                        "http://docs.openmm.org/latest/userguide/application/02_running_sims.html#energy-minimization"
+                    , label = text "energy minimisation"
+                    }
+                , text """ in molecular dynamics). Related to this, after you have
                     shortlisted designs based on the output of DE-STRESS, you should
                     consider more in depth evaluation of models and sequences using
-                    methods such as molecular dynamics or protein folding simulations.
+                    methods such as molecular dynamics or protein-folding simulations.
                     """
                 ]
             , text "Links"
