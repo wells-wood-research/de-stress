@@ -202,9 +202,9 @@ view _ =
                     """If you use DE-STRESS, please cite the following article:"""
                 ]
             , paragraph []
-                [ link
+                [ link Style.linkStyle
                     { url = "https://doi.org/10.1093/protein/gzab029"
-                    , label ="""Stam MJ and Wood CW (2021) DE-STRESS: A user-friendly
+                    , label = text """Stam MJ and Wood CW (2021) DE-STRESS: A user-friendly
                     web application for the evaluation of protein designs, Protein
                     Engineering, Design and Selection, 34, gzab029, 2021."""
                     }
