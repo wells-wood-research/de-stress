@@ -16,7 +16,7 @@ https://pragmaticproteindesign.bio.ed.ac.uk/de-stress/
 
 If you use DE-STRESS, please cite the following article:
 
-Stam MJ and Wood CW (2021)...
+[Stam MJ and Wood CW (2021) DE-STRESS: A user-friendly web application for the evaluation of protein designs, Protein Engineering, Design and Selection, 34, gzab029.](https://academic.oup.com/peds/article/doi/10.1093/protein/gzab029/6462357)
 
 ## Contacting Us
 
