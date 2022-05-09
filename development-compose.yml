@@ -11,6 +11,7 @@ services:
       - AGGRESCAN3D_SCRIPT_PATH
       - GUNICORN_WORKERS
       - APP_PORT
+      - MAX_RUN_TIME
     depends_on:
       - redis
     ports:
@@ -34,6 +35,7 @@ services:
       - DFIRE2_FOLDER_PATH
       - ROSETTA_BINARY_PATH
       - AGGRESCAN3D_SCRIPT_PATH
+      - MAX_RUN_TIME
     depends_on:
       - big-structure
       - redis
