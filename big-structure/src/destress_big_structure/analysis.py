@@ -32,9 +32,11 @@ from destress_big_structure.settings import (
     DFIRE2_FOLDER_PATH,
     ROSETTA_BINARY_PATH,
     AGGRESCAN3D_SCRIPT_PATH,
+    MAX_RUN_TIME,
 )
 
-MAX_RUN_TIME = 20
+MAX_RUN_TIME = float(MAX_RUN_TIME)
+
 
 # We're suppressing warnings about atoms not being parameterised in BUDE FF
 # I'm not reporting this as the user should look into BUDE FF to understand how it works
