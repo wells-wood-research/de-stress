@@ -1,8 +1,6 @@
 FROM python:3.8
 
-RUN apt update 
-
-# && apt-get install -y dssp
+RUN apt update && apt install -y dssp
 
 WORKDIR /app
 
