@@ -1,0 +1,15 @@
+version: '2'
+services:
+  big-structure:
+    build:
+      context: ./big-structure
+    environment:
+      - POSTGRES_PASSWORD
+      - EVOEF2_BINARY_PATH
+      - DFIRE2_FOLDER_PATH
+      - ROSETTA_BINARY_PATH
+      - AGGRESCAN3D_SCRIPT_PATH
+      - MAX_RUN_TIME
+    volumes:
+      - ./big-structure:/app
+      - ./dependencies_for_de-stress:/dependencies_for_de-stress 
