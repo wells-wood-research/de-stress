@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.8.2-alpine
 
 RUN apt update && apt install -y dssp
 
