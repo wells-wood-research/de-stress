@@ -74,3 +74,30 @@ docker-compose -f development-compose.yml --env-file .env up -d --scale rq-worke
 ```
 
 Navigate to `de-stress/database` and run `import_db_dump.sh`.
+
+## Headless DE-STRESS
+
+The DE-STRESS webserver has a few limitations which are there to ensure the stability of the webserver. These limitations are listed below. 
+
+* Only proteins with 500 residues or less can be uploaded.
+* Only 30 files can be uploaded at a time.
+* There is a max run time of 20 seconds for all the DE-STRESS metrics.
+
+The headless version of DE-STRESS can be ran locally and the user can change these settings to run a batch of larger PDB files. THe code has been written to allow multiprocessing as well so that large amounts of files can be ran in a reasonable amount of time. The `.env-headless` file can be used to update the MAX_RUN_TIME and HEADLESS_DESTRESS_WORKERS variables to change the amount of seconds the DE-STRESS metrics are allowed to run, and how many processers should be used respectively. 
+
+Firstly the docker image needs to be built. There is a different docker compose file called `headless-compose.yml` that needs to be used instead of the `development-compose.yml` file.  
+
+```bash 
+docker-compose -f headless-compose.yml build
+```
+
+After this, make sure the dependencies have been built. The path `/absolute/path/to/de-stress/dependencies_for_de-stress/` needs to be replaced with the user's local path to the DE-STRESS dependencies. 
+
+```bash
+docker run -it --rm -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress_big-structure:latest sh build_dependencies.sh
+```
+
+Finally, run headless DE-STRESS with the following command and change the `/absolute/path/to/` to the the local file path to these folders. 
+
+```bash
+docker run -it --rm --env-file .env -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress -v /absolute/path/to/input_path/:/input_path de-stress_big-structure:latest poetry run headless_destress /input_path
