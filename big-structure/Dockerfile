@@ -1,4 +1,4 @@
-FROM python:3.8-buster
+FROM python:3.8.12
 
 RUN apt update && apt install -y dssp
 
