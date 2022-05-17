@@ -352,6 +352,17 @@ class DesignMetricsOutputRow:
     aggrescan3d_min_value: float
     aggrescan3d_max_value: float
 
+    # Defining the __eq__method to compare all the fields except the
+    # file_name field
+    def __eq__(self, other):
+        self_dict = self.__dict__
+        other_dict = other.__dict__
+
+        self_dict_new = {k: v for k, v in self_dict.items() if k not in ["file_name"]}
+        other_dict_new = {k: v for k, v in other_dict.items() if k not in ["file_name"]}
+
+        return self_dict_new == other_dict_new
+
 
 # }}}
 # {{{ Server Job Wrappers
