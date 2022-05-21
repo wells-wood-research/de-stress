@@ -10,7 +10,7 @@ from destress_big_structure.settings import HEADLESS_DESTRESS_WORKERS
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
 def test_check_headless_ui_consistency():
 
-    test_path = "tests/testing_files/test_headless/"
+    test_path = "/app/tests/testing_files/test_headless/"
 
     # DE-STRESS UI results for 1aac.pdb test file
     destress_ui_results = DesignMetricsOutputRow(
@@ -94,7 +94,7 @@ def test_check_headless_ui_consistency():
     print(os.getcwd())
 
     # Opening csv to insert into
-    with open("/app/" + test_path + "design_data.csv", "r") as f:
+    with open(test_path + "design_data.csv", "r") as f:
         lines = f.readlines()
 
     # Extracting the results from the csv output
