@@ -1,6 +1,6 @@
 from pathlib import Path
 import subprocess
-import csv
+import os
 from destress_big_structure.elm_types import (
     DesignMetricsOutputRow,
 )
@@ -90,6 +90,8 @@ def test_check_headless_ui_consistency():
         cmd,
         capture_output=True,
     )
+
+    print(os.getcwd())
 
     # Opening csv to insert into
     with open(test_path + "design_data.csv", "r") as f:
