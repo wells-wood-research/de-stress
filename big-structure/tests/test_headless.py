@@ -10,7 +10,7 @@ from destress_big_structure.settings import HEADLESS_DESTRESS_WORKERS
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
 def test_check_headless_ui_consistency():
 
-    test_path = "/app/tests/testing_files/test_headless/"
+    test_path = "tests/testing_files/test_headless/"
 
     # DE-STRESS UI results for 1aac.pdb test file
     destress_ui_results = DesignMetricsOutputRow(
@@ -77,21 +77,27 @@ def test_check_headless_ui_consistency():
         aggrescan3d_max_value=1.0632,
     )
 
-    # Creating bash command
-    cmd = [
+    # Creating bash command to run headless destress
+    headless_destress_run_cmd = [
         "poetry",
         "run",
         "headless_destress",
         test_path,
     ]
 
+    # Creating a bash command to change permissions to the file
+    chmod_cmd = [
+        "chmod",
+        "+x",
+        test_path + "design_data.csv",
+    ]
+
     # Using subprocess to run this command and capturing the output
-    destress_headless_stdout = subprocess.run(
-        cmd,
-        capture_output=True,
+    subprocess.run(
+        headless_destress_run_cmd,
     )
 
-    print(os.getcwd())
+    subprocess.run(chmod_cmd)
 
     # Opening csv to insert into
     with open(test_path + "design_data.csv", "r") as f:
