@@ -94,7 +94,7 @@ def test_check_headless_ui_consistency():
     print(os.getcwd())
 
     # Opening csv to insert into
-    with open(test_path + "design_data.csv", "r") as f:
+    with open("/app/" + test_path + "design_data.csv", "r") as f:
         lines = f.readlines()
 
     # Extracting the results from the csv output
