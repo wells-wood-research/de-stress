@@ -77,27 +77,34 @@ def test_check_headless_ui_consistency():
         aggrescan3d_max_value=1.0632,
     )
 
-    # Creating bash command to run headless destress
+    # # Creating bash command to run headless destress
+    # headless_destress_run_cmd = [
+    #     "poetry",
+    #     "run",
+    #     "headless_destress",
+    #     test_path,
+    # ]
+
     headless_destress_run_cmd = [
+        "docker",
+        "run",
+        "-it",
+        "--rm",
+        "--env-file",
+        ".env-headless",
+        "-v",
+        test_path + ":/input_path",
+        "de-stress_big-structure:latest",
         "poetry",
         "run",
         "headless_destress",
-        test_path,
-    ]
-
-    # Creating a bash command to change permissions to the file
-    chmod_cmd = [
-        "chmod",
-        "+x",
-        test_path + "design_data.csv",
+        "/input_path",
     ]
 
     # Using subprocess to run this command and capturing the output
     subprocess.run(
         headless_destress_run_cmd,
     )
-
-    subprocess.run(chmod_cmd)
 
     # Opening csv to insert into
     with open(test_path + "design_data.csv", "r") as f:
