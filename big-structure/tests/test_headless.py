@@ -77,31 +77,23 @@ def test_check_headless_ui_consistency():
         aggrescan3d_max_value=1.0632,
     )
 
-    # # Creating bash command to run headless destress
-    # headless_destress_run_cmd = [
-    #     "poetry",
-    #     "run",
-    #     "headless_destress",
-    #     test_path,
-    # ]
+    # Creating a bash command to source .env file
+    env_vars_cmd = ["source", "tests/setenv.sh"]
 
+    # Creating bash command to run headless destress
     headless_destress_run_cmd = [
-        "docker",
-        "run",
-        "-it",
-        "--rm",
-        "--env-file",
-        ".env-headless",
-        "-v",
-        test_path + ":/input_path",
-        "de-stress_big-structure:latest",
         "poetry",
         "run",
         "headless_destress",
-        "/input_path",
+        test_path,
     ]
 
-    # Using subprocess to run this command and capturing the output
+    # Using subprocess to run this command
+    subprocess.run(
+        env_vars_cmd,
+    )
+
+    # Using subprocess to run this command
     subprocess.run(
         headless_destress_run_cmd,
     )
