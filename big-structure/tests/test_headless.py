@@ -1,11 +1,14 @@
 from pathlib import Path
 import subprocess
 import os
+from dotenv import load_dotenv
 from destress_big_structure.elm_types import (
     DesignMetricsOutputRow,
 )
 
-from destress_big_structure.settings import HEADLESS_DESTRESS_WORKERS
+load_dotenv()
+
+HEADLESS_DESTRESS_WORKERS = os.getenv("HEADLESS_DESTRESS_WORKERS")
 
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
 def test_check_headless_ui_consistency():
@@ -77,9 +80,6 @@ def test_check_headless_ui_consistency():
         aggrescan3d_max_value=1.0632,
     )
 
-    # Creating a bash command to source .env file
-    env_vars_cmd = ["source", "tests/setenv.sh"]
-
     # Creating bash command to run headless destress
     headless_destress_run_cmd = [
         "poetry",
@@ -87,11 +87,6 @@ def test_check_headless_ui_consistency():
         "headless_destress",
         test_path,
     ]
-
-    # Using subprocess to run this command
-    subprocess.run(
-        env_vars_cmd,
-    )
 
     # Using subprocess to run this command
     subprocess.run(
