@@ -4,4 +4,4 @@ set -a
 source tests/.env
 set +a
 
-python3 tests/run_headless_for_testing.py
+poetry run headless_destress "tests/testing_files/test_headless/"
