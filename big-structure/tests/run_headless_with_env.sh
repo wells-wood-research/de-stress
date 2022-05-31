@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -a
-source .env
+source tests/.env
 set +a
 
-python3 run_headless_for_testing.py
+python3 tests/run_headless_for_testing.py
