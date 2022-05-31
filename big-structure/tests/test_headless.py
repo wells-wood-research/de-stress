@@ -78,8 +78,15 @@ def test_check_headless_ui_consistency():
         aggrescan3d_max_value=1.0632,
     )
 
+    chmod_cmd = ["chmod", "+x", "run_headless_with_env.sh"]
+
+    # Using subprocess to run this command
+    subprocess.run(
+        chmod_cmd,
+    )
+
     # Creating bash command to run headless destress
-    headless_destress_run_cmd = ["./run_headless_with_env.sh"]
+    headless_destress_run_cmd = ["bash", "run_headless_with_env.sh"]
 
     # Using subprocess to run this command
     subprocess.run(
