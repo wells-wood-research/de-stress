@@ -11,7 +11,6 @@ HEADLESS_DESTRESS_WORKERS = os.getenv("HEADLESS_DESTRESS_WORKERS")
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
 def test_check_headless_ui_consistency():
 
-    test_code_path = "tests/"
     test_pdb_path = "tests/testing_files/test_headless/"
 
     # DE-STRESS UI results for 1aac.pdb test file
@@ -80,7 +79,7 @@ def test_check_headless_ui_consistency():
     )
 
     # Creating bash command to run headless destress
-    headless_destress_run_cmd = ["./" + test_code_path + "run_headless_with_env.sh"]
+    headless_destress_run_cmd = ["poetry", "run", "headless_destress", test_pdb_path]
 
     # Using subprocess to run this command
     subprocess.run(
