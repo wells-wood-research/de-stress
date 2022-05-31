@@ -6,8 +6,6 @@ from destress_big_structure.elm_types import (
     DesignMetricsOutputRow,
 )
 
-load_dotenv()
-
 HEADLESS_DESTRESS_WORKERS = os.getenv("HEADLESS_DESTRESS_WORKERS")
 
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
@@ -81,12 +79,7 @@ def test_check_headless_ui_consistency():
     )
 
     # Creating bash command to run headless destress
-    headless_destress_run_cmd = [
-        "poetry",
-        "run",
-        "headless_destress",
-        test_path,
-    ]
+    headless_destress_run_cmd = ["./run_headless_with_env.sh"]
 
     # Using subprocess to run this command
     subprocess.run(
