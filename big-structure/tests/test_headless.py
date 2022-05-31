@@ -11,7 +11,8 @@ HEADLESS_DESTRESS_WORKERS = os.getenv("HEADLESS_DESTRESS_WORKERS")
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
 def test_check_headless_ui_consistency():
 
-    test_path = "tests/testing_files/test_headless/"
+    test_code_path = "tests/"
+    test_pdb_path = "tests/testing_files/test_headless/"
 
     # DE-STRESS UI results for 1aac.pdb test file
     destress_ui_results = DesignMetricsOutputRow(
@@ -78,15 +79,8 @@ def test_check_headless_ui_consistency():
         aggrescan3d_max_value=1.0632,
     )
 
-    chmod_cmd = ["chmod", "+x", test_path + "run_headless_with_env.sh"]
-
-    # Using subprocess to run this command
-    subprocess.run(
-        chmod_cmd,
-    )
-
     # Creating bash command to run headless destress
-    headless_destress_run_cmd = ["bash", test_path + "run_headless_with_env.sh"]
+    headless_destress_run_cmd = ["./" + test_code_path + "run_headless_with_env.sh"]
 
     # Using subprocess to run this command
     subprocess.run(
@@ -94,7 +88,7 @@ def test_check_headless_ui_consistency():
     )
 
     # Opening csv to insert into
-    with open(test_path + "design_data.csv", "r") as f:
+    with open(test_pdb_path + "design_data.csv", "r") as f:
         lines = f.readlines()
 
     # Extracting the results from the csv output
