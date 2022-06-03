@@ -1,10 +1,10 @@
 from pathlib import Path
 import subprocess
 import os
-from dotenv import load_dotenv
 from destress_big_structure.elm_types import (
     DesignMetricsOutputRow,
 )
+import pytest
 
 HEADLESS_DESTRESS_WORKERS = os.getenv("HEADLESS_DESTRESS_WORKERS")
 
