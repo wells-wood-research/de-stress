@@ -9,6 +9,9 @@ from destress_big_structure.elm_types import (
 HEADLESS_DESTRESS_WORKERS = os.getenv("HEADLESS_DESTRESS_WORKERS")
 
 # Testing the consistency of DE-STRESS headless with DE-STRESS UI
+# Adding a flag to skip this test when running pytest on test server.
+# This can be ran locally instead.
+@pytest.mark.skip
 def test_check_headless_ui_consistency():
 
     test_pdb_path = "tests/testing_files/test_headless/"
