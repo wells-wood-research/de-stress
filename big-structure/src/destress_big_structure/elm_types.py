@@ -288,6 +288,82 @@ class DesignMetrics:
     aggrescan3d_results: Aggrescan3DOutput
 
 
+@dataclass
+class DesignMetricsOutputRow:
+    design_name: str
+    file_name: str
+    composition_ALA: float
+    composition_CYS: float
+    composition_ASP: float
+    composition_GLU: float
+    composition_PHE: float
+    composition_GLY: float
+    composition_HIS: float
+    composition_ILE: float
+    composition_LYS: float
+    composition_LEU: float
+    composition_MET: float
+    composition_ASN: float
+    composition_PRO: float
+    composition_GLN: float
+    composition_ARG: float
+    composition_SER: float
+    composition_THR: float
+    composition_VAL: float
+    composition_TRP: float
+    composition_UNK: float
+    composition_TYR: float
+    hydrophobic_fitness: float
+    isoelectric_point: float
+    mass: float
+    num_residues: float
+    packing_density: float
+    budeff_total: float
+    budeff_steric: float
+    budeff_desolvation: float
+    budeff_charge: float
+    evoef2_total: float
+    evoef2_ref_total: float
+    evoef2_intraR_total: float
+    evoef2_interS_total: float
+    evoef2_interD_total: float
+    dfire2_total: float
+    rosetta_total: float
+    rosetta_fa_atr: float
+    rosetta_fa_rep: float
+    rosetta_fa_intra_rep: float
+    rosetta_fa_elec: float
+    rosetta_fa_sol: float
+    rosetta_lk_ball_wtd: float
+    rosetta_fa_intra_sol_xover4: float
+    rosetta_hbond_lr_bb: float
+    rosetta_hbond_sr_bb: float
+    rosetta_hbond_bb_sc: float
+    rosetta_hbond_sc: float
+    rosetta_dslf_fa13: float
+    rosetta_rama_prepro: float
+    rosetta_p_aa_pp: float
+    rosetta_fa_dun: float
+    rosetta_omega: float
+    rosetta_pro_close: float
+    rosetta_yhh_planarity: float
+    aggrescan3d_total_value: float
+    aggrescan3d_avg_value: float
+    aggrescan3d_min_value: float
+    aggrescan3d_max_value: float
+
+    # Defining the __eq__method to compare all the fields except the
+    # file_name field
+    def __eq__(self, other):
+        self_dict = self.__dict__
+        other_dict = other.__dict__
+
+        self_dict_new = {k: v for k, v in self_dict.items() if k not in ["file_name"]}
+        other_dict_new = {k: v for k, v in other_dict.items() if k not in ["file_name"]}
+
+        return self_dict_new == other_dict_new
+
+
 # }}}
 # {{{ Server Job Wrappers
 @adt
