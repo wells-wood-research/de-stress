@@ -256,7 +256,10 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     assert (
         AGGRESCAN3D_SCRIPT_PATH
     ), "AGGRESCAN3D_SCRIPT_PATH is not defined, check you `.env` file"
-    ev.tag_dssp_data(design)
+    try:
+        ev.tag_dssp_data(design)
+    except:
+        subprocess.CalledProcessError
     sequence_info = {
         chain.id: SequenceInfo(
             sequence="".join(m.mol_letter for m in chain),
