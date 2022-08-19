@@ -260,12 +260,8 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     try:
         ev.tag_dssp_data(design)
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(
-            "command '{}' return with error (code {}): {}".format(
-                e.cmd, e.returncode, e.output
-            )
-        )
-        print("Error with Isambard Tag DSSP")
+        print(e.stdout)
+        pass
 
     sequence_info = {
         chain.id: SequenceInfo(
