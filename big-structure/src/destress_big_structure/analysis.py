@@ -260,8 +260,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     try:
         ev.tag_dssp_data(design)
     except subprocess.CalledProcessError as e:
-        print(e.stderr)
-        pass
+        print(e)
 
     sequence_info = {
         chain.id: SequenceInfo(
