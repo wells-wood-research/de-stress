@@ -517,7 +517,7 @@ def headless_destress_batch(input_path: str) -> None:
     os.chdir(input_path)
 
     # Getting a list of all the pdb files in the input path
-    pdb_file_list = list(input_path.glob("*.pdb"))[0:10000]
+    pdb_file_list = list(input_path.glob("*.pdb"))[0:2000]
 
     # Checking that the list of PDB files is not empty.
     assert pdb_file_list, "There are no PDB files in the input path."
@@ -555,13 +555,13 @@ def headless_destress_batch(input_path: str) -> None:
         "Headless DE-STRESS will run for "
         + str(num_pdb_files)
         + " PDB files, in "
-        + str(int(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE, 1)))
+        + str(int(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
         + " batches."
     )
 
     print(
         "Estimated run time with > 20 cores: "
-        + str(round(num_pdb_files / 60, 1))
+        + str(round(num_pdb_files / 60))
         + " minutes."
     )
 
