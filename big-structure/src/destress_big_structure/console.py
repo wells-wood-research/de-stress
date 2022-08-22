@@ -517,8 +517,7 @@ def headless_destress_batch(input_path: str) -> None:
     os.chdir(input_path)
 
     # Getting a list of all the pdb files in the input path
-    pdb_file_list = list(input_path.glob("*.pdb"))
-    print(pdb_file_list)
+    pdb_file_list = list(input_path.glob("*ranked_0.pdb"))
 
     # Checking that the list of PDB files is not empty.
     assert pdb_file_list, "There are no PDB files in the input path."
