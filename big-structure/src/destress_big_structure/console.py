@@ -555,11 +555,15 @@ def headless_destress_batch(input_path: str) -> None:
         "Headless DE-STRESS will run for "
         + str(num_pdb_files)
         + " PDB files, in "
-        + str(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE, 1))
+        + str(int(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE, 1)))
         + " batches."
     )
 
-    print("Estimated run time with > 20 cores: " + str(round(num_pdb_files / 360, 1)))
+    print(
+        "Estimated run time with > 20 cores: "
+        + str(round(num_pdb_files / 60, 1))
+        + " minutes."
+    )
 
     with mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS) as process_pool:
         batches = [
