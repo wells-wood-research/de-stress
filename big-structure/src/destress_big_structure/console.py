@@ -544,9 +544,9 @@ def headless_destress_batch(input_path: str) -> None:
     num_pdb_files = len(pdb_file_list)
 
     print(
-        "Headless DE-STRESS will run for "
+        "Headless DE-STRESS will run on "
         + str(num_pdb_files)
-        + " PDB files, in "
+        + " PDB files in "
         + str(int(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
         + " batches."
     )
@@ -589,7 +589,7 @@ def headless_destress_batch(input_path: str) -> None:
 
             else:
 
-                with open("design_data.csv", "r", encoding="UTF8") as f:
+                with open("design_data.csv", "a", encoding="UTF8") as f:
                     writer = csv.writer(f)
 
                     # Looping through the data rows and
