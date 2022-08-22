@@ -36,9 +36,8 @@ BATCH_SIZE = 1000  # files will be processed in batches of 1000
 
 from destress_big_structure.settings import (
     HEADLESS_DESTRESS_WORKERS,
+    HEADLESS_DESTRESS_BATCH_SIZE,
 )
-
-HEADLESS_DESTRESS_BATCH_SIZE = 2000
 
 
 def dev_run():
