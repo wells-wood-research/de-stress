@@ -528,8 +528,17 @@ def headless_destress_batch(input_path: str) -> None:
         HEADLESS_DESTRESS_WORKERS
     ), "The number of HEADLESS_DESTRESS_WORKERS is not set in a .env file."
 
+    # Checking if the number of HEADLESS_DESTRESS_BATCH_SIZE has
+    # been specified in the .env-headless file
+    assert (
+        HEADLESS_DESTRESS_BATCH_SIZE
+    ), "The number of HEADLESS_DESTRESS_BATCH_SIZE is not set in a .env file."
+
     # Converting to integer.
     NUM_HEADLESS_DESTRESS_WORKERS = int(HEADLESS_DESTRESS_WORKERS)
+
+    # Converting to integer.
+    NUM_HEADLESS_DESTRESS_BATCH_SIZE = int(HEADLESS_DESTRESS_BATCH_SIZE)
 
     # # Using multiprocessing with HEADLESS_DESTRESS_WORKERS
     # # as the number of processes to run the function
@@ -541,8 +550,8 @@ def headless_destress_batch(input_path: str) -> None:
 
     with mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS) as process_pool:
         batches = [
-            pdb_file_list[x : x + HEADLESS_DESTRESS_BATCH_SIZE]
-            for x in range(0, len(pdb_file_list), HEADLESS_DESTRESS_BATCH_SIZE)
+            pdb_file_list[x : x + NUM_HEADLESS_DESTRESS_BATCH_SIZE]
+            for x in range(0, len(pdb_file_list), NUM_HEADLESS_DESTRESS_BATCH_SIZE)
         ]
 
         for batch_number, batch_file_list in enumerate(batches):
