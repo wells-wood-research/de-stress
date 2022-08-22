@@ -555,7 +555,7 @@ def headless_destress_batch(input_path: str) -> None:
         "Headless DE-STRESS will run for "
         + str(num_pdb_files)
         + " PDB files, in "
-        + str(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE), 1)
+        + str(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE, 1))
         + " batches."
     )
 
