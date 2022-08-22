@@ -575,23 +575,23 @@ def headless_destress_batch(input_path: str) -> None:
             print(f"Processing batch {batch_number+1}/{len(batches)}...")
             batch_results = process_pool.map(headless_destress, batch_file_list)
 
-        # Extracting the dictionary keys as headers for
-        # the CSV file
-        headers = batch_results[0].__dict__.keys()
+            # Extracting the dictionary keys as headers for
+            # the CSV file
+            headers = batch_results[0].__dict__.keys()
 
-        # Opening csv to insert the data
-        with open(
-            "design_data_batch" + str(batch_number) + ".csv", "w", encoding="UTF8"
-        ) as f:
-            writer = csv.writer(f)
+            # Opening csv to insert the data
+            with open(
+                "design_data_batch" + str(batch_number) + ".csv", "w", encoding="UTF8"
+            ) as f:
+                writer = csv.writer(f)
 
-            # Writing the header to the csv file
-            writer.writerow(headers)
+                # Writing the header to the csv file
+                writer.writerow(headers)
 
-            # Looping through the data rows and
-            # writing them into the data set
-            for i in range(0, len(batch_results)):
-                writer.writerow(batch_results[i].__dict__.values())
+                # Looping through the data rows and
+                # writing them into the data set
+                for i in range(0, len(batch_results)):
+                    writer.writerow(batch_results[i].__dict__.values())
 
     # End time
     toc = time.time()
