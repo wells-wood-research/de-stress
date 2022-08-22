@@ -9,7 +9,7 @@ import random
 import re
 import typing as tp
 import csv
-
+import math
 import click
 import bs4
 import ampal
@@ -547,7 +547,7 @@ def headless_destress_batch(input_path: str) -> None:
         "Headless DE-STRESS will run on "
         + str(num_pdb_files)
         + " PDB files in "
-        + str(int(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
+        + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
         + " batches."
     )
 
