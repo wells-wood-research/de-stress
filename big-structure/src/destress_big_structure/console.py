@@ -519,7 +519,7 @@ def headless_destress_batch(input_path: str) -> None:
 
     # Getting a list of all the pdb files in the input path
     pdb_file_list = list(input_path.glob("*.pdb"))
-    pdb_file_list = [x for x in pdb_file_list if "ranked" in x]
+    pdb_file_list = [x for x in pdb_file_list if "ranked" in str(x)]
     print(pdb_file_list)
 
     # Checking that the list of PDB files is not empty.
