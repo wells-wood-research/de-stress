@@ -309,7 +309,7 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
     """
 
     # First printing out the pdb file path
-    print(pdb_file)
+    # print(pdb_file)
 
     # Loading in the PDB file and converting it to an ampal assembly
     ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
@@ -547,6 +547,19 @@ def headless_destress_batch(input_path: str) -> None:
     # pool = mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS)
     # results = pool.map(headless_destress, pdb_file_list)
     # pool.close()
+
+    # Calculating number of PDB files
+    num_pdb_files = len(pdb_file_list)
+
+    print(
+        "Headless DE-STRESS will run for "
+        + str(num_pdb_files)
+        + " PDB files, in "
+        + str(round(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE), 1)
+        + " batches."
+    )
+
+    print("Estimated run time with > 20 cores: " + str(round(num_pdb_files / 360, 1)))
 
     with mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS) as process_pool:
         batches = [
