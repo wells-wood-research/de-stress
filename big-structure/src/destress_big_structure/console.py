@@ -517,7 +517,7 @@ def headless_destress_batch(input_path: str) -> None:
     os.chdir(input_path)
 
     # Getting a list of all the pdb files in the input path
-    pdb_file_list = list(input_path.glob("*.pdb"))[0:2000]
+    pdb_file_list = list(input_path.glob("*.pdb"))[0:500]
 
     # Checking that the list of PDB files is not empty.
     assert pdb_file_list, "There are no PDB files in the input path."
@@ -539,14 +539,6 @@ def headless_destress_batch(input_path: str) -> None:
 
     # Converting to integer.
     NUM_HEADLESS_DESTRESS_BATCH_SIZE = int(HEADLESS_DESTRESS_BATCH_SIZE)
-
-    # # Using multiprocessing with HEADLESS_DESTRESS_WORKERS
-    # # as the number of processes to run the function
-    # # headless_destress() on the full set of
-    # # pdb files from the input_path.
-    # pool = mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS)
-    # results = pool.map(headless_destress, pdb_file_list)
-    # pool.close()
 
     # Calculating number of PDB files
     num_pdb_files = len(pdb_file_list)
@@ -579,26 +571,38 @@ def headless_destress_batch(input_path: str) -> None:
             # the CSV file
             headers = batch_results[0].__dict__.keys()
 
-            # Opening csv to insert the data
-            with open(
-                "design_data_batch" + str(batch_number) + ".csv", "w", encoding="UTF8"
-            ) as f:
-                writer = csv.writer(f)
+            # If this is the first batch then it creates the csv file
+            # but for all the other batches it just inserts into
+            # this csv file
+            if batch_number == 0:
 
-                # Writing the header to the csv file
-                writer.writerow(headers)
+                with open("design_data.csv", "w", encoding="UTF8") as f:
+                    writer = csv.writer(f)
 
-                # Looping through the data rows and
-                # writing them into the data set
-                for i in range(0, len(batch_results)):
-                    writer.writerow(batch_results[i].__dict__.values())
+                    # Writing the header to the csv file
+                    writer.writerow(headers)
+
+                    # Looping through the data rows and
+                    # writing them into the data set
+                    for i in range(0, len(batch_results)):
+                        writer.writerow(batch_results[i].__dict__.values())
+
+            else:
+
+                with open("design_data.csv", "r", encoding="UTF8") as f:
+                    writer = csv.writer(f)
+
+                    # Looping through the data rows and
+                    # writing them into the data set
+                    for i in range(0, len(batch_results)):
+                        writer.writerow(batch_results[i].__dict__.values())
 
     # End time
     toc = time.time()
 
     # Outputting the total time it took for the
     # script to run.
-    print("Done in {:.4f} seconds".format(toc - tic))
+    print("Done in {:.2f} minutes".format((toc - tic) / 60))
 
 
 @click.command()
