@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import gzip as gz
 import os
+import pdb
 import time
 import multiprocessing as mp
 from pathlib import Path
@@ -517,7 +518,9 @@ def headless_destress_batch(input_path: str) -> None:
     os.chdir(input_path)
 
     # Getting a list of all the pdb files in the input path
-    pdb_file_list = list(input_path.glob("*ranked_0.pdb"))
+    pdb_file_list = list(input_path.glob("*.pdb"))
+    pdb_file_list = [x for x in pdb_file_list if "ranked" in x]
+    print(pdb_file_list)
 
     # Checking that the list of PDB files is not empty.
     assert pdb_file_list, "There are no PDB files in the input path."
