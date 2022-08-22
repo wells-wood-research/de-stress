@@ -38,6 +38,8 @@ from destress_big_structure.settings import (
     HEADLESS_DESTRESS_WORKERS,
 )
 
+HEADLESS_DESTRESS_BATCH_SIZE = 2000
+
 
 def dev_run():
     app.run()
@@ -530,29 +532,41 @@ def headless_destress_batch(input_path: str) -> None:
     # Converting to integer.
     NUM_HEADLESS_DESTRESS_WORKERS = int(HEADLESS_DESTRESS_WORKERS)
 
-    # Using multiprocessing with HEADLESS_DESTRESS_WORKERS
-    # as the number of processes to run the function
-    # headless_destress() on the full set of
-    # pdb files from the input_path.
-    pool = mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS)
-    results = pool.map(headless_destress, pdb_file_list)
-    pool.close()
+    # # Using multiprocessing with HEADLESS_DESTRESS_WORKERS
+    # # as the number of processes to run the function
+    # # headless_destress() on the full set of
+    # # pdb files from the input_path.
+    # pool = mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS)
+    # results = pool.map(headless_destress, pdb_file_list)
+    # pool.close()
 
-    # Extracting the dictionary keys as headers for
-    # the CSV file
-    headers = results[0].__dict__.keys()
+    with mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS) as process_pool:
+        batches = [
+            pdb_file_list[x : x + HEADLESS_DESTRESS_BATCH_SIZE]
+            for x in range(0, len(pdb_file_list), HEADLESS_DESTRESS_BATCH_SIZE)
+        ]
 
-    # Opening csv to insert the data
-    with open("design_data.csv", "w", encoding="UTF8") as f:
-        writer = csv.writer(f)
+        for batch_number, batch_file_list in enumerate(batches):
+            print(f"Processing batch {batch_number+1}/{len(batches)}...")
+            batch_results = process_pool.map(headless_destress, batch_file_list)
 
-        # Writing the header to the csv file
-        writer.writerow(headers)
+        # Extracting the dictionary keys as headers for
+        # the CSV file
+        headers = batch_results[0].__dict__.keys()
 
-        # Looping through the data rows and
-        # writing them into the data set
-        for i in range(0, len(results)):
-            writer.writerow(results[i].__dict__.values())
+        # Opening csv to insert the data
+        with open(
+            "design_data_batch" + str(batch_number) + ".csv", "w", encoding="UTF8"
+        ) as f:
+            writer = csv.writer(f)
+
+            # Writing the header to the csv file
+            writer.writerow(headers)
+
+            # Looping through the data rows and
+            # writing them into the data set
+            for i in range(0, len(batch_results)):
+                writer.writerow(batch_results[i].__dict__.values())
 
     # End time
     toc = time.time()
