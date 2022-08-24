@@ -551,7 +551,7 @@ def headless_destress_batch(input_path: str) -> None:
 
     # Printing info to the user
     print(
-        "Hello user! :) I hope you're having a great day. Just to let you know that Headless DE-STRESS will run on "
+        "Hello user :) I hope you're having a great day! Just to let you know that headless DE-STRESS will run on "
         + str(num_pdb_files)
         + " PDB files in "
         + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
@@ -559,7 +559,7 @@ def headless_destress_batch(input_path: str) -> None:
     )
 
     print(
-        "The estimated run time with > 20 cores will be roughly "
+        "The estimated run time with >= 20 cores will be roughly "
         + str(round(num_pdb_files / 60))
         + " minutes. So relax, get a coffee and the results will be ready for you soon!"
     )
