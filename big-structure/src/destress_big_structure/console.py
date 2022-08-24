@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 import gzip as gz
 import os
-import pdb
 import time
 import multiprocessing as mp
 from pathlib import Path
