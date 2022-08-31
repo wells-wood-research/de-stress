@@ -232,7 +232,12 @@ class JpredSubmission:
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
-    ampal_assembly = ampal.load_pdb(pdb_string, path=False)
+    try:
+        ampal_assembly = ampal.load_pdb(pdb_string, path=False)
+    except ValueError as e:
+        print(e.stdout)
+        pass
+
     # relabel everything to remove annoying insertion codes!
     ampal_assembly.relabel_all()
     if isinstance(ampal_assembly, ampal.AmpalContainer):
@@ -256,7 +261,13 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     assert (
         AGGRESCAN3D_SCRIPT_PATH
     ), "AGGRESCAN3D_SCRIPT_PATH is not defined, check you `.env` file"
-    ev.tag_dssp_data(design)
+
+    try:
+        ev.tag_dssp_data(design)
+    except subprocess.CalledProcessError as e:
+        print(e.stdout)
+        pass
+
     sequence_info = {
         chain.id: SequenceInfo(
             sequence="".join(m.mol_letter for m in chain),
