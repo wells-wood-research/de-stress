@@ -235,7 +235,7 @@ def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
     try:
         ampal_assembly = ampal.load_pdb(pdb_string, path=False)
     except ValueError as e:
-        print(e.stdout)
+        print(e.stderr)
         pass
 
     # relabel everything to remove annoying insertion codes!
@@ -265,7 +265,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     try:
         ev.tag_dssp_data(design)
     except subprocess.CalledProcessError as e:
-        print(e.stdout)
+        print(e.stderr)
         pass
 
     sequence_info = {
