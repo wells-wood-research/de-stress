@@ -308,11 +308,12 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 
     """
 
-    # First printing out the pdb file path
-    # print(pdb_file)
-
     # Loading in the PDB file and converting it to an ampal assembly
-    ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
+    try:
+        ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
+    except ValueError as e:
+        print(e.stderr)
+        pass
 
     # Only selecting ATOM residues and removing the other residues.
     # This is because some of these other residues can cause issues
