@@ -466,7 +466,7 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 
         design_metrics_output
 
-    except (KeyError, ValueError, TypeError):
+    except Exception:
 
         # Setting all the design metrics to None
         design_metrics_output = dict(
