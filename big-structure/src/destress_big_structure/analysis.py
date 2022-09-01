@@ -232,12 +232,8 @@ class JpredSubmission:
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
-    try:
-        ampal_assembly = ampal.load_pdb(pdb_string, path=False)
-    except ValueError as e:
-        print(e.stderr)
-        pass
 
+    ampal_assembly = ampal.load_pdb(pdb_string, path=False)
     # relabel everything to remove annoying insertion codes!
     ampal_assembly.relabel_all()
     if isinstance(ampal_assembly, ampal.AmpalContainer):
@@ -265,7 +261,6 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     try:
         ev.tag_dssp_data(design)
     except subprocess.CalledProcessError as e:
-        print(e.stderr)
         pass
 
     sequence_info = {
