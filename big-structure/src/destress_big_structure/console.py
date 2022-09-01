@@ -302,182 +302,194 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 
     Returns
     -------
-    data_row: list
+    design_metrics_output_row: DesignMetricsOutputRow
         This is the DE-STRESS metrics that have been calculated
         for the input pdb file.
 
     """
 
+    # Extracting the design name for the pdb file and the file name
+    design_name = os.path.splitext(os.path.basename(pdb_file))[0]
+    file_name = pdb_file
+
+    # Firstly defining a list of fields in the output
+    design_field_list = [
+        "composition_ALA",
+        "composition_CYS",
+        "composition_ASP",
+        "composition_GLU",
+        "composition_PHE",
+        "composition_GLY",
+        "composition_HIS",
+        "composition_ILE",
+        "composition_LYS",
+        "composition_LEU",
+        "composition_MET",
+        "composition_ASN",
+        "composition_PRO",
+        "composition_GLN",
+        "composition_ARG",
+        "composition_SER",
+        "composition_THR",
+        "composition_VAL",
+        "composition_TRP",
+        "composition_UNK",
+        "composition_TYR",
+        "hydrophobic_fitness",
+        "isoelectric_point",
+        "mass",
+        "num_residues",
+        "packing_density",
+        "budeff_total",
+        "budeff_steric",
+        "budeff_desolvation",
+        "budeff_charge",
+        "evoef2_total",
+        "evoef2_ref_total",
+        "evoef2_intraR_total",
+        "evoef2_interS_total",
+        "evoef2_interD_total",
+        "dfire2_total",
+        "rosetta_total",
+        "rosetta_fa_atr",
+        "rosetta_fa_rep",
+        "rosetta_fa_intra_rep",
+        "rosetta_fa_elec",
+        "rosetta_fa_sol",
+        "rosetta_lk_ball_wtd",
+        "rosetta_fa_intra_sol_xover4",
+        "rosetta_hbond_lr_bb",
+        "rosetta_hbond_sr_bb",
+        "rosetta_hbond_bb_sc",
+        "rosetta_hbond_sc",
+        "rosetta_dslf_fa13",
+        "rosetta_rama_prepro",
+        "rosetta_p_aa_pp",
+        "rosetta_fa_dun",
+        "rosetta_omega",
+        "rosetta_pro_close",
+        "rosetta_yhh_planarity",
+        "aggrescan3d_total_value",
+        "aggrescan3d_avg_value",
+        "aggrescan3d_min_value",
+        "aggrescan3d_max_value",
+    ]
+
     # Loading in the PDB file and converting it to an ampal assembly
     try:
         ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
-    except ValueError:
-        ampal_assembly = None
-        pass
 
-    if ampal_assembly is None:
+    except ValueError:
         print("PDB file could not be loaded due to a ValueError.")
 
-    else:
+        # Setting all the design metrics to None
+        design_metrics_output = dict(
+            zip(design_field_list, [None] * len(design_field_list))
+        )
 
-        # Only selecting ATOM residues and removing the other residues.
-        # This is because some of these other residues can cause issues
-        # for the DE-STRESS metric calculations.
-        pdb_lines = ampal_assembly.pdb.splitlines()
-        pdb_lines_filtered = [line for line in pdb_lines if line.startswith("ATOM")]
-        pdb_string_filtered = "\n".join(pdb_lines_filtered)
+        # Creating the design metrics output row
+        design_metrics_output_row = DesignMetricsOutputRow(
+            design_name=design_name,
+            file_name=file_name,
+            **design_metrics_output,
+        )
 
-        # Extracting the design name for the pdb file and the file name
-        design_name = os.path.splitext(os.path.basename(pdb_file))[0]
-        file_name = pdb_file
+    # Only selecting ATOM residues and removing the other residues.
+    # This is because some of these other residues can cause issues
+    # for the DE-STRESS metric calculations.
+    pdb_lines = ampal_assembly.pdb.splitlines()
+    pdb_lines_filtered = [line for line in pdb_lines if line.startswith("ATOM")]
+    pdb_string_filtered = "\n".join(pdb_lines_filtered)
 
-        # Defining a list of fields
-        design_field_list = [
-            "composition_ALA",
-            "composition_CYS",
-            "composition_ASP",
-            "composition_GLU",
-            "composition_PHE",
-            "composition_GLY",
-            "composition_HIS",
-            "composition_ILE",
-            "composition_LYS",
-            "composition_LEU",
-            "composition_MET",
-            "composition_ASN",
-            "composition_PRO",
-            "composition_GLN",
-            "composition_ARG",
-            "composition_SER",
-            "composition_THR",
-            "composition_VAL",
-            "composition_TRP",
-            "composition_UNK",
-            "composition_TYR",
-            "hydrophobic_fitness",
-            "isoelectric_point",
-            "mass",
-            "num_residues",
-            "packing_density",
-            "budeff_total",
-            "budeff_steric",
-            "budeff_desolvation",
-            "budeff_charge",
-            "evoef2_total",
-            "evoef2_ref_total",
-            "evoef2_intraR_total",
-            "evoef2_interS_total",
-            "evoef2_interD_total",
-            "dfire2_total",
-            "rosetta_total",
-            "rosetta_fa_atr",
-            "rosetta_fa_rep",
-            "rosetta_fa_intra_rep",
-            "rosetta_fa_elec",
-            "rosetta_fa_sol",
-            "rosetta_lk_ball_wtd",
-            "rosetta_fa_intra_sol_xover4",
-            "rosetta_hbond_lr_bb",
-            "rosetta_hbond_sr_bb",
-            "rosetta_hbond_bb_sc",
-            "rosetta_hbond_sc",
-            "rosetta_dslf_fa13",
-            "rosetta_rama_prepro",
-            "rosetta_p_aa_pp",
-            "rosetta_fa_dun",
-            "rosetta_omega",
-            "rosetta_pro_close",
-            "rosetta_yhh_planarity",
-            "aggrescan3d_total_value",
-            "aggrescan3d_avg_value",
-            "aggrescan3d_min_value",
-            "aggrescan3d_max_value",
-        ]
+    try:
 
-        try:
+        # Running the DE-STRESS metrics for the pdb file
+        design_metrics = analysis.create_metrics_from_pdb(pdb_string_filtered)
 
-            # Running the DE-STRESS metrics for the pdb file
-            design_metrics = analysis.create_metrics_from_pdb(pdb_string_filtered)
+        # Unpacking the compisition metrics
+        comp_metrics = unpacking_comp_metrics(design_metrics)
 
-            # Unpacking the compisition metrics
-            comp_metrics = unpacking_comp_metrics(design_metrics)
-
-            # Creating a dictionary of all the design metrics
-            design_metrics_output = dict(
-                zip(
-                    design_field_list,
-                    [
-                        comp_metrics["ALA"],
-                        comp_metrics["CYS"],
-                        comp_metrics["ASP"],
-                        comp_metrics["GLU"],
-                        comp_metrics["PHE"],
-                        comp_metrics["GLY"],
-                        comp_metrics["HIS"],
-                        comp_metrics["ILE"],
-                        comp_metrics["LYS"],
-                        comp_metrics["LEU"],
-                        comp_metrics["MET"],
-                        comp_metrics["ASN"],
-                        comp_metrics["PRO"],
-                        comp_metrics["GLN"],
-                        comp_metrics["ARG"],
-                        comp_metrics["SER"],
-                        comp_metrics["THR"],
-                        comp_metrics["VAL"],
-                        comp_metrics["TRP"],
-                        comp_metrics["UNK"],
-                        comp_metrics["TYR"],
-                        design_metrics.hydrophobic_fitness,
-                        design_metrics.isoelectric_point,
-                        design_metrics.mass,
-                        design_metrics.num_of_residues,
-                        design_metrics.packing_density,
-                        design_metrics.budeFF_results.total_energy,
-                        design_metrics.budeFF_results.steric,
-                        design_metrics.budeFF_results.desolvation,
-                        design_metrics.budeFF_results.charge,
-                        design_metrics.evoEF2_results.total,
-                        design_metrics.evoEF2_results.ref_total,
-                        design_metrics.evoEF2_results.intraR_total,
-                        design_metrics.evoEF2_results.interS_total,
-                        design_metrics.evoEF2_results.interD_total,
-                        design_metrics.dfire2_results.total,
-                        design_metrics.rosetta_results.total_score,
-                        design_metrics.rosetta_results.fa_atr,
-                        design_metrics.rosetta_results.fa_rep,
-                        design_metrics.rosetta_results.fa_intra_rep,
-                        design_metrics.rosetta_results.fa_elec,
-                        design_metrics.rosetta_results.fa_sol,
-                        design_metrics.rosetta_results.lk_ball_wtd,
-                        design_metrics.rosetta_results.fa_intra_sol_xover4,
-                        design_metrics.rosetta_results.hbond_lr_bb,
-                        design_metrics.rosetta_results.hbond_sr_bb,
-                        design_metrics.rosetta_results.hbond_bb_sc,
-                        design_metrics.rosetta_results.hbond_sc,
-                        design_metrics.rosetta_results.dslf_fa13,
-                        design_metrics.rosetta_results.rama_prepro,
-                        design_metrics.rosetta_results.p_aa_pp,
-                        design_metrics.rosetta_results.fa_dun,
-                        design_metrics.rosetta_results.omega,
-                        design_metrics.rosetta_results.pro_close,
-                        design_metrics.rosetta_results.yhh_planarity,
-                        design_metrics.aggrescan3d_results.total_value,
-                        design_metrics.aggrescan3d_results.avg_value,
-                        design_metrics.aggrescan3d_results.min_value,
-                        design_metrics.aggrescan3d_results.max_value,
-                    ],
-                )
+        # Creating a dictionary of all the design metrics
+        design_metrics_output = dict(
+            zip(
+                design_field_list,
+                [
+                    comp_metrics["ALA"],
+                    comp_metrics["CYS"],
+                    comp_metrics["ASP"],
+                    comp_metrics["GLU"],
+                    comp_metrics["PHE"],
+                    comp_metrics["GLY"],
+                    comp_metrics["HIS"],
+                    comp_metrics["ILE"],
+                    comp_metrics["LYS"],
+                    comp_metrics["LEU"],
+                    comp_metrics["MET"],
+                    comp_metrics["ASN"],
+                    comp_metrics["PRO"],
+                    comp_metrics["GLN"],
+                    comp_metrics["ARG"],
+                    comp_metrics["SER"],
+                    comp_metrics["THR"],
+                    comp_metrics["VAL"],
+                    comp_metrics["TRP"],
+                    comp_metrics["UNK"],
+                    comp_metrics["TYR"],
+                    design_metrics.hydrophobic_fitness,
+                    design_metrics.isoelectric_point,
+                    design_metrics.mass,
+                    design_metrics.num_of_residues,
+                    design_metrics.packing_density,
+                    design_metrics.budeFF_results.total_energy,
+                    design_metrics.budeFF_results.steric,
+                    design_metrics.budeFF_results.desolvation,
+                    design_metrics.budeFF_results.charge,
+                    design_metrics.evoEF2_results.total,
+                    design_metrics.evoEF2_results.ref_total,
+                    design_metrics.evoEF2_results.intraR_total,
+                    design_metrics.evoEF2_results.interS_total,
+                    design_metrics.evoEF2_results.interD_total,
+                    design_metrics.dfire2_results.total,
+                    design_metrics.rosetta_results.total_score,
+                    design_metrics.rosetta_results.fa_atr,
+                    design_metrics.rosetta_results.fa_rep,
+                    design_metrics.rosetta_results.fa_intra_rep,
+                    design_metrics.rosetta_results.fa_elec,
+                    design_metrics.rosetta_results.fa_sol,
+                    design_metrics.rosetta_results.lk_ball_wtd,
+                    design_metrics.rosetta_results.fa_intra_sol_xover4,
+                    design_metrics.rosetta_results.hbond_lr_bb,
+                    design_metrics.rosetta_results.hbond_sr_bb,
+                    design_metrics.rosetta_results.hbond_bb_sc,
+                    design_metrics.rosetta_results.hbond_sc,
+                    design_metrics.rosetta_results.dslf_fa13,
+                    design_metrics.rosetta_results.rama_prepro,
+                    design_metrics.rosetta_results.p_aa_pp,
+                    design_metrics.rosetta_results.fa_dun,
+                    design_metrics.rosetta_results.omega,
+                    design_metrics.rosetta_results.pro_close,
+                    design_metrics.rosetta_results.yhh_planarity,
+                    design_metrics.aggrescan3d_results.total_value,
+                    design_metrics.aggrescan3d_results.avg_value,
+                    design_metrics.aggrescan3d_results.min_value,
+                    design_metrics.aggrescan3d_results.max_value,
+                ],
             )
+        )
 
-            design_metrics_output
+        # Creating the design metrics output row
+        design_metrics_output_row = DesignMetricsOutputRow(
+            design_name=design_name,
+            file_name=file_name,
+            **design_metrics_output,
+        )
 
-        except Exception:
+    except Exception:
 
-            # Setting all the design metrics to None
-            design_metrics_output = dict(
-                zip(design_field_list, [None] * len(design_field_list))
-            )
+        # Setting all the design metrics to None
+        design_metrics_output = dict(
+            zip(design_field_list, [None] * len(design_field_list))
+        )
 
         # Creating the design metrics output row
         design_metrics_output_row = DesignMetricsOutputRow(
