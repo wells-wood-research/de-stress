@@ -36,7 +36,7 @@
     "file-saver-es": "^2.0.5",
     "idb-keyval": "^5.0.2",
     "ngl": "^0.10.4",
-    "vega": "^5.19.1",
+    "vega": "^5.22.1",
     "vega-embed": "^6.15.1",
     "vega-lite": "^4.17.0"
   }
