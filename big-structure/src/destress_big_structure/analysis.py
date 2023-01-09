@@ -261,7 +261,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     try:
         ev.tag_dssp_data(design)
     except subprocess.CalledProcessError as e:
-        pass
+        print(f"Cannot compute the DSSP assignment due to a CalledProcessError:\n {e}")
 
     sequence_info = {
         chain.id: SequenceInfo(

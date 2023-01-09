@@ -13,6 +13,7 @@ import math
 import click
 import bs4
 import ampal
+import logging
 
 from destress_big_structure import app
 from destress_big_structure.big_structure_models import (
@@ -379,8 +380,8 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
     try:
         ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
 
-    except ValueError:
-        print("PDB file could not be loaded due to a ValueError.")
+    except ValueError as e:
+        logging.debug(f"PDB file could not be loaded due to a ValueError:\n {e}")
         ampal_assembly = None
 
     if ampal_assembly is None:
@@ -404,6 +405,11 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
         pdb_lines = ampal_assembly.pdb.splitlines()
         pdb_lines_filtered = [line for line in pdb_lines if line.startswith("ATOM")]
         pdb_string_filtered = "\n".join(pdb_lines_filtered)
+        num_atom_records_removed = len(pdb_lines) - len(pdb_lines_filtered)
+
+        logging.warning(
+            f"{num_atom_records_removed} non ATOM records removed from the PDB file {file_name}."
+        )
 
         try:
 
@@ -488,7 +494,10 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
                 **design_metrics_output,
             )
 
-        except Exception:
+        except Exception as e:
+            logging.debug(
+                f"Error encountered when calculating the DE-STRESS metrics for PDB file {file_name}. Therefore, this file will have None values for all the metrics. :\n {e}"
+            )
 
             # Setting all the design metrics to None
             design_metrics_output = dict(
@@ -545,24 +554,26 @@ def headless_destress_batch(input_path: str) -> None:
     # Changing directory to the input path
     os.chdir(input_path)
 
+    logging.basicConfig(filename="logging.txt", level=logging.DEBUG, filemode="w")
+
     # Getting a list of all the pdb files in the input path
     pdb_file_list = list(input_path.glob("*.pdb"))
     pdb_file_list = pdb_file_list + list(input_path.glob("*.ent"))
 
     # Checking that the list of PDB files is not empty.
-    assert pdb_file_list, "There are no PDB files in the input path."
+    assert pdb_file_list, logging.debug("There are no PDB files in the input path.")
 
     # Checking if HEADLESS_DESTRESS_WORKERS has
     # been specified in the .env-headless file
-    assert (
-        HEADLESS_DESTRESS_WORKERS
-    ), "The number of HEADLESS_DESTRESS_WORKERS is not set in a .env file."
+    assert HEADLESS_DESTRESS_WORKERS, logging.debug(
+        "The number of HEADLESS_DESTRESS_WORKERS is not set in a .env file."
+    )
 
     # Checking if HEADLESS_DESTRESS_BATCH_SIZE has
     # been specified in the .env-headless file
-    assert (
-        HEADLESS_DESTRESS_BATCH_SIZE
-    ), "The number of HEADLESS_DESTRESS_BATCH_SIZE is not set in a .env file."
+    assert HEADLESS_DESTRESS_BATCH_SIZE, logging.debug(
+        "The number of HEADLESS_DESTRESS_BATCH_SIZE is not set in a .env file."
+    )
 
     # Converting from strings to integers.
     NUM_HEADLESS_DESTRESS_WORKERS = int(HEADLESS_DESTRESS_WORKERS)
@@ -574,6 +585,14 @@ def headless_destress_batch(input_path: str) -> None:
     # Printing info to the user
     print(
         "Hello user :) I hope you're having a great day! Just to let you know that headless DE-STRESS will run on "
+        + str(num_pdb_files)
+        + " PDB files in "
+        + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
+        + " batches."
+    )
+
+    logging.info(
+        "DE-STRESS will run on "
         + str(num_pdb_files)
         + " PDB files in "
         + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
@@ -601,6 +620,8 @@ def headless_destress_batch(input_path: str) -> None:
 
             # Printing the batch number to the user
             print(f"Processing batch {batch_number+1}/{len(batches)}...")
+
+            logging.info(f"Processing batch {batch_number+1}/{len(batches)}...")
 
             # Applying process pool to the batch of PDB files
             batch_results = process_pool.map(headless_destress, batch_file_list)
@@ -640,3 +661,5 @@ def headless_destress_batch(input_path: str) -> None:
 
     # Printing the total time it took for the script to run in minutes.
     print("Completed in {:.2f} minutes.".format((toc - tic) / 60))
+
+    logging.info("Completed in {:.2f} minutes.".format((toc - tic) / 60))
