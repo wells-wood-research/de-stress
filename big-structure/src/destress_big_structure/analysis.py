@@ -274,6 +274,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         if isinstance(chain, ampal.Polypeptide)
     }
     full_sequence = "".join(si.sequence for si in sequence_info.values())
+    dssp_assignment = "".join(si.dssp_assignment for si in sequence_info.values())
     num_of_residues = len(full_sequence)
     isoelectric_point = ampal.analyse_protein.sequence_isoelectric_point(
         full_sequence.replace("X", "")
@@ -283,6 +284,8 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     )
     design_metrics = DesignMetrics(
         sequence_info=sequence_info,
+        dssp_assignment=dssp_assignment,
+        full_sequence=full_sequence,
         composition={
             k: v / num_of_residues for (k, v) in Counter(full_sequence).items()
         },

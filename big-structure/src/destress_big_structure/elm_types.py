@@ -274,6 +274,8 @@ class Aggrescan3DOutput:
 @dataclass
 class DesignMetrics:
     sequence_info: Dict[str, SequenceInfo]
+    full_sequence: str
+    dssp_assignment: str
     composition: Dict[str, float]
     torsion_angles: Dict[str, Tuple[float, float, float]]
     hydrophobic_fitness: Optional[float]
@@ -292,6 +294,8 @@ class DesignMetrics:
 class DesignMetricsOutputRow:
     design_name: str
     file_name: str
+    full_sequence: str
+    dssp_assignment: str
     composition_ALA: float
     composition_CYS: float
     composition_ASP: float

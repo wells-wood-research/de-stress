@@ -315,6 +315,8 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 
     # Firstly defining a list of fields in the output
     design_field_list = [
+        "full_sequence",
+        "dssp_assignment",
         "composition_ALA",
         "composition_CYS",
         "composition_ASP",
@@ -424,6 +426,8 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
                 zip(
                     design_field_list,
                     [
+                        design_metrics.full_sequence,
+                        design_metrics.dssp_assignment,
                         comp_metrics["ALA"],
                         comp_metrics["CYS"],
                         comp_metrics["ASP"],
