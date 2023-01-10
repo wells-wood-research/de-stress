@@ -9,10 +9,11 @@ import random
 import re
 import typing as tp
 import csv
-
+import math
 import click
 import bs4
 import ampal
+import logging
 
 from destress_big_structure import app
 from destress_big_structure.big_structure_models import (
@@ -36,6 +37,7 @@ BATCH_SIZE = 1000  # files will be processed in batches of 1000
 
 from destress_big_structure.settings import (
     HEADLESS_DESTRESS_WORKERS,
+    HEADLESS_DESTRESS_BATCH_SIZE,
 )
 
 
@@ -301,30 +303,17 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 
     Returns
     -------
-    data_row: list
+    design_metrics_output_row: DesignMetricsOutputRow
         This is the DE-STRESS metrics that have been calculated
         for the input pdb file.
 
     """
 
-    # First printing out the pdb file path
-    print(pdb_file)
-
-    # Loading in the PDB file and converting it to an ampal assembly
-    ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
-
-    # Only selecting ATOM residues and removing the other residues.
-    # This is because some of these other residues can cause issues
-    # for the DE-STRESS metric calculations.
-    pdb_lines = ampal_assembly.pdb.splitlines()
-    pdb_lines_filtered = [line for line in pdb_lines if line.startswith("ATOM")]
-    pdb_string_filtered = "\n".join(pdb_lines_filtered)
-
     # Extracting the design name for the pdb file and the file name
     design_name = os.path.splitext(os.path.basename(pdb_file))[0]
     file_name = pdb_file
 
-    # Defining a list of fields
+    # Firstly defining a list of fields in the output
     design_field_list = [
         "composition_ALA",
         "composition_CYS",
@@ -387,97 +376,140 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
         "aggrescan3d_max_value",
     ]
 
+    # Loading in the PDB file and converting it to an ampal assembly
     try:
+        ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
 
-        # Running the DE-STRESS metrics for the pdb file
-        design_metrics = analysis.create_metrics_from_pdb(pdb_string_filtered)
+    except ValueError as e:
+        logging.debug(f"PDB file could not be loaded due to a ValueError:\n {e}")
+        ampal_assembly = None
 
-        # Unpacking the compisition metrics
-        comp_metrics = unpacking_comp_metrics(design_metrics)
-
-        # Creating a dictionary of all the design metrics
-        design_metrics_output = dict(
-            zip(
-                design_field_list,
-                [
-                    comp_metrics["ALA"],
-                    comp_metrics["CYS"],
-                    comp_metrics["ASP"],
-                    comp_metrics["GLU"],
-                    comp_metrics["PHE"],
-                    comp_metrics["GLY"],
-                    comp_metrics["HIS"],
-                    comp_metrics["ILE"],
-                    comp_metrics["LYS"],
-                    comp_metrics["LEU"],
-                    comp_metrics["MET"],
-                    comp_metrics["ASN"],
-                    comp_metrics["PRO"],
-                    comp_metrics["GLN"],
-                    comp_metrics["ARG"],
-                    comp_metrics["SER"],
-                    comp_metrics["THR"],
-                    comp_metrics["VAL"],
-                    comp_metrics["TRP"],
-                    comp_metrics["UNK"],
-                    comp_metrics["TYR"],
-                    design_metrics.hydrophobic_fitness,
-                    design_metrics.isoelectric_point,
-                    design_metrics.mass,
-                    design_metrics.num_of_residues,
-                    design_metrics.packing_density,
-                    design_metrics.budeFF_results.total_energy,
-                    design_metrics.budeFF_results.steric,
-                    design_metrics.budeFF_results.desolvation,
-                    design_metrics.budeFF_results.charge,
-                    design_metrics.evoEF2_results.total,
-                    design_metrics.evoEF2_results.ref_total,
-                    design_metrics.evoEF2_results.intraR_total,
-                    design_metrics.evoEF2_results.interS_total,
-                    design_metrics.evoEF2_results.interD_total,
-                    design_metrics.dfire2_results.total,
-                    design_metrics.rosetta_results.total_score,
-                    design_metrics.rosetta_results.fa_atr,
-                    design_metrics.rosetta_results.fa_rep,
-                    design_metrics.rosetta_results.fa_intra_rep,
-                    design_metrics.rosetta_results.fa_elec,
-                    design_metrics.rosetta_results.fa_sol,
-                    design_metrics.rosetta_results.lk_ball_wtd,
-                    design_metrics.rosetta_results.fa_intra_sol_xover4,
-                    design_metrics.rosetta_results.hbond_lr_bb,
-                    design_metrics.rosetta_results.hbond_sr_bb,
-                    design_metrics.rosetta_results.hbond_bb_sc,
-                    design_metrics.rosetta_results.hbond_sc,
-                    design_metrics.rosetta_results.dslf_fa13,
-                    design_metrics.rosetta_results.rama_prepro,
-                    design_metrics.rosetta_results.p_aa_pp,
-                    design_metrics.rosetta_results.fa_dun,
-                    design_metrics.rosetta_results.omega,
-                    design_metrics.rosetta_results.pro_close,
-                    design_metrics.rosetta_results.yhh_planarity,
-                    design_metrics.aggrescan3d_results.total_value,
-                    design_metrics.aggrescan3d_results.avg_value,
-                    design_metrics.aggrescan3d_results.min_value,
-                    design_metrics.aggrescan3d_results.max_value,
-                ],
-            )
-        )
-
-        design_metrics_output
-
-    except (KeyError, ValueError):
+    if ampal_assembly is None:
 
         # Setting all the design metrics to None
         design_metrics_output = dict(
             zip(design_field_list, [None] * len(design_field_list))
         )
 
-    # Creating the design metrics output row
-    design_metrics_output_row = DesignMetricsOutputRow(
-        design_name=design_name,
-        file_name=file_name,
-        **design_metrics_output,
-    )
+        # Creating the design metrics output row
+        design_metrics_output_row = DesignMetricsOutputRow(
+            design_name=design_name,
+            file_name=file_name,
+            **design_metrics_output,
+        )
+    else:
+
+        # Only selecting ATOM residues and removing the other residues.
+        # This is because some of these other residues can cause issues
+        # for the DE-STRESS metric calculations.
+        pdb_lines = ampal_assembly.pdb.splitlines()
+        pdb_lines_filtered = [line for line in pdb_lines if line.startswith("ATOM")]
+        pdb_string_filtered = "\n".join(pdb_lines_filtered)
+        num_atom_records_removed = len(pdb_lines) - len(pdb_lines_filtered)
+
+        logging.warning(
+            f"{num_atom_records_removed} non ATOM records removed from the PDB file {file_name}."
+        )
+
+        try:
+
+            # Running the DE-STRESS metrics for the pdb file
+            design_metrics = analysis.create_metrics_from_pdb(pdb_string_filtered)
+
+            # Unpacking the compisition metrics
+            comp_metrics = unpacking_comp_metrics(design_metrics)
+
+            # Creating a dictionary of all the design metrics
+            design_metrics_output = dict(
+                zip(
+                    design_field_list,
+                    [
+                        comp_metrics["ALA"],
+                        comp_metrics["CYS"],
+                        comp_metrics["ASP"],
+                        comp_metrics["GLU"],
+                        comp_metrics["PHE"],
+                        comp_metrics["GLY"],
+                        comp_metrics["HIS"],
+                        comp_metrics["ILE"],
+                        comp_metrics["LYS"],
+                        comp_metrics["LEU"],
+                        comp_metrics["MET"],
+                        comp_metrics["ASN"],
+                        comp_metrics["PRO"],
+                        comp_metrics["GLN"],
+                        comp_metrics["ARG"],
+                        comp_metrics["SER"],
+                        comp_metrics["THR"],
+                        comp_metrics["VAL"],
+                        comp_metrics["TRP"],
+                        comp_metrics["UNK"],
+                        comp_metrics["TYR"],
+                        design_metrics.hydrophobic_fitness,
+                        design_metrics.isoelectric_point,
+                        design_metrics.mass,
+                        design_metrics.num_of_residues,
+                        design_metrics.packing_density,
+                        design_metrics.budeFF_results.total_energy,
+                        design_metrics.budeFF_results.steric,
+                        design_metrics.budeFF_results.desolvation,
+                        design_metrics.budeFF_results.charge,
+                        design_metrics.evoEF2_results.total,
+                        design_metrics.evoEF2_results.ref_total,
+                        design_metrics.evoEF2_results.intraR_total,
+                        design_metrics.evoEF2_results.interS_total,
+                        design_metrics.evoEF2_results.interD_total,
+                        design_metrics.dfire2_results.total,
+                        design_metrics.rosetta_results.total_score,
+                        design_metrics.rosetta_results.fa_atr,
+                        design_metrics.rosetta_results.fa_rep,
+                        design_metrics.rosetta_results.fa_intra_rep,
+                        design_metrics.rosetta_results.fa_elec,
+                        design_metrics.rosetta_results.fa_sol,
+                        design_metrics.rosetta_results.lk_ball_wtd,
+                        design_metrics.rosetta_results.fa_intra_sol_xover4,
+                        design_metrics.rosetta_results.hbond_lr_bb,
+                        design_metrics.rosetta_results.hbond_sr_bb,
+                        design_metrics.rosetta_results.hbond_bb_sc,
+                        design_metrics.rosetta_results.hbond_sc,
+                        design_metrics.rosetta_results.dslf_fa13,
+                        design_metrics.rosetta_results.rama_prepro,
+                        design_metrics.rosetta_results.p_aa_pp,
+                        design_metrics.rosetta_results.fa_dun,
+                        design_metrics.rosetta_results.omega,
+                        design_metrics.rosetta_results.pro_close,
+                        design_metrics.rosetta_results.yhh_planarity,
+                        design_metrics.aggrescan3d_results.total_value,
+                        design_metrics.aggrescan3d_results.avg_value,
+                        design_metrics.aggrescan3d_results.min_value,
+                        design_metrics.aggrescan3d_results.max_value,
+                    ],
+                )
+            )
+
+            # Creating the design metrics output row
+            design_metrics_output_row = DesignMetricsOutputRow(
+                design_name=design_name,
+                file_name=file_name,
+                **design_metrics_output,
+            )
+
+        except Exception as e:
+            logging.debug(
+                f"Error encountered when calculating the DE-STRESS metrics for PDB file {file_name}. Therefore, this file will have None values for all the metrics. :\n {e}"
+            )
+
+            # Setting all the design metrics to None
+            design_metrics_output = dict(
+                zip(design_field_list, [None] * len(design_field_list))
+            )
+
+            # Creating the design metrics output row
+            design_metrics_output_row = DesignMetricsOutputRow(
+                design_name=design_name,
+                file_name=file_name,
+                **design_metrics_output,
+            )
 
     return design_metrics_output_row
 
@@ -486,14 +518,21 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 @click.argument("input_path", type=click.Path(exists=True))
 def headless_destress_batch(input_path: str) -> None:
     """Running DE-STRESS in headless mode (using CLI rather than
-    DE-STRESS user interface) for a batch of pdb files.
+    DE-STRESS user interface) for a set of pdb files.
 
     Defining a function to run the function headless_destress()
-    on a batch of pdb files. This function uses multiprocessing and
-    HEADLESS_DESTRESS_WORKERS is set from the .env-headless file. All
+    on a set of pdb files. This function uses multiprocessing and
+    splits the set of pdb files into batches which are run one
+    by one. Two parameters are used in this function:
+    HEADLESS_DESTRESS_WORKERS which is the number of workers to use
+    for the multiprocessing and HEADLESS_DESTRESS_BATCH_SIZE
+    which is the number of pdb files to have in each batch. Both of
+    these can be set by the user in the .env-headless file. All
     the data_row lists are collected from the results of
     run_headless_destress() function and outputted as a csv file
-    in the input path directory.
+    in the input path directory. This csv file is created for the
+    first batch and then the results from the other batches are
+    inserted into the same csv file.
 
     Parameters
     ----------
@@ -515,241 +554,112 @@ def headless_destress_batch(input_path: str) -> None:
     # Changing directory to the input path
     os.chdir(input_path)
 
+    logging.basicConfig(filename="logging.txt", level=logging.DEBUG, filemode="w")
+
     # Getting a list of all the pdb files in the input path
     pdb_file_list = list(input_path.glob("*.pdb"))
+    pdb_file_list = pdb_file_list + list(input_path.glob("*.ent"))
 
     # Checking that the list of PDB files is not empty.
-    assert pdb_file_list, "There are no PDB files in the input path."
+    assert pdb_file_list, logging.debug("There are no PDB files in the input path.")
 
-    # Checking if the number of HEADLESS_DESTRESS_WORKERS has
+    # Checking if HEADLESS_DESTRESS_WORKERS has
     # been specified in the .env-headless file
-    assert (
-        HEADLESS_DESTRESS_WORKERS
-    ), "The number of HEADLESS_DESTRESS_WORKERS is not set in a .env file."
+    assert HEADLESS_DESTRESS_WORKERS, logging.debug(
+        "The number of HEADLESS_DESTRESS_WORKERS is not set in a .env file."
+    )
 
-    # Converting to integer.
+    # Checking if HEADLESS_DESTRESS_BATCH_SIZE has
+    # been specified in the .env-headless file
+    assert HEADLESS_DESTRESS_BATCH_SIZE, logging.debug(
+        "The number of HEADLESS_DESTRESS_BATCH_SIZE is not set in a .env file."
+    )
+
+    # Converting from strings to integers.
     NUM_HEADLESS_DESTRESS_WORKERS = int(HEADLESS_DESTRESS_WORKERS)
+    NUM_HEADLESS_DESTRESS_BATCH_SIZE = int(HEADLESS_DESTRESS_BATCH_SIZE)
 
-    # Using multiprocessing with HEADLESS_DESTRESS_WORKERS
-    # as the number of processes to run the function
-    # headless_destress() on the full set of
-    # pdb files from the input_path.
-    pool = mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS)
-    results = pool.map(headless_destress, pdb_file_list)
-    pool.close()
+    # Calculating the total number of PDB files in the list
+    num_pdb_files = len(pdb_file_list)
 
-    # Extracting the dictionary keys as headers for
-    # the CSV file
-    headers = results[0].__dict__.keys()
+    # Printing info to the user
+    print(
+        "Hello user :) I hope you're having a great day! Just to let you know that headless DE-STRESS will run on "
+        + str(num_pdb_files)
+        + " PDB files in "
+        + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
+        + " batches."
+    )
 
-    # Opening csv to insert the data
-    with open("design_data.csv", "w", encoding="UTF8") as f:
-        writer = csv.writer(f)
+    logging.info(
+        "DE-STRESS will run on "
+        + str(num_pdb_files)
+        + " PDB files in "
+        + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
+        + " batches."
+    )
 
-        # Writing the header to the csv file
-        writer.writerow(headers)
+    print(
+        "The estimated run time with >= 20 cores will be roughly "
+        + str(round(num_pdb_files / 60))
+        + " minutes. So relax, get a coffee and the results will be ready for you soon!"
+    )
 
-        # Looping through the data rows and
-        # writing them into the data set
-        for i in range(0, len(results)):
-            writer.writerow(results[i].__dict__.values())
+    # Initialising the mprocess pool and number of workers
+    with mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS) as process_pool:
+
+        # Splitting the PDB file list up into batches based on the
+        # HEADLESS_DESTRESS_BATCH_SIZE set by the user
+        batches = [
+            pdb_file_list[x : x + NUM_HEADLESS_DESTRESS_BATCH_SIZE]
+            for x in range(0, len(pdb_file_list), NUM_HEADLESS_DESTRESS_BATCH_SIZE)
+        ]
+
+        # Looping over the different batches
+        for batch_number, batch_file_list in enumerate(batches):
+
+            # Printing the batch number to the user
+            print(f"Processing batch {batch_number+1}/{len(batches)}...")
+
+            logging.info(f"Processing batch {batch_number+1}/{len(batches)}...")
+
+            # Applying process pool to the batch of PDB files
+            batch_results = process_pool.map(headless_destress, batch_file_list)
+
+            # If this is the first batch then it creates the csv file
+            # but for all other batches it inserts into the csv file
+            if batch_number == 0:
+
+                # Extracting the dictionary keys as headers for the CSV file
+                headers = batch_results[0].__dict__.keys()
+
+                # Opening in "write" mode
+                with open("design_data.csv", "w", encoding="UTF8") as f:
+                    writer = csv.writer(f)
+
+                    # Writing the header to the csv file
+                    writer.writerow(headers)
+
+                    # Looping through the data rows and
+                    # writing them into the data set
+                    for i in range(0, len(batch_results)):
+                        writer.writerow(batch_results[i].__dict__.values())
+
+            else:
+
+                # Opening in "append" mode
+                with open("design_data.csv", "a", encoding="UTF8") as f:
+                    writer = csv.writer(f)
+
+                    # Looping through the data rows and
+                    # writing them into the data set
+                    for i in range(0, len(batch_results)):
+                        writer.writerow(batch_results[i].__dict__.values())
 
     # End time
     toc = time.time()
 
-    # Outputting the total time it took for the
-    # script to run.
-    print("Done in {:.4f} seconds".format(toc - tic))
+    # Printing the total time it took for the script to run in minutes.
+    print("Completed in {:.2f} minutes.".format((toc - tic) / 60))
 
-
-@click.command()
-@click.argument("input_path", type=click.Path(exists=True))
-def headless_destress1(input_path: str) -> None:
-
-    tic = time.time()
-
-    # Resolving the input path that has been provided
-    input_path = Path(input_path).resolve()
-
-    # Changing directory to the input path
-    os.chdir(input_path)
-
-    # Getting a list of all the pdb files in the input path
-    pdb_file_list = list(input_path.glob("*.pdb"))
-
-    # Defining a list of headers for the csv file output
-    headers = [
-        "design name",
-        "file name",
-        "composition: ALA",
-        "composition: CYS",
-        "composition: ASP",
-        "composition: GLU",
-        "composition: PHE",
-        "composition: GLY",
-        "composition: HIS",
-        "composition: ILE",
-        "composition: LYS",
-        "composition: LEU",
-        "composition: MET",
-        "composition: ASN",
-        "composition: PRO",
-        "composition: GLN",
-        "composition: ARG",
-        "composition: SER",
-        "composition: THR",
-        "composition: VAL",
-        "composition: TRP",
-        "composition: UNK",
-        "composition: TYR",
-        "hydrophobic fitness",
-        "isoelectric point (pH)",
-        "mass (da)",
-        "number of residues",
-        "packing density",
-        "budeff: total",
-        "budeff: steric",
-        "budeff: desolvation",
-        "budeff: charge",
-        "evoef2: total",
-        "evoef2: ref total",
-        "evoef2: intraR total",
-        "evoef2: interS total",
-        "evoef2 - interD total",
-        "dfire2 - total",
-        "rosetta - total",
-        "rosetta - fa_atr",
-        "rosetta - fa_rep",
-        "rosetta - fa_intra_rep",
-        "rosetta - fa_elec",
-        "rosetta - fa_sol",
-        "rosetta - lk_ball_wtd",
-        "rosetta - fa_intra_sol_xover4",
-        "rosetta - hbond_lr_bb",
-        "rosetta - hbond_sr_bb",
-        "rosetta - hbond_bb_sc",
-        "rosetta - hbond_sc",
-        "rosetta - dslf_fa13",
-        "rosetta - rama_prepro",
-        "rosetta - p_aa_pp",
-        "rosetta - fa_dun",
-        "rosetta - omega",
-        "rosetta - pro_close",
-        "rosetta - yhh_planarity",
-        "aggrescan3d: total_value",
-        "aggrescan3d: avg_value",
-        "aggrescan3d: min_value",
-        "aggrescan3d: max_value",
-    ]
-
-    # Creating a data list to collect the results from each PDB file
-    data_list = []
-
-    # Looping through each PDB file and calculating the DE-STRESS design metrics
-    for pdb_file in pdb_file_list:
-        print(pdb_file)
-
-        ampal_assembly = ampal.load_pdb(str(pdb_file), path=True)
-
-        # Only selecting ATOM residues
-        pdb_lines = ampal_assembly.pdb.splitlines()
-        pdb_lines_filtered = [line for line in pdb_lines if line.startswith("ATOM")]
-        pdb_string_filtered = "\n".join(pdb_lines_filtered)
-
-        # Extracting all the values for inserting into the csv file
-        design_name = os.path.splitext(os.path.basename(pdb_file))[0]
-        file_name = pdb_file
-
-        try:
-
-            design_metrics = analysis.create_metrics_from_pdb(pdb_string_filtered)
-
-            # Unpacking the compisition metrics
-            comp_metrics = unpacking_comp_metrics(design_metrics)
-
-            data_row = [
-                design_name,
-                file_name,
-                comp_metrics["ALA"],
-                comp_metrics["CYS"],
-                comp_metrics["ASP"],
-                comp_metrics["GLU"],
-                comp_metrics["PHE"],
-                comp_metrics["GLY"],
-                comp_metrics["HIS"],
-                comp_metrics["ILE"],
-                comp_metrics["LYS"],
-                comp_metrics["LEU"],
-                comp_metrics["MET"],
-                comp_metrics["ASN"],
-                comp_metrics["PRO"],
-                comp_metrics["GLN"],
-                comp_metrics["ARG"],
-                comp_metrics["SER"],
-                comp_metrics["THR"],
-                comp_metrics["VAL"],
-                comp_metrics["TRP"],
-                comp_metrics["UNK"],
-                comp_metrics["TYR"],
-                design_metrics.hydrophobic_fitness,
-                design_metrics.isoelectric_point,
-                design_metrics.mass,
-                design_metrics.num_of_residues,
-                design_metrics.packing_density,
-                design_metrics.budeFF_results.total_energy,
-                design_metrics.budeFF_results.steric,
-                design_metrics.budeFF_results.desolvation,
-                design_metrics.budeFF_results.charge,
-                design_metrics.evoEF2_results.total,
-                design_metrics.evoEF2_results.ref_total,
-                design_metrics.evoEF2_results.intraR_total,
-                design_metrics.evoEF2_results.interS_total,
-                design_metrics.evoEF2_results.interD_total,
-                design_metrics.dfire2_results.total,
-                design_metrics.rosetta_results.total_score,
-                design_metrics.rosetta_results.fa_atr,
-                design_metrics.rosetta_results.fa_rep,
-                design_metrics.rosetta_results.fa_intra_rep,
-                design_metrics.rosetta_results.fa_elec,
-                design_metrics.rosetta_results.fa_sol,
-                design_metrics.rosetta_results.lk_ball_wtd,
-                design_metrics.rosetta_results.fa_intra_sol_xover4,
-                design_metrics.rosetta_results.hbond_lr_bb,
-                design_metrics.rosetta_results.hbond_sr_bb,
-                design_metrics.rosetta_results.hbond_bb_sc,
-                design_metrics.rosetta_results.hbond_sc,
-                design_metrics.rosetta_results.dslf_fa13,
-                design_metrics.rosetta_results.rama_prepro,
-                design_metrics.rosetta_results.p_aa_pp,
-                design_metrics.rosetta_results.fa_dun,
-                design_metrics.rosetta_results.omega,
-                design_metrics.rosetta_results.pro_close,
-                design_metrics.rosetta_results.yhh_planarity,
-                design_metrics.aggrescan3d_results.total_value,
-                design_metrics.aggrescan3d_results.avg_value,
-                design_metrics.aggrescan3d_results.min_value,
-                design_metrics.aggrescan3d_results.max_value,
-            ]
-
-            data_list.append(data_row)
-
-        except (KeyError, ValueError):
-
-            data_list.append(design_name)
-            data_row = [None] * (len(headers) - 1)
-            data_list.append(data_row)
-
-    # Opening csv to insert into
-    with open("design_data.csv", "w", encoding="UTF8") as f:
-        writer = csv.writer(f)
-
-        # Writing the header
-        writer.writerow(headers)
-
-        # write the data
-        for i in range(0, len(data_list)):
-            writer.writerow(data_list[i])
-
-    toc = time.time()
-
-    print("Done in {:.4f} seconds".format(toc - tic))
+    logging.info("Completed in {:.2f} minutes.".format((toc - tic) / 60))

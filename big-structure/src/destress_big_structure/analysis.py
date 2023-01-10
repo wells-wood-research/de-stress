@@ -232,6 +232,7 @@ class JpredSubmission:
 
 
 def create_metrics_from_pdb(pdb_string: str) -> DesignMetrics:
+
     ampal_assembly = ampal.load_pdb(pdb_string, path=False)
     # relabel everything to remove annoying insertion codes!
     ampal_assembly.relabel_all()
@@ -260,12 +261,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
     try:
         ev.tag_dssp_data(design)
     except subprocess.CalledProcessError as e:
-        print(e)
-        raise RuntimeError(
-            "command '{}' return with error (code {}): {}".format(
-                e.cmd, e.returncode, e.output
-            )
-        )
+        print(f"Cannot compute the DSSP assignment due to a CalledProcessError:\n {e}")
 
     sequence_info = {
         chain.id: SequenceInfo(
