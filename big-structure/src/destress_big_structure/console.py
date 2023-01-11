@@ -431,30 +431,40 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
             comp_metrics = unpacking_comp_metrics(design_metrics)
 
             # Calculating secondary structure proportions
-            ss_prop_alpha_helix = design_metrics.dssp_assignment.count("H") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_beta_bridge = design_metrics.dssp_assignment.count("B") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_beta_strand = design_metrics.dssp_assignment.count("E") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_3_10_helix = design_metrics.dssp_assignment.count("G") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_pi_helix = design_metrics.dssp_assignment.count("I") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_hbonded_turn = design_metrics.dssp_assignment.count("T") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_bend = design_metrics.dssp_assignment.count("S") / len(
-                design_metrics.dssp_assignment
-            )
-            ss_prop_loop = design_metrics.dssp_assignment.count("-") / len(
-                design_metrics.dssp_assignment
-            )
+            try:
+                ss_prop_alpha_helix = design_metrics.dssp_assignment.count("H") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_beta_bridge = design_metrics.dssp_assignment.count("B") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_beta_strand = design_metrics.dssp_assignment.count("E") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_3_10_helix = design_metrics.dssp_assignment.count("G") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_pi_helix = design_metrics.dssp_assignment.count("I") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_hbonded_turn = design_metrics.dssp_assignment.count("T") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_bend = design_metrics.dssp_assignment.count("S") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_loop = design_metrics.dssp_assignment.count("-") / len(
+                    design_metrics.dssp_assignment
+                )
+            except ZeroDivisionError:
+                ss_prop_alpha_helix = None
+                ss_prop_beta_bridge = None
+                ss_prop_beta_strand = None
+                ss_prop_3_10_helix = None
+                ss_prop_pi_helix = None
+                ss_prop_hbonded_turn = None
+                ss_prop_bend = None
+                ss_prop_loop = None
 
             # Creating a dictionary of all the design metrics
             design_metrics_output = dict(
