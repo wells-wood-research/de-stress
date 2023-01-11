@@ -338,8 +338,17 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
         "composition_TRP",
         "composition_UNK",
         "composition_TYR",
+        "ss_prop_alpha_helix",
+        "ss_prop_beta_bridge",
+        "ss_prop_beta_strand",
+        "ss_prop_3_10_helix",
+        "ss_prop_pi_helix",
+        "ss_prop_hbonded_turn",
+        "ss_prop_bend",
+        "ss_prop_loop",
         "hydrophobic_fitness",
         "isoelectric_point",
+        "charge",
         "mass",
         "num_residues",
         "packing_density",
@@ -421,6 +430,32 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
             # Unpacking the compisition metrics
             comp_metrics = unpacking_comp_metrics(design_metrics)
 
+            # Calculating secondary structure proportions
+            ss_prop_alpha_helix = design_metrics.dssp_assignment.count("H") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_beta_bridge = design_metrics.dssp_assignment.count("B") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_beta_strand = design_metrics.dssp_assignment.count("E") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_3_10_helix = design_metrics.dssp_assignment.count("G") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_pi_helix = design_metrics.dssp_assignment.count("I") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_hbonded_turn = design_metrics.dssp_assignment.count("T") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_bend = design_metrics.dssp_assignment.count("S") / len(
+                design_metrics.dssp_assignment
+            )
+            ss_prop_loop = design_metrics.dssp_assignment.count("-") / len(
+                design_metrics.dssp_assignment
+            )
+
             # Creating a dictionary of all the design metrics
             design_metrics_output = dict(
                 zip(
@@ -449,8 +484,17 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
                         comp_metrics["TRP"],
                         comp_metrics["UNK"],
                         comp_metrics["TYR"],
+                        ss_prop_alpha_helix,
+                        ss_prop_beta_bridge,
+                        ss_prop_beta_strand,
+                        ss_prop_3_10_helix,
+                        ss_prop_pi_helix,
+                        ss_prop_hbonded_turn,
+                        ss_prop_bend,
+                        ss_prop_loop,
                         design_metrics.hydrophobic_fitness,
                         design_metrics.isoelectric_point,
+                        design_metrics.charge,
                         design_metrics.mass,
                         design_metrics.num_of_residues,
                         design_metrics.packing_density,

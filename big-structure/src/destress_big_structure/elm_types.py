@@ -280,6 +280,7 @@ class DesignMetrics:
     torsion_angles: Dict[str, Tuple[float, float, float]]
     hydrophobic_fitness: Optional[float]
     isoelectric_point: float
+    charge: float
     mass: float
     num_of_residues: int
     packing_density: float
@@ -317,8 +318,17 @@ class DesignMetricsOutputRow:
     composition_TRP: float
     composition_UNK: float
     composition_TYR: float
+    ss_prop_alpha_helix: float
+    ss_prop_beta_bridge: float
+    ss_prop_beta_strand: float
+    ss_prop_3_10_helix: float
+    ss_prop_pi_helix: float
+    ss_prop_hbonded_turn: float
+    ss_prop_bend: float
+    ss_prop_loop: float
     hydrophobic_fitness: float
     isoelectric_point: float
+    charge: float
     mass: float
     num_residues: float
     packing_density: float
