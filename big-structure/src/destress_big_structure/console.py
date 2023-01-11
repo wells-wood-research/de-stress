@@ -456,7 +456,12 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
                 ss_prop_loop = design_metrics.dssp_assignment.count("-") / len(
                     design_metrics.dssp_assignment
                 )
-            except ZeroDivisionError:
+            except ZeroDivisionError as e:
+
+                logging.debug(
+                    f"Secondary structure proportion cannot be computed because of ZeroDivisionError.:\n {e}"
+                )
+
                 ss_prop_alpha_helix = None
                 ss_prop_beta_bridge = None
                 ss_prop_beta_strand = None
