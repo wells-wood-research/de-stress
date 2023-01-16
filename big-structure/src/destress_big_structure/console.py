@@ -315,6 +315,8 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
 
     # Firstly defining a list of fields in the output
     design_field_list = [
+        "full_sequence",
+        "dssp_assignment",
         "composition_ALA",
         "composition_CYS",
         "composition_ASP",
@@ -336,8 +338,17 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
         "composition_TRP",
         "composition_UNK",
         "composition_TYR",
+        "ss_prop_alpha_helix",
+        "ss_prop_beta_bridge",
+        "ss_prop_beta_strand",
+        "ss_prop_3_10_helix",
+        "ss_prop_pi_helix",
+        "ss_prop_hbonded_turn",
+        "ss_prop_bend",
+        "ss_prop_loop",
         "hydrophobic_fitness",
         "isoelectric_point",
+        "charge",
         "mass",
         "num_residues",
         "packing_density",
@@ -419,11 +430,54 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
             # Unpacking the compisition metrics
             comp_metrics = unpacking_comp_metrics(design_metrics)
 
+            # Calculating secondary structure proportions
+            try:
+                ss_prop_alpha_helix = design_metrics.dssp_assignment.count("H") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_beta_bridge = design_metrics.dssp_assignment.count("B") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_beta_strand = design_metrics.dssp_assignment.count("E") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_3_10_helix = design_metrics.dssp_assignment.count("G") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_pi_helix = design_metrics.dssp_assignment.count("I") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_hbonded_turn = design_metrics.dssp_assignment.count("T") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_bend = design_metrics.dssp_assignment.count("S") / len(
+                    design_metrics.dssp_assignment
+                )
+                ss_prop_loop = design_metrics.dssp_assignment.count("-") / len(
+                    design_metrics.dssp_assignment
+                )
+            except ZeroDivisionError as e:
+
+                logging.debug(
+                    f"Secondary structure proportion cannot be computed because of ZeroDivisionError.:\n {e}"
+                )
+
+                ss_prop_alpha_helix = None
+                ss_prop_beta_bridge = None
+                ss_prop_beta_strand = None
+                ss_prop_3_10_helix = None
+                ss_prop_pi_helix = None
+                ss_prop_hbonded_turn = None
+                ss_prop_bend = None
+                ss_prop_loop = None
+
             # Creating a dictionary of all the design metrics
             design_metrics_output = dict(
                 zip(
                     design_field_list,
                     [
+                        design_metrics.full_sequence,
+                        design_metrics.dssp_assignment,
                         comp_metrics["ALA"],
                         comp_metrics["CYS"],
                         comp_metrics["ASP"],
@@ -445,8 +499,17 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
                         comp_metrics["TRP"],
                         comp_metrics["UNK"],
                         comp_metrics["TYR"],
+                        ss_prop_alpha_helix,
+                        ss_prop_beta_bridge,
+                        ss_prop_beta_strand,
+                        ss_prop_3_10_helix,
+                        ss_prop_pi_helix,
+                        ss_prop_hbonded_turn,
+                        ss_prop_bend,
+                        ss_prop_loop,
                         design_metrics.hydrophobic_fitness,
                         design_metrics.isoelectric_point,
+                        design_metrics.charge,
                         design_metrics.mass,
                         design_metrics.num_of_residues,
                         design_metrics.packing_density,
