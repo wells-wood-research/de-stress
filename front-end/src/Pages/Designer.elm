@@ -9,12 +9,15 @@ import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
 import File.Select as FileSelect
+import Html
+import Html.Attributes as HAtt
 import Shared
 import Shared.Buttons as Buttons
 import Shared.Style as Style
 import Spa.Document exposing (Document)
 import Spa.Page as Page exposing (Page)
 import Spa.Url as Url exposing (Url)
+import Task
 
 
 page : Page Params Model Msg
@@ -41,15 +44,29 @@ type Model
     = AwaitingFile
     | Loading
     | Structure String String
-    | Prediction PredictionData
+    | ProbabilityDist ProbabilityDistData
+    | NewDesigns {}
     | FailedToLoad
 
 
-type alias PredictionData =
+type alias ProbabilityDistData =
     { fileName : String
     , pdbString : String
     , probabilityDist : List (Dict String Float)
     }
+
+
+
+-- Next task:
+--    Make a button and a message to go from the structure
+--    to a structure with a prediction for each amino acid.
+--    Look at the format for the predictions that is generated
+--    by the streamlit app, and mock that up for a file here.
+-- Beyond that:
+--    * generate the top predicted sequence from the dist
+--    * sample from the dist using Leo's monte carlo sampling ported to elm
+--    * use HTTP to get a predicted structure from ESMFold server (talk to me!)
+--         curl -X POST --data "KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL" https://api.esmatlas.com/foldSequence/v1/pdb/
 
 
 init : Shared.Model -> Url Params -> ( Model, Cmd Msg )
@@ -73,8 +90,17 @@ update msg model =
         StructureRequested ->
             ( Loading, structureRequested )
 
-        _ ->
-            Debug.todo "Finish these messages"
+        StructureFileSelected file ->
+            ( model
+            , Task.perform
+                (StructureLoaded (File.name file))
+                (File.toString file)
+            )
+
+        StructureLoaded name fileString ->
+            ( Structure name fileString
+            , Cmd.none
+            )
 
 
 structureRequested : Cmd Msg
@@ -110,6 +136,29 @@ view model =
 
 bodyView : Model -> Element Msg
 bodyView model =
+    column
+        [ width fill
+        , spacing 20
+        ]
+        [ header model
+        , el [ centerX, width fill ] <|
+            case model of
+                AwaitingFile ->
+                    paragraph [] [ text "Click load to upload a template PDB file." ]
+
+                Loading ->
+                    paragraph [] [ text "Loading PDB file..." ]
+
+                Structure fileName fileString ->
+                    loadedStructureView fileName fileString
+
+                _ ->
+                    text "oops"
+        ]
+
+
+header : Model -> Element Msg
+header model =
     let
         ( label, isActive ) =
             case model of
@@ -120,7 +169,7 @@ bodyView model =
                     ( "Loading", False )
 
                 _ ->
-                    ( "Load", True )
+                    ( "Load New", True )
     in
     wrappedRow [ centerX, spacing 10 ]
         [ paragraph [] [ Style.h1 <| text "Designer" ]
@@ -132,3 +181,35 @@ bodyView model =
                 }
             ]
         ]
+
+
+loadedStructureView : String -> String -> Element Msg
+loadedStructureView fileName fileString =
+    column
+        [ width fill ]
+        [ paragraph [ centerX ]
+            [ "Loaded structure \""
+                ++ fileName
+                ++ "\""
+                |> text
+            ]
+        , sectionColumn
+            [ Style.h2 <| text "Structure"
+            , el [ height <| px 400, width fill, padding 5, Border.width 1 ]
+                (Html.node "ngl-viewer"
+                    [ HAtt.id "viewer"
+                    , HAtt.style "width" "100%"
+                    , HAtt.style "height" "100%"
+                    , HAtt.attribute "pdb-string" fileString
+                    ]
+                    []
+                    |> html
+                )
+            ]
+        , el [] (text fileString)
+        ]
+
+
+sectionColumn : List (Element msg) -> Element msg
+sectionColumn =
+    column [ spacing 12, width fill ]
