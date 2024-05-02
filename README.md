@@ -88,16 +88,16 @@ The headless version of DE-STRESS can be ran locally and the user can change the
 Firstly the docker image needs to be built. There is a different docker compose file called `headless-compose.yml` that needs to be used instead of the `development-compose.yml` file.  
 
 ```bash 
-docker-compose -f headless-compose.yml build
+docker compose -f headless-compose.yml build
 ```
 
 After this, make sure the dependencies have been built. The path `/absolute/path/to/de-stress/dependencies_for_de-stress/` needs to be replaced with the user's local path to the DE-STRESS dependencies. 
 
 ```bash
-docker run -it --rm -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress_big-structure:latest sh build_dependencies.sh
+docker run -it --rm -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh
 ```
 
 Finally, run headless DE-STRESS with the following command and change the `/absolute/path/to/` to the the local file path to these folders. 
 
 ```bash
-docker run -it --rm --env-file .env -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress -v /absolute/path/to/input_path/:/input_path de-stress_big-structure:latest poetry run headless_destress /input_path
+docker run -it --rm --env-file .env-headless -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress -v /absolute/path/to/input_path/:/input_path de-stress-big-structure:latest poetry run headless_destress /input_path
