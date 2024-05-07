@@ -71,7 +71,7 @@ You can change the settings in the .env-headless file to change the max run time
 
 Firstly, download `big_structure.dump` and place it in `de-stress/database`. This is a .dump file of a PostgreSQL database that contains the pre-calculated DE-STRESS metrics for a set of structures from the Protein Data Bank (PDB). This database is used for the reference set functionality in DE-STRESS, which allows users to compare their designed proteins against a set of known proteins. 
 
-After this run the setup.sh bash script to install a local version of the DE-STRESS webserver and follow the same steps as described above. This script wil lask you if you want to install the webserver in a development or production environment as well. The settings for the DE-STRESS webserver can be chaned in the .env file as well. 
+After this, run the setup.sh bash script to install a local version of the DE-STRESS webserver and follow the same steps as described above. This script will ask if you want to install the webserver in a development or production environment as well. Also, the settings for the DE-STRESS webserver can be chaned in the .env file as well. 
 
 ```bash
 ./setup.sh
