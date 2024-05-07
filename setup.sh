@@ -30,10 +30,30 @@ if [ "$option1" == "1" ]; then
     change_dir_command="cd ../"
     $change_dir_command
 
-    # Building the docker image for webserver version of DE-STRESS
-    echo "Building docker image for webserver DE-STRESS."
-    docker_command1="docker compose -f development-compose.yml build"
-    $docker_command1
+    # Ask the user which version of DE-STRESS they want to install
+    echo "Are you installing the websever in a development or production environment. Submit 1 for development or 2 for production."
+    read option3
+
+    if [ "$option3" == "1" ]; then
+
+        # Building the docker image for development webserver version of DE-STRESS
+        echo "Building docker image for the development version of the DE-STRESS webserver."
+        docker_command1="docker compose -f development-compose.yml build"
+        $docker_command1
+
+
+    elif [ "$option3" == "2" ]; then
+
+        # Building the docker image for production webserver version of DE-STRESS
+        echo "Building docker image for the production version of the DE-STRESS webserver."
+        docker_command1="docker compose -f production-compose.yml build"
+        $docker_command1
+
+        exit 1
+    else
+        echo "Invalid option. Please choose either 1 or 2."
+        exit 1
+    fi
 
     # Get the current working directory
     current_dir=$(pwd)
@@ -48,8 +68,27 @@ if [ "$option1" == "1" ]; then
     echo "How many CPUs do you want to use for the DE-STRESS webserver?"
     read webserver_num_cpus
     echo "Launching DE-STRESS webserver"
-    docker_command3="docker compose -f development-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
-    $docker_command3
+
+    if [ "$option3" == "1" ]; then
+
+        # Launching the development version of DE-STRESS web server
+        docker_command3="docker compose -f development-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
+        $docker_command3
+
+
+    elif [ "$option3" == "2" ]; then
+
+        # Launching the production version of DE-STRESS web server
+        docker_command3="docker compose -f production-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
+        $docker_command3
+
+        exit 1
+    else
+        echo "Invalid option. Please choose either 1 or 2."
+        exit 1
+    fi
+
+    
 
 # Installing the headless version of DE-STRESS
 elif [ "$option1" == "2" ]; then

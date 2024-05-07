@@ -30,74 +30,58 @@ For more information about our research group, check out our
 
 ## Local Deployment
 
-Make sure you have all the relevant dependencies in
+DE-STRESS can be installed locally as a web server (for example https://pragmaticproteindesign.bio.ed.ac.uk/de-stress/) or as a command line tool or "headless" DE-STRESS.
+
+The DE-STRESS webserver has a few limitations which are there to ensure the stability of the webserver. These limitations are listed below.
+
+* Only proteins with 500 residues or less can be uploaded.
+* Only 30 files can be uploaded at a time.
+* There is a max run time of 20 seconds for all the DE-STRESS metrics.
+
+The headless version of DE-STRESS can be ran using the command line interface and the user can change the settings to run a larger set of PDB files. The code has been written to allow multiprocessing so that large amounts of files can be ran in a reasonable amount of time. The .env-headless file can be used to update the MAX_RUN_TIME, HEADLESS_DESTRESS_WORKERS and HEADLESS_DESTRESS_BATCH_SIZE variables to change the amount of seconds the DE-STRESS metrics are allowed to run, how many PDB files are in a batch, and how many processers should be used respectively.
+
+Before installing either of these versions, make sure you have all the relevant licenses for the dependencies in
 `de-stress/dependencies_for_de-stress/`. Currently, these are:
 
 * Aggrescan3D
 * DFIRE 2 pair
 * DSSP
 * EvoEF2 (source)
-* Rosetta (source)
+* Rosetta (source).
 
-Create a `.env` file in the top level `de-stress` folder. You can copy
-`de-stress/.env-testing` and update that. This 
+Rosetta requires a commercial licence to install. In the future, we will offer a version of DE-STRESS without Rosetta but that is not available yet. 
 
-Download `big_structure.dump` and place it in `de-stress/database`.
+## Local install of headless DE-STRESS
 
-Next, from within `de-stress/`, build all the containers:
-
-```bash
-# use production-compose.yml if you're deploying in a production environment
-docker-compose -f development-compose.yml build
-```
-
-Compile the dependencies in the container:
+Run the setup.sh bash script to install a local version of headless DE-STRESS. This script will ask you which version of DE-STRESS you want, and after selecting headless DE-STRESS it will begin the install. After this, it will ask you if you want to install Rosetta and whether you have a licence for this software. If yes is selected, then it will begin an automatic install of Rosetta from the git repo https://github.com/RosettaCommons/rosetta. Once this has been installed, the dependencies(EvoEF2 and Rosetta) will be compiled from source code. Rosetta can take a long time to compile and this script will ask you how many CPUs to use for the compilation (if using 2 CPUs the compilation of Rosetta can take around 3 hours). 
 
 ```bash
-docker run \
-    -it \
-    --rm \
-    -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress \
-    de-stress_big-structure:latest \
-    sh build_dependencies.sh
+./setup.sh
 ```
 
-This will compile the software, but the output will be stored on the host machine as a
-volume is used. This means that you cannot move or delete this folder while the
-application is being served or it will break.
-
-Launch the application:
-
-```bash
-# Change rq-worker to however many processes you want to use for analysis
-docker-compose -f development-compose.yml --env-file .env up -d --scale rq-worker=4
-```
-
-Navigate to `de-stress/database` and run `import_db_dump.sh`.
-
-## Headless DE-STRESS
-
-The DE-STRESS webserver has a few limitations which are there to ensure the stability of the webserver. These limitations are listed below. 
-
-* Only proteins with 500 residues or less can be uploaded.
-* Only 30 files can be uploaded at a time.
-* There is a max run time of 20 seconds for all the DE-STRESS metrics.
-
-The headless version of DE-STRESS can be ran locally and the user can change the settings to run a larger set of PDB files. The code has been written to allow multiprocessing so that large amounts of files can be ran in a reasonable amount of time. The `.env-headless` file can be used to update the MAX_RUN_TIME, HEADLESS_DESTRESS_WORKERS and HEADLESS_DESTRESS_BATCH_SIZE variables to change the amount of seconds the DE-STRESS metrics are allowed to run, how many PDB files are in a batch, and how many processers should be used respectively. 
-
-Firstly the docker image needs to be built. There is a different docker compose file called `headless-compose.yml` that needs to be used instead of the `development-compose.yml` file.  
-
-```bash 
-docker compose -f headless-compose.yml build
-```
-
-After this, make sure the dependencies have been built. The path `/absolute/path/to/de-stress/dependencies_for_de-stress/` needs to be replaced with the user's local path to the DE-STRESS dependencies. 
-
-```bash
-docker run -it --rm -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh
-```
-
-Finally, run headless DE-STRESS with the following command and change the `/absolute/path/to/` to the the local file path to these folders. 
+Once this script has finished running, the installation of headless DE-STRESS will be complete and you can run DE-STRESS on a set of PDB files using the below docker run command. 
 
 ```bash
 docker run -it --rm --env-file .env-headless -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress -v /absolute/path/to/input_path/:/input_path de-stress-big-structure:latest poetry run headless_destress /input_path
+```
+
+You can change the settings in the .env-headless file to change the max run time, number of CPUs used and the batch size for the runs. Once this docker command has ran, a CSV file called design_data.csv will be saved in the input path which has the DE-STRESS metric for the set of PDB files. Also a logging.txt file is saved in the same folder. 
+
+## Local install of the DE-STRESS web server
+
+Firstly, download `big_structure.dump` and place it in `de-stress/database`. This is a .dump file of a PostgreSQL database that contains the pre-calculated DE-STRESS metrics for a set of structures from the Protein Data Bank (PDB). This database is used for the reference set functionality in DE-STRESS, which allows users to compare their designed proteins against a set of known proteins. 
+
+After this run the setup.sh bash script to install a local version of the DE-STRESS webserver and follow the same steps as described above. This script wil lask you if you want to install the webserver in a development or production environment as well. The settings for the DE-STRESS webserver can be chaned in the .env file as well. 
+
+```bash
+./setup.sh
+```
+
+Next, navigate to /de-stress/front-end and run the below command to launch the user interface for the web server. Note npm needs to be installed locally to be able to do this. 
+
+```bash
+npm start
+```
+
+Finally, after this command has ran there will be a url link that can be clicked to view the user interface for the DE-STRESS web server.
+
