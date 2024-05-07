@@ -30,7 +30,7 @@ For more information about our research group, check out our
 
 ## Local Deployment
 
-DE-STRESS can be installed locally as a web server (for example https://pragmaticproteindesign.bio.ed.ac.uk/de-stress/) or as a command line tool or "headless" DE-STRESS.
+DE-STRESS can be installed locally as a web server (https://pragmaticproteindesign.bio.ed.ac.uk/de-stress/) or as a command line tool (headless DE-STRESS).
 
 The DE-STRESS webserver has a few limitations which are there to ensure the stability of the webserver. These limitations are listed below.
 
@@ -38,16 +38,16 @@ The DE-STRESS webserver has a few limitations which are there to ensure the stab
 * Only 30 files can be uploaded at a time.
 * There is a max run time of 20 seconds for all the DE-STRESS metrics.
 
-The headless version of DE-STRESS can be ran using the command line interface and the user can change the settings to run a larger set of PDB files. The code has been written to allow multiprocessing so that large amounts of files can be ran in a reasonable amount of time. The .env-headless file can be used to update the MAX_RUN_TIME, HEADLESS_DESTRESS_WORKERS and HEADLESS_DESTRESS_BATCH_SIZE variables to change the amount of seconds the DE-STRESS metrics are allowed to run, how many PDB files are in a batch, and how many processers should be used respectively.
+The headless version of DE-STRESS can be ran using the command line interface and the user can change the settings to run DE-STRESS on a larger set of PDB files. The code has been written to allow multiprocessing so that large amounts of files can be ran in a reasonable amount of time. The .env-headless file can be used to update the MAX_RUN_TIME, HEADLESS_DESTRESS_BATCH_SIZE and HEADLESS_DESTRESS_WORKERS variables to change the amount of seconds the DE-STRESS metrics are allowed to run, how many PDB files are in a batch, and how many CPUs should be used respectively.
 
-Before installing either of these versions, make sure you have all the relevant licenses for the dependencies in
-`de-stress/dependencies_for_de-stress/`. Currently, these are:
+Before installing either of these versions of DE-STRESS, make sure you have all the relevant licenses for the dependencies in
+`de-stress/dependencies_for_de-stress/`. The current dependencies used by DE-STRESS are shown below.
 
 * Aggrescan3D
 * DFIRE 2 pair
 * DSSP
 * EvoEF2 (source)
-* Rosetta (source).
+* Rosetta (source)
 
 Rosetta requires a commercial licence to install. In the future, we will offer a version of DE-STRESS without Rosetta but that is not available yet. 
 
