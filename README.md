@@ -65,7 +65,7 @@ Once this script has finished running, the installation of headless DE-STRESS wi
 docker run -it --rm --env-file .env-headless -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress -v /absolute/path/to/input_path/:/input_path de-stress-big-structure:latest poetry run headless_destress /input_path
 ```
 
-You can change the settings in the .env-headless file to change the max run time, number of CPUs used and the batch size for the runs. Once this docker command has ran, a CSV file called design_data.csv will be saved in the input path which has the DE-STRESS metric for the set of PDB files. Also a logging.txt file is saved in the same folder. 
+You can change the settings in the .env-headless file to change the max run time, number of CPUs used and the batch size for the runs. Once this docker command has finished running, a CSV file called design_data.csv will be saved in the input path which contains all of the DE-STRESS metrics for the set of PDB files. In addition to this, a logging.txt file is saved in the same folder. 
 
 ## Local install of the DE-STRESS web server
 
