@@ -92,6 +92,7 @@ if [ "$option1" == "1" ]; then
 
 # Installing the headless version of DE-STRESS
 elif [ "$option1" == "2" ]; then
+
     # Asking the user if they want to install Rosetta and checking if they have a licence.
     echo "Do you want to install Rosetta? A licence is required to use Rosetta which is free for academics but not for commercial users. Submit 1 if you still want to install Rosetta and 2 if you want to install a version without Rosetta."
     read option2

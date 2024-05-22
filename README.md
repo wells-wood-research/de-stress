@@ -53,7 +53,15 @@ Rosetta requires a commercial licence to install. In the future, we will offer a
 
 ## Local install of headless DE-STRESS
 
-Run the setup.sh bash script to install a local version of headless DE-STRESS. To begin with, this script will ask you which version of DE-STRESS you want and after selecting headless DE-STRESS it will begin the installation process. After this, it will ask you if you want to install Rosetta and whether you have a licence for this software. If yes is selected, then it will begin an automatic install of Rosetta from the git repo https://github.com/RosettaCommons/rosetta. Once this has been installed, some of the dependencies (EvoEF2 and Rosetta) will be compiled from source code. Rosetta can take a long time to compile and this script will ask you how many CPUs to use for the compilation (if using 2 CPUs the compilation of Rosetta can take around 3 hours). 
+First creating a virtual environment for running headless destress.
+
+```bash
+python -m venv headless_destress && source headless_destress/bin/activate && pip install -r requirements.txt
+
+```
+
+Next, run the setup.sh bash script to install a local version of headless DE-STRESS. To begin with, this script will ask you which version of DE-STRESS you want and after selecting headless DE-STRESS it will begin the installation process. After this, it will ask you if you want to install Rosetta and whether you have a licence for this software. If yes is selected, then it will begin an automatic install of Rosetta from the git repo https://github.com/RosettaCommons/rosetta. Once this has been installed, some of the dependencies (EvoEF2 and Rosetta) will be compiled from source code. Rosetta can take a long time to compile and this script will ask you how many CPUs to use for the compilation (if using 2 CPUs the compilation of Rosetta can take around 3 hours). 
+
 
 ```bash
 ./setup.sh
