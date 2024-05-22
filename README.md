@@ -53,7 +53,7 @@ Rosetta requires a commercial licence to install. In the future, we will offer a
 
 ## Local install of headless DE-STRESS
 
-First creating a virtual environment for running headless destress.
+First create a virtual environment for running headless destress.
 
 ```bash
 python -m venv headless_destress && source headless_destress/bin/activate && pip install -r requirements.txt
@@ -67,10 +67,10 @@ Next, run the setup.sh bash script to install a local version of headless DE-STR
 ./setup.sh
 ```
 
-Once this script has finished running, the installation of headless DE-STRESS will be complete and you can run DE-STRESS on a set of PDB files using the below docker run command. 
+Once this script has finished running, the installation of headless DE-STRESS will be complete and you can run DE-STRESS on a set of PDB files using the below python command. Change the path to the input path containing the set of PDB files.
 
 ```bash
-docker run -it --rm --env-file .env-headless -v /absolute/path/to/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress -v /absolute/path/to/input_path/:/input_path de-stress-big-structure:latest poetry run headless_destress /input_path
+python3 run_destress_headless.py --i /absolute/path/to/input/pdbs/
 ```
 
 You can change the settings in the .env-headless file to change the max run time, number of CPUs used and the batch size for the runs. Once this docker command has finished running, a CSV file called design_data.csv will be saved in the input path which contains all of the DE-STRESS metrics for the set of PDB files. In addition to this, a logging.txt file is saved in the same folder. 

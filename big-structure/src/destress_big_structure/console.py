@@ -651,7 +651,7 @@ def headless_destress_batch(input_path: str) -> None:
         + str(num_pdb_files)
         + " PDB files in "
         + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
-        + " batches."
+        + " batch/batches."
     )
 
     logging.info(
@@ -659,14 +659,23 @@ def headless_destress_batch(input_path: str) -> None:
         + str(num_pdb_files)
         + " PDB files in "
         + str(int(math.ceil(num_pdb_files / NUM_HEADLESS_DESTRESS_BATCH_SIZE)))
-        + " batches."
+        + " batch/batches."
     )
 
-    print(
-        "The estimated run time with >= 20 cores will be roughly "
-        + str(round(num_pdb_files / 60))
-        + " minutes. So relax, get a coffee and the results will be ready for you soon!"
-    )
+    if round(num_pdb_files / 60) < 120:
+
+        print(
+            "The estimated run time with >= 20 CPUs will be roughly "
+            + str(round(num_pdb_files / 60))
+            + " minutes. So relax, get a coffee and the results will be ready for you soon!"
+        )
+    elif round(num_pdb_files / 60) >= 120:
+
+        print(
+            "Wow that's a lot of PDB files!!! The estimated run time with >= 20 CPUs will be roughly "
+            + str(round(num_pdb_files / 60))
+            + " minutes. Come back later and headless DE-STRESS will have the results for you. "
+        )
 
     # Initialising the mprocess pool and number of workers
     with mp.Pool(processes=NUM_HEADLESS_DESTRESS_WORKERS) as process_pool:
