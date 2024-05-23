@@ -1,0 +1,30 @@
+# compile
+g++ calene.cc -o calene
+or using intel compiler
+icpc calene.cc -o calene
+
+#usage: calene dfire_pair.lib ...;  followed with PDB files
+# The program explains itself.
+# benchmark
+bash# time ./calene dfire_pair.lib pro.pdb
+pro.pdb -510.9
+real	0m0.431s
+
+# If you're interested in interaction between CA atoms, or between CB (CA for GLY) atoms, you can use program calene_part with option "-CA" or "-CB", respectively.
+#usage: calene_part dfire_pair.lib [-CA|-CB] ...;  followed with PDB files
+# benchmark
+bash# time ./calene_part dfire_pair.lib -CA pro.pdb 
+pro.pdb -10.9
+real	0m0.480s
+#The result is exactly same as "calene" on PDB file with CA atoms only
+bash# time ./calene dfire_pair.lib pro_CA.pdb 
+pro_CA.pdb -10.9
+real	0m0.475s
+
+# Tips
+# The potential library file is exactly same when partial atoms are used to calculate the energy, and what you need to do is removing other atoms from the PDB files or change the program a little  at line 59 to filter unused atoms
+#Reference
+1. Specific interactions for ab initio folding of protein terminal regions with secondary structures. Proteins 72, 793-803 (2008)
+2. Ab initio folding of terminal segments with secondary structures reveals the fine difference between two closely-related all-atom statistical energy functions. Protein Science 17 1212-1219, (2008)
+
+# If any comments, contact me by yueyang@iupui.edu
