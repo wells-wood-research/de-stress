@@ -38,8 +38,8 @@ jobs:
       - name: Test `big-structure`
         run: |
           docker run --rm -v /home/runner/work/de-stress/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
-              --env-file .env \
-              big-structure \
+              --env-file .env-testing \
+              de-stress-big-structure:latest \
               poetry run pytest -m "not rosetta"
 
           
