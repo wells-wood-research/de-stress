@@ -34,10 +34,7 @@ jobs:
           current_dir=$(pwd)
           echo "Current dir: $current_dir"
           echo "Building DE-STRESS dependencies. Rosetta will take a few hours to compile."
-          docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest bash cd /dependencies_for_de-stress/EvoEF2/ &&\ 
-          g++ -O3 --fast-math -o EvoEF2 src/*.cpp \
-          cd /dependencies_for_de-stress/rosetta/source/ &&\ 
-          ./scons.py -j20 mode=release bin
+          docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies_tests.sh
       - name: Test `big-structure`
         run: |
           chmod -R 755 dependencies_for_de-stress/
