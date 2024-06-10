@@ -22,8 +22,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download dependencies
-      - run: |
-          python -m venv headless_destress && source headless_destress/bin/activate && pip install -r requirements.txt
+        run: |
+          python -m venv headless_destress
+          source headless_destress/bin/activate
+          pip install -r requirements.txt
           cd dependencies_for_de-stress/
           git clone --branch v2024.18-dev62107 https://github.com/RosettaCommons/rosetta.git
           echo "Rosetta has been successfully downloaded."
@@ -34,12 +36,12 @@ jobs:
           echo "Building DE-STRESS dependencies. Rosetta will take a few hours to compile."
           docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh
 
-
-      - name: Test `big-structure`   
+      - name: Test `big-structure`
         run: |
           chmod -R 755 dependencies_for_de-stress/
           docker run --rm -v $(pwd)/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
               --env-file .env \
               big-structure \
               poetry run pytest -m "not rosetta"
+
           
