@@ -34,11 +34,11 @@ jobs:
           current_dir=$(pwd)
           echo "Current dir: $current_dir"
           echo "Building DE-STRESS dependencies. Rosetta will take a few hours to compile."
-          docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies_tests.sh
+          docker run -it --rm -v /home/runner/work/de-stress/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies_tests.sh
       - name: Test `big-structure`
         run: |
           chmod -R 755 dependencies_for_de-stress/
-          docker run --rm -v $(pwd)/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
+          docker run --rm -v /home/runner/work/de-stress/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
               --env-file .env \
               big-structure \
               poetry run pytest -m "not rosetta"
