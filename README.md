@@ -51,6 +51,8 @@ Before installing either of these versions of DE-STRESS, make sure you have all 
 
 Rosetta requires a commercial licence to install. In the future, we will offer a version of DE-STRESS without Rosetta but that is not available yet. 
 
+Also, make sure you have the most up to date version of docker and docker-compose. 
+
 ## Local install of headless DE-STRESS
 
 First create a virtual environment for running headless destress.
@@ -58,6 +60,12 @@ First create a virtual environment for running headless destress.
 ```bash
 python -m venv headless_destress && source headless_destress/bin/activate && pip install -r requirements.txt
 
+```
+
+After this copy .env-headless-testing file to .env-headless and then you can customise the settings for running headless DE-STRESS.
+
+```bash
+cp .env-headless-testing .env-headless
 ```
 
 Next, run the setup.sh bash script to install a local version of headless DE-STRESS. To begin with, this script will ask you which version of DE-STRESS you want and after selecting headless DE-STRESS it will begin the installation process. After this, it will ask you if you want to install Rosetta and whether you have a licence for this software. If yes is selected, then it will begin an automatic install of Rosetta from the git repo https://github.com/RosettaCommons/rosetta. Once this has been installed, some of the dependencies (EvoEF2 and Rosetta) will be compiled from source code. Rosetta can take a long time to compile and this script will ask you how many CPUs to use for the compilation (if using 2 CPUs the compilation of Rosetta can take around 3 hours). 
@@ -78,6 +86,12 @@ You can change the settings in the .env-headless file to change the max run time
 ## Local install of the DE-STRESS web server
 
 Firstly, download `big_structure.dump` and place it in `de-stress/database`. This is a .dump file of a PostgreSQL database that contains the pre-calculated DE-STRESS metrics for a set of structures from the Protein Data Bank (PDB). This database is used for the reference set functionality in DE-STRESS, which allows users to compare their designed proteins against a set of known proteins. 
+
+Next, copy the .env-testing file to .env and then you can customise the settings for running the webserver version of DE-STRESS.
+
+```bash
+cp .env-testing .env
+```
 
 After this, run the setup.sh bash script to install a local version of the DE-STRESS webserver and follow the same steps as described above. This script will ask if you want to install the webserver in a development or production environment as well. Also, the settings for the DE-STRESS webserver can be changed in the .env file as well. 
 
