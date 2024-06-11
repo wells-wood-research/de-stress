@@ -25,6 +25,7 @@ jobs:
         run: |
           python -m venv headless_destress
           source headless_destress/bin/activate
+          cp .env-headless-testing .env-headless
           pip install -r requirements.txt
           cd dependencies_for_de-stress/
           git clone --branch v2024.18-dev62107 https://github.com/RosettaCommons/rosetta.git
@@ -38,7 +39,7 @@ jobs:
       - name: Test `big-structure`
         run: |
           docker run --rm -v /home/runner/work/de-stress/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
-              --env-file .env-testing \
+              --env-file .env-headless \
               de-stress-big-structure:latest \
               poetry run pytest -m "not rosetta"
 
