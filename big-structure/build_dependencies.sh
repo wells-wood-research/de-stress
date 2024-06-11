@@ -1,4 +1,7 @@
-cd /dependencies_for_de-stress/EvoEF2/ &&\
-    g++ -O3 --fast-math -o EvoEF2 src/*.cpp
-cd /dependencies_for_de-stress/rosetta_src_2020.08.61146_bundle/main/source/ &&\
-    ./scons.py -j2 mode=release  bin/score_jd2.linuxgccrelease
+cd /dependencies_for_de-stress/EvoEF2/ &&\ 
+g++ -O3 --fast-math -o EvoEF2 src/*.cpp
+
+echo "How many jobs do you want to run in order to compile Rosetta?"
+read numofjobs
+cd /dependencies_for_de-stress/rosetta/source/ &&\ 
+./scons.py -j$numofjobs mode=release bin

@@ -21,22 +21,26 @@ jobs:
       - name: Checkout de-stress
         uses: actions/checkout@v2
 
-      - name: Checkout dependencies_for_de-stress
-        uses: actions/checkout@v2
-        with:
-          repository: wells-wood-research/dependencies_for_de-stress.git
-          token: ${{ secrets.DEPENDENCIES_ACCESS_TOKEN }}
-          ref: master
-          path: dependencies_for_de-stress
-
-      - name: Build and test `big-structure`   
+      - name: Download dependencies
         run: |
-          chmod -R 755 dependencies_for_de-stress/
-          cd big-structure/
-          docker build -t big-structure .
-          cd ..
-          docker run --rm -v $(pwd)/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
-              --env-file .env-testing \
-              big-structure \
+          python -m venv headless_destress
+          source headless_destress/bin/activate
+          cp .env-headless-testing .env-headless
+          pip install -r requirements.txt
+          cd dependencies_for_de-stress/
+          git clone --branch v2024.18-dev62107 https://github.com/RosettaCommons/rosetta.git
+          echo "Rosetta has been successfully downloaded."
+          cd ../
+          docker compose -f headless-compose.yml build
+          current_dir=$(pwd)
+          echo "Current dir: $current_dir"
+          echo "Building DE-STRESS dependencies. Rosetta will take a few hours to compile."
+          docker run --rm -v /home/runner/work/de-stress/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies_tests.sh
+      - name: Test `big-structure`
+        run: |
+          docker run --rm -v /home/runner/work/de-stress/de-stress/dependencies_for_de-stress/:/dependencies_for_de-stress/ \
+              --env-file .env-headless \
+              de-stress-big-structure:latest \
               poetry run pytest -m "not rosetta"
+
           
