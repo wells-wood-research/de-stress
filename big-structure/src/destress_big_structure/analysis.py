@@ -17,6 +17,7 @@ import budeff.force_field
 import isambard.evaluation as ev
 import numpy as np
 import requests
+import logging
 
 from .elm_types import (
     DesignMetrics,
@@ -260,10 +261,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
 
     try:
         ev.tag_dssp_data(design)
-    except subprocess.CalledProcessError as e:
-        print(f"Cannot compute the DSSP assignment due to a CalledProcessError:\n {e}")
-
-    sequence_info = {
+        sequence_info = {
         chain.id: SequenceInfo(
             sequence="".join(m.mol_letter for m in chain),
             dssp_assignment="".join(
@@ -273,6 +271,43 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         for chain in design
         if isinstance(chain, ampal.Polypeptide)
     }
+    except subprocess.CalledProcessError as se:
+        logging.debug(f"Cannot compute the DSSP assignment due to a CalledProcessError:\n {se}")
+
+        sequence_info = {
+            chain.id: SequenceInfo(
+                sequence="".join(m.mol_letter for m in chain),
+                dssp_assignment="",
+            )
+            for chain in design
+            if isinstance(chain, ampal.Polypeptide)
+        }
+
+    except ValueError as ve:
+        logging.debug(f"Cannot compute the DSSP assignment due to a ValueError: {ve}")
+
+        sequence_info = {
+            chain.id: SequenceInfo(
+                sequence="".join(m.mol_letter for m in chain),
+                dssp_assignment="",
+            )
+            for chain in design
+            if isinstance(chain, ampal.Polypeptide)
+        }
+
+
+    except Exception as ue:
+        logging.debug(f"Cannot compute DSSP due to unknown exception: {ue}")
+
+        sequence_info = {
+            chain.id: SequenceInfo(
+                sequence="".join(m.mol_letter for m in chain),
+                dssp_assignment="",
+            )
+            for chain in design
+            if isinstance(chain, ampal.Polypeptide)
+        }
+
     full_sequence = "".join(si.sequence for si in sequence_info.values())
     dssp_assignment = "".join(
         si.dssp_assignment for si in sequence_info.values()
@@ -313,7 +348,9 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
 def design_hydrophobic_fitness(design: ampal.Assembly) -> Optional[float]:
     try:
         hydrophobic_fitness = ev.calculate_hydrophobic_fitness(design)
-    except ZeroDivisionError:
+    except ZeroDivisionError as e:
+        logging.debug(f"ZeroDivisionError when computing hydrophobic_fitness: {e}")
+        
         hydrophobic_fitness = None
     return hydrophobic_fitness
 
@@ -365,7 +402,8 @@ def run_bude_ff(ampal_assembly: ampal.Assembly) -> BudeFFOutput:
             desolvation=budeff_score.desolvation,
             charge=budeff_score.charge,
         )
-    except KeyError:
+    except KeyError as e:
+        logging.debug(f"KeyError when computing BUDE: {e}")
         # Contains an unknown atom
         budeff_output = BudeFFOutput(
             total_energy=None,
@@ -455,7 +493,8 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
         energy_values["total"] = energy_values.pop("Total")
         energy_values["time_spent"] = energy_values.pop("Time spent")
 
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        logging.debug(f"subprocess.CalledProcessError when computing EvoEF2: {e}")
 
         log_info = evoef2_stdout.stdout.decode()
 
@@ -616,7 +655,8 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
             input_string=dfire2_stdout.stdout.decode().partition(" ")[2].strip()
         )
 
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        logging.debug(f"subprocess.CalledProcessError when computing DFIRE2: {e}")
 
         # Setting total energy to None if there has been an error
         dfire2_total_energy = None
@@ -699,7 +739,8 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                     # Removing decoy key that is not needed
                     energy_values.pop("decoy", None)
 
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as e:
+                logging.debug(f"subprocess.CalledProcessError when computing Rosetta: {e}")
 
                 # Creating a list of the energy value fields
                 energy_field_list = [
@@ -903,12 +944,14 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                             **aggrescan3d_residue,
                         }
 
-                except AssertionError:
+                except AssertionError as ae:
+                    logging.debug(f"AssertionError when computing Aggrescan3d: {ae}")
 
                     # Setting all the aggrescan3d_results to None
                     aggrescan3d_results = aggrescan3d_none_dict
 
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as se:
+                logging.debug(f"subprocess.CalledProcessError when computing Aggrescan3d: {se}")
 
                 # Setting all the aggrescan3d_results to None
                 aggrescan3d_results = aggrescan3d_none_dict
