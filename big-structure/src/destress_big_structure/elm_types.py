@@ -138,7 +138,7 @@ class EvoEF2Output:
         else:
 
             self.ref_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("reference"))
+                (v for k, v in self.__dict__.items() if k.startswith("reference") and v is not None)
             )
 
             self.intraR_total = sum(
@@ -148,16 +148,16 @@ class EvoEF2Output:
                     if (
                         k.startswith("intraR")
                         or k in ["aapropensity", "ramachandran", "dunbrack"]
-                    )
+                    ) and v is not None
                 )
             )
 
             self.interS_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("interS"))
+                (v for k, v in self.__dict__.items() if k.startswith("interS") and v is not None)
             )
 
             self.interD_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("interD"))
+                (v for k, v in self.__dict__.items() if k.startswith("interD") and v is not None)
             )
 
 

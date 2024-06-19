@@ -348,8 +348,12 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
 def design_hydrophobic_fitness(design: ampal.Assembly) -> Optional[float]:
     try:
         hydrophobic_fitness = ev.calculate_hydrophobic_fitness(design)
-    except ZeroDivisionError as e:
-        logging.debug(f"ZeroDivisionError when computing hydrophobic_fitness: {e}")
+    except ZeroDivisionError as ze:
+        logging.debug(f"ZeroDivisionError when computing hydrophobic_fitness: {ze}")
+        
+        hydrophobic_fitness = None
+    except KeyError as ke:
+        logging.debug(f"KeyError when computing hydrophobic_fitness: {ke}")
         
         hydrophobic_fitness = None
     return hydrophobic_fitness
@@ -366,15 +370,28 @@ def design_mean_packing_density(design: ampal.Assembly) -> float:
 def design_torsion_angles(
     design: ampal.Assembly,
 ) -> Dict[str, Tuple[float, float, float]]:
-    design.tag_torsion_angles()
-    torsion_angles = {}
-    for residue in list(design.get_monomers()):
-        if "tas" in residue.tags:
-            tas = residue.tags["tas"]
-            if all(tas):
-                (ch, (ic, rn, _)) = residue.unique_id
-                id_string = f"{ch}{rn}{ic}".strip()
-                torsion_angles[id_string] = tas
+    
+    try:
+        design.tag_torsion_angles()
+        torsion_angles = {}
+        for residue in list(design.get_monomers()):
+            if "tas" in residue.tags:
+                tas = residue.tags["tas"]
+                if all(tas):
+                    (ch, (ic, rn, _)) = residue.unique_id
+                    id_string = f"{ch}{rn}{ic}".strip()
+                    torsion_angles[id_string] = tas
+
+    except KeyError as k:
+        logging.debug(f"KeyError when computing torsion angles: {k}")
+
+        torsion_angles = {}
+
+
+    except Exception as ue:
+        logging.debug(f"Unknown error when computing torsion angles: {ue}")
+
+        torsion_angles = {}
     return torsion_angles
 
 
@@ -469,6 +486,74 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
 
+
+    # Creating a list of the energy value fields
+    energy_field_list = [
+        "reference_ALA",
+        "reference_CYS",
+        "reference_ASP",
+        "reference_GLU",
+        "reference_PHE",
+        "reference_GLY",
+        "reference_HIS",
+        "reference_ILE",
+        "reference_LYS",
+        "reference_LEU",
+        "reference_MET",
+        "reference_ASN",
+        "reference_PRO",
+        "reference_GLN",
+        "reference_ARG",
+        "reference_SER",
+        "reference_THR",
+        "reference_VAL",
+        "reference_TRP",
+        "reference_TYR",
+        "intraR_vdwatt",
+        "intraR_vdwrep",
+        "intraR_electr",
+        "intraR_deslvP",
+        "intraR_deslvH",
+        "intraR_hbscbb_dis",
+        "intraR_hbscbb_the",
+        "intraR_hbscbb_phi",
+        "aapropensity",
+        "ramachandran",
+        "dunbrack",
+        "interS_vdwatt",
+        "interS_vdwrep",
+        "interS_electr",
+        "interS_deslvP",
+        "interS_deslvH",
+        "interS_ssbond",
+        "interS_hbbbbb_dis",
+        "interS_hbbbbb_the",
+        "interS_hbbbbb_phi",
+        "interS_hbscbb_dis",
+        "interS_hbscbb_the",
+        "interS_hbscbb_phi",
+        "interS_hbscsc_dis",
+        "interS_hbscsc_the",
+        "interS_hbscsc_phi",
+        "interD_vdwatt",
+        "interD_vdwrep",
+        "interD_electr",
+        "interD_deslvP",
+        "interD_deslvH",
+        "interD_ssbond",
+        "interD_hbbbbb_dis",
+        "interD_hbbbbb_the",
+        "interD_hbbbbb_phi",
+        "interD_hbscbb_dis",
+        "interD_hbscbb_the",
+        "interD_hbscbb_phi",
+        "interD_hbscsc_dis",
+        "interD_hbscsc_the",
+        "interD_hbscsc_phi",
+        "total",
+        "time_spent",
+    ]
+
     try:
         evoef2_stdout.check_returncode()
 
@@ -498,72 +583,13 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 
         log_info = evoef2_stdout.stdout.decode()
 
-        # Creating a list of the energy value fields
-        energy_field_list = [
-            "reference_ALA",
-            "reference_CYS",
-            "reference_ASP",
-            "reference_GLU",
-            "reference_PHE",
-            "reference_GLY",
-            "reference_HIS",
-            "reference_ILE",
-            "reference_LYS",
-            "reference_LEU",
-            "reference_MET",
-            "reference_ASN",
-            "reference_PRO",
-            "reference_GLN",
-            "reference_ARG",
-            "reference_SER",
-            "reference_THR",
-            "reference_VAL",
-            "reference_TRP",
-            "reference_TYR",
-            "intraR_vdwatt",
-            "intraR_vdwrep",
-            "intraR_electr",
-            "intraR_deslvP",
-            "intraR_deslvH",
-            "intraR_hbscbb_dis",
-            "intraR_hbscbb_the",
-            "intraR_hbscbb_phi",
-            "aapropensity",
-            "ramachandran",
-            "dunbrack",
-            "interS_vdwatt",
-            "interS_vdwrep",
-            "interS_electr",
-            "interS_deslvP",
-            "interS_deslvH",
-            "interS_ssbond",
-            "interS_hbbbbb_dis",
-            "interS_hbbbbb_the",
-            "interS_hbbbbb_phi",
-            "interS_hbscbb_dis",
-            "interS_hbscbb_the",
-            "interS_hbscbb_phi",
-            "interS_hbscsc_dis",
-            "interS_hbscsc_the",
-            "interS_hbscsc_phi",
-            "interD_vdwatt",
-            "interD_vdwrep",
-            "interD_electr",
-            "interD_deslvP",
-            "interD_deslvH",
-            "interD_ssbond",
-            "interD_hbbbbb_dis",
-            "interD_hbbbbb_the",
-            "interD_hbbbbb_phi",
-            "interD_hbscbb_dis",
-            "interD_hbscbb_the",
-            "interD_hbscbb_phi",
-            "interD_hbscsc_dis",
-            "interD_hbscsc_the",
-            "interD_hbscsc_phi",
-            "total",
-            "time_spent",
-        ]
+        # Setting all the energy values to None
+        energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
+
+    except subprocess.TimeoutExpired as te:
+        logging.debug(f"subprocess.TimeoutExpired when computing EvoEF2: {te}")
+
+        log_info = evoef2_stdout.stdout.decode()
 
         # Setting all the energy values to None
         energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
@@ -661,6 +687,13 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
         # Setting total energy to None if there has been an error
         dfire2_total_energy = None
 
+
+    except subprocess.TimeoutExpired as te:
+        logging.debug(f"subprocess.TimeoutExpired when computing DFIRE2: {te}")
+
+        # Setting total energy to None if there has been an error
+        dfire2_total_energy = None
+
     # Creating the DFIRE2Output object
     dfire2_output = DFIRE2Output(
         log_info=log_info,
@@ -729,19 +762,6 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                     cmd, capture_output=True, timeout=MAX_RUN_TIME
                 )
 
-            try:
-                rosetta_stdout.check_returncode()
-
-                # Opening the json file score.sc to get the energy values
-                with open("score.sc") as json_file:
-                    energy_values = json.load(json_file)
-
-                    # Removing decoy key that is not needed
-                    energy_values.pop("decoy", None)
-
-            except subprocess.CalledProcessError as e:
-                logging.debug(f"subprocess.CalledProcessError when computing Rosetta: {e}")
-
                 # Creating a list of the energy value fields
                 energy_field_list = [
                     "dslf_fa13",
@@ -769,6 +789,27 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                     "total_score",
                     "yhh_planarity",
                 ]
+
+            try:
+                rosetta_stdout.check_returncode()
+
+                # Opening the json file score.sc to get the energy values
+                with open("score.sc") as json_file:
+                    energy_values = json.load(json_file)
+
+                    # Removing decoy key that is not needed
+                    energy_values.pop("decoy", None)
+
+            except subprocess.CalledProcessError as e:
+                logging.debug(f"subprocess.CalledProcessError when computing Rosetta: {e}")
+
+                # Setting all the energy values to None
+                energy_values = dict(
+                    zip(energy_field_list, [None] * len(energy_field_list))
+                )
+
+            except subprocess.TimeoutExpired as te:
+                logging.debug(f"subprocess.TimeoutExpired when computing Rosetta: {te}")
 
                 # Setting all the energy values to None
                 energy_values = dict(
@@ -952,6 +993,13 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
 
             except subprocess.CalledProcessError as se:
                 logging.debug(f"subprocess.CalledProcessError when computing Aggrescan3d: {se}")
+
+                # Setting all the aggrescan3d_results to None
+                aggrescan3d_results = aggrescan3d_none_dict
+
+            
+            except subprocess.TimeoutExpired as te:
+                logging.debug(f"subprocess.TimeoutExpired when computing Aggrescan3d: {te}")
 
                 # Setting all the aggrescan3d_results to None
                 aggrescan3d_results = aggrescan3d_none_dict
