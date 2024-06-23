@@ -277,7 +277,7 @@ class DesignMetrics:
     full_sequence: str
     dssp_assignment: str
     composition: Dict[str, float]
-    torsion_angles: Dict[str, Tuple[float, float, float]]
+    # torsion_angles: Dict[str, Tuple[float, float, float]]
     hydrophobic_fitness: Optional[float]
     isoelectric_point: float
     charge: float

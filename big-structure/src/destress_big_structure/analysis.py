@@ -9,6 +9,7 @@ import re
 import json
 import csv
 import warnings
+import contextlib
 
 from bs4 import BeautifulSoup
 import ampal
@@ -327,7 +328,7 @@ def analyse_design(design: ampal.Assembly) -> DesignMetrics:
         composition={
             k: v / num_of_residues for (k, v) in Counter(full_sequence).items()
         },
-        torsion_angles=design_torsion_angles(design),
+        # torsion_angles=design_torsion_angles(design),
         hydrophobic_fitness=design_hydrophobic_fitness(design),
         isoelectric_point=isoelectric_point,
         charge=charge,
