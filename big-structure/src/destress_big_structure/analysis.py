@@ -462,31 +462,6 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
     """
 
     starting_directory = pathlib.Path.cwd()
-    try:
-        with tempfile.NamedTemporaryFile(mode="w") as tmp:
-            # changing working dir so that EvoEF doesn't create files in the users cwd
-            temp_folder = pathlib.Path(tmp.name).parent
-            os.chdir(temp_folder)
-
-            # writing the pdb string to a temp file as input for EvoEF
-            tmp.write(pdb_string)
-
-            # Creating bash command
-            cmd = [
-                evoef2_binary_path,
-                "--command=ComputeStability",
-                "--pdb=" + tmp.name,
-            ]
-
-            # Using subprocess to run this command and capturing the output
-            evoef2_stdout = subprocess.run(
-                cmd, capture_output=True, timeout=MAX_RUN_TIME
-            )
-
-    finally:
-        # Change back to starting directory before checking return code
-        os.chdir(starting_directory)
-
 
     # Creating a list of the energy value fields
     energy_field_list = [
@@ -554,46 +529,79 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
         "total",
         "time_spent",
     ]
-
     try:
-        evoef2_stdout.check_returncode()
+        with tempfile.NamedTemporaryFile(mode="w") as tmp:
+            # changing working dir so that EvoEF doesn't create files in the users cwd
+            temp_folder = pathlib.Path(tmp.name).parent
+            os.chdir(temp_folder)
 
-        # Splitting the result string at a substring with 92 #'s
-        # then splitting the string at "Structure energy details:\n"
-        # which can separate the EvoEF2 log information from the actual structure
-        # energy details
-        log_info, _, result_string = (
-            evoef2_stdout.stdout.decode()
-            .partition("#" * 92)[2]
-            .partition("Structure energy details:\n")
-        )
+            # writing the pdb string to a temp file as input for EvoEF
+            tmp.write(pdb_string)
 
-        # Finding lines with key-value pairs seperated by either ":" or "=" then creating
-        # a dictionary from the pairs.
-        energy_values = {
-            k.strip(): convert_string_to_float(v.strip())
-            for k, v in re.findall(r"(.+)[=:](.+)", result_string)
-        }
+            # Creating bash command
+            cmd = [
+                evoef2_binary_path,
+                "--command=ComputeStability",
+                "--pdb=" + tmp.name,
+            ]
 
-        # Renaming some of the keys in the output dictionary
-        energy_values["total"] = energy_values.pop("Total")
-        energy_values["time_spent"] = energy_values.pop("Time spent")
+            try:
 
-    except subprocess.CalledProcessError as e:
-        logging.debug(f"subprocess.CalledProcessError when computing EvoEF2: {e}")
+                # Using subprocess to run this command and capturing the output
+                evoef2_stdout = subprocess.run(
+                    cmd, capture_output=True, timeout=MAX_RUN_TIME
+                )
 
-        log_info = evoef2_stdout.stdout.decode()
+                evoef2_stdout.check_returncode()
 
-        # Setting all the energy values to None
-        energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+                logging.debug(f"Subprocess Error when computing EvoEF2: {e}")
 
-    except subprocess.TimeoutExpired as te:
-        logging.debug(f"subprocess.TimeoutExpired when computing EvoEF2: {te}")
+                log_info = evoef2_stdout.stdout.decode()
 
-        log_info = evoef2_stdout.stdout.decode()
+                # Setting all the energy values to None
+                energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
 
-        # Setting all the energy values to None
-        energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
+                # Extracting error information and the return code
+                error_info = evoef2_stdout.stderr.decode()
+                return_code = evoef2_stdout.returncode
+
+                # Creating an EvoEF2 object by unpacking the output dictionary
+                evoef2_output = EvoEF2Output(
+                    log_info=log_info,
+                    error_info=error_info,
+                    return_code=return_code,
+                    **energy_values,
+                )
+
+                return evoef2_output
+
+    finally:
+        # Change back to starting directory before checking return code
+        os.chdir(starting_directory)
+
+
+    # Splitting the result string at a substring with 92 #'s
+    # then splitting the string at "Structure energy details:\n"
+    # which can separate the EvoEF2 log information from the actual structure
+    # energy details
+    log_info, _, result_string = (
+        evoef2_stdout.stdout.decode()
+        .partition("#" * 92)[2]
+        .partition("Structure energy details:\n")
+    )
+
+    # Finding lines with key-value pairs seperated by either ":" or "=" then creating
+    # a dictionary from the pairs.
+    energy_values = {
+        k.strip(): convert_string_to_float(v.strip())
+        for k, v in re.findall(r"(.+)[=:](.+)", result_string)
+    }
+
+    # Renaming some of the keys in the output dictionary
+    energy_values["total"] = energy_values.pop("Total")
+    energy_values["time_spent"] = energy_values.pop("Time spent")
+
 
     # Extracting error information and the return code
     error_info = evoef2_stdout.stderr.decode()
@@ -659,10 +667,30 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
                 tmp.name,
             ]
 
-            # Using subprocess to run this command and capturing the output
-            dfire2_stdout = subprocess.run(
-                cmd, capture_output=True, timeout=MAX_RUN_TIME
-            )
+            try:
+
+                # Using subprocess to run this command and capturing the output
+                dfire2_stdout = subprocess.run(
+                    cmd, capture_output=True, timeout=MAX_RUN_TIME
+                )
+
+                dfire2_stdout.check_returncode()
+
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+                logging.debug(f"Subprocess Error when computing DFIRE2: {e}")
+
+                # Setting total energy to None if there has been an error
+                dfire2_total_energy = None
+
+                # Creating the DFIRE2Output object
+                dfire2_output = DFIRE2Output(
+                    log_info=None,
+                    error_info=None,
+                    return_code=None,
+                    total=dfire2_total_energy,
+                )
+
+                return dfire2_output
     finally:
         # Change back to starting directory before checking return code
         os.chdir(starting_directory)
@@ -674,26 +702,10 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
     error_info = dfire2_stdout.stderr.decode()
     return_code = dfire2_stdout.returncode
 
-    try:
-        dfire2_stdout.check_returncode()
-
-        # Extracting the energy value from the output
-        dfire2_total_energy = convert_string_to_float(
-            input_string=dfire2_stdout.stdout.decode().partition(" ")[2].strip()
-        )
-
-    except subprocess.CalledProcessError as e:
-        logging.debug(f"subprocess.CalledProcessError when computing DFIRE2: {e}")
-
-        # Setting total energy to None if there has been an error
-        dfire2_total_energy = None
-
-
-    except subprocess.TimeoutExpired as te:
-        logging.debug(f"subprocess.TimeoutExpired when computing DFIRE2: {te}")
-
-        # Setting total energy to None if there has been an error
-        dfire2_total_energy = None
+    # Extracting the energy value from the output
+    dfire2_total_energy = convert_string_to_float(
+        input_string=dfire2_stdout.stdout.decode().partition(" ")[2].strip()
+    )
 
     # Creating the DFIRE2Output object
     dfire2_output = DFIRE2Output(
@@ -737,6 +749,34 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
     """
 
     starting_directory = pathlib.Path.cwd()
+
+    # Creating a list of the energy value fields
+    energy_field_list = [
+        "dslf_fa13",
+        "fa_atr",
+        "fa_dun",
+        "fa_elec",
+        "fa_intra_rep",
+        "fa_intra_sol_xover4",
+        "fa_rep",
+        "fa_sol",
+        "hbond_bb_sc",
+        "hbond_lr_bb",
+        "hbond_sc",
+        "hbond_sr_bb",
+        "linear_chainbreak",
+        "lk_ball_wtd",
+        "omega",
+        "overlap_chainbreak",
+        "p_aa_pp",
+        "pro_close",
+        "rama_prepro",
+        "ref",
+        "score",
+        "time",
+        "total_score",
+        "yhh_planarity",
+    ]
     try:
         with tempfile.TemporaryDirectory() as tmp:
 
@@ -758,64 +798,40 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                     "-scorefile_format json",
                 ]
 
-                # Using subprocess to run this command and capturing the output
-                rosetta_stdout = subprocess.run(
-                    cmd, capture_output=True, timeout=MAX_RUN_TIME
-                )
+                try: 
 
-                # Creating a list of the energy value fields
-                energy_field_list = [
-                    "dslf_fa13",
-                    "fa_atr",
-                    "fa_dun",
-                    "fa_elec",
-                    "fa_intra_rep",
-                    "fa_intra_sol_xover4",
-                    "fa_rep",
-                    "fa_sol",
-                    "hbond_bb_sc",
-                    "hbond_lr_bb",
-                    "hbond_sc",
-                    "hbond_sr_bb",
-                    "linear_chainbreak",
-                    "lk_ball_wtd",
-                    "omega",
-                    "overlap_chainbreak",
-                    "p_aa_pp",
-                    "pro_close",
-                    "rama_prepro",
-                    "ref",
-                    "score",
-                    "time",
-                    "total_score",
-                    "yhh_planarity",
-                ]
+                    # Using subprocess to run this command and capturing the output
+                    rosetta_stdout = subprocess.run(
+                        cmd, capture_output=True, timeout=MAX_RUN_TIME
+                    )
+                    rosetta_stdout.check_returncode()
 
-            try:
-                rosetta_stdout.check_returncode()
+                except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+                    logging.debug(f"Subprocess Error when computing Rosetta: {e}")
 
-                # Opening the json file score.sc to get the energy values
-                with open("score.sc") as json_file:
-                    energy_values = json.load(json_file)
+                    # Setting all the energy values to None
+                    energy_values = dict(
+                        zip(energy_field_list, [None] * len(energy_field_list))
+                    )
 
-                    # Removing decoy key that is not needed
-                    energy_values.pop("decoy", None)
+                    # Creating an RosettaOutput object by unpacking the output dictionary
+                    rosetta_output = RosettaOutput(
+                        log_info=None,
+                        error_info=None,
+                        return_code=None,
+                        **energy_values,
+                    )
 
-            except subprocess.CalledProcessError as e:
-                logging.debug(f"subprocess.CalledProcessError when computing Rosetta: {e}")
+                    return rosetta_output
 
-                # Setting all the energy values to None
-                energy_values = dict(
-                    zip(energy_field_list, [None] * len(energy_field_list))
-                )
+            # Opening the json file score.sc to get the energy values
+            with open("score.sc") as json_file:
+                energy_values = json.load(json_file)
 
-            except subprocess.TimeoutExpired as te:
-                logging.debug(f"subprocess.TimeoutExpired when computing Rosetta: {te}")
+                # Removing decoy key that is not needed
+                energy_values.pop("decoy", None)
 
-                # Setting all the energy values to None
-                energy_values = dict(
-                    zip(energy_field_list, [None] * len(energy_field_list))
-                )
+               
     finally:
         # Change back to starting directory
         os.chdir(starting_directory)
@@ -911,99 +927,99 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     pdb.name,
                 ]
 
-                # Using subprocess to run this command and capturing the output
-                aggrescan3D_stdout = subprocess.run(
-                    cmd, capture_output=True, timeout=MAX_RUN_TIME
-                )
+        try:
+            # Using subprocess to run this command and capturing the output
+            aggrescan3D_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
+            aggrescan3D_stdout.check_returncode()
 
-            try:
-                aggrescan3D_stdout.check_returncode()
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+            logging.debug(f"Subprocess Error when computing Aggrescan3d: {e}")
+            aggrescan3d_output = Aggrescan3DOutput(
+                log_info=None,
+                error_info=None,
+                return_code=None,
+                **aggrescan3d_none_dict,
+            )
+            return aggrescan3d_output
 
-                try:
-                    assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
-                        "output/A3D.csv"
-                    )
+        try:
+            assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
+                "output/A3D.csv"
+            )
 
-                    # Firstly getting the summary aggrescan3d score values
-                    # from a json file
-                    with open("output/tmp/folded_stats") as json_file:
-                        aggrescan3d_summary = json.load(json_file)["All"]
+        except AssertionError as ae:
+            logging.debug(f"AssertionError when computing Aggrescan3d: {ae}")
 
-                    # Now getting the residue level aggrescan3d score values
-                    # from a csv file
-                    with open("output/A3D.csv") as csv_file:
+            aggrescan3d_output = Aggrescan3DOutput(
+                log_info="",
+                error_info="",
+                return_code="",
+                **aggrescan3d_none_dict,
+            )
+            return aggrescan3d_output
 
-                        # Reading csv file
-                        csv_reader = csv.reader(csv_file, delimiter=",")
+        # Firstly getting the summary aggrescan3d score values
+        # from a json file
+        with open("output/tmp/folded_stats") as json_file:
+            aggrescan3d_summary = json.load(json_file)["All"]
 
-                        # Initialising lists to capture the output
-                        protein_list = []
-                        chain_list = []
-                        residue_number_list = []
-                        residue_name_list = []
-                        residue_score_list = []
+        # Now getting the residue level aggrescan3d score values
+        # from a csv file
+        with open("output/A3D.csv") as csv_file:
 
-                        # Looping through each row in the csv file and appending to
-                        # the lists that were initialised above
-                        line_count = 0
-                        for row in csv_reader:
-                            if line_count > 0:
-                                protein_list.append(row[0])
-                                chain_list.append(row[1])
-                                residue_number_list.append(row[2])
-                                residue_name_list.append(row[3])
-                                residue_score_list.append(row[4])
-                            line_count += 1
+            # Reading csv file
+            csv_reader = csv.reader(csv_file, delimiter=",")
 
-                        # Converting to floats and then back to strings.
-                        # This is to ensure the values are floats but they
-                        # need to be strings to be inserted into the sql table
-                        residue_score_list = list(
-                            map(convert_string_to_float, residue_score_list)
-                        )
-                        residue_score_list = list(map(str, residue_score_list))
+            # Initialising lists to capture the output
+            protein_list = []
+            chain_list = []
+            residue_number_list = []
+            residue_name_list = []
+            residue_score_list = []
 
-                        # Converting these lists into strings so that they can be inputted into
-                        # the sql database
-                        protein_list = ";".join(protein_list)
-                        chain_list = ";".join(chain_list)
-                        residue_number_list = ";".join(residue_number_list)
-                        residue_name_list = ";".join(residue_name_list)
-                        residue_score_list = ";".join(residue_score_list)
+            # Looping through each row in the csv file and appending to
+            # the lists that were initialised above
+            line_count = 0
+            for row in csv_reader:
+                if line_count > 0:
+                    protein_list.append(row[0])
+                    chain_list.append(row[1])
+                    residue_number_list.append(row[2])
+                    residue_name_list.append(row[3])
+                    residue_score_list.append(row[4])
+                line_count += 1
 
-                        # Creating a dictionary of these lists
-                        aggrescan3d_residue = {
-                            "protein_list": protein_list,
-                            "chain_list": chain_list,
-                            "residue_number_list": residue_number_list,
-                            "residue_name_list": residue_name_list,
-                            "residue_score_list": residue_score_list,
-                        }
+            # Converting to floats and then back to strings.
+            # This is to ensure the values are floats but they
+            # need to be strings to be inserted into the sql table
+            residue_score_list = list(
+                map(convert_string_to_float, residue_score_list)
+            )
+            residue_score_list = list(map(str, residue_score_list))
 
-                        # Combining the two dictionaries
-                        aggrescan3d_results = {
-                            **aggrescan3d_summary,
-                            **aggrescan3d_residue,
-                        }
+            # Converting these lists into strings so that they can be inputted into
+            # the sql database
+            protein_list = ";".join(protein_list)
+            chain_list = ";".join(chain_list)
+            residue_number_list = ";".join(residue_number_list)
+            residue_name_list = ";".join(residue_name_list)
+            residue_score_list = ";".join(residue_score_list)
 
-                except AssertionError as ae:
-                    logging.debug(f"AssertionError when computing Aggrescan3d: {ae}")
+            # Creating a dictionary of these lists
+            aggrescan3d_residue = {
+                "protein_list": protein_list,
+                "chain_list": chain_list,
+                "residue_number_list": residue_number_list,
+                "residue_name_list": residue_name_list,
+                "residue_score_list": residue_score_list,
+            }
 
-                    # Setting all the aggrescan3d_results to None
-                    aggrescan3d_results = aggrescan3d_none_dict
+            # Combining the two dictionaries
+            aggrescan3d_results = {
+                **aggrescan3d_summary,
+                **aggrescan3d_residue,
+            }
 
-            except subprocess.CalledProcessError as se:
-                logging.debug(f"subprocess.CalledProcessError when computing Aggrescan3d: {se}")
-
-                # Setting all the aggrescan3d_results to None
-                aggrescan3d_results = aggrescan3d_none_dict
-
-            
-            except subprocess.TimeoutExpired as te:
-                logging.debug(f"subprocess.TimeoutExpired when computing Aggrescan3d: {te}")
-
-                # Setting all the aggrescan3d_results to None
-                aggrescan3d_results = aggrescan3d_none_dict
     finally:
         # Change back to starting directory
         os.chdir(starting_directory)

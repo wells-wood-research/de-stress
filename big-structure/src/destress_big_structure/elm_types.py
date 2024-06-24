@@ -38,9 +38,9 @@ class BudeFFOutput:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class EvoEF2Output:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     reference_ALA: Optional[float]
     reference_CYS: Optional[float]
     reference_ASP: Optional[float]
@@ -164,9 +164,9 @@ class EvoEF2Output:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass()
 class DFIRE2Output:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     total: Optional[float]
 
     # Redefining the __repr__ method to return the total energy value from DFIRE2
@@ -177,9 +177,9 @@ class DFIRE2Output:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class RosettaOutput:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     dslf_fa13: Optional[float]
     fa_atr: Optional[float]
     fa_dun: Optional[float]
@@ -232,9 +232,9 @@ class RosettaOutput:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class Aggrescan3DOutput:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     protein_list: Optional[str]
     chain_list: Optional[str]
     residue_number_list: Optional[str]
