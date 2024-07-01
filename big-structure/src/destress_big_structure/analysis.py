@@ -927,98 +927,104 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     pdb.name,
                 ]
 
-        try:
-            # Using subprocess to run this command and capturing the output
-            aggrescan3D_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
-            aggrescan3D_stdout.check_returncode()
+                try:
+                    # Using subprocess to run this command and capturing the output
+                    aggrescan3D_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
+                    aggrescan3D_stdout.check_returncode()
 
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
-            logging.debug(f"Subprocess Error when computing Aggrescan3d: {e}")
-            aggrescan3d_output = Aggrescan3DOutput(
-                log_info=None,
-                error_info=None,
-                return_code=None,
-                **aggrescan3d_none_dict,
-            )
-            return aggrescan3d_output
+                except subprocess.TimeoutExpired as te:
+                    logging.debug(f"subprocess.TimeoutExpired error when running Aggrescan3d: {te}")
+                    return Aggrescan3DOutput(
+                        log_info=None,
+                        error_info="TimeoutExpired",
+                        return_code=e.returncode if te.returncode else None,
+                        **aggrescan3d_none_dict,
+                    )
 
-        try:
-            assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
-                "output/A3D.csv"
-            )
+                except subprocess.CalledProcessError as ce:
+                    logging.debug(f"subprocess.CalledProcessError when running Aggrescan3d: {ce}")
+                    return Aggrescan3DOutput(
+                        log_info=None,
+                        error_info=f"CalledProcessError: {ce.stderr.decode()}",
+                        return_code=ce.returncode if ce.returncode else None,
+                        **aggrescan3d_none_dict,
+                    )
 
-        except AssertionError as ae:
-            logging.debug(f"AssertionError when computing Aggrescan3d: {ae}")
+                try:
+                    assert os.path.exists("output/tmp/folded_stats") and os.path.exists(
+                        "output/A3D.csv"
+                    )
 
-            aggrescan3d_output = Aggrescan3DOutput(
-                log_info="",
-                error_info="",
-                return_code="",
-                **aggrescan3d_none_dict,
-            )
-            return aggrescan3d_output
+                except AssertionError as ae:
+                    logging.debug(f"AssertionError when running Aggrescan3d: {ae}")
+                    return Aggrescan3DOutput(
+                        log_info="",
+                        error_info=str(ae),
+                        return_code=1,  # Indicate an error in the assertion
+                        **aggrescan3d_none_dict,
+                    )
 
-        # Firstly getting the summary aggrescan3d score values
-        # from a json file
-        with open("output/tmp/folded_stats") as json_file:
-            aggrescan3d_summary = json.load(json_file)["All"]
+            # Firstly getting the summary aggrescan3d score values
+            # from a json file
+            with open("output/tmp/folded_stats") as json_file:
+                aggrescan3d_summary = json.load(json_file)["All"]
 
-        # Now getting the residue level aggrescan3d score values
-        # from a csv file
-        with open("output/A3D.csv") as csv_file:
+            # Now getting the residue level aggrescan3d score values
+            # from a csv file
+            with open("output/A3D.csv") as csv_file:
 
-            # Reading csv file
-            csv_reader = csv.reader(csv_file, delimiter=",")
+                # Reading csv file
+                csv_reader = csv.reader(csv_file, delimiter=",")
 
-            # Initialising lists to capture the output
-            protein_list = []
-            chain_list = []
-            residue_number_list = []
-            residue_name_list = []
-            residue_score_list = []
+                # Initialising lists to capture the output
+                protein_list = []
+                chain_list = []
+                residue_number_list = []
+                residue_name_list = []
+                residue_score_list = []
 
-            # Looping through each row in the csv file and appending to
-            # the lists that were initialised above
-            line_count = 0
-            for row in csv_reader:
-                if line_count > 0:
-                    protein_list.append(row[0])
-                    chain_list.append(row[1])
-                    residue_number_list.append(row[2])
-                    residue_name_list.append(row[3])
-                    residue_score_list.append(row[4])
-                line_count += 1
+                # Looping through each row in the csv file and appending to
+                # the lists that were initialised above
+                line_count = 0
+                for row in csv_reader:
+                    if line_count > 0:
+                        protein_list.append(row[0])
+                        chain_list.append(row[1])
+                        residue_number_list.append(row[2])
+                        residue_name_list.append(row[3])
+                        residue_score_list.append(row[4])
+                    line_count += 1
 
-            # Converting to floats and then back to strings.
-            # This is to ensure the values are floats but they
-            # need to be strings to be inserted into the sql table
-            residue_score_list = list(
-                map(convert_string_to_float, residue_score_list)
-            )
-            residue_score_list = list(map(str, residue_score_list))
+                # Converting to floats and then back to strings.
+                # This is to ensure the values are floats but they
+                # need to be strings to be inserted into the sql table
+                residue_score_list = list(
+                    map(convert_string_to_float, residue_score_list)
+                )
+                residue_score_list = list(map(str, residue_score_list))
 
-            # Converting these lists into strings so that they can be inputted into
-            # the sql database
-            protein_list = ";".join(protein_list)
-            chain_list = ";".join(chain_list)
-            residue_number_list = ";".join(residue_number_list)
-            residue_name_list = ";".join(residue_name_list)
-            residue_score_list = ";".join(residue_score_list)
+                # Converting these lists into strings so that they can be inputted into
+                # the sql database
+                protein_list = ";".join(protein_list)
+                chain_list = ";".join(chain_list)
+                residue_number_list = ";".join(residue_number_list)
+                residue_name_list = ";".join(residue_name_list)
+                residue_score_list = ";".join(residue_score_list)
 
-            # Creating a dictionary of these lists
-            aggrescan3d_residue = {
-                "protein_list": protein_list,
-                "chain_list": chain_list,
-                "residue_number_list": residue_number_list,
-                "residue_name_list": residue_name_list,
-                "residue_score_list": residue_score_list,
-            }
+                # Creating a dictionary of these lists
+                aggrescan3d_residue = {
+                    "protein_list": protein_list,
+                    "chain_list": chain_list,
+                    "residue_number_list": residue_number_list,
+                    "residue_name_list": residue_name_list,
+                    "residue_score_list": residue_score_list,
+                }
 
-            # Combining the two dictionaries
-            aggrescan3d_results = {
-                **aggrescan3d_summary,
-                **aggrescan3d_residue,
-            }
+                # Combining the two dictionaries
+                aggrescan3d_results = {
+                    **aggrescan3d_summary,
+                    **aggrescan3d_residue,
+                }
 
     finally:
         # Change back to starting directory
