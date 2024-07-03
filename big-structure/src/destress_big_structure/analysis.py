@@ -933,14 +933,12 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     aggrescan3D_stdout.check_returncode()
 
                     
-                    
-
                 except subprocess.TimeoutExpired as te:
                     logging.debug(f"subprocess.TimeoutExpired error when running Aggrescan3d: {te}")
                     return Aggrescan3DOutput(
                         log_info=None,
-                        error_info=aggrescan3D_stdout.stderr.decode(),
-                        return_code=aggrescan3D_stdout.returncode,
+                        error_info=None,
+                        return_code=None,
                         **aggrescan3d_none_dict,
                     )
 
@@ -948,8 +946,8 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     logging.debug(f"subprocess.CalledProcessError when running Aggrescan3d: {ce}")
                     return Aggrescan3DOutput(
                         log_info=None,
-                        error_info=aggrescan3D_stdout.stderr.decode(),
-                        return_code=aggrescan3D_stdout.returncode,
+                        error_info=None,
+                        return_code=None,
                         **aggrescan3d_none_dict,
                     )
 
@@ -962,8 +960,8 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     logging.debug(f"AssertionError when running Aggrescan3d: {ae}")
                     return Aggrescan3DOutput(
                         log_info=None,
-                        error_info=aggrescan3D_stdout.stderr.decode(),
-                        return_code=aggrescan3D_stdout.returncode,  # Indicate an error in the assertion
+                        error_info=None,
+                        return_code=None,
                         **aggrescan3d_none_dict,
                     )
 
