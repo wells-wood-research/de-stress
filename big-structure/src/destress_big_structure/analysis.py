@@ -685,8 +685,8 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
                 # Creating the DFIRE2Output object
                 dfire2_output = DFIRE2Output(
                     log_info=None,
-                    error_info=None,
-                    return_code=None,
+                    error_info=dfire2_stdout.stderr.decode(),
+                    return_code=dfire2_stdout.returncode,
                     total=dfire2_total_energy,
                 )
 
@@ -817,8 +817,8 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                     # Creating an RosettaOutput object by unpacking the output dictionary
                     rosetta_output = RosettaOutput(
                         log_info=None,
-                        error_info=None,
-                        return_code=None,
+                        error_info=rosetta_stdout.stderr.decode(),
+                        return_code=rosetta_stdout.returncode,
                         **energy_values,
                     )
 
@@ -932,12 +932,15 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     aggrescan3D_stdout = subprocess.run(cmd, capture_output=True, timeout=MAX_RUN_TIME)
                     aggrescan3D_stdout.check_returncode()
 
+                    
+                    
+
                 except subprocess.TimeoutExpired as te:
                     logging.debug(f"subprocess.TimeoutExpired error when running Aggrescan3d: {te}")
                     return Aggrescan3DOutput(
                         log_info=None,
-                        error_info="TimeoutExpired",
-                        return_code=e.returncode if te.returncode else None,
+                        error_info=aggrescan3D_stdout.stderr.decode(),
+                        return_code=aggrescan3D_stdout.returncode,
                         **aggrescan3d_none_dict,
                     )
 
@@ -945,8 +948,8 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     logging.debug(f"subprocess.CalledProcessError when running Aggrescan3d: {ce}")
                     return Aggrescan3DOutput(
                         log_info=None,
-                        error_info=f"CalledProcessError: {ce.stderr.decode()}",
-                        return_code=ce.returncode if ce.returncode else None,
+                        error_info=aggrescan3D_stdout.stderr.decode(),
+                        return_code=aggrescan3D_stdout.returncode,
                         **aggrescan3d_none_dict,
                     )
 
@@ -958,9 +961,9 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                 except AssertionError as ae:
                     logging.debug(f"AssertionError when running Aggrescan3d: {ae}")
                     return Aggrescan3DOutput(
-                        log_info="",
-                        error_info=str(ae),
-                        return_code=1,  # Indicate an error in the assertion
+                        log_info=None,
+                        error_info=aggrescan3D_stdout.stderr.decode(),
+                        return_code=aggrescan3D_stdout.returncode,  # Indicate an error in the assertion
                         **aggrescan3d_none_dict,
                     )
 
