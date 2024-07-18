@@ -38,16 +38,18 @@ if [ "$option1" == "1" ]; then
 
         # Building the docker image for development webserver version of DE-STRESS
         echo "Building docker image for the development version of the DE-STRESS webserver."
-        docker_command1="docker compose -f development-compose.yml build"
-        $docker_command1
+        docker_command1a="docker compose -f development-compose.yml build"
+        docker_command1b="docker-compose -f development-compose.yml build"
+        $docker_command1a || $docker_command1b
 
 
     elif [ "$option3" == "2" ]; then
 
         # Building the docker image for production webserver version of DE-STRESS
         echo "Building docker image for the production version of the DE-STRESS webserver."
-        docker_command1="docker compose -f production-compose.yml build"
-        $docker_command1
+        docker_command1a="docker compose -f production-compose.yml build"
+        docker_command1b="docker-compose -f production-compose.yml build"
+        $docker_command1a || $docker_command1b
 
         exit 1
     else
@@ -61,8 +63,9 @@ if [ "$option1" == "1" ]; then
 
     # Building the dependencies for DE-STRESS
     echo "Building DE-STRESS dependencies. Rosetta will take a few hours to compile. "
-    docker_command2="docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh"
-    $docker_command2
+    docker_command2a="docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh"
+    docker_command2b="docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress_big-structure:latest sh build_dependencies.sh"
+    $docker_command2a || $docker_command2b
 
     # Asking the user how many cpus they want to use for the webserver
     echo "How many CPUs do you want to use for the DE-STRESS webserver?"
@@ -72,15 +75,17 @@ if [ "$option1" == "1" ]; then
     if [ "$option3" == "1" ]; then
 
         # Launching the development version of DE-STRESS web server
-        docker_command3="docker compose -f development-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
-        $docker_command3
+        docker_command3a="docker compose -f development-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
+        docker_command3b="docker-compose -f development-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
+        $docker_command3a || $docker_command3b
 
 
     elif [ "$option3" == "2" ]; then
 
         # Launching the production version of DE-STRESS web server
-        docker_command3="docker compose -f production-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
-        $docker_command3
+        docker_command3a="docker compose -f production-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
+        docker_command3b="docker-compose -f production-compose.yml --env-file .env up -d --scale rq-worker=$webserver_num_cpus"
+        $docker_command3a || $docker_command3b
 
         exit 1
     else
@@ -119,8 +124,9 @@ elif [ "$option1" == "2" ]; then
 
     # Building the docker image for headless version of DE-STRESS
     echo "Building docker image for headless DE-STRESS."
-    docker_command1="docker compose -f headless-compose.yml build"
-    $docker_command1
+    docker_command1a="docker compose -f headless-compose.yml build"
+    docker_command1b="docker-compose -f headless-compose.yml build"
+    $docker_command1a || $docker_command1b
 
     # Get the current working directory
     current_dir=$(pwd)
@@ -128,8 +134,9 @@ elif [ "$option1" == "2" ]; then
 
     # Building the dependencies for DE-STRESS
     echo "Building DE-STRESS dependencies. Rosetta will take a few hours to compile. "
-    docker_command2="docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh"
-    $docker_command2
+    docker_command2a="docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress-big-structure:latest sh build_dependencies.sh"
+    docker_command2b="docker run -it --rm -v $current_dir/dependencies_for_de-stress/:/dependencies_for_de-stress de-stress_big-structure:latest sh build_dependencies.sh"
+    $docker_command2a || $docker_command2b
 else
     echo "Invalid option. Please choose either 1 or 2."
     exit 1
