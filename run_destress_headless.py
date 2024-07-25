@@ -25,12 +25,23 @@ def main():
     ascii_splash("DESTRESS")
     deStressDir = os.getcwd()
     dependanciesDir = p.join(deStressDir,"dependencies_for_de-stress")
-    call(["docker", "run", "-it", "--rm",
-          "--env-file", ".env-headless",
-          "-v", f"{dependanciesDir}:/dependencies_for_de-stress",
-          "-v", f"{inputPath}:/input_path",
-          "de-stress-big-structure:latest",
-        "poetry", "run", "headless_destress", "/input_path"])
+    # Try the first command
+    result = call(["docker", "run", "-it", "--rm",
+                   "--env-file", ".env-headless",
+                   "-v", f"{dependanciesDir}:/dependencies_for_de-stress",
+                   "-v", f"{inputPath}:/input_path",
+                   "de-stress-big-structure:latest",
+                   "poetry", "run", "headless_destress", "/input_path"])
+
+    # If the first command fails, try the second command
+    if result != 0:
+        print("First command failed, trying de-stress_big-structure...")
+        result = call(["docker", "run", "-it", "--rm",
+                       "--env-file", ".env-headless",
+                       "-v", f"{dependanciesDir}:/dependencies_for_de-stress",
+                       "-v", f"{inputPath}:/input_path",
+                       "de-stress_big-structure:latest",
+                       "poetry", "run", "headless_destress", "/input_path"])
 ##############################################################################
 def ascii_splash(id):
     splashDict = {"DESTRESS":
