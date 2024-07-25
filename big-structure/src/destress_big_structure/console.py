@@ -557,9 +557,9 @@ def headless_destress(pdb_file: str) -> DesignMetricsOutputRow:
                 **design_metrics_output,
             )
 
-        except Exception as e:
+        except ValueError as ve:
             logging.debug(
-                f"Error encountered when calculating the DE-STRESS metrics for PDB file {file_name}. Therefore, this file will have None values for all the metrics. :\n {e}"
+                f"Error encountered when calculating the DE-STRESS metrics for PDB file {file_name}. Therefore, this file will have None values for all the metrics. :\n {ve}"
             )
 
             # Setting all the design metrics to None

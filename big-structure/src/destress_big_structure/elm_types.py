@@ -38,9 +38,9 @@ class BudeFFOutput:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class EvoEF2Output:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     reference_ALA: Optional[float]
     reference_CYS: Optional[float]
     reference_ASP: Optional[float]
@@ -138,7 +138,7 @@ class EvoEF2Output:
         else:
 
             self.ref_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("reference"))
+                (v for k, v in self.__dict__.items() if k.startswith("reference") and v is not None)
             )
 
             self.intraR_total = sum(
@@ -148,25 +148,25 @@ class EvoEF2Output:
                     if (
                         k.startswith("intraR")
                         or k in ["aapropensity", "ramachandran", "dunbrack"]
-                    )
+                    ) and v is not None
                 )
             )
 
             self.interS_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("interS"))
+                (v for k, v in self.__dict__.items() if k.startswith("interS") and v is not None)
             )
 
             self.interD_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("interD"))
+                (v for k, v in self.__dict__.items() if k.startswith("interD") and v is not None)
             )
 
 
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass()
 class DFIRE2Output:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     total: Optional[float]
 
     # Redefining the __repr__ method to return the total energy value from DFIRE2
@@ -177,9 +177,9 @@ class DFIRE2Output:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class RosettaOutput:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     dslf_fa13: Optional[float]
     fa_atr: Optional[float]
     fa_dun: Optional[float]
@@ -232,9 +232,9 @@ class RosettaOutput:
 @dataclass_json()  # letter_case=LetterCase.CAMEL)
 @dataclass(eq=False)
 class Aggrescan3DOutput:
-    log_info: str
-    error_info: str
-    return_code: int
+    log_info: Optional[str]
+    error_info: Optional[str]
+    return_code: Optional[int]
     protein_list: Optional[str]
     chain_list: Optional[str]
     residue_number_list: Optional[str]
@@ -277,7 +277,7 @@ class DesignMetrics:
     full_sequence: str
     dssp_assignment: str
     composition: Dict[str, float]
-    torsion_angles: Dict[str, Tuple[float, float, float]]
+    # torsion_angles: Dict[str, Tuple[float, float, float]]
     hydrophobic_fitness: Optional[float]
     isoelectric_point: float
     charge: float
