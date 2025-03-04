@@ -138,7 +138,11 @@ class EvoEF2Output:
         else:
 
             self.ref_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("reference") and v is not None)
+                (
+                    v
+                    for k, v in self.__dict__.items()
+                    if k.startswith("reference") and v is not None
+                )
             )
 
             self.intraR_total = sum(
@@ -148,16 +152,25 @@ class EvoEF2Output:
                     if (
                         k.startswith("intraR")
                         or k in ["aapropensity", "ramachandran", "dunbrack"]
-                    ) and v is not None
+                    )
+                    and v is not None
                 )
             )
 
             self.interS_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("interS") and v is not None)
+                (
+                    v
+                    for k, v in self.__dict__.items()
+                    if k.startswith("interS") and v is not None
+                )
             )
 
             self.interD_total = sum(
-                (v for k, v in self.__dict__.items() if k.startswith("interD") and v is not None)
+                (
+                    v
+                    for k, v in self.__dict__.items()
+                    if k.startswith("interD") and v is not None
+                )
             )
 
 
@@ -341,6 +354,67 @@ class DesignMetricsOutputRow:
     evoef2_intraR_total: float
     evoef2_interS_total: float
     evoef2_interD_total: float
+    evoef2_reference_ALA: float
+    evoef2_reference_CYS: float
+    evoef2_reference_ASP: float
+    evoef2_reference_GLU: float
+    evoef2_reference_PHE: float
+    evoef2_reference_GLY: float
+    evoef2_reference_HIS: float
+    evoef2_reference_ILE: float
+    evoef2_reference_LYS: float
+    evoef2_reference_LEU: float
+    evoef2_reference_MET: float
+    evoef2_reference_ASN: float
+    evoef2_reference_PRO: float
+    evoef2_reference_GLN: float
+    evoef2_reference_ARG: float
+    evoef2_reference_SER: float
+    evoef2_reference_THR: float
+    evoef2_reference_VAL: float
+    evoef2_reference_TRP: float
+    evoef2_reference_TYR: float
+    evoef2_intraR_vdwatt: float
+    evoef2_intraR_vdwrep: float
+    evoef2_intraR_electr: float
+    evoef2_intraR_deslvP: float
+    evoef2_intraR_deslvH: float
+    evoef2_intraR_hbscbb_dis: float
+    evoef2_intraR_hbscbb_the: float
+    evoef2_intraR_hbscbb_phi: float
+    evoef2_aapropensity: float
+    evoef2_ramachandran: float
+    evoef2_dunbrack: float
+    evoef2_interS_vdwatt: float
+    evoef2_interS_vdwrep: float
+    evoef2_interS_electr: float
+    evoef2_interS_deslvP: float
+    evoef2_interS_deslvH: float
+    evoef2_interS_ssbond: float
+    evoef2_interS_hbbbbb_dis: float
+    evoef2_interS_hbbbbb_the: float
+    evoef2_interS_hbbbbb_phi: float
+    evoef2_interS_hbscbb_dis: float
+    evoef2_interS_hbscbb_the: float
+    evoef2_interS_hbscbb_phi: float
+    evoef2_interS_hbscsc_dis: float
+    evoef2_interS_hbscsc_the: float
+    evoef2_interS_hbscsc_phi: float
+    evoef2_interD_vdwatt: float
+    evoef2_interD_vdwrep: float
+    evoef2_interD_electr: float
+    evoef2_interD_deslvP: float
+    evoef2_interD_deslvH: float
+    evoef2_interD_ssbond: float
+    evoef2_interD_hbbbbb_dis: float
+    evoef2_interD_hbbbbb_the: float
+    evoef2_interD_hbbbbb_phi: float
+    evoef2_interD_hbscbb_dis: float
+    evoef2_interD_hbscbb_the: float
+    evoef2_interD_hbscbb_phi: float
+    evoef2_interD_hbscsc_dis: float
+    evoef2_interD_hbscsc_the: float
+    evoef2_interD_hbscsc_phi: float
     dfire2_total: float
     rosetta_total: float
     rosetta_fa_atr: float

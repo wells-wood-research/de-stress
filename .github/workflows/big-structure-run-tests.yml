@@ -23,10 +23,7 @@ jobs:
 
       - name: Download dependencies
         run: |
-          python -m venv headless_destress
-          source headless_destress/bin/activate
           cp .env-headless-testing .env-headless
-          pip install -r requirements.txt
           cd dependencies_for_de-stress/
           git clone --branch v2024.18-dev62107 https://github.com/RosettaCommons/rosetta.git
           echo "Rosetta has been successfully downloaded."
