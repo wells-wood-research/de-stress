@@ -55,14 +55,7 @@ Also, make sure you have the most up to date version of docker and docker-compos
 
 ## Local install of headless DE-STRESS
 
-First create a virtual environment for running headless destress.
-
-```bash
-python -m venv headless_destress && source headless_destress/bin/activate && pip install -r requirements.txt
-
-```
-
-After this copy .env-headless-testing file to .env-headless and then you can customise the settings for running headless DE-STRESS.
+First, copy .env-headless-testing file to .env-headless and then you can customise the settings for running headless DE-STRESS.
 
 ```bash
 cp .env-headless-testing .env-headless
