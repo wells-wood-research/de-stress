@@ -23,8 +23,6 @@ jobs:
 
       - name: Download dependencies
         run: |
-          python -m venv headless_destress
-          source headless_destress/bin/activate
           cp .env-headless-testing .env-headless
           pip install -r requirements.txt
           cd dependencies_for_de-stress/
