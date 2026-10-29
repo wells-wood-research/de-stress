@@ -128,6 +128,44 @@ def convert_string_to_float(input_string: str) -> Optional[float]:
 # {{{ Jpred Submission
 
 
+def subprocess_failure_info(
+    error: Exception,
+) -> Tuple[Optional[str], Optional[str], Optional[int]]:
+    """Extracts the output of a subprocess call that raised an exception.
+
+    `subprocess.run` raises before it returns when the command times out or
+    when the executable cannot be found, so no `CompletedProcess` is bound in
+    those cases. The failure information therefore has to be taken from the
+    exception object itself.
+
+    Parameters
+    ----------
+    error: Exception
+        The exception raised by the subprocess call.
+
+    Returns
+    -------
+    Tuple[Optional[str], Optional[str], Optional[int]]
+        The stdout, stderr and return code of the failed call, where available.
+    """
+
+    def decode(stream):
+        if stream is None:
+            return None
+        return stream.decode() if isinstance(stream, bytes) else str(stream)
+
+    log_info = decode(getattr(error, "stdout", None))
+    error_info = decode(getattr(error, "stderr", None))
+    return_code = getattr(error, "returncode", None)
+
+    # Timeouts and missing binaries carry no stderr, so the exception is
+    # recorded instead to avoid losing the reason for the failure.
+    if not error_info:
+        error_info = f"{type(error).__name__}: {error}"
+
+    return log_info, error_info, return_code
+
+
 class JpredSubmissionError(Exception):
     pass
 
@@ -538,6 +576,10 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
             # writing the pdb string to a temp file as input for EvoEF
             tmp.write(pdb_string)
 
+            # flushing so that the full structure is on disk before EvoEF2
+            # opens the file in a separate process
+            tmp.flush()
+
             # Creating bash command
             cmd = [
                 evoef2_binary_path,
@@ -554,17 +596,18 @@ def run_evoef2(pdb_string: str, evoef2_binary_path: str) -> EvoEF2Output:
 
                 evoef2_stdout.check_returncode()
 
-            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+            except (
+                subprocess.TimeoutExpired,
+                subprocess.CalledProcessError,
+                OSError,
+            ) as e:
                 logging.debug(f"Subprocess Error when computing EvoEF2: {e}")
-
-                log_info = evoef2_stdout.stdout.decode()
 
                 # Setting all the energy values to None
                 energy_values = dict(zip(energy_field_list, [None] * len(energy_field_list)))
 
-                # Extracting error information and the return code
-                error_info = evoef2_stdout.stderr.decode()
-                return_code = evoef2_stdout.returncode
+                # Extracting the output, error information and the return code
+                log_info, error_info, return_code = subprocess_failure_info(e)
 
                 # Creating an EvoEF2 object by unpacking the output dictionary
                 evoef2_output = EvoEF2Output(
@@ -660,6 +703,10 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
             # Writing the pdb string to a temp file as input for dfire2
             tmp.write(pdb_string)
 
+            # flushing so that the full structure is on disk before DFIRE2
+            # opens the file in a separate process
+            tmp.flush()
+
             # Creating bash command
             cmd = [
                 dfire2_folder_path + "calene",
@@ -676,17 +723,24 @@ def run_dfire2(pdb_string: str, dfire2_folder_path: str) -> DFIRE2Output:
 
                 dfire2_stdout.check_returncode()
 
-            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+            except (
+                subprocess.TimeoutExpired,
+                subprocess.CalledProcessError,
+                OSError,
+            ) as e:
                 logging.debug(f"Subprocess Error when computing DFIRE2: {e}")
 
                 # Setting total energy to None if there has been an error
                 dfire2_total_energy = None
 
+                # Extracting the output, error information and the return code
+                log_info, error_info, return_code = subprocess_failure_info(e)
+
                 # Creating the DFIRE2Output object
                 dfire2_output = DFIRE2Output(
-                    log_info=None,
-                    error_info=dfire2_stdout.stderr.decode(),
-                    return_code=dfire2_stdout.returncode,
+                    log_info=log_info,
+                    error_info=error_info,
+                    return_code=return_code,
                     total=dfire2_total_energy,
                 )
 
@@ -789,6 +843,10 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                 # Writing the pdb string to a temp file as input for Rosetta
                 pdb.write(pdb_string)
 
+                # flushing so that the full structure is on disk before Rosetta
+                # opens the file in a separate process
+                pdb.flush()
+
                 # Creating bash command
                 cmd = [
                     rosetta_binary_path,
@@ -806,7 +864,11 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                     )
                     rosetta_stdout.check_returncode()
 
-                except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+                except (
+                    subprocess.TimeoutExpired,
+                    subprocess.CalledProcessError,
+                    OSError,
+                ) as e:
                     logging.debug(f"Subprocess Error when computing Rosetta: {e}")
 
                     # Setting all the energy values to None
@@ -814,11 +876,14 @@ def run_rosetta(pdb_string: str, rosetta_binary_path: str) -> RosettaOutput:
                         zip(energy_field_list, [None] * len(energy_field_list))
                     )
 
+                    # Extracting the output, error information and the return code
+                    log_info, error_info, return_code = subprocess_failure_info(e)
+
                     # Creating an RosettaOutput object by unpacking the output dictionary
                     rosetta_output = RosettaOutput(
-                        log_info=None,
-                        error_info=rosetta_stdout.stderr.decode(),
-                        return_code=rosetta_stdout.returncode,
+                        log_info=log_info,
+                        error_info=error_info,
+                        return_code=return_code,
                         **energy_values,
                     )
 
@@ -920,6 +985,10 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                 # Writing the pdb string to a temp file as the input for Aggrescan3D
                 pdb.write(pdb_string)
 
+                # flushing so that the full structure is on disk before
+                # Aggrescan3D opens the file in a separate process
+                pdb.flush()
+
                 # Creating bash command
                 cmd = [
                     "python2",
@@ -933,21 +1002,20 @@ def run_aggrescan3d(pdb_string: str, aggrescan3d_script_path: str) -> Aggrescan3
                     aggrescan3D_stdout.check_returncode()
 
                     
-                except subprocess.TimeoutExpired as te:
-                    logging.debug(f"subprocess.TimeoutExpired error when running Aggrescan3d: {te}")
-                    return Aggrescan3DOutput(
-                        log_info=None,
-                        error_info=None,
-                        return_code=None,
-                        **aggrescan3d_none_dict,
-                    )
+                except (
+                    subprocess.TimeoutExpired,
+                    subprocess.CalledProcessError,
+                    OSError,
+                ) as e:
+                    logging.debug(f"Subprocess Error when running Aggrescan3d: {e}")
 
-                except subprocess.CalledProcessError as ce:
-                    logging.debug(f"subprocess.CalledProcessError when running Aggrescan3d: {ce}")
+                    # Extracting the output, error information and the return code
+                    log_info, error_info, return_code = subprocess_failure_info(e)
+
                     return Aggrescan3DOutput(
-                        log_info=None,
-                        error_info=None,
-                        return_code=None,
+                        log_info=log_info,
+                        error_info=error_info,
+                        return_code=return_code,
                         **aggrescan3d_none_dict,
                     )
 
