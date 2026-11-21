@@ -65,5 +65,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
     ports:
-      - "${RQ_DASHBOARD_PORT}:${RQ_DASHBOARD_PORT}"
+      # Only from lilis itself: the dashboard has no login, and Docker
+      # bypasses the firewall. Use an SSH tunnel to see it.
+      - "127.0.0.1:${RQ_DASHBOARD_PORT}:${RQ_DASHBOARD_PORT}"
 
